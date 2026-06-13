@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const ownerEmail = email || 'owner@bookflow.os'
-    const ownerName = name || 'BookFlow Owner'
-    const ownerPassword = password || 'Owner@2025'
+    const ownerEmail = email || 'admin@apexflow.cloud'
+    const ownerName = name || 'ApexFlow Admin'
+    const ownerPassword = password || 'Admin@180H'
 
     // Create owner user
     const owner = await db.user.create({

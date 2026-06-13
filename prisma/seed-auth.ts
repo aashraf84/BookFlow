@@ -7,12 +7,12 @@ async function main() {
 
   // Create owner user
   const owner = await prisma.user.upsert({
-    where: { email: 'owner@bookflow.os' },
+    where: { email: 'admin@apexflow.cloud' },
     update: {},
     create: {
-      name: 'BookFlow Owner',
-      email: 'owner@bookflow.os',
-      password: 'Owner@2025',
+      name: 'ApexFlow Admin',
+      email: 'admin@apexflow.cloud',
+      password: 'Admin@180H',
       role: 'owner',
       isActive: true,
       isViewOnly: false,
@@ -40,8 +40,8 @@ async function main() {
   console.log('═══════════════════════════════════════════════')
   console.log('  🔑 OWNER CREDENTIALS')
   console.log('═══════════════════════════════════════════════')
-  console.log(`  Email:    owner@bookflow.os`)
-  console.log(`  Password: Owner@2025`)
+  console.log(`  Email:    admin@apexflow.cloud`)
+  console.log(`  Password: Admin@180H`)
   console.log(`  Role:     owner`)
   console.log('───────────────────────────────────────────────')
   console.log('  🔐 SERIAL KEY (for device activation)')
