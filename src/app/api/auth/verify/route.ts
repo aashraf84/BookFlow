@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
         email: session.user.email,
         role: session.user.role,
         isViewOnly: session.user.isViewOnly,
+        tenantId: session.user.tenantId,
       },
     })
   } catch (error) {

@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string
   role: string
   isViewOnly: boolean
+  tenantId: string | null
 }
 
 interface AppState {

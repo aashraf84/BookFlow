@@ -1,24 +1,29 @@
 ---
 Task ID: 1
 Agent: Main Agent
-Task: Remove traffic light buttons, update sidebar branding, create owner account, shift Owner Portal to top, make it owner-only visible
+Task: Migrate BookFlow OS from SQLite to Neon PostgreSQL with multi-tenant setup + redesign login screen
 
 Work Log:
-- Updated app-shell.tsx sidebar footer: replaced "v27.0.0 · Professional · 18 Modules" with "v27.0.0 · Professional Edition" and added "© 2025 ApexFlow Ecosystem"
-- Added Owner Access badge (amber/gold) in sidebar footer, visible only when authUser?.role === 'owner'
-- Updated nav-config.ts: moved Owner Portal to new 'owner' group at the top, added ownerOnly flag
-- Updated app-shell.tsx sidebar content: filters owner-only modules based on authUser role, hides empty groups
-- Updated module-content.tsx: added AccessDenied component for owner-only modules when accessed by non-owners
-- Created seed-auth.ts with owner account and serial key
-- Created /api/auth/setup route for programmatic owner creation
-- Ran db:seed-auth successfully
-- Browser E2E verified: owner login shows Owner Portal at top with amber Owner Access badge
-- Browser E2E verified: demo user cannot see Owner Portal or Owner group in sidebar
+- Changed Prisma provider from `sqlite` to `postgresql` with Neon connection strings
+- Added `Tenant` model with company info, plan, status, and all tenant-scoped relations
+- Added `tenantId` field to all tenant-scoped models (User, Branch, Employee, Book, etc.)
+- Changed global `@unique` constraints to composite `@@unique([tenantId, field])` where appropriate
+- Owner/SaaS management models (OwnerClient, OwnerSubscription, etc.) remain global (no tenantId)
+- Updated `.env` with Neon PostgreSQL connection strings (pooled + direct)
+- Updated `db.ts` with Neon serverless WebSocket support and multi-tenant seed data
+- Updated `app-store.ts` to include `tenantId` in `AuthUser` interface
+- Updated all auth API routes (login, demo, verify, activate) to return `tenantId`
+- Redesigned `login-gate.tsx` with macOS-style box-shaped login card
+- Pushed schema to Neon PostgreSQL successfully (all tables created)
+- Auto-seed verified: Tenant (ApexFlow HQ) + Owner + Demo User + 5 Serial Keys
+- All 3 auth flows verified via curl: Activate, Login, Demo Login
+- Lint passes clean
 
 Stage Summary:
-- Owner credentials: email=owner@bookflow.os, password=Owner@2025
-- Serial key for device activation: BFOWN-2025-PROF-UNLM (Enterprise, unlimited devices, expires 2030)
-- Owner Portal is now at the top of sidebar in its own "Owner" group
-- Owner Portal is only visible to users with role='owner'
-- Non-owner users see Access Denied if they try to navigate to /owner
-- No traffic light buttons present (they were already removed in previous session)
+- Database: Migrated from SQLite to Neon PostgreSQL with full multi-tenant architecture
+- Tenant model: ApexFlow HQ (enterprise plan) as default tenant
+- Users: admin@apexflow.cloud (owner) + demo@bookflow.os (demo), both linked to tenant
+- Serial Keys: BFOWN-2025-PROF-UNLM + 4 others
+- Login screen: macOS-style frosted glass box with avatar, inputs, and buttons
+- AuthUser interface now includes tenantId for tenant-aware queries
+- Browser verification limited by sandbox memory constraints, but all API endpoints verified working

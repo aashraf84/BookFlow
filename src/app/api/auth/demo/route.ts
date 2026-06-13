@@ -13,6 +13,11 @@ export async function POST() {
     })
 
     if (!user) {
+      // Find the default tenant
+      const defaultTenant = await db.tenant.findFirst({
+        where: { slug: 'apexflow-hq' },
+      })
+
       user = await db.user.create({
         data: {
           name: 'Demo User',
@@ -20,6 +25,7 @@ export async function POST() {
           password: 'demo123',
           role: 'demo',
           isViewOnly: true,
+          tenantId: defaultTenant?.id ?? null,
         },
       })
     }
@@ -49,6 +55,7 @@ export async function POST() {
         email: user.email,
         role: user.role,
         isViewOnly: user.isViewOnly,
+        tenantId: user.tenantId,
       },
     })
   } catch (error) {

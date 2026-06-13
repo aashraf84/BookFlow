@@ -17,14 +17,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!password || typeof password !== 'string') {
+    if (!password || typeof email !== 'string') {
       return NextResponse.json(
         { success: false, error: 'Password is required' },
         { status: 200 }
       )
     }
 
-    const user = await db.user.findUnique({
+    // Find user by email (could be in any tenant or global owner)
+    const user = await db.user.findFirst({
       where: { email },
     })
 
@@ -75,6 +76,7 @@ export async function POST(request: NextRequest) {
         email: user.email,
         role: user.role,
         isViewOnly: user.isViewOnly,
+        tenantId: user.tenantId,
       },
     })
   } catch (error) {

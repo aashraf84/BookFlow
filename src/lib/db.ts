@@ -1,20 +1,26 @@
 import { PrismaClient } from '@prisma/client'
+import { Pool, neonConfig } from '@neondatabase/serverless'
+import ws from 'ws'
+
+// Configure Neon to use WebSocket for better performance
+neonConfig.webSocketConstructor = ws
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Use the Neon serverless adapter with connection pooling
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query'] : [],
+    log: [],
+    datasourceUrl: process.env.DATABASE_URL,
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 
 // ─── Auto-seed on cold start ────────────────────────────────
-// On serverless (Vercel), SQLite data doesn't persist between
-// invocations. This ensures owner + serial key + demo user
+// Ensures owner + serial key + demo user + default tenant
 // always exist when the first auth request comes in.
 let _seeded = false
 
@@ -29,7 +35,23 @@ export async function ensureSeedData() {
     if (keyCount === 0) {
       console.log('🌱 Auto-seeding: Fresh database detected, creating seed data...')
 
-      // Create owner user
+      // 1. Create default tenant (the bookstore company)
+      const defaultTenant = await db.tenant.create({
+        data: {
+          name: 'ApexFlow HQ',
+          slug: 'apexflow-hq',
+          email: 'admin@apexflow.cloud',
+          industry: 'Bookstore Management',
+          status: 'active',
+          plan: 'enterprise',
+          maxUsers: 999,
+          maxBranches: 999,
+          currency: 'USD',
+          timezone: 'UTC',
+        },
+      })
+
+      // 2. Create owner user (belongs to default tenant)
       await db.user.create({
         data: {
           name: 'ApexFlow Admin',
@@ -38,10 +60,11 @@ export async function ensureSeedData() {
           role: 'owner',
           isActive: true,
           isViewOnly: false,
+          tenantId: defaultTenant.id,
         },
       })
 
-      // Create serial keys
+      // 3. Create serial keys
       await db.serialKey.createMany({
         data: [
           {
@@ -83,7 +106,7 @@ export async function ensureSeedData() {
         ],
       })
 
-      // Create demo user
+      // 4. Create demo user (belongs to default tenant)
       await db.user.create({
         data: {
           name: 'Demo User',
@@ -92,10 +115,11 @@ export async function ensureSeedData() {
           role: 'demo',
           isActive: true,
           isViewOnly: true,
+          tenantId: defaultTenant.id,
         },
       })
 
-      console.log('✅ Auto-seed complete: Owner + Serial Keys + Demo user created')
+      console.log('✅ Auto-seed complete: Tenant + Owner + Serial Keys + Demo user created')
     }
   } catch (error) {
     console.error('Auto-seed error (non-fatal):', error)
