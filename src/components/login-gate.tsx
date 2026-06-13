@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  BookOpen,
   Wifi,
   Battery,
   Accessibility,
@@ -394,6 +393,12 @@ export function LoginGate() {
                     </>
                   )}
                 </button>
+
+                {/* Version & branding */}
+                <div className="flex flex-col items-center pt-4 gap-0.5">
+                  <p className="text-[11px] text-white/25 font-medium tracking-wide">BookFlow OS v27.0</p>
+                  <p className="text-[10px] text-white/15">Powered by ApexFlow Ecosystem</p>
+                </div>
               </div>
             </motion.div>
           )}
@@ -557,24 +562,16 @@ export function LoginGate() {
                     </>
                   )}
                 </button>
+
+                {/* Version & branding */}
+                <div className="flex flex-col items-center pt-4 gap-0.5">
+                  <p className="text-[11px] text-white/25 font-medium tracking-wide">BookFlow OS v27.0</p>
+                  <p className="text-[10px] text-white/15">Powered by ApexFlow Ecosystem</p>
+                </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Footer branding */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.8 }}
-          className="absolute bottom-10 left-0 right-0 flex flex-col items-center"
-        >
-          <div className="flex items-center gap-1.5 mb-1">
-            <BookOpen className="size-3 text-white/25" strokeWidth={2} />
-            <span className="text-[11px] text-white/30 font-medium tracking-wide">ApexFlow Ecosystem</span>
-          </div>
-          <p className="text-[10px] text-white/20">BookFlow OS v27.0 · Retina</p>
-        </motion.div>
       </div>
     </div>
   )
