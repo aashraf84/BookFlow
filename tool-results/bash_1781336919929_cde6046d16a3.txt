@@ -1,0 +1,321 @@
+🌱 Seeding database...
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Branch`.`id` FROM `main`.`Branch` WHERE (`main`.`Branch`.`code` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Branch` (`id`, `name`, `code`, `address`, `phone`, `manager`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Branch`.`id`, `main`.`Branch`.`name`, `main`.`Branch`.`code`, `main`.`Branch`.`address`, `main`.`Branch`.`phone`, `main`.`Branch`.`email`, `main`.`Branch`.`manager`, `main`.`Branch`.`isActive`, `main`.`Branch`.`createdAt`, `main`.`Branch`.`updatedAt` FROM `main`.`Branch` WHERE `main`.`Branch`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Branch`.`id` FROM `main`.`Branch` WHERE (`main`.`Branch`.`code` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Branch` (`id`, `name`, `code`, `address`, `phone`, `manager`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Branch`.`id`, `main`.`Branch`.`name`, `main`.`Branch`.`code`, `main`.`Branch`.`address`, `main`.`Branch`.`phone`, `main`.`Branch`.`email`, `main`.`Branch`.`manager`, `main`.`Branch`.`isActive`, `main`.`Branch`.`createdAt`, `main`.`Branch`.`updatedAt` FROM `main`.`Branch` WHERE `main`.`Branch`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created branches: Downtown Store, Mall Location
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Warehouse`.`id` FROM `main`.`Warehouse` WHERE (`main`.`Warehouse`.`code` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Warehouse` (`id`, `name`, `code`, `address`, `branchId`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Warehouse`.`id`, `main`.`Warehouse`.`name`, `main`.`Warehouse`.`code`, `main`.`Warehouse`.`address`, `main`.`Warehouse`.`branchId`, `main`.`Warehouse`.`isActive`, `main`.`Warehouse`.`createdAt`, `main`.`Warehouse`.`updatedAt` FROM `main`.`Warehouse` WHERE `main`.`Warehouse`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Warehouse`.`id` FROM `main`.`Warehouse` WHERE (`main`.`Warehouse`.`code` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Warehouse` (`id`, `name`, `code`, `address`, `branchId`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Warehouse`.`id`, `main`.`Warehouse`.`name`, `main`.`Warehouse`.`code`, `main`.`Warehouse`.`address`, `main`.`Warehouse`.`branchId`, `main`.`Warehouse`.`isActive`, `main`.`Warehouse`.`createdAt`, `main`.`Warehouse`.`updatedAt` FROM `main`.`Warehouse` WHERE `main`.`Warehouse`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created warehouses: Main Warehouse, Mall Warehouse
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryCategory`.`id` FROM `main`.`StationeryCategory` WHERE (`main`.`StationeryCategory`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryCategory` (`id`, `name`, `type`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryCategory`.`id`, `main`.`StationeryCategory`.`name`, `main`.`StationeryCategory`.`type`, `main`.`StationeryCategory`.`createdAt`, `main`.`StationeryCategory`.`updatedAt` FROM `main`.`StationeryCategory` WHERE `main`.`StationeryCategory`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryCategory`.`id` FROM `main`.`StationeryCategory` WHERE (`main`.`StationeryCategory`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryCategory` (`id`, `name`, `type`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryCategory`.`id`, `main`.`StationeryCategory`.`name`, `main`.`StationeryCategory`.`type`, `main`.`StationeryCategory`.`createdAt`, `main`.`StationeryCategory`.`updatedAt` FROM `main`.`StationeryCategory` WHERE `main`.`StationeryCategory`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryCategory`.`id` FROM `main`.`StationeryCategory` WHERE (`main`.`StationeryCategory`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryCategory` (`id`, `name`, `type`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryCategory`.`id`, `main`.`StationeryCategory`.`name`, `main`.`StationeryCategory`.`type`, `main`.`StationeryCategory`.`createdAt`, `main`.`StationeryCategory`.`updatedAt` FROM `main`.`StationeryCategory` WHERE `main`.`StationeryCategory`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryCategory`.`id` FROM `main`.`StationeryCategory` WHERE (`main`.`StationeryCategory`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryCategory` (`id`, `name`, `type`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryCategory`.`id`, `main`.`StationeryCategory`.`name`, `main`.`StationeryCategory`.`type`, `main`.`StationeryCategory`.`createdAt`, `main`.`StationeryCategory`.`updatedAt` FROM `main`.`StationeryCategory` WHERE `main`.`StationeryCategory`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryCategory`.`id` FROM `main`.`StationeryCategory` WHERE (`main`.`StationeryCategory`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryCategory` (`id`, `name`, `type`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryCategory`.`id`, `main`.`StationeryCategory`.`name`, `main`.`StationeryCategory`.`type`, `main`.`StationeryCategory`.`createdAt`, `main`.`StationeryCategory`.`updatedAt` FROM `main`.`StationeryCategory` WHERE `main`.`StationeryCategory`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created stationery categories
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StationeryProduct`.`id` FROM `main`.`StationeryProduct` WHERE (`main`.`StationeryProduct`.`sku` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StationeryProduct` (`id`, `name`, `sku`, `categoryId`, `brand`, `price`, `costPrice`, `discount`, `barcode`, `unit`, `minOrderQty`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE `main`.`StationeryProduct`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created stationery products
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`BookCategory`.`id` FROM `main`.`BookCategory` WHERE (`main`.`BookCategory`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`BookCategory` (`id`, `name`, `type`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`BookCategory`.`id`, `main`.`BookCategory`.`name`, `main`.`BookCategory`.`type`, `main`.`BookCategory`.`createdAt`, `main`.`BookCategory`.`updatedAt` FROM `main`.`BookCategory` WHERE `main`.`BookCategory`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`BookCategory`.`id` FROM `main`.`BookCategory` WHERE (`main`.`BookCategory`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`BookCategory` (`id`, `name`, `type`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`BookCategory`.`id`, `main`.`BookCategory`.`name`, `main`.`BookCategory`.`type`, `main`.`BookCategory`.`createdAt`, `main`.`BookCategory`.`updatedAt` FROM `main`.`BookCategory` WHERE `main`.`BookCategory`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`BookCategory`.`id` FROM `main`.`BookCategory` WHERE (`main`.`BookCategory`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`BookCategory` (`id`, `name`, `type`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`BookCategory`.`id`, `main`.`BookCategory`.`name`, `main`.`BookCategory`.`type`, `main`.`BookCategory`.`createdAt`, `main`.`BookCategory`.`updatedAt` FROM `main`.`BookCategory` WHERE `main`.`BookCategory`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Author`.`id` FROM `main`.`Author` WHERE (`main`.`Author`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Author` (`id`, `name`, `nationality`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Author`.`id`, `main`.`Author`.`name`, `main`.`Author`.`bio`, `main`.`Author`.`nationality`, `main`.`Author`.`website`, `main`.`Author`.`email`, `main`.`Author`.`phone`, `main`.`Author`.`createdAt`, `main`.`Author`.`updatedAt` FROM `main`.`Author` WHERE `main`.`Author`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Author`.`id` FROM `main`.`Author` WHERE (`main`.`Author`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Author` (`id`, `name`, `nationality`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Author`.`id`, `main`.`Author`.`name`, `main`.`Author`.`bio`, `main`.`Author`.`nationality`, `main`.`Author`.`website`, `main`.`Author`.`email`, `main`.`Author`.`phone`, `main`.`Author`.`createdAt`, `main`.`Author`.`updatedAt` FROM `main`.`Author` WHERE `main`.`Author`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Author`.`id` FROM `main`.`Author` WHERE (`main`.`Author`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Author` (`id`, `name`, `nationality`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Author`.`id`, `main`.`Author`.`name`, `main`.`Author`.`bio`, `main`.`Author`.`nationality`, `main`.`Author`.`website`, `main`.`Author`.`email`, `main`.`Author`.`phone`, `main`.`Author`.`createdAt`, `main`.`Author`.`updatedAt` FROM `main`.`Author` WHERE `main`.`Author`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Publisher`.`id` FROM `main`.`Publisher` WHERE (`main`.`Publisher`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Publisher` (`id`, `name`, `email`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Publisher`.`id`, `main`.`Publisher`.`name`, `main`.`Publisher`.`contact`, `main`.`Publisher`.`email`, `main`.`Publisher`.`phone`, `main`.`Publisher`.`address`, `main`.`Publisher`.`website`, `main`.`Publisher`.`agreement`, `main`.`Publisher`.`createdAt`, `main`.`Publisher`.`updatedAt` FROM `main`.`Publisher` WHERE `main`.`Publisher`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Publisher`.`id` FROM `main`.`Publisher` WHERE (`main`.`Publisher`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Publisher` (`id`, `name`, `email`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Publisher`.`id`, `main`.`Publisher`.`name`, `main`.`Publisher`.`contact`, `main`.`Publisher`.`email`, `main`.`Publisher`.`phone`, `main`.`Publisher`.`address`, `main`.`Publisher`.`website`, `main`.`Publisher`.`agreement`, `main`.`Publisher`.`createdAt`, `main`.`Publisher`.`updatedAt` FROM `main`.`Publisher` WHERE `main`.`Publisher`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Book`.`id` FROM `main`.`Book` WHERE (`main`.`Book`.`isbn` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Book` (`id`, `isbn`, `title`, `authorId`, `publisherId`, `categoryId`, `language`, `pages`, `publishYear`, `price`, `costPrice`, `discount`, `barcode`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Book`.`id`, `main`.`Book`.`isbn`, `main`.`Book`.`title`, `main`.`Book`.`subtitle`, `main`.`Book`.`authorId`, `main`.`Book`.`publisherId`, `main`.`Book`.`categoryId`, `main`.`Book`.`edition`, `main`.`Book`.`language`, `main`.`Book`.`pages`, `main`.`Book`.`publishYear`, `main`.`Book`.`description`, `main`.`Book`.`coverImage`, `main`.`Book`.`price`, `main`.`Book`.`costPrice`, `main`.`Book`.`discount`, `main`.`Book`.`academicLevel`, `main`.`Book`.`subject`, `main`.`Book`.`barcode`, `main`.`Book`.`isActive`, `main`.`Book`.`createdAt`, `main`.`Book`.`updatedAt` FROM `main`.`Book` WHERE `main`.`Book`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Book`.`id` FROM `main`.`Book` WHERE (`main`.`Book`.`isbn` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Book` (`id`, `isbn`, `title`, `authorId`, `publisherId`, `categoryId`, `language`, `pages`, `publishYear`, `price`, `costPrice`, `discount`, `barcode`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Book`.`id`, `main`.`Book`.`isbn`, `main`.`Book`.`title`, `main`.`Book`.`subtitle`, `main`.`Book`.`authorId`, `main`.`Book`.`publisherId`, `main`.`Book`.`categoryId`, `main`.`Book`.`edition`, `main`.`Book`.`language`, `main`.`Book`.`pages`, `main`.`Book`.`publishYear`, `main`.`Book`.`description`, `main`.`Book`.`coverImage`, `main`.`Book`.`price`, `main`.`Book`.`costPrice`, `main`.`Book`.`discount`, `main`.`Book`.`academicLevel`, `main`.`Book`.`subject`, `main`.`Book`.`barcode`, `main`.`Book`.`isActive`, `main`.`Book`.`createdAt`, `main`.`Book`.`updatedAt` FROM `main`.`Book` WHERE `main`.`Book`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Book`.`id` FROM `main`.`Book` WHERE (`main`.`Book`.`isbn` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Book` (`id`, `isbn`, `title`, `authorId`, `publisherId`, `categoryId`, `language`, `pages`, `publishYear`, `price`, `costPrice`, `discount`, `barcode`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Book`.`id`, `main`.`Book`.`isbn`, `main`.`Book`.`title`, `main`.`Book`.`subtitle`, `main`.`Book`.`authorId`, `main`.`Book`.`publisherId`, `main`.`Book`.`categoryId`, `main`.`Book`.`edition`, `main`.`Book`.`language`, `main`.`Book`.`pages`, `main`.`Book`.`publishYear`, `main`.`Book`.`description`, `main`.`Book`.`coverImage`, `main`.`Book`.`price`, `main`.`Book`.`costPrice`, `main`.`Book`.`discount`, `main`.`Book`.`academicLevel`, `main`.`Book`.`subject`, `main`.`Book`.`barcode`, `main`.`Book`.`isActive`, `main`.`Book`.`createdAt`, `main`.`Book`.`updatedAt` FROM `main`.`Book` WHERE `main`.`Book`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Book`.`id` FROM `main`.`Book` WHERE (`main`.`Book`.`isbn` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Book` (`id`, `isbn`, `title`, `publisherId`, `categoryId`, `language`, `pages`, `publishYear`, `price`, `costPrice`, `discount`, `barcode`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Book`.`id`, `main`.`Book`.`isbn`, `main`.`Book`.`title`, `main`.`Book`.`subtitle`, `main`.`Book`.`authorId`, `main`.`Book`.`publisherId`, `main`.`Book`.`categoryId`, `main`.`Book`.`edition`, `main`.`Book`.`language`, `main`.`Book`.`pages`, `main`.`Book`.`publishYear`, `main`.`Book`.`description`, `main`.`Book`.`coverImage`, `main`.`Book`.`price`, `main`.`Book`.`costPrice`, `main`.`Book`.`discount`, `main`.`Book`.`academicLevel`, `main`.`Book`.`subject`, `main`.`Book`.`barcode`, `main`.`Book`.`isActive`, `main`.`Book`.`createdAt`, `main`.`Book`.`updatedAt` FROM `main`.`Book` WHERE `main`.`Book`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Book`.`id` FROM `main`.`Book` WHERE (`main`.`Book`.`isbn` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Book` (`id`, `isbn`, `title`, `publisherId`, `categoryId`, `language`, `pages`, `publishYear`, `price`, `costPrice`, `discount`, `barcode`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Book`.`id`, `main`.`Book`.`isbn`, `main`.`Book`.`title`, `main`.`Book`.`subtitle`, `main`.`Book`.`authorId`, `main`.`Book`.`publisherId`, `main`.`Book`.`categoryId`, `main`.`Book`.`edition`, `main`.`Book`.`language`, `main`.`Book`.`pages`, `main`.`Book`.`publishYear`, `main`.`Book`.`description`, `main`.`Book`.`coverImage`, `main`.`Book`.`price`, `main`.`Book`.`costPrice`, `main`.`Book`.`discount`, `main`.`Book`.`academicLevel`, `main`.`Book`.`subject`, `main`.`Book`.`barcode`, `main`.`Book`.`isActive`, `main`.`Book`.`createdAt`, `main`.`Book`.`updatedAt` FROM `main`.`Book` WHERE `main`.`Book`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created books
+prisma:query SELECT `main`.`StationeryProduct`.`id`, `main`.`StationeryProduct`.`name`, `main`.`StationeryProduct`.`sku`, `main`.`StationeryProduct`.`categoryId`, `main`.`StationeryProduct`.`brand`, `main`.`StationeryProduct`.`description`, `main`.`StationeryProduct`.`price`, `main`.`StationeryProduct`.`costPrice`, `main`.`StationeryProduct`.`discount`, `main`.`StationeryProduct`.`barcode`, `main`.`StationeryProduct`.`unit`, `main`.`StationeryProduct`.`minOrderQty`, `main`.`StationeryProduct`.`isActive`, `main`.`StationeryProduct`.`createdAt`, `main`.`StationeryProduct`.`updatedAt` FROM `main`.`StationeryProduct` WHERE 1=1 LIMIT ? OFFSET ?
+prisma:query SELECT `main`.`Book`.`id`, `main`.`Book`.`isbn`, `main`.`Book`.`title`, `main`.`Book`.`subtitle`, `main`.`Book`.`authorId`, `main`.`Book`.`publisherId`, `main`.`Book`.`categoryId`, `main`.`Book`.`edition`, `main`.`Book`.`language`, `main`.`Book`.`pages`, `main`.`Book`.`publishYear`, `main`.`Book`.`description`, `main`.`Book`.`coverImage`, `main`.`Book`.`price`, `main`.`Book`.`costPrice`, `main`.`Book`.`discount`, `main`.`Book`.`academicLevel`, `main`.`Book`.`subject`, `main`.`Book`.`barcode`, `main`.`Book`.`isActive`, `main`.`Book`.`createdAt`, `main`.`Book`.`updatedAt` FROM `main`.`Book` WHERE 1=1 LIMIT ? OFFSET ?
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `stationeryId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `bookId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `bookId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `bookId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `bookId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`InventoryItem`.`id` FROM `main`.`InventoryItem` WHERE (`main`.`InventoryItem`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`InventoryItem` (`id`, `warehouseId`, `branchId`, `bookId`, `quantity`, `reorderLevel`, `maxStockLevel`, `costPrice`, `sellingPrice`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`InventoryItem`.`id`, `main`.`InventoryItem`.`warehouseId`, `main`.`InventoryItem`.`branchId`, `main`.`InventoryItem`.`bookId`, `main`.`InventoryItem`.`stationeryId`, `main`.`InventoryItem`.`quantity`, `main`.`InventoryItem`.`reorderLevel`, `main`.`InventoryItem`.`maxStockLevel`, `main`.`InventoryItem`.`batchNumber`, `main`.`InventoryItem`.`costPrice`, `main`.`InventoryItem`.`sellingPrice`, `main`.`InventoryItem`.`location`, `main`.`InventoryItem`.`lastAuditDate`, `main`.`InventoryItem`.`createdAt`, `main`.`InventoryItem`.`updatedAt` FROM `main`.`InventoryItem` WHERE `main`.`InventoryItem`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created inventory items
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Customer`.`id` FROM `main`.`Customer` WHERE (`main`.`Customer`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Customer` (`id`, `name`, `email`, `phone`, `type`, `loyaltyPoints`, `totalSpent`, `creditLimit`, `outstanding`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Customer`.`id`, `main`.`Customer`.`name`, `main`.`Customer`.`email`, `main`.`Customer`.`phone`, `main`.`Customer`.`address`, `main`.`Customer`.`type`, `main`.`Customer`.`loyaltyPoints`, `main`.`Customer`.`totalSpent`, `main`.`Customer`.`creditLimit`, `main`.`Customer`.`outstanding`, `main`.`Customer`.`isActive`, `main`.`Customer`.`createdAt`, `main`.`Customer`.`updatedAt` FROM `main`.`Customer` WHERE `main`.`Customer`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Customer`.`id` FROM `main`.`Customer` WHERE (`main`.`Customer`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Customer` (`id`, `name`, `email`, `phone`, `type`, `loyaltyPoints`, `totalSpent`, `creditLimit`, `outstanding`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Customer`.`id`, `main`.`Customer`.`name`, `main`.`Customer`.`email`, `main`.`Customer`.`phone`, `main`.`Customer`.`address`, `main`.`Customer`.`type`, `main`.`Customer`.`loyaltyPoints`, `main`.`Customer`.`totalSpent`, `main`.`Customer`.`creditLimit`, `main`.`Customer`.`outstanding`, `main`.`Customer`.`isActive`, `main`.`Customer`.`createdAt`, `main`.`Customer`.`updatedAt` FROM `main`.`Customer` WHERE `main`.`Customer`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Customer`.`id` FROM `main`.`Customer` WHERE (`main`.`Customer`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Customer` (`id`, `name`, `email`, `phone`, `type`, `loyaltyPoints`, `totalSpent`, `creditLimit`, `outstanding`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Customer`.`id`, `main`.`Customer`.`name`, `main`.`Customer`.`email`, `main`.`Customer`.`phone`, `main`.`Customer`.`address`, `main`.`Customer`.`type`, `main`.`Customer`.`loyaltyPoints`, `main`.`Customer`.`totalSpent`, `main`.`Customer`.`creditLimit`, `main`.`Customer`.`outstanding`, `main`.`Customer`.`isActive`, `main`.`Customer`.`createdAt`, `main`.`Customer`.`updatedAt` FROM `main`.`Customer` WHERE `main`.`Customer`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`Customer`.`id` FROM `main`.`Customer` WHERE (`main`.`Customer`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`Customer` (`id`, `name`, `email`, `phone`, `type`, `loyaltyPoints`, `totalSpent`, `creditLimit`, `outstanding`, `isActive`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`Customer`.`id`, `main`.`Customer`.`name`, `main`.`Customer`.`email`, `main`.`Customer`.`phone`, `main`.`Customer`.`address`, `main`.`Customer`.`type`, `main`.`Customer`.`loyaltyPoints`, `main`.`Customer`.`totalSpent`, `main`.`Customer`.`creditLimit`, `main`.`Customer`.`outstanding`, `main`.`Customer`.`isActive`, `main`.`Customer`.`createdAt`, `main`.`Customer`.`updatedAt` FROM `main`.`Customer` WHERE `main`.`Customer`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created customers/dealers
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`WholesaleOrder`.`id` FROM `main`.`WholesaleOrder` WHERE (`main`.`WholesaleOrder`.`orderNumber` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`WholesaleOrder` (`id`, `orderNumber`, `customerId`, `status`, `subtotal`, `discount`, `tax`, `total`, `paymentStatus`, `deliveryAddress`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query INSERT INTO `main`.`WholesaleOrderItem` (`id`, `orderId`, `bookId`, `stationeryId`, `quantity`, `unitPrice`, `discount`, `totalPrice`) VALUES (?,?,?,null,?,?,?,?), (?,?,null,?,?,?,?,?)
+prisma:query SELECT `main`.`WholesaleOrder`.`id`, `main`.`WholesaleOrder`.`orderNumber`, `main`.`WholesaleOrder`.`customerId`, `main`.`WholesaleOrder`.`dealerName`, `main`.`WholesaleOrder`.`distributorName`, `main`.`WholesaleOrder`.`status`, `main`.`WholesaleOrder`.`subtotal`, `main`.`WholesaleOrder`.`discount`, `main`.`WholesaleOrder`.`tax`, `main`.`WholesaleOrder`.`total`, `main`.`WholesaleOrder`.`paymentStatus`, `main`.`WholesaleOrder`.`deliveryAddress`, `main`.`WholesaleOrder`.`notes`, `main`.`WholesaleOrder`.`createdAt`, `main`.`WholesaleOrder`.`updatedAt` FROM `main`.`WholesaleOrder` WHERE `main`.`WholesaleOrder`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`WholesaleOrder`.`id` FROM `main`.`WholesaleOrder` WHERE (`main`.`WholesaleOrder`.`orderNumber` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`WholesaleOrder` (`id`, `orderNumber`, `customerId`, `status`, `subtotal`, `discount`, `tax`, `total`, `paymentStatus`, `deliveryAddress`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query INSERT INTO `main`.`WholesaleOrderItem` (`id`, `orderId`, `bookId`, `stationeryId`, `quantity`, `unitPrice`, `discount`, `totalPrice`) VALUES (?,?,?,null,?,?,?,?), (?,?,null,?,?,?,?,?)
+prisma:query SELECT `main`.`WholesaleOrder`.`id`, `main`.`WholesaleOrder`.`orderNumber`, `main`.`WholesaleOrder`.`customerId`, `main`.`WholesaleOrder`.`dealerName`, `main`.`WholesaleOrder`.`distributorName`, `main`.`WholesaleOrder`.`status`, `main`.`WholesaleOrder`.`subtotal`, `main`.`WholesaleOrder`.`discount`, `main`.`WholesaleOrder`.`tax`, `main`.`WholesaleOrder`.`total`, `main`.`WholesaleOrder`.`paymentStatus`, `main`.`WholesaleOrder`.`deliveryAddress`, `main`.`WholesaleOrder`.`notes`, `main`.`WholesaleOrder`.`createdAt`, `main`.`WholesaleOrder`.`updatedAt` FROM `main`.`WholesaleOrder` WHERE `main`.`WholesaleOrder`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`WholesaleOrder`.`id` FROM `main`.`WholesaleOrder` WHERE (`main`.`WholesaleOrder`.`orderNumber` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`WholesaleOrder` (`id`, `orderNumber`, `customerId`, `status`, `subtotal`, `discount`, `tax`, `total`, `paymentStatus`, `notes`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query INSERT INTO `main`.`WholesaleOrderItem` (`id`, `orderId`, `bookId`, `stationeryId`, `quantity`, `unitPrice`, `discount`, `totalPrice`) VALUES (?,?,?,null,?,?,?,?), (?,?,?,null,?,?,?,?), (?,?,null,?,?,?,?,?)
+prisma:query SELECT `main`.`WholesaleOrder`.`id`, `main`.`WholesaleOrder`.`orderNumber`, `main`.`WholesaleOrder`.`customerId`, `main`.`WholesaleOrder`.`dealerName`, `main`.`WholesaleOrder`.`distributorName`, `main`.`WholesaleOrder`.`status`, `main`.`WholesaleOrder`.`subtotal`, `main`.`WholesaleOrder`.`discount`, `main`.`WholesaleOrder`.`tax`, `main`.`WholesaleOrder`.`total`, `main`.`WholesaleOrder`.`paymentStatus`, `main`.`WholesaleOrder`.`deliveryAddress`, `main`.`WholesaleOrder`.`notes`, `main`.`WholesaleOrder`.`createdAt`, `main`.`WholesaleOrder`.`updatedAt` FROM `main`.`WholesaleOrder` WHERE `main`.`WholesaleOrder`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created wholesale orders
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StockTransfer`.`id` FROM `main`.`StockTransfer` WHERE (`main`.`StockTransfer`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StockTransfer` (`id`, `fromBranchId`, `toBranchId`, `items`, `status`, `notes`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StockTransfer`.`id`, `main`.`StockTransfer`.`fromBranchId`, `main`.`StockTransfer`.`toBranchId`, `main`.`StockTransfer`.`items`, `main`.`StockTransfer`.`status`, `main`.`StockTransfer`.`notes`, `main`.`StockTransfer`.`createdAt`, `main`.`StockTransfer`.`updatedAt` FROM `main`.`StockTransfer` WHERE `main`.`StockTransfer`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+prisma:query BEGIN IMMEDIATE
+prisma:query SELECT `main`.`StockTransfer`.`id` FROM `main`.`StockTransfer` WHERE (`main`.`StockTransfer`.`id` = ? AND 1=1) LIMIT ? OFFSET ?
+prisma:query INSERT INTO `main`.`StockTransfer` (`id`, `fromBranchId`, `toBranchId`, `items`, `status`, `notes`, `createdAt`, `updatedAt`) VALUES (?,?,?,?,?,?,?,?) RETURNING `id` AS `id`
+prisma:query SELECT `main`.`StockTransfer`.`id`, `main`.`StockTransfer`.`fromBranchId`, `main`.`StockTransfer`.`toBranchId`, `main`.`StockTransfer`.`items`, `main`.`StockTransfer`.`status`, `main`.`StockTransfer`.`notes`, `main`.`StockTransfer`.`createdAt`, `main`.`StockTransfer`.`updatedAt` FROM `main`.`StockTransfer` WHERE `main`.`StockTransfer`.`id` = ? LIMIT ? OFFSET ?
+prisma:query COMMIT
+✅ Created stock transfers
+🎉 Seeding complete!

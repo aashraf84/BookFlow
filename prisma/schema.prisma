@@ -1,0 +1,525 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== CORE MODELS ====================
+
+model Branch {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  address     String?
+  phone       String?
+  email       String?
+  manager     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventory   InventoryItem[]
+  sales       Sale[]
+  employees   Employee[]
+  warehouses  Warehouse[]
+  transfersFrom StockTransfer[] @relation("FromBranch")
+  transfersTo   StockTransfer[] @relation("ToBranch")
+}
+
+model Employee {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  department  String?
+  position    String?
+  salary      Float    @default(0)
+  hireDate    DateTime?
+  isActive    Boolean  @default(true)
+  branchId    String?
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sales       Sale[]
+  attendance  Attendance[]
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  date        DateTime
+  checkIn     DateTime?
+  checkOut    DateTime?
+  status      String   @default("present")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== BOOK CATALOG ====================
+
+model Author {
+  id          String   @id @default(cuid())
+  name        String
+  bio         String?
+  nationality String?
+  website     String?
+  email       String?
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  books       Book[]
+}
+
+model Publisher {
+  id          String   @id @default(cuid())
+  name        String
+  contact     String?
+  email       String?
+  phone       String?
+  address     String?
+  website     String?
+  agreement   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  books       Book[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model BookCategory {
+  id          String   @id @default(cuid())
+  name        String
+  type        String? // school, college, university, religious, professional, competitive, children, fiction, non-fiction
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  books       Book[]
+}
+
+model Book {
+  id            String   @id @default(cuid())
+  isbn          String?  @unique
+  title         String
+  subtitle      String?
+  authorId      String?
+  author        Author?  @relation(fields: [authorId], references: [id])
+  publisherId   String?
+  publisher     Publisher? @relation(fields: [publisherId], references: [id])
+  categoryId    String?
+  category      BookCategory? @relation(fields: [categoryId], references: [id])
+  edition       String?
+  language      String   @default("English")
+  pages         Int?
+  publishYear   Int?
+  description   String?
+  coverImage    String?
+  price         Float    @default(0)
+  costPrice     Float    @default(0)
+  discount      Float    @default(0)
+  academicLevel String?
+  subject       String?
+  barcode       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inventory     InventoryItem[]
+  saleItems     SaleItem[]
+  packageItems  AcademicPackageItem[]
+  orderItems    WholesaleOrderItem[]
+}
+
+// ==================== STATIONERY ====================
+
+model StationeryCategory {
+  id          String   @id @default(cuid())
+  name        String
+  type        String? // pens, pencils, markers, notebooks, registers, art, school, office, educational
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products    StationeryProduct[]
+}
+
+model StationeryProduct {
+  id            String   @id @default(cuid())
+  name          String
+  sku           String?  @unique
+  categoryId    String?
+  category      StationeryCategory? @relation(fields: [categoryId], references: [id])
+  brand         String?
+  description   String?
+  price         Float    @default(0)
+  costPrice     Float    @default(0)
+  discount      Float    @default(0)
+  barcode       String?
+  unit          String   @default("piece")
+  minOrderQty   Int      @default(1)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  inventory     InventoryItem[]
+  saleItems     SaleItem[]
+  orderItems    WholesaleOrderItem[]
+  packageItems  AcademicPackageItem[]
+}
+
+// ==================== INVENTORY ====================
+
+model Warehouse {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  address     String?
+  branchId    String?
+  branch      Branch?  @relation(fields: [branchId], references: [id])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventory   InventoryItem[]
+}
+
+model InventoryItem {
+  id              String   @id @default(cuid())
+  warehouseId     String?
+  warehouse       Warehouse? @relation(fields: [warehouseId], references: [id])
+  branchId        String?
+  branch          Branch? @relation(fields: [branchId], references: [id])
+  bookId          String?
+  book            Book?    @relation(fields: [bookId], references: [id])
+  stationeryId    String?
+  stationery      StationeryProduct? @relation(fields: [stationeryId], references: [id])
+  quantity        Int      @default(0)
+  reorderLevel    Int      @default(10)
+  maxStockLevel   Int      @default(500)
+  batchNumber     String?
+  costPrice       Float    @default(0)
+  sellingPrice    Float    @default(0)
+  location        String?
+  lastAuditDate   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model StockTransfer {
+  id              String   @id @default(cuid())
+  fromBranchId    String
+  fromBranch      Branch   @relation("FromBranch", fields: [fromBranchId], references: [id])
+  toBranchId      String
+  toBranch        Branch   @relation("ToBranch", fields: [toBranchId], references: [id])
+  items           String   // JSON string of items
+  status          String   @default("pending") // pending, in-transit, completed, cancelled
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ==================== CUSTOMERS & CRM ====================
+
+model Customer {
+  id              String   @id @default(cuid())
+  name            String
+  email           String?
+  phone           String?
+  address         String?
+  type            String   @default("retail") // retail, wholesale, school, dealer, distributor
+  loyaltyPoints   Int      @default(0)
+  totalSpent      Float    @default(0)
+  creditLimit     Float    @default(0)
+  outstanding     Float    @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sales           Sale[]
+  school          School?
+  wholesaleOrders WholesaleOrder[]
+}
+
+model LoyaltyTier {
+  id          String   @id @default(cuid())
+  name        String
+  minPoints   Int      @default(0)
+  maxPoints   Int?
+  discount    Float    @default(0)
+  benefits    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== SALES & POS ====================
+
+model Sale {
+  id              String   @id @default(cuid())
+  invoiceNumber   String   @unique
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  branchId        String?
+  branch          Branch? @relation(fields: [branchId], references: [id])
+  employeeId      String?
+  employee        Employee? @relation(fields: [employeeId], references: [id])
+  subtotal        Float    @default(0)
+  discount        Float    @default(0)
+  tax             Float    @default(0)
+  total           Float    @default(0)
+  paymentMethod   String   @default("cash") // cash, card, bank, wallet
+  paymentStatus   String   @default("paid") // paid, partial, credit
+  saleType        String   @default("retail") // retail, wholesale, online
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           SaleItem[]
+}
+
+model SaleItem {
+  id              String   @id @default(cuid())
+  saleId          String
+  sale            Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  bookId          String?
+  book            Book?    @relation(fields: [bookId], references: [id])
+  stationeryId    String?
+  stationery      StationeryProduct? @relation(fields: [stationeryId], references: [id])
+  quantity        Int      @default(1)
+  unitPrice       Float    @default(0)
+  discount        Float    @default(0)
+  totalPrice      Float    @default(0)
+}
+
+// ==================== WHOLESALE ====================
+
+model WholesaleOrder {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  dealerName      String?
+  distributorName String?
+  status          String   @default("pending") // pending, confirmed, shipped, delivered, cancelled
+  subtotal        Float    @default(0)
+  discount        Float    @default(0)
+  tax             Float    @default(0)
+  total           Float    @default(0)
+  paymentStatus   String   @default("unpaid") // unpaid, partial, paid
+  deliveryAddress String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           WholesaleOrderItem[]
+}
+
+model WholesaleOrderItem {
+  id              String   @id @default(cuid())
+  orderId         String
+  order           WholesaleOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  bookId          String?
+  book            Book?    @relation(fields: [bookId], references: [id])
+  stationeryId    String?
+  stationery      StationeryProduct? @relation(fields: [stationeryId], references: [id])
+  quantity        Int      @default(1)
+  unitPrice       Float    @default(0)
+  discount        Float    @default(0)
+  totalPrice      Float    @default(0)
+}
+
+// ==================== SCHOOL SUPPLY ====================
+
+model School {
+  id              String   @id @default(cuid())
+  name            String
+  address         String?
+  phone           String?
+  email           String?
+  contactPerson   String?
+  customerId      String?   @unique
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  academicSession String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  contracts       SchoolContract[]
+  packages        AcademicPackage[]
+}
+
+model SchoolContract {
+  id              String   @id @default(cuid())
+  schoolId        String
+  school          School   @relation(fields: [schoolId], references: [id])
+  title           String
+  academicSession String?
+  totalValue      Float    @default(0)
+  status          String   @default("active") // active, expired, cancelled
+  startDate       DateTime?
+  endDate         DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AcademicPackage {
+  id              String   @id @default(cuid())
+  name            String
+  schoolId        String?
+  school          School?  @relation(fields: [schoolId], references: [id])
+  grade           String?
+  academicLevel   String?
+  description     String?
+  totalPrice      Float    @default(0)
+  discount        Float    @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           AcademicPackageItem[]
+}
+
+model AcademicPackageItem {
+  id              String   @id @default(cuid())
+  packageId       String
+  package         AcademicPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  bookId          String?
+  book            Book?    @relation(fields: [bookId], references: [id])
+  stationeryId    String?
+  stationery      StationeryProduct? @relation(fields: [stationeryId], references: [id])
+  quantity        Int      @default(1)
+  unitPrice       Float    @default(0)
+}
+
+// ==================== PURCHASE ORDERS ====================
+
+model PurchaseOrder {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique
+  publisherId     String?
+  publisher       Publisher? @relation(fields: [publisherId], references: [id])
+  supplier        String?
+  status          String   @default("pending") // pending, approved, ordered, received, cancelled
+  totalAmount     Float    @default(0)
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ==================== FINANCE ====================
+
+model Account {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  type        String   // asset, liability, equity, revenue, expense
+  parentCode  String?
+  balance     Float    @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  journalLines   JournalEntryLine[]
+}
+
+model JournalEntry {
+  id          String   @id @default(cuid())
+  date        DateTime
+  description String
+  reference   String?
+  isPosted    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lines       JournalEntryLine[]
+}
+
+model JournalEntryLine {
+  id          String   @id @default(cuid())
+  entryId     String
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id])
+  debit       Float    @default(0)
+  credit      Float    @default(0)
+  description String?
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  category    String
+  amount      Float
+  date        DateTime
+  description String?
+  paidBy      String?
+  receipt     String?
+  status      String   @default("pending") // pending, approved, paid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== E-COMMERCE ====================
+
+model OnlineOrder {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique
+  customerName    String
+  customerEmail   String?
+  customerPhone   String?
+  items           String   // JSON
+  total           Float    @default(0)
+  status          String   @default("pending") // pending, confirmed, shipped, delivered, cancelled
+  deliveryMethod  String   @default("home") // home, pickup, click-collect
+  deliveryAddress String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ==================== PUBLISHING ====================
+
+model Manuscript {
+  id          String   @id @default(cuid())
+  title       String
+  author      String?
+  status      String   @default("submitted") // submitted, reviewed, approved, published, rejected
+  submittedAt DateTime @default(now())
+  reviewedAt  DateTime?
+  publishedAt DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PrintOrder {
+  id          String   @id @default(cuid())
+  bookId      String?
+  quantity    Int      @default(0)
+  status      String   @default("ordered") // ordered, printing, completed
+  costPerUnit Float    @default(0)
+  totalCost   Float    @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== MARKETING ====================
+
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // sms, whatsapp, email, social
+  target      String?
+  message     String
+  status      String   @default("draft") // draft, scheduled, sent, completed
+  sentCount   Int      @default(0)
+  responseCount Int    @default(0)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
