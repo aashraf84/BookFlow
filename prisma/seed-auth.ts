@@ -3,101 +3,57 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Seeding auth data...\n')
+  console.log('🌱 Seeding owner account...')
 
-  // ─── Users ────────────────────────────────────────────────────────
-  const users = [
-    {
-      name: 'Admin User',
-      email: 'admin@bookflow.os',
-      password: 'admin123',
-      role: 'admin',
+  // Create owner user
+  const owner = await prisma.user.upsert({
+    where: { email: 'owner@bookflow.os' },
+    update: {},
+    create: {
+      name: 'BookFlow Owner',
+      email: 'owner@bookflow.os',
+      password: 'Owner@2025',
+      role: 'owner',
+      isActive: true,
       isViewOnly: false,
     },
-    {
-      name: 'Sarah Manager',
-      email: 'manager@bookflow.os',
-      password: 'manager123',
-      role: 'manager',
-      isViewOnly: false,
-    },
-    {
-      name: 'Demo User',
-      email: 'demo@bookflow.os',
-      password: 'demo123',
-      role: 'demo',
-      isViewOnly: true,
-    },
-  ]
+  })
 
-  console.log('📋 Creating users...')
-  for (const u of users) {
-    const user = await prisma.user.upsert({
-      where: { email: u.email },
-      update: {
-        name: u.name,
-        password: u.password,
-        role: u.role,
-        isViewOnly: u.isViewOnly,
-      },
-      create: {
-        name: u.name,
-        email: u.email,
-        password: u.password,
-        role: u.role,
-        isViewOnly: u.isViewOnly,
-      },
-    })
-    console.log(`   ✓ User: ${user.name} (${user.email}) — role: ${user.role}, isViewOnly: ${user.isViewOnly}`)
-  }
+  console.log(`✅ Owner user created: ${owner.email}`)
 
-  // ─── Serial Keys ──────────────────────────────────────────────────
-  const serialKeys = [
-    {
-      key: 'BF-TRIAL-2027-XXXX',
-      plan: 'trial',
-      maxDevices: 1,
-    },
-    {
-      key: 'BF-STD-2027-XXXX',
-      plan: 'standard',
-      maxDevices: 3,
-    },
-    {
-      key: 'BF-PRO-2027-XXXX',
-      plan: 'professional',
-      maxDevices: 10,
-    },
-    {
-      key: 'BF-ENT-2027-XXXX',
+  // Create a universal serial key for owner device activation
+  const serialKey = await prisma.serialKey.upsert({
+    where: { key: 'BFOWN-2025-PROF-UNLM' },
+    update: {},
+    create: {
+      key: 'BFOWN-2025-PROF-UNLM',
       plan: 'enterprise',
       maxDevices: 999,
+      isActive: true,
+      activatedAt: new Date(),
+      expiresAt: new Date('2030-12-31'),
     },
-  ]
+  })
 
-  console.log('\n🔑 Creating serial keys...')
-  for (const sk of serialKeys) {
-    const serialKey = await prisma.serialKey.upsert({
-      where: { key: sk.key },
-      update: {
-        plan: sk.plan,
-        maxDevices: sk.maxDevices,
-      },
-      create: {
-        key: sk.key,
-        plan: sk.plan,
-        maxDevices: sk.maxDevices,
-      },
-    })
-    console.log(`   ✓ SerialKey: ${serialKey.key} — plan: ${serialKey.plan}, maxDevices: ${serialKey.maxDevices}`)
-  }
-
-  console.log('\n✅ Auth seeding complete!')
+  console.log(`✅ Owner serial key created: ${serialKey.key}`)
+  console.log('')
+  console.log('═══════════════════════════════════════════════')
+  console.log('  🔑 OWNER CREDENTIALS')
+  console.log('═══════════════════════════════════════════════')
+  console.log(`  Email:    owner@bookflow.os`)
+  console.log(`  Password: Owner@2025`)
+  console.log(`  Role:     owner`)
+  console.log('───────────────────────────────────────────────')
+  console.log('  🔐 SERIAL KEY (for device activation)')
+  console.log('───────────────────────────────────────────────')
+  console.log(`  Key:  BFOWN-2025-PROF-UNLM`)
+  console.log(`  Plan: Enterprise (Unlimited)`)
+  console.log('═══════════════════════════════════════════════')
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e)
+    console.error('Seed error:', e)
     process.exit(1)
   })
   .finally(async () => {

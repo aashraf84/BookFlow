@@ -79,7 +79,14 @@ function AppSidebar() {
 
       <SidebarContent className="custom-scrollbar px-2 pb-2">
         {navGroups.map((group) => {
-          const groupModules = navModules.filter((m) => m.group === group.id)
+          const groupModules = navModules.filter((m) => {
+            if (m.group !== group.id) return false
+            // Hide owner-only modules from non-owners
+            if (m.ownerOnly && authUser?.role !== 'owner') return false
+            return true
+          })
+          // Don't render empty groups
+          if (groupModules.length === 0) return null
           return (
             <SidebarGroup key={group.id} className="py-1">
               <SidebarGroupLabel className="text-[10px] uppercase tracking-wider font-semibold text-sidebar-foreground/40 px-2 mb-0.5">
@@ -132,13 +139,27 @@ function AppSidebar() {
           </div>
         )}
 
+        {/* Owner Badge */}
+        {authUser?.role === 'owner' && (
+          <div className="group-data-[collapsible=icon]:hidden mb-2">
+            <div className="rounded-lg bg-[#FF9500]/10 border border-[#FF9500]/20 p-2.5 flex items-center gap-2">
+              <Crown className="size-3.5 text-[#FF9500]" strokeWidth={2} />
+              <div>
+                <p className="text-[11px] font-semibold text-[#FF9500]">Owner Access</p>
+                <p className="text-[10px] text-sidebar-foreground/40">Full system control</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="group-data-[collapsible=icon]:hidden">
           <div className="rounded-lg bg-sidebar-accent/50 p-2.5 text-center">
             <div className="flex items-center justify-center gap-1.5 mb-1">
               <Crown className="size-3 text-sidebar-primary" />
               <span className="text-[11px] font-semibold text-sidebar-foreground/70">BookFlow OS</span>
             </div>
-            <p className="text-[10px] text-sidebar-foreground/40">v27.0.0 · Professional · 18 Modules</p>
+            <p className="text-[10px] text-sidebar-foreground/40">v27.0.0 · Professional Edition</p>
+            <p className="text-[9px] text-sidebar-foreground/30 mt-0.5">© 2025 ApexFlow Ecosystem</p>
           </div>
         </div>
       </SidebarFooter>
