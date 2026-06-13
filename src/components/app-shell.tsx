@@ -10,13 +10,10 @@ import {
   BookOpen,
   ChevronRight,
   ChevronLeft,
-  Maximize2,
-  Minus,
-  X,
-  Sparkles,
   Eye,
   LogOut,
   Shield,
+  Crown,
 } from 'lucide-react'
 
 import { useAppStore } from '@/store/app-store'
@@ -50,23 +47,6 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-// ─── macOS Traffic Lights ────────────────────────────────────
-function TrafficLights({ onClose, onMinimize, onMaximize }: { onClose?: () => void; onMinimize?: () => void; onMaximize?: () => void }) {
-  return (
-    <div className="flex items-center gap-2 pl-3">
-      <button onClick={onClose} className="group size-3 rounded-full traffic-close flex items-center justify-center transition-colors">
-        <X className="size-1.5 text-transparent group-hover:text-black/60" strokeWidth={3} />
-      </button>
-      <button onClick={onMinimize} className="group size-3 rounded-full traffic-minimize flex items-center justify-center transition-colors">
-        <Minus className="size-1.5 text-transparent group-hover:text-black/60" strokeWidth={3} />
-      </button>
-      <button onClick={onMaximize} className="group size-3 rounded-full traffic-maximize flex items-center justify-center transition-colors">
-        <Maximize2 className="size-1.5 text-transparent group-hover:text-black/60" strokeWidth={3} />
-      </button>
-    </div>
-  )
-}
-
 // ─── Sidebar ─────────────────────────────────────────────────
 function AppSidebar() {
   const { activeModule, setActiveModule, authUser } = useAppStore()
@@ -90,7 +70,7 @@ function AppSidebar() {
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold text-[13px] tracking-tight">BookFlow OS</span>
-                <span className="truncate text-[11px] text-sidebar-foreground/50">Golden Gate Edition</span>
+                <span className="truncate text-[11px] text-sidebar-foreground/50">v27.0 Professional</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -155,10 +135,10 @@ function AppSidebar() {
         <div className="group-data-[collapsible=icon]:hidden">
           <div className="rounded-lg bg-sidebar-accent/50 p-2.5 text-center">
             <div className="flex items-center justify-center gap-1.5 mb-1">
-              <Sparkles className="size-3 text-sidebar-primary" />
-              <span className="text-[11px] font-semibold text-sidebar-foreground/70">ApexFlow Ecosystem</span>
+              <Crown className="size-3 text-sidebar-primary" />
+              <span className="text-[11px] font-semibold text-sidebar-foreground/70">BookFlow OS</span>
             </div>
-            <p className="text-[10px] text-sidebar-foreground/40">v27.0 · Golden Gate</p>
+            <p className="text-[10px] text-sidebar-foreground/40">v27.0.0 · Professional · 18 Modules</p>
           </div>
         </div>
       </SidebarFooter>
@@ -201,9 +181,6 @@ function AppHeader() {
 
   return (
     <header className="macos-titlebar flex h-[52px] shrink-0 items-center gap-3 border-b border-border/50 bg-background/80 glass-thin px-4">
-      {/* Traffic Lights */}
-      <TrafficLights />
-
       {/* Sidebar Toggle */}
       <SidebarTrigger
         className="-mx-1 flex size-7 items-center justify-center rounded-md hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
@@ -325,8 +302,7 @@ function AppFooter() {
     <footer className="mt-auto border-t border-border/30 bg-background/60 glass-thin">
       <div className="flex items-center justify-between px-4 h-8 text-[11px] text-muted-foreground/60 font-medium tracking-tight">
         <span>
-          BookFlow OS <span className="mx-0.5 opacity-30">·</span>{' '}
-          <span className="text-primary/70">ApexFlow</span> Ecosystem
+          BookFlow OS v27.0
           {authUser?.isViewOnly && (
             <>
               <span className="mx-0.5 opacity-30">·</span>
@@ -343,7 +319,7 @@ function AppFooter() {
             Online
           </span>
           <span className="opacity-30">·</span>
-          <span>v27.0 · GG</span>
+          <span>Powered by ApexFlow</span>
         </div>
       </div>
     </footer>
