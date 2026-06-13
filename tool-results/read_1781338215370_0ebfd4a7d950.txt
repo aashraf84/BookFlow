@@ -1,0 +1,1462 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import * as React from 'react'
+     4→     4→import {
+     5→     5→  DollarSign,
+     6→     6→  TrendingUp,
+     7→     7→  TrendingDown,
+     8→     8→  BarChart3,
+     9→     9→  Wallet,
+    10→    10→  BookOpen,
+    11→    11→  Plus,
+    12→    12→  Trash2,
+    13→    13→  X,
+    14→    14→  ArrowUpRight,
+    15→    15→  ArrowDownRight,
+    16→    16→  Calendar,
+    17→    17→  FileText,
+    18→    18→  CreditCard,
+    19→    19→  Receipt,
+    20→    20→  CheckCircle2,
+    21→    21→  Clock,
+    22→    22→  AlertCircle,
+    23→    23→  Eye,
+    24→    24→} from 'lucide-react'
+    25→    25→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+    26→    26→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+    27→    27→import { Button } from '@/components/ui/button'
+    28→    28→import { Input } from '@/components/ui/input'
+    29→    29→import { Label } from '@/components/ui/label'
+    30→    30→import { Badge } from '@/components/ui/badge'
+    31→    31→import {
+    32→    32→  Dialog,
+    33→    33→  DialogContent,
+    34→    34→  DialogDescription,
+    35→    35→  DialogFooter,
+    36→    36→  DialogHeader,
+    37→    37→  DialogTitle,
+    38→    38→} from '@/components/ui/dialog'
+    39→    39→import {
+    40→    40→  Select,
+    41→    41→  SelectContent,
+    42→    42→  SelectItem,
+    43→    43→  SelectTrigger,
+    44→    44→  SelectValue,
+    45→    45→} from '@/components/ui/select'
+    46→    46→import { Textarea } from '@/components/ui/textarea'
+    47→    47→import { Separator } from '@/components/ui/separator'
+    48→    48→import { ScrollArea } from '@/components/ui/scroll-area'
+    49→    49→import {
+    50→    50→  Table,
+    51→    51→  TableBody,
+    52→    52→  TableCell,
+    53→    53→  TableHead,
+    54→    54→  TableHeader,
+    55→    55→  TableRow,
+    56→    56→} from '@/components/ui/table'
+    57→    57→
+    58→    58→// ==================== TYPES ====================
+    59→    59→
+    60→    60→interface Account {
+    61→    61→  id: string
+    62→    62→  code: string
+    63→    63→  name: string
+    64→    64→  type: string
+    65→    65→  parentCode?: string | null
+    66→    66→  balance: number
+    67→    67→  isActive: boolean
+    68→    68→}
+    69→    69→
+    70→    70→interface JournalEntryLine {
+    71→    71→  id: string
+    72→    72→  accountId: string
+    73→    73→  account?: { id: string; code: string; name: string; type: string }
+    74→    74→  debit: number
+    75→    75→  credit: number
+    76→    76→  description?: string | null
+    77→    77→}
+    78→    78→
+    79→    79→interface JournalEntry {
+    80→    80→  id: string
+    81→    81→  date: string
+    82→    82→  description: string
+    83→    83→  reference?: string | null
+    84→    84→  isPosted: boolean
+    85→    85→  createdAt: string
+    86→    86→  lines: JournalEntryLine[]
+    87→    87→}
+    88→    88→
+    89→    89→interface Expense {
+    90→    90→  id: string
+    91→    91→  category: string
+    92→    92→  amount: number
+    93→    93→  date: string
+    94→    94→  description?: string | null
+    95→    95→  paidBy?: string | null
+    96→    96→  receipt?: string | null
+    97→    97→  status: string
+    98→    98→  createdAt: string
+    99→    99→}
+   100→   100→
+   101→   101→// ==================== FINANCE MODULE ====================
+   102→   102→
+   103→   103→export function FinanceModule() {
+   104→   104→  const [activeTab, setActiveTab] = React.useState('overview')
+   105→   105→
+   106→   106→  return (
+   107→   107→    <div className="space-y-6">
+   108→   108→      <div className="flex items-center gap-3">
+   109→   109→        <div className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-950/40">
+   110→   110→          <DollarSign className="size-5 text-emerald-600" />
+   111→   111→        </div>
+   112→   112→        <div>
+   113→   113→          <h2 className="text-xl font-bold tracking-tight">Finance</h2>
+   114→   114→          <p className="text-sm text-muted-foreground">
+   115→   115→            Financial management, accounting, and reporting
+   116→   116→          </p>
+   117→   117→        </div>
+   118→   118→      </div>
+   119→   119→
+   120→   120→      <Tabs value={activeTab} onValueChange={setActiveTab}>
+   121→   121→        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+   122→   122→          <TabsTrigger value="overview" className="gap-1.5">
+   123→   123→            <BarChart3 className="size-3.5" />
+   124→   124→            <span className="hidden sm:inline">Overview</span>
+   125→   125→          </TabsTrigger>
+   126→   126→          <TabsTrigger value="accounts" className="gap-1.5">
+   127→   127→            <Wallet className="size-3.5" />
+   128→   128→            <span className="hidden sm:inline">Accounts</span>
+   129→   129→          </TabsTrigger>
+   130→   130→          <TabsTrigger value="entries" className="gap-1.5">
+   131→   131→            <BookOpen className="size-3.5" />
+   132→   132→            <span className="hidden sm:inline">Journal</span>
+   133→   133→          </TabsTrigger>
+   134→   134→          <TabsTrigger value="expenses" className="gap-1.5">
+   135→   135→            <Receipt className="size-3.5" />
+   136→   136→            <span className="hidden sm:inline">Expenses</span>
+   137→   137→          </TabsTrigger>
+   138→   138→        </TabsList>
+   139→   139→
+   140→   140→        <TabsContent value="overview" className="mt-4">
+   141→   141→          <OverviewTab />
+   142→   142→        </TabsContent>
+   143→   143→        <TabsContent value="accounts" className="mt-4">
+   144→   144→          <AccountsTab />
+   145→   145→        </TabsContent>
+   146→   146→        <TabsContent value="entries" className="mt-4">
+   147→   147→          <JournalEntriesTab />
+   148→   148→        </TabsContent>
+   149→   149→        <TabsContent value="expenses" className="mt-4">
+   150→   150→          <ExpensesTab />
+   151→   151→        </TabsContent>
+   152→   152→      </Tabs>
+   153→   153→    </div>
+   154→   154→  )
+   155→   155→}
+   156→   156→
+   157→   157→// ==================== OVERVIEW TAB ====================
+   158→   158→
+   159→   159→function OverviewTab() {
+   160→   160→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   161→   161→  const [expenses, setExpenses] = React.useState<Expense[]>([])
+   162→   162→  const [loading, setLoading] = React.useState(true)
+   163→   163→
+   164→   164→  React.useEffect(() => {
+   165→   165→    async function fetchData() {
+   166→   166→      setLoading(true)
+   167→   167→      try {
+   168→   168→        const [accRes, expRes] = await Promise.all([
+   169→   169→          fetch('/api/finance?type=accounts&limit=100'),
+   170→   170→          fetch('/api/finance?type=expenses&limit=100'),
+   171→   171→        ])
+   172→   172→        const [accJson, expJson] = await Promise.all([accRes.json(), expRes.json()])
+   173→   173→        if (accJson.data) setAccounts(accJson.data)
+   174→   174→        if (expJson.data) setExpenses(expJson.data)
+   175→   175→      } catch (err) {
+   176→   176→        console.error('Failed to fetch finance data:', err)
+   177→   177→      } finally {
+   178→   178→        setLoading(false)
+   179→   179→      }
+   180→   180→    }
+   181→   181→    fetchData()
+   182→   182→  }, [])
+   183→   183→
+   184→   184→  const revenue = accounts.filter((a) => a.type === 'revenue').reduce((sum, a) => sum + a.balance, 0)
+   185→   185→  const expenseTotal = accounts.filter((a) => a.type === 'expense').reduce((sum, a) => sum + a.balance, 0)
+   186→   186→  const assets = accounts.filter((a) => a.type === 'asset').reduce((sum, a) => sum + a.balance, 0)
+   187→   187→  const liabilities = accounts.filter((a) => a.type === 'liability').reduce((sum, a) => sum + a.balance, 0)
+   188→   188→  const netIncome = revenue - expenseTotal
+   189→   189→  const pendingExpenses = expenses.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0)
+   190→   190→
+   191→   191→  const summaryCards = [
+   192→   192→    {
+   193→   193→      label: 'Total Revenue',
+   194→   194→      value: `$${revenue.toLocaleString()}`,
+   195→   195→      change: '+8.5%',
+   196→   196→      up: true,
+   197→   197→      icon: TrendingUp,
+   198→   198→      color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-950/40',
+   199→   199→    },
+   200→   200→    {
+   201→   201→      label: 'Total Expenses',
+   202→   202→      value: `$${expenseTotal.toLocaleString()}`,
+   203→   203→      change: '+3.2%',
+   204→   204→      up: false,
+   205→   205→      icon: TrendingDown,
+   206→   206→      color: 'text-red-600 bg-red-100 dark:bg-red-950/40',
+   207→   207→    },
+   208→   208→    {
+   209→   209→      label: 'Net Income',
+   210→   210→      value: `$${netIncome.toLocaleString()}`,
+   211→   211→      change: netIncome >= 0 ? '+12.1%' : '-5.3%',
+   212→   212→      up: netIncome >= 0,
+   213→   213→      icon: DollarSign,
+   214→   214→      color: 'text-teal-600 bg-teal-100 dark:bg-teal-950/40',
+   215→   215→    },
+   216→   216→    {
+   217→   217→      label: 'Pending Payments',
+   218→   218→      value: `$${pendingExpenses.toLocaleString()}`,
+   219→   219→      change: '',
+   220→   220→      up: false,
+   221→   221→      icon: Clock,
+   222→   222→      color: 'text-amber-600 bg-amber-100 dark:bg-amber-950/40',
+   223→   223→    },
+   224→   224→  ]
+   225→   225→
+   226→   226→  // Group accounts by type for P&L display
+   227→   227→  const accountTypes = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const
+   228→   228→  const accountTypeLabels: Record<string, string> = {
+   229→   229→    asset: 'Assets',
+   230→   230→    liability: 'Liabilities',
+   231→   231→    equity: 'Equity',
+   232→   232→    revenue: 'Revenue',
+   233→   233→    expense: 'Expenses',
+   234→   234→  }
+   235→   235→
+   236→   236→  return (
+   237→   237→    <div className="space-y-6">
+   238→   238→      {loading ? (
+   239→   239→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   240→   240→          {[1, 2, 3, 4].map((i) => (
+   241→   241→            <Card key={i} className="animate-pulse">
+   242→   242→              <CardContent className="p-4">
+   243→   243→                <div className="h-4 bg-muted rounded w-2/3 mb-3" />
+   244→   244→                <div className="h-6 bg-muted rounded w-1/2" />
+   245→   245→              </CardContent>
+   246→   246→            </Card>
+   247→   247→          ))}
+   248→   248→        </div>
+   249→   249→      ) : (
+   250→   250→        <>
+   251→   251→          {/* Summary Cards */}
+   252→   252→          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   253→   253→            {summaryCards.map((card) => {
+   254→   254→              const Icon = card.icon
+   255→   255→              return (
+   256→   256→                <Card key={card.label} className="relative overflow-hidden">
+   257→   257→                  <CardContent className="p-4">
+   258→   258→                    <div className="flex items-center justify-between">
+   259→   259→                      <div className="space-y-1">
+   260→   260→                        <p className="text-sm text-muted-foreground">{card.label}</p>
+   261→   261→                        <p className="text-2xl font-bold tracking-tight">{card.value}</p>
+   262→   262→                      </div>
+   263→   263→                      <div className={`rounded-lg p-2.5 ${card.color}`}>
+   264→   264→                        <Icon className="size-5" />
+   265→   265→                      </div>
+   266→   266→                    </div>
+   267→   267→                    {card.change && (
+   268→   268→                      <div className="mt-2 flex items-center gap-1 text-xs">
+   269→   269→                        {card.up ? (
+   270→   270→                          <ArrowUpRight className="size-3 text-emerald-600" />
+   271→   271→                        ) : (
+   272→   272→                          <ArrowDownRight className="size-3 text-red-500" />
+   273→   273→                        )}
+   274→   274→                        <span className={card.up ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'}>
+   275→   275→                          {card.change}
+   276→   276→                        </span>
+   277→   277→                        <span className="text-muted-foreground">vs last month</span>
+   278→   278→                      </div>
+   279→   279→                    )}
+   280→   280→                  </CardContent>
+   281→   281→                </Card>
+   282→   282→              )
+   283→   283→            })}
+   284→   284→          </div>
+   285→   285→
+   286→   286→          {/* P&L and Balance Sheet */}
+   287→   287→          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   288→   288→            {/* Profit & Loss */}
+   289→   289→            <Card>
+   290→   290→              <CardHeader className="pb-3">
+   291→   291→                <CardTitle className="text-base">Profit & Loss Summary</CardTitle>
+   292→   292→                <CardDescription>Revenue vs Expenses comparison</CardDescription>
+   293→   293→              </CardHeader>
+   294→   294→              <CardContent className="space-y-3">
+   295→   295→                <div className="space-y-2">
+   296→   296→                  <div className="flex justify-between text-sm">
+   297→   297→                    <span className="text-muted-foreground">Revenue</span>
+   298→   298→                    <span className="font-medium text-emerald-600">${revenue.toLocaleString()}</span>
+   299→   299→                  </div>
+   300→   300→                  <div className="h-3 rounded-full bg-muted overflow-hidden">
+   301→   301→                    <div
+   302→   302→                      className="h-full bg-emerald-500 rounded-full transition-all"
+   303→   303→                      style={{ width: `${revenue > 0 ? Math.min((revenue / (revenue + expenseTotal || 1)) * 100, 100) : 0}%` }}
+   304→   304→                    />
+   305→   305→                  </div>
+   306→   306→                </div>
+   307→   307→                <div className="space-y-2">
+   308→   308→                  <div className="flex justify-between text-sm">
+   309→   309→                    <span className="text-muted-foreground">Expenses</span>
+   310→   310→                    <span className="font-medium text-red-600">${expenseTotal.toLocaleString()}</span>
+   311→   311→                  </div>
+   312→   312→                  <div className="h-3 rounded-full bg-muted overflow-hidden">
+   313→   313→                    <div
+   314→   314→                      className="h-full bg-red-500 rounded-full transition-all"
+   315→   315→                      style={{ width: `${expenseTotal > 0 ? Math.min((expenseTotal / (revenue + expenseTotal || 1)) * 100, 100) : 0}%` }}
+   316→   316→                    />
+   317→   317→                  </div>
+   318→   318→                </div>
+   319→   319→                <Separator />
+   320→   320→                <div className="flex justify-between text-sm font-semibold">
+   321→   321→                  <span>Net {netIncome >= 0 ? 'Profit' : 'Loss'}</span>
+   322→   322→                  <span className={netIncome >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+   323→   323→                    ${Math.abs(netIncome).toLocaleString()}
+   324→   324→                  </span>
+   325→   325→                </div>
+   326→   326→              </CardContent>
+   327→   327→            </Card>
+   328→   328→
+   329→   329→            {/* Balance Sheet */}
+   330→   330→            <Card>
+   331→   331→              <CardHeader className="pb-3">
+   332→   332→                <CardTitle className="text-base">Balance Sheet</CardTitle>
+   333→   333→                <CardDescription>Assets, liabilities, and equity</CardDescription>
+   334→   334→              </CardHeader>
+   335→   335→              <CardContent className="space-y-3">
+   336→   336→                <div className="flex justify-between text-sm">
+   337→   337→                  <span className="text-muted-foreground">Total Assets</span>
+   338→   338→                  <span className="font-medium">${assets.toLocaleString()}</span>
+   339→   339→                </div>
+   340→   340→                <div className="flex justify-between text-sm">
+   341→   341→                  <span className="text-muted-foreground">Total Liabilities</span>
+   342→   342→                  <span className="font-medium">${liabilities.toLocaleString()}</span>
+   343→   343→                </div>
+   344→   344→                <Separator />
+   345→   345→                <div className="flex justify-between text-sm font-semibold">
+   346→   346→                  <span>Net Worth</span>
+   347→   347→                  <span className={(assets - liabilities) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+   348→   348→                    ${(assets - liabilities).toLocaleString()}
+   349→   349→                  </span>
+   350→   350→                </div>
+   351→   351→                <Separator />
+   352→   352→                <div className="space-y-2">
+   353→   353→                  {accountTypes.map((type) => {
+   354→   354→                    const typeBalance = accounts
+   355→   355→                      .filter((a) => a.type === type)
+   356→   356→                      .reduce((sum, a) => sum + a.balance, 0)
+   357→   357→                    return (
+   358→   358→                      <div key={type} className="flex justify-between text-xs">
+   359→   359→                        <span className="text-muted-foreground">{accountTypeLabels[type]}</span>
+   360→   360→                        <span>${typeBalance.toLocaleString()}</span>
+   361→   361→                      </div>
+   362→   362→                    )
+   363→   363→                  })}
+   364→   364→                </div>
+   365→   365→              </CardContent>
+   366→   366→            </Card>
+   367→   367→          </div>
+   368→   368→
+   369→   369→          {/* Recent Expenses */}
+   370→   370→          <Card>
+   371→   371→            <CardHeader className="pb-3">
+   372→   372→              <CardTitle className="text-base">Recent Expenses</CardTitle>
+   373→   373→            </CardHeader>
+   374→   374→            <CardContent>
+   375→   375→              {expenses.length === 0 ? (
+   376→   376→                <p className="text-sm text-muted-foreground text-center py-4">No expenses recorded</p>
+   377→   377→              ) : (
+   378→   378→                <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+   379→   379→                  {expenses.slice(0, 5).map((expense) => (
+   380→   380→                    <div key={expense.id} className="flex items-center justify-between p-2 rounded border text-sm">
+   381→   381→                      <div>
+   382→   382→                        <p className="font-medium">{expense.category}</p>
+   383→   383→                        <p className="text-xs text-muted-foreground">
+   384→   384→                          {expense.description || 'No description'} • {new Date(expense.date).toLocaleDateString()}
+   385→   385→                        </p>
+   386→   386→                      </div>
+   387→   387→                      <div className="text-right">
+   388→   388→                        <p className="font-semibold text-red-600">${expense.amount.toLocaleString()}</p>
+   389→   389→                        <Badge
+   390→   390→                          variant="secondary"
+   391→   391→                          className={
+   392→   392→                            expense.status === 'paid'
+   393→   393→                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]'
+   394→   394→                              : expense.status === 'approved'
+   395→   395→                              ? 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400 text-[10px]'
+   396→   396→                              : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]'
+   397→   397→                          }
+   398→   398→                        >
+   399→   399→                          {expense.status}
+   400→   400→                        </Badge>
+   401→   401→                      </div>
+   402→   402→                    </div>
+   403→   403→                  ))}
+   404→   404→                </div>
+   405→   405→              )}
+   406→   406→            </CardContent>
+   407→   407→          </Card>
+   408→   408→        </>
+   409→   409→      )}
+   410→   410→    </div>
+   411→   411→  )
+   412→   412→}
+   413→   413→
+   414→   414→// ==================== ACCOUNTS TAB ====================
+   415→   415→
+   416→   416→function AccountsTab() {
+   417→   417→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   418→   418→  const [loading, setLoading] = React.useState(true)
+   419→   419→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   420→   420→
+   421→   421→  const fetchAccounts = React.useCallback(async () => {
+   422→   422→    setLoading(true)
+   423→   423→    try {
+   424→   424→      const res = await fetch('/api/finance?type=accounts&limit=100')
+   425→   425→      const json = await res.json()
+   426→   426→      if (json.data) setAccounts(json.data)
+   427→   427→    } catch (err) {
+   428→   428→      console.error('Failed to fetch accounts:', err)
+   429→   429→    } finally {
+   430→   430→      setLoading(false)
+   431→   431→    }
+   432→   432→  }, [])
+   433→   433→
+   434→   434→  React.useEffect(() => {
+   435→   435→    fetchAccounts()
+   436→   436→  }, [fetchAccounts])
+   437→   437→
+   438→   438→  const getTypeColor = (type: string) => {
+   439→   439→    switch (type) {
+   440→   440→      case 'asset':
+   441→   441→        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+   442→   442→      case 'liability':
+   443→   443→        return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+   444→   444→      case 'equity':
+   445→   445→        return 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400'
+   446→   446→      case 'revenue':
+   447→   447→        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+   448→   448→      case 'expense':
+   449→   449→        return 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400'
+   450→   450→      default:
+   451→   451→        return ''
+   452→   452→    }
+   453→   453→  }
+   454→   454→
+   455→   455→  const groupedAccounts = accounts.reduce(
+   456→   456→    (groups, account) => {
+   457→   457→      if (!groups[account.type]) groups[account.type] = []
+   458→   458→      groups[account.type].push(account)
+   459→   459→      return groups
+   460→   460→    },
+   461→   461→    {} as Record<string, Account[]>
+   462→   462→  )
+   463→   463→
+   464→   464→  return (
+   465→   465→    <div className="space-y-4">
+   466→   466→      <div className="flex items-center justify-between">
+   467→   467→        <p className="text-sm text-muted-foreground">{accounts.length} accounts</p>
+   468→   468→        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+   469→   469→          <Plus className="size-4" /> Create Account
+   470→   470→        </Button>
+   471→   471→      </div>
+   472→   472→
+   473→   473→      {loading ? (
+   474→   474→        <Card>
+   475→   475→          <CardContent className="p-6">
+   476→   476→            <div className="space-y-3">
+   477→   477→              {[1, 2, 3, 4, 5].map((i) => (
+   478→   478→                <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+   479→   479→              ))}
+   480→   480→            </div>
+   481→   481→          </CardContent>
+   482→   482→        </Card>
+   483→   483→      ) : accounts.length === 0 ? (
+   484→   484→        <Card>
+   485→   485→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   486→   486→            <Wallet className="size-10 text-muted-foreground mb-3" />
+   487→   487→            <p className="text-muted-foreground">No accounts found</p>
+   488→   488→            <p className="text-sm text-muted-foreground">Create your chart of accounts</p>
+   489→   489→          </CardContent>
+   490→   490→        </Card>
+   491→   491→      ) : (
+   492→   492→        <Card>
+   493→   493→          <CardContent className="p-0">
+   494→   494→            <ScrollArea className="max-h-[500px]">
+   495→   495→              <Table>
+   496→   496→                <TableHeader>
+   497→   497→                  <TableRow>
+   498→   498→                    <TableHead>Code</TableHead>
+   499→   499→                    <TableHead>Name</TableHead>
+   500→   500→                    <TableHead>Type</TableHead>
+   501→   501→                    <TableHead>Parent</TableHead>
+   502→   502→                    <TableHead className="text-right">Balance</TableHead>
+   503→   503→                    <TableHead>Status</TableHead>
+   504→   504→                  </TableRow>
+   505→   505→                </TableHeader>
+   506→   506→                <TableBody>
+   507→   507→                  {Object.entries(groupedAccounts).map(([type, typeAccounts]) => (
+   508→   508→                    <React.Fragment key={type}>
+   509→   509→                      <TableRow className="bg-muted/50">
+   510→   510→                        <TableCell colSpan={6} className="font-semibold text-xs uppercase tracking-wider text-muted-foreground py-2">
+   511→   511→                          {type} ({typeAccounts.length})
+   512→   512→                        </TableCell>
+   513→   513→                      </TableRow>
+   514→   514→                      {typeAccounts.map((account) => (
+   515→   515→                        <TableRow key={account.id}>
+   516→   516→                          <TableCell className="font-mono text-xs">{account.code}</TableCell>
+   517→   517→                          <TableCell className="font-medium">{account.name}</TableCell>
+   518→   518→                          <TableCell>
+   519→   519→                            <Badge className={`text-[10px] ${getTypeColor(account.type)}`}>
+   520→   520→                              {account.type}
+   521→   521→                            </Badge>
+   522→   522→                          </TableCell>
+   523→   523→                          <TableCell className="text-xs text-muted-foreground">
+   524→   524→                            {account.parentCode || '—'}
+   525→   525→                          </TableCell>
+   526→   526→                          <TableCell className="text-right font-medium">
+   527→   527→                            ${account.balance.toLocaleString()}
+   528→   528→                          </TableCell>
+   529→   529→                          <TableCell>
+   530→   530→                            <Badge
+   531→   531→                              variant={account.isActive ? 'default' : 'secondary'}
+   532→   532→                              className={
+   533→   533→                                account.isActive
+   534→   534→                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]'
+   535→   535→                                  : 'text-[10px]'
+   536→   536→                              }
+   537→   537→                            >
+   538→   538→                              {account.isActive ? 'Active' : 'Inactive'}
+   539→   539→                            </Badge>
+   540→   540→                          </TableCell>
+   541→   541→                        </TableRow>
+   542→   542→                      ))}
+   543→   543→                    </React.Fragment>
+   544→   544→                  ))}
+   545→   545→                </TableBody>
+   546→   546→              </Table>
+   547→   547→            </ScrollArea>
+   548→   548→          </CardContent>
+   549→   549→        </Card>
+   550→   550→      )}
+   551→   551→
+   552→   552→      <CreateAccountDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSuccess={fetchAccounts} />
+   553→   553→    </div>
+   554→   554→  )
+   555→   555→}
+   556→   556→
+   557→   557→// ==================== JOURNAL ENTRIES TAB ====================
+   558→   558→
+   559→   559→function JournalEntriesTab() {
+   560→   560→  const [entries, setEntries] = React.useState<JournalEntry[]>([])
+   561→   561→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   562→   562→  const [loading, setLoading] = React.useState(true)
+   563→   563→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   564→   564→  const [selectedEntry, setSelectedEntry] = React.useState<JournalEntry | null>(null)
+   565→   565→
+   566→   566→  const fetchEntries = React.useCallback(async () => {
+   567→   567→    setLoading(true)
+   568→   568→    try {
+   569→   569→      const res = await fetch('/api/finance?type=entries&limit=50')
+   570→   570→      const json = await res.json()
+   571→   571→      if (json.data) setEntries(json.data)
+   572→   572→    } catch (err) {
+   573→   573→      console.error('Failed to fetch entries:', err)
+   574→   574→    } finally {
+   575→   575→      setLoading(false)
+   576→   576→    }
+   577→   577→  }, [])
+   578→   578→
+   579→   579→  const fetchAccounts = React.useCallback(async () => {
+   580→   580→    try {
+   581→   581→      const res = await fetch('/api/finance?type=accounts&limit=100')
+   582→   582→      const json = await res.json()
+   583→   583→      if (json.data) setAccounts(json.data)
+   584→   584→    } catch (err) {
+   585→   585→      console.error('Failed to fetch accounts:', err)
+   586→   586→    }
+   587→   587→  }, [])
+   588→   588→
+   589→   589→  React.useEffect(() => {
+   590→   590→    fetchEntries()
+   591→   591→    fetchAccounts()
+   592→   592→  }, [fetchEntries, fetchAccounts])
+   593→   593→
+   594→   594→  return (
+   595→   595→    <div className="space-y-4">
+   596→   596→      <div className="flex items-center justify-between">
+   597→   597→        <p className="text-sm text-muted-foreground">{entries.length} entries</p>
+   598→   598→        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+   599→   599→          <Plus className="size-4" /> Create Entry
+   600→   600→        </Button>
+   601→   601→      </div>
+   602→   602→
+   603→   603→      {loading ? (
+   604→   604→        <Card>
+   605→   605→          <CardContent className="p-6">
+   606→   606→            <div className="space-y-3">
+   607→   607→              {[1, 2, 3].map((i) => (
+   608→   608→                <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+   609→   609→              ))}
+   610→   610→            </div>
+   611→   611→          </CardContent>
+   612→   612→        </Card>
+   613→   613→      ) : entries.length === 0 ? (
+   614→   614→        <Card>
+   615→   615→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   616→   616→            <BookOpen className="size-10 text-muted-foreground mb-3" />
+   617→   617→            <p className="text-muted-foreground">No journal entries found</p>
+   618→   618→            <p className="text-sm text-muted-foreground">Record your first journal entry</p>
+   619→   619→          </CardContent>
+   620→   620→        </Card>
+   621→   621→      ) : (
+   622→   622→        <Card>
+   623→   623→          <CardContent className="p-0">
+   624→   624→            <ScrollArea className="max-h-[500px]">
+   625→   625→              <Table>
+   626→   626→                <TableHeader>
+   627→   627→                  <TableRow>
+   628→   628→                    <TableHead>Date</TableHead>
+   629→   629→                    <TableHead>Description</TableHead>
+   630→   630→                    <TableHead>Reference</TableHead>
+   631→   631→                    <TableHead className="text-right">Debit</TableHead>
+   632→   632→                    <TableHead className="text-right">Credit</TableHead>
+   633→   633→                    <TableHead>Status</TableHead>
+   634→   634→                    <TableHead className="w-10"></TableHead>
+   635→   635→                  </TableRow>
+   636→   636→                </TableHeader>
+   637→   637→                <TableBody>
+   638→   638→                  {entries.map((entry) => {
+   639→   639→                    const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+   640→   640→                    const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
+   641→   641→                    return (
+   642→   642→                      <TableRow key={entry.id} className="cursor-pointer" onClick={() => setSelectedEntry(entry)}>
+   643→   643→                        <TableCell className="text-xs">
+   644→   644→                          {new Date(entry.date).toLocaleDateString()}
+   645→   645→                        </TableCell>
+   646→   646→                        <TableCell className="font-medium text-sm max-w-48 truncate">
+   647→   647→                          {entry.description}
+   648→   648→                        </TableCell>
+   649→   649→                        <TableCell className="text-xs text-muted-foreground">
+   650→   650→                          {entry.reference || '—'}
+   651→   651→                        </TableCell>
+   652→   652→                        <TableCell className="text-right text-xs font-medium">
+   653→   653→                          ${totalDebit.toLocaleString()}
+   654→   654→                        </TableCell>
+   655→   655→                        <TableCell className="text-right text-xs font-medium">
+   656→   656→                          ${totalCredit.toLocaleString()}
+   657→   657→                        </TableCell>
+   658→   658→                        <TableCell>
+   659→   659→                          <Badge
+   660→   660→                            className={
+   661→   661→                              entry.isPosted
+   662→   662→                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]'
+   663→   663→                                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]'
+   664→   664→                            }
+   665→   665→                          >
+   666→   666→                            {entry.isPosted ? 'Posted' : 'Draft'}
+   667→   667→                          </Badge>
+   668→   668→                        </TableCell>
+   669→   669→                        <TableCell>
+   670→   670→                          <Eye className="size-3.5 text-muted-foreground" />
+   671→   671→                        </TableCell>
+   672→   672→                      </TableRow>
+   673→   673→                    )
+   674→   674→                  })}
+   675→   675→                </TableBody>
+   676→   676→              </Table>
+   677→   677→            </ScrollArea>
+   678→   678→          </CardContent>
+   679→   679→        </Card>
+   680→   680→      )}
+   681→   681→
+   682→   682→      <CreateJournalEntryDialog
+   683→   683→        open={showCreateDialog}
+   684→   684→        onOpenChange={setShowCreateDialog}
+   685→   685→        accounts={accounts}
+   686→   686→        onSuccess={fetchEntries}
+   687→   687→      />
+   688→   688→
+   689→   689→      <JournalEntryDetailDialog
+   690→   690→        entry={selectedEntry}
+   691→   691→        onOpenChange={(open) => !open && setSelectedEntry(null)}
+   692→   692→      />
+   693→   693→    </div>
+   694→   694→  )
+   695→   695→}
+   696→   696→
+   697→   697→// ==================== EXPENSES TAB ====================
+   698→   698→
+   699→   699→function ExpensesTab() {
+   700→   700→  const [expenses, setExpenses] = React.useState<Expense[]>([])
+   701→   701→  const [loading, setLoading] = React.useState(true)
+   702→   702→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   703→   703→
+   704→   704→  const fetchExpenses = React.useCallback(async () => {
+   705→   705→    setLoading(true)
+   706→   706→    try {
+   707→   707→      const res = await fetch('/api/finance?type=expenses&limit=50')
+   708→   708→      const json = await res.json()
+   709→   709→      if (json.data) setExpenses(json.data)
+   710→   710→    } catch (err) {
+   711→   711→      console.error('Failed to fetch expenses:', err)
+   712→   712→    } finally {
+   713→   713→      setLoading(false)
+   714→   714→    }
+   715→   715→  }, [])
+   716→   716→
+   717→   717→  React.useEffect(() => {
+   718→   718→    fetchExpenses()
+   719→   719→  }, [fetchExpenses])
+   720→   720→
+   721→   721→  const getStatusIcon = (status: string) => {
+   722→   722→    switch (status) {
+   723→   723→      case 'paid':
+   724→   724→        return <CheckCircle2 className="size-4 text-emerald-600" />
+   725→   725→      case 'approved':
+   726→   726→        return <CheckCircle2 className="size-4 text-teal-600" />
+   727→   727→      case 'pending':
+   728→   728→        return <Clock className="size-4 text-amber-600" />
+   729→   729→      default:
+   730→   730→        return <AlertCircle className="size-4 text-muted-foreground" />
+   731→   731→    }
+   732→   732→  }
+   733→   733→
+   734→   734→  const getStatusColor = (status: string) => {
+   735→   735→    switch (status) {
+   736→   736→      case 'paid':
+   737→   737→        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+   738→   738→      case 'approved':
+   739→   739→        return 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400'
+   740→   740→      case 'pending':
+   741→   741→        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+   742→   742→      default:
+   743→   743→        return ''
+   744→   744→    }
+   745→   745→  }
+   746→   746→
+   747→   747→  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+   748→   748→  const pendingAmount = expenses.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0)
+   749→   749→  const paidAmount = expenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0)
+   750→   750→
+   751→   751→  return (
+   752→   752→    <div className="space-y-4">
+   753→   753→      {/* Summary */}
+   754→   754→      <div className="grid grid-cols-3 gap-3">
+   755→   755→        <Card>
+   756→   756→          <CardContent className="p-3">
+   757→   757→            <p className="text-xs text-muted-foreground">Total Expenses</p>
+   758→   758→            <p className="text-lg font-bold">${totalExpenses.toLocaleString()}</p>
+   759→   759→          </CardContent>
+   760→   760→        </Card>
+   761→   761→        <Card>
+   762→   762→          <CardContent className="p-3">
+   763→   763→            <p className="text-xs text-muted-foreground">Pending</p>
+   764→   764→            <p className="text-lg font-bold text-amber-600">${pendingAmount.toLocaleString()}</p>
+   765→   765→          </CardContent>
+   766→   766→        </Card>
+   767→   767→        <Card>
+   768→   768→          <CardContent className="p-3">
+   769→   769→            <p className="text-xs text-muted-foreground">Paid</p>
+   770→   770→            <p className="text-lg font-bold text-emerald-600">${paidAmount.toLocaleString()}</p>
+   771→   771→          </CardContent>
+   772→   772→        </Card>
+   773→   773→      </div>
+   774→   774→
+   775→   775→      <div className="flex items-center justify-between">
+   776→   776→        <p className="text-sm text-muted-foreground">{expenses.length} expense records</p>
+   777→   777→        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+   778→   778→          <Plus className="size-4" /> Add Expense
+   779→   779→        </Button>
+   780→   780→      </div>
+   781→   781→
+   782→   782→      {loading ? (
+   783→   783→        <Card>
+   784→   784→          <CardContent className="p-6">
+   785→   785→            <div className="space-y-3">
+   786→   786→              {[1, 2, 3, 4].map((i) => (
+   787→   787→                <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+   788→   788→              ))}
+   789→   789→            </div>
+   790→   790→          </CardContent>
+   791→   791→        </Card>
+   792→   792→      ) : expenses.length === 0 ? (
+   793→   793→        <Card>
+   794→   794→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   795→   795→            <Receipt className="size-10 text-muted-foreground mb-3" />
+   796→   796→            <p className="text-muted-foreground">No expenses found</p>
+   797→   797→            <p className="text-sm text-muted-foreground">Record your first expense</p>
+   798→   798→          </CardContent>
+   799→   799→        </Card>
+   800→   800→      ) : (
+   801→   801→        <Card>
+   802→   802→          <CardContent className="p-0">
+   803→   803→            <ScrollArea className="max-h-[400px]">
+   804→   804→              <Table>
+   805→   805→                <TableHeader>
+   806→   806→                  <TableRow>
+   807→   807→                    <TableHead>Category</TableHead>
+   808→   808→                    <TableHead>Description</TableHead>
+   809→   809→                    <TableHead className="text-right">Amount</TableHead>
+   810→   810→                    <TableHead>Date</TableHead>
+   811→   811→                    <TableHead>Paid By</TableHead>
+   812→   812→                    <TableHead>Status</TableHead>
+   813→   813→                  </TableRow>
+   814→   814→                </TableHeader>
+   815→   815→                <TableBody>
+   816→   816→                  {expenses.map((expense) => (
+   817→   817→                    <TableRow key={expense.id}>
+   818→   818→                      <TableCell className="font-medium">{expense.category}</TableCell>
+   819→   819→                      <TableCell className="text-xs text-muted-foreground max-w-32 truncate">
+   820→   820→                        {expense.description || '—'}
+   821→   821→                      </TableCell>
+   822→   822→                      <TableCell className="text-right font-semibold text-red-600">
+   823→   823→                        ${expense.amount.toLocaleString()}
+   824→   824→                      </TableCell>
+   825→   825→                      <TableCell className="text-xs">
+   826→   826→                        {new Date(expense.date).toLocaleDateString()}
+   827→   827→                      </TableCell>
+   828→   828→                      <TableCell className="text-xs text-muted-foreground">
+   829→   829→                        {expense.paidBy || '—'}
+   830→   830→                      </TableCell>
+   831→   831→                      <TableCell>
+   832→   832→                        <Badge className={`text-[10px] ${getStatusColor(expense.status)}`}>
+   833→   833→                          {expense.status}
+   834→   834→                        </Badge>
+   835→   835→                      </TableCell>
+   836→   836→                    </TableRow>
+   837→   837→                  ))}
+   838→   838→                </TableBody>
+   839→   839→              </Table>
+   840→   840→            </ScrollArea>
+   841→   841→          </CardContent>
+   842→   842→        </Card>
+   843→   843→      )}
+   844→   844→
+   845→   845→      <AddExpenseDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchExpenses} />
+   846→   846→    </div>
+   847→   847→  )
+   848→   848→}
+   849→   849→
+   850→   850→// ==================== CREATE ACCOUNT DIALOG ====================
+   851→   851→
+   852→   852→function CreateAccountDialog({
+   853→   853→  open,
+   854→   854→  onOpenChange,
+   855→   855→  onSuccess,
+   856→   856→}: {
+   857→   857→  open: boolean
+   858→   858→  onOpenChange: (open: boolean) => void
+   859→   859→  onSuccess: () => void
+   860→   860→}) {
+   861→   861→  const [saving, setSaving] = React.useState(false)
+   862→   862→  const [form, setForm] = React.useState({
+   863→   863→    code: '',
+   864→   864→    name: '',
+   865→   865→    type: 'asset',
+   866→   866→    parentCode: '',
+   867→   867→  })
+   868→   868→
+   869→   869→  const handleSubmit = async (e: React.FormEvent) => {
+   870→   870→    e.preventDefault()
+   871→   871→    if (!form.code.trim() || !form.name.trim()) return
+   872→   872→    setSaving(true)
+   873→   873→    try {
+   874→   874→      const res = await fetch('/api/finance?type=accounts', {
+   875→   875→        method: 'POST',
+   876→   876→        headers: { 'Content-Type': 'application/json' },
+   877→   877→        body: JSON.stringify({
+   878→   878→          ...form,
+   879→   879→          parentCode: form.parentCode || null,
+   880→   880→        }),
+   881→   881→      })
+   882→   882→      if (res.ok) {
+   883→   883→        setForm({ code: '', name: '', type: 'asset', parentCode: '' })
+   884→   884→        onOpenChange(false)
+   885→   885→        onSuccess()
+   886→   886→      } else {
+   887→   887→        const json = await res.json()
+   888→   888→        alert(json.error || 'Failed to create account')
+   889→   889→      }
+   890→   890→    } catch (err) {
+   891→   891→      console.error('Failed to create account:', err)
+   892→   892→      alert('Failed to create account')
+   893→   893→    } finally {
+   894→   894→      setSaving(false)
+   895→   895→    }
+   896→   896→  }
+   897→   897→
+   898→   898→  return (
+   899→   899→    <Dialog open={open} onOpenChange={onOpenChange}>
+   900→   900→      <DialogContent className="sm:max-w-md">
+   901→   901→        <DialogHeader>
+   902→   902→          <DialogTitle>Create Account</DialogTitle>
+   903→   903→          <DialogDescription>Add a new account to your chart of accounts</DialogDescription>
+   904→   904→        </DialogHeader>
+   905→   905→        <form onSubmit={handleSubmit} className="space-y-4">
+   906→   906→          <div className="grid grid-cols-2 gap-3">
+   907→   907→            <div className="space-y-2">
+   908→   908→              <Label htmlFor="acc-code">Account Code *</Label>
+   909→   909→              <Input
+   910→   910→                id="acc-code"
+   911→   911→                value={form.code}
+   912→   912→                onChange={(e) => setForm({ ...form, code: e.target.value })}
+   913→   913→                placeholder="1000"
+   914→   914→                required
+   915→   915→              />
+   916→   916→            </div>
+   917→   917→            <div className="space-y-2">
+   918→   918→              <Label>Account Type *</Label>
+   919→   919→              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+   920→   920→                <SelectTrigger>
+   921→   921→                  <SelectValue />
+   922→   922→                </SelectTrigger>
+   923→   923→                <SelectContent>
+   924→   924→                  <SelectItem value="asset">Asset</SelectItem>
+   925→   925→                  <SelectItem value="liability">Liability</SelectItem>
+   926→   926→                  <SelectItem value="equity">Equity</SelectItem>
+   927→   927→                  <SelectItem value="revenue">Revenue</SelectItem>
+   928→   928→                  <SelectItem value="expense">Expense</SelectItem>
+   929→   929→                </SelectContent>
+   930→   930→              </Select>
+   931→   931→            </div>
+   932→   932→          </div>
+   933→   933→          <div className="space-y-2">
+   934→   934→            <Label htmlFor="acc-name">Account Name *</Label>
+   935→   935→            <Input
+   936→   936→              id="acc-name"
+   937→   937→              value={form.name}
+   938→   938→              onChange={(e) => setForm({ ...form, name: e.target.value })}
+   939→   939→              placeholder="Cash on Hand"
+   940→   940→              required
+   941→   941→            />
+   942→   942→          </div>
+   943→   943→          <div className="space-y-2">
+   944→   944→            <Label htmlFor="acc-parent">Parent Code</Label>
+   945→   945→            <Input
+   946→   946→              id="acc-parent"
+   947→   947→              value={form.parentCode}
+   948→   948→              onChange={(e) => setForm({ ...form, parentCode: e.target.value })}
+   949→   949→              placeholder="1000 (optional)"
+   950→   950→            />
+   951→   951→          </div>
+   952→   952→          <DialogFooter>
+   953→   953→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+   954→   954→              Cancel
+   955→   955→            </Button>
+   956→   956→            <Button
+   957→   957→              type="submit"
+   958→   958→              disabled={saving || !form.code.trim() || !form.name.trim()}
+   959→   959→              className="bg-emerald-600 hover:bg-emerald-700"
+   960→   960→            >
+   961→   961→              {saving ? 'Creating...' : 'Create Account'}
+   962→   962→            </Button>
+   963→   963→          </DialogFooter>
+   964→   964→        </form>
+   965→   965→      </DialogContent>
+   966→   966→    </Dialog>
+   967→   967→  )
+   968→   968→}
+   969→   969→
+   970→   970→// ==================== CREATE JOURNAL ENTRY DIALOG ====================
+   971→   971→
+   972→   972→interface JournalLineForm {
+   973→   973→  key: string
+   974→   974→  accountId: string
+   975→   975→  debit: string
+   976→   976→  credit: string
+   977→   977→  description: string
+   978→   978→}
+   979→   979→
+   980→   980→function CreateJournalEntryDialog({
+   981→   981→  open,
+   982→   982→  onOpenChange,
+   983→   983→  accounts,
+   984→   984→  onSuccess,
+   985→   985→}: {
+   986→   986→  open: boolean
+   987→   987→  onOpenChange: (open: boolean) => void
+   988→   988→  accounts: Account[]
+   989→   989→  onSuccess: () => void
+   990→   990→}) {
+   991→   991→  const [saving, setSaving] = React.useState(false)
+   992→   992→  const [form, setForm] = React.useState({
+   993→   993→    date: new Date().toISOString().split('T')[0],
+   994→   994→    description: '',
+   995→   995→    reference: '',
+   996→   996→    isPosted: false,
+   997→   997→  })
+   998→   998→  const [lines, setLines] = React.useState<JournalLineForm[]>([
+   999→   999→    { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1000→  1000→    { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1001→  1001→  ])
+  1002→  1002→
+  1003→  1003→  const totalDebit = lines.reduce((sum, l) => sum + (parseFloat(l.debit) || 0), 0)
+  1004→  1004→  const totalCredit = lines.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0)
+  1005→  1005→  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0
+  1006→  1006→
+  1007→  1007→  const addLine = () => {
+  1008→  1008→    setLines([...lines, { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' }])
+  1009→  1009→  }
+  1010→  1010→
+  1011→  1011→  const removeLine = (key: string) => {
+  1012→  1012→    if (lines.length > 2) {
+  1013→  1013→      setLines(lines.filter((l) => l.key !== key))
+  1014→  1014→    }
+  1015→  1015→  }
+  1016→  1016→
+  1017→  1017→  const updateLine = (key: string, updates: Partial<JournalLineForm>) => {
+  1018→  1018→    setLines(lines.map((l) => (l.key === key ? { ...l, ...updates } : l)))
+  1019→  1019→  }
+  1020→  1020→
+  1021→  1021→  const handleSubmit = async (e: React.FormEvent) => {
+  1022→  1022→    e.preventDefault()
+  1023→  1023→    if (!form.description.trim() || !isBalanced) return
+  1024→  1024→    setSaving(true)
+  1025→  1025→    try {
+  1026→  1026→      const res = await fetch('/api/finance?type=entries', {
+  1027→  1027→        method: 'POST',
+  1028→  1028→        headers: { 'Content-Type': 'application/json' },
+  1029→  1029→        body: JSON.stringify({
+  1030→  1030→          ...form,
+  1031→  1031→          lines: lines
+  1032→  1032→            .filter((l) => l.accountId && (parseFloat(l.debit) > 0 || parseFloat(l.credit) > 0))
+  1033→  1033→            .map((l) => ({
+  1034→  1034→              accountId: l.accountId,
+  1035→  1035→              debit: parseFloat(l.debit) || 0,
+  1036→  1036→              credit: parseFloat(l.credit) || 0,
+  1037→  1037→              description: l.description || null,
+  1038→  1038→            })),
+  1039→  1039→        }),
+  1040→  1040→      })
+  1041→  1041→      if (res.ok) {
+  1042→  1042→        setForm({ date: new Date().toISOString().split('T')[0], description: '', reference: '', isPosted: false })
+  1043→  1043→        setLines([
+  1044→  1044→          { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1045→  1045→          { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1046→  1046→        ])
+  1047→  1047→        onOpenChange(false)
+  1048→  1048→        onSuccess()
+  1049→  1049→      } else {
+  1050→  1050→        const json = await res.json()
+  1051→  1051→        alert(json.error || 'Failed to create journal entry')
+  1052→  1052→      }
+  1053→  1053→    } catch (err) {
+  1054→  1054→      console.error('Failed to create journal entry:', err)
+  1055→  1055→      alert('Failed to create journal entry')
+  1056→  1056→    } finally {
+  1057→  1057→      setSaving(false)
+  1058→  1058→    }
+  1059→  1059→  }
+  1060→  1060→
+  1061→  1061→  return (
+  1062→  1062→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1063→  1063→      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+  1064→  1064→        <DialogHeader>
+  1065→  1065→          <DialogTitle>Create Journal Entry</DialogTitle>
+  1066→  1066→          <DialogDescription>Record a double-entry journal transaction</DialogDescription>
+  1067→  1067→        </DialogHeader>
+  1068→  1068→        <form onSubmit={handleSubmit} className="space-y-4">
+  1069→  1069→          <div className="grid grid-cols-2 gap-3">
+  1070→  1070→            <div className="space-y-2">
+  1071→  1071→              <Label>Date *</Label>
+  1072→  1072→              <Input
+  1073→  1073→                type="date"
+  1074→  1074→                value={form.date}
+  1075→  1075→                onChange={(e) => setForm({ ...form, date: e.target.value })}
+  1076→  1076→                required
+  1077→  1077→              />
+  1078→  1078→            </div>
+  1079→  1079→            <div className="space-y-2">
+  1080→  1080→              <Label>Reference</Label>
+  1081→  1081→              <Input
+  1082→  1082→                value={form.reference}
+  1083→  1083→                onChange={(e) => setForm({ ...form, reference: e.target.value })}
+  1084→  1084→                placeholder="JE-001"
+  1085→  1085→              />
+  1086→  1086→            </div>
+  1087→  1087→          </div>
+  1088→  1088→          <div className="space-y-2">
+  1089→  1089→            <Label>Description *</Label>
+  1090→  1090→            <Input
+  1091→  1091→              value={form.description}
+  1092→  1092→              onChange={(e) => setForm({ ...form, description: e.target.value })}
+  1093→  1093→              placeholder="Monthly rent payment"
+  1094→  1094→              required
+  1095→  1095→            />
+  1096→  1096→          </div>
+  1097→  1097→
+  1098→  1098→          <Separator />
+  1099→  1099→
+  1100→  1100→          <div className="space-y-3">
+  1101→  1101→            <div className="flex items-center justify-between">
+  1102→  1102→              <Label className="text-sm font-semibold">Entry Lines</Label>
+  1103→  1103→              <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1">
+  1104→  1104→                <Plus className="size-3" /> Add Line
+  1105→  1105→              </Button>
+  1106→  1106→            </div>
+  1107→  1107→            {lines.map((line) => (
+  1108→  1108→              <div key={line.key} className="flex items-end gap-2 p-3 rounded-lg border bg-muted/30">
+  1109→  1109→                <div className="flex-[2] space-y-1">
+  1110→  1110→                  <Label className="text-xs text-muted-foreground">Account</Label>
+  1111→  1111→                  <Select value={line.accountId} onValueChange={(v) => updateLine(line.key, { accountId: v })}>
+  1112→  1112→                    <SelectTrigger className="h-8 text-xs">
+  1113→  1113→                      <SelectValue placeholder="Select account..." />
+  1114→  1114→                    </SelectTrigger>
+  1115→  1115→                    <SelectContent>
+  1116→  1116→                      {accounts.map((a) => (
+  1117→  1117→                        <SelectItem key={a.id} value={a.id}>
+  1118→  1118→                          {a.code} - {a.name}
+  1119→  1119→                        </SelectItem>
+  1120→  1120→                      ))}
+  1121→  1121→                    </SelectContent>
+  1122→  1122→                  </Select>
+  1123→  1123→                </div>
+  1124→  1124→                <div className="w-24 space-y-1">
+  1125→  1125→                  <Label className="text-xs text-muted-foreground">Debit</Label>
+  1126→  1126→                  <Input
+  1127→  1127→                    type="number"
+  1128→  1128→                    step="0.01"
+  1129→  1129→                    min="0"
+  1130→  1130→                    value={line.debit}
+  1131→  1131→                    onChange={(e) => updateLine(line.key, { debit: e.target.value })}
+  1132→  1132→                    className="h-8 text-xs"
+  1133→  1133→                  />
+  1134→  1134→                </div>
+  1135→  1135→                <div className="w-24 space-y-1">
+  1136→  1136→                  <Label className="text-xs text-muted-foreground">Credit</Label>
+  1137→  1137→                  <Input
+  1138→  1138→                    type="number"
+  1139→  1139→                    step="0.01"
+  1140→  1140→                    min="0"
+  1141→  1141→                    value={line.credit}
+  1142→  1142→                    onChange={(e) => updateLine(line.key, { credit: e.target.value })}
+  1143→  1143→                    className="h-8 text-xs"
+  1144→  1144→                  />
+  1145→  1145→                </div>
+  1146→  1146→                <div className="flex-[1] space-y-1">
+  1147→  1147→                  <Label className="text-xs text-muted-foreground">Note</Label>
+  1148→  1148→                  <Input
+  1149→  1149→                    value={line.description}
+  1150→  1150→                    onChange={(e) => updateLine(line.key, { description: e.target.value })}
+  1151→  1151→                    className="h-8 text-xs"
+  1152→  1152→                    placeholder="Optional"
+  1153→  1153→                  />
+  1154→  1154→                </div>
+  1155→  1155→                <Button
+  1156→  1156→                  type="button"
+  1157→  1157→                  variant="ghost"
+  1158→  1158→                  size="sm"
+  1159→  1159→                  className="h-8 w-8 p-0 text-red-500"
+  1160→  1160→                  onClick={() => removeLine(line.key)}
+  1161→  1161→                  disabled={lines.length <= 2}
+  1162→  1162→                >
+  1163→  1163→                  <X className="size-3" />
+  1164→  1164→                </Button>
+  1165→  1165→              </div>
+  1166→  1166→            ))}
+  1167→  1167→          </div>
+  1168→  1168→
+  1169→  1169→          {/* Validation display */}
+  1170→  1170→          <div className={`flex items-center justify-between p-3 rounded-lg border ${
+  1171→  1171→            isBalanced
+  1172→  1172→              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+  1173→  1173→              : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+  1174→  1174→          }`}>
+  1175→  1175→            <div className="flex items-center gap-4 text-sm">
+  1176→  1176→              <span>
+  1177→  1177→                Debit: <strong>${totalDebit.toLocaleString()}</strong>
+  1178→  1178→              </span>
+  1179→  1179→              <span>
+  1180→  1180→                Credit: <strong>${totalCredit.toLocaleString()}</strong>
+  1181→  1181→              </span>
+  1182→  1182→            </div>
+  1183→  1183→            <Badge className={isBalanced ? 'bg-emerald-100 text-emerald-700 text-[10px]' : 'bg-amber-100 text-amber-700 text-[10px]'}>
+  1184→  1184→              {isBalanced ? 'Balanced' : 'Unbalanced'}
+  1185→  1185→            </Badge>
+  1186→  1186→          </div>
+  1187→  1187→
+  1188→  1188→          <div className="flex items-center gap-2">
+  1189→  1189→            <Label htmlFor="post-entry" className="text-sm">Post immediately</Label>
+  1190→  1190→            <input
+  1191→  1191→              id="post-entry"
+  1192→  1192→              type="checkbox"
+  1193→  1193→              checked={form.isPosted}
+  1194→  1194→              onChange={(e) => setForm({ ...form, isPosted: e.target.checked })}
+  1195→  1195→              className="rounded"
+  1196→  1196→            />
+  1197→  1197→          </div>
+  1198→  1198→
+  1199→  1199→          <DialogFooter>
+  1200→  1200→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+  1201→  1201→              Cancel
+  1202→  1202→            </Button>
+  1203→  1203→            <Button
+  1204→  1204→              type="submit"
+  1205→  1205→              disabled={saving || !form.description.trim() || !isBalanced}
+  1206→  1206→              className="bg-emerald-600 hover:bg-emerald-700"
+  1207→  1207→            >
+  1208→  1208→              {saving ? 'Creating...' : 'Create Entry'}
+  1209→  1209→            </Button>
+  1210→  1210→          </DialogFooter>
+  1211→  1211→        </form>
+  1212→  1212→      </DialogContent>
+  1213→  1213→    </Dialog>
+  1214→  1214→  )
+  1215→  1215→}
+  1216→  1216→
+  1217→  1217→// ==================== JOURNAL ENTRY DETAIL DIALOG ====================
+  1218→  1218→
+  1219→  1219→function JournalEntryDetailDialog({
+  1220→  1220→  entry,
+  1221→  1221→  onOpenChange,
+  1222→  1222→}: {
+  1223→  1223→  entry: JournalEntry | null
+  1224→  1224→  onOpenChange: (open: boolean) => void
+  1225→  1225→}) {
+  1226→  1226→  if (!entry) return null
+  1227→  1227→
+  1228→  1228→  const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+  1229→  1229→  const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
+  1230→  1230→
+  1231→  1231→  return (
+  1232→  1232→    <Dialog open={!!entry} onOpenChange={onOpenChange}>
+  1233→  1233→      <DialogContent className="sm:max-w-lg">
+  1234→  1234→        <DialogHeader>
+  1235→  1235→          <DialogTitle className="flex items-center gap-2">
+  1236→  1236→            <BookOpen className="size-5 text-emerald-600" />
+  1237→  1237→            Journal Entry
+  1238→  1238→          </DialogTitle>
+  1239→  1239→          <DialogDescription>{entry.description}</DialogDescription>
+  1240→  1240→        </DialogHeader>
+  1241→  1241→        <div className="space-y-4">
+  1242→  1242→          <div className="grid grid-cols-2 gap-3 text-sm">
+  1243→  1243→            <div>
+  1244→  1244→              <span className="text-muted-foreground">Date:</span>{' '}
+  1245→  1245→              <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
+  1246→  1246→            </div>
+  1247→  1247→            <div>
+  1248→  1248→              <span className="text-muted-foreground">Reference:</span>{' '}
+  1249→  1249→              <span className="font-medium">{entry.reference || '—'}</span>
+  1250→  1250→            </div>
+  1251→  1251→          </div>
+  1252→  1252→          <Badge
+  1253→  1253→            className={
+  1254→  1254→              entry.isPosted
+  1255→  1255→                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+  1256→  1256→                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+  1257→  1257→            }
+  1258→  1258→          >
+  1259→  1259→            {entry.isPosted ? 'Posted' : 'Draft'}
+  1260→  1260→          </Badge>
+  1261→  1261→
+  1262→  1262→          <Separator />
+  1263→  1263→
+  1264→  1264→          <Table>
+  1265→  1265→            <TableHeader>
+  1266→  1266→              <TableRow>
+  1267→  1267→                <TableHead>Account</TableHead>
+  1268→  1268→                <TableHead className="text-right">Debit</TableHead>
+  1269→  1269→                <TableHead className="text-right">Credit</TableHead>
+  1270→  1270→              </TableRow>
+  1271→  1271→            </TableHeader>
+  1272→  1272→            <TableBody>
+  1273→  1273→              {entry.lines.map((line) => (
+  1274→  1274→                <TableRow key={line.id}>
+  1275→  1275→                  <TableCell className="text-sm">
+  1276→  1276→                    <div>
+  1277→  1277→                      <span className="font-medium">{line.account?.name || 'Unknown'}</span>
+  1278→  1278→                      <span className="text-xs text-muted-foreground ml-1">({line.account?.code})</span>
+  1279→  1279→                    </div>
+  1280→  1280→                    {line.description && (
+  1281→  1281→                      <p className="text-xs text-muted-foreground">{line.description}</p>
+  1282→  1282→                    )}
+  1283→  1283→                  </TableCell>
+  1284→  1284→                  <TableCell className="text-right font-medium">
+  1285→  1285→                    {line.debit > 0 ? `$${line.debit.toLocaleString()}` : ''}
+  1286→  1286→                  </TableCell>
+  1287→  1287→                  <TableCell className="text-right font-medium">
+  1288→  1288→                    {line.credit > 0 ? `$${line.credit.toLocaleString()}` : ''}
+  1289→  1289→                  </TableCell>
+  1290→  1290→                </TableRow>
+  1291→  1291→              ))}
+  1292→  1292→              <TableRow className="font-bold">
+  1293→  1293→                <TableCell>Total</TableCell>
+  1294→  1294→                <TableCell className="text-right">${totalDebit.toLocaleString()}</TableCell>
+  1295→  1295→                <TableCell className="text-right">${totalCredit.toLocaleString()}</TableCell>
+  1296→  1296→              </TableRow>
+  1297→  1297→            </TableBody>
+  1298→  1298→          </Table>
+  1299→  1299→        </div>
+  1300→  1300→      </DialogContent>
+  1301→  1301→    </Dialog>
+  1302→  1302→  )
+  1303→  1303→}
+  1304→  1304→
+  1305→  1305→// ==================== ADD EXPENSE DIALOG ====================
+  1306→  1306→
+  1307→  1307→function AddExpenseDialog({
+  1308→  1308→  open,
+  1309→  1309→  onOpenChange,
+  1310→  1310→  onSuccess,
+  1311→  1311→}: {
+  1312→  1312→  open: boolean
+  1313→  1313→  onOpenChange: (open: boolean) => void
+  1314→  1314→  onSuccess: () => void
+  1315→  1315→}) {
+  1316→  1316→  const [saving, setSaving] = React.useState(false)
+  1317→  1317→  const [form, setForm] = React.useState({
+  1318→  1318→    category: '',
+  1319→  1319→    amount: '',
+  1320→  1320→    date: new Date().toISOString().split('T')[0],
+  1321→  1321→    description: '',
+  1322→  1322→    paidBy: '',
+  1323→  1323→    status: 'pending',
+  1324→  1324→  })
+  1325→  1325→
+  1326→  1326→  const handleSubmit = async (e: React.FormEvent) => {
+  1327→  1327→    e.preventDefault()
+  1328→  1328→    if (!form.category.trim() || !form.amount || !form.date) return
+  1329→  1329→    setSaving(true)
+  1330→  1330→    try {
+  1331→  1331→      const res = await fetch('/api/finance?type=expenses', {
+  1332→  1332→        method: 'POST',
+  1333→  1333→        headers: { 'Content-Type': 'application/json' },
+  1334→  1334→        body: JSON.stringify({
+  1335→  1335→          category: form.category,
+  1336→  1336→          amount: parseFloat(form.amount),
+  1337→  1337→          date: form.date,
+  1338→  1338→          description: form.description || null,
+  1339→  1339→          paidBy: form.paidBy || null,
+  1340→  1340→          status: form.status,
+  1341→  1341→        }),
+  1342→  1342→      })
+  1343→  1343→      if (res.ok) {
+  1344→  1344→        setForm({ category: '', amount: '', date: new Date().toISOString().split('T')[0], description: '', paidBy: '', status: 'pending' })
+  1345→  1345→        onOpenChange(false)
+  1346→  1346→        onSuccess()
+  1347→  1347→      } else {
+  1348→  1348→        const json = await res.json()
+  1349→  1349→        alert(json.error || 'Failed to add expense')
+  1350→  1350→      }
+  1351→  1351→    } catch (err) {
+  1352→  1352→      console.error('Failed to add expense:', err)
+  1353→  1353→      alert('Failed to add expense')
+  1354→  1354→    } finally {
+  1355→  1355→      setSaving(false)
+  1356→  1356→    }
+  1357→  1357→  }
+  1358→  1358→
+  1359→  1359→  return (
+  1360→  1360→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1361→  1361→      <DialogContent className="sm:max-w-md">
+  1362→  1362→        <DialogHeader>
+  1363→  1363→          <DialogTitle>Add Expense</DialogTitle>
+  1364→  1364→          <DialogDescription>Record a new expense</DialogDescription>
+  1365→  1365→        </DialogHeader>
+  1366→  1366→        <form onSubmit={handleSubmit} className="space-y-4">
+  1367→  1367→          <div className="grid grid-cols-2 gap-3">
+  1368→  1368→            <div className="space-y-2">
+  1369→  1369→              <Label>Category *</Label>
+  1370→  1370→              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+  1371→  1371→                <SelectTrigger>
+  1372→  1372→                  <SelectValue placeholder="Select category" />
+  1373→  1373→                </SelectTrigger>
+  1374→  1374→                <SelectContent>
+  1375→  1375→                  <SelectItem value="Rent">Rent</SelectItem>
+  1376→  1376→                  <SelectItem value="Utilities">Utilities</SelectItem>
+  1377→  1377→                  <SelectItem value="Salaries">Salaries</SelectItem>
+  1378→  1378→                  <SelectItem value="Office Supplies">Office Supplies</SelectItem>
+  1379→  1379→                  <SelectItem value="Marketing">Marketing</SelectItem>
+  1380→  1380→                  <SelectItem value="Transport">Transport</SelectItem>
+  1381→  1381→                  <SelectItem value="Maintenance">Maintenance</SelectItem>
+  1382→  1382→                  <SelectItem value="Insurance">Insurance</SelectItem>
+  1383→  1383→                  <SelectItem value="Other">Other</SelectItem>
+  1384→  1384→                </SelectContent>
+  1385→  1385→              </Select>
+  1386→  1386→            </div>
+  1387→  1387→            <div className="space-y-2">
+  1388→  1388→              <Label htmlFor="exp-amount">Amount ($) *</Label>
+  1389→  1389→              <Input
+  1390→  1390→                id="exp-amount"
+  1391→  1391→                type="number"
+  1392→  1392→                step="0.01"
+  1393→  1393→                min="0"
+  1394→  1394→                value={form.amount}
+  1395→  1395→                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+  1396→  1396→                placeholder="500"
+  1397→  1397→                required
+  1398→  1398→              />
+  1399→  1399→            </div>
+  1400→  1400→          </div>
+  1401→  1401→          <div className="grid grid-cols-2 gap-3">
+  1402→  1402→            <div className="space-y-2">
+  1403→  1403→              <Label htmlFor="exp-date">Date *</Label>
+  1404→  1404→              <Input
+  1405→  1405→                id="exp-date"
+  1406→  1406→                type="date"
+  1407→  1407→                value={form.date}
+  1408→  1408→                onChange={(e) => setForm({ ...form, date: e.target.value })}
+  1409→  1409→                required
+  1410→  1410→              />
+  1411→  1411→            </div>
+  1412→  1412→            <div className="space-y-2">
+  1413→  1413→              <Label>Status</Label>
+  1414→  1414→              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+  1415→  1415→                <SelectTrigger>
+  1416→  1416→                  <SelectValue />
+  1417→  1417→                </SelectTrigger>
+  1418→  1418→                <SelectContent>
+  1419→  1419→                  <SelectItem value="pending">Pending</SelectItem>
+  1420→  1420→                  <SelectItem value="approved">Approved</SelectItem>
+  1421→  1421→                  <SelectItem value="paid">Paid</SelectItem>
+  1422→  1422→                </SelectContent>
+  1423→  1423→              </Select>
+  1424→  1424→            </div>
+  1425→  1425→          </div>
+  1426→  1426→          <div className="space-y-2">
+  1427→  1427→            <Label htmlFor="exp-desc">Description</Label>
+  1428→  1428→            <Textarea
+  1429→  1429→              id="exp-desc"
+  1430→  1430→              value={form.description}
+  1431→  1431→              onChange={(e) => setForm({ ...form, description: e.target.value })}
+  1432→  1432→              placeholder="Expense details..."
+  1433→  1433→              rows={2}
+  1434→  1434→            />
+  1435→  1435→          </div>
+  1436→  1436→          <div className="space-y-2">
+  1437→  1437→            <Label htmlFor="exp-paidby">Paid By</Label>
+  1438→  1438→            <Input
+  1439→  1439→              id="exp-paidby"
+  1440→  1440→              value={form.paidBy}
+  1441→  1441→              onChange={(e) => setForm({ ...form, paidBy: e.target.value })}
+  1442→  1442→              placeholder="John Smith"
+  1443→  1443→            />
+  1444→  1444→          </div>
+  1445→  1445→          <DialogFooter>
+  1446→  1446→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+  1447→  1447→              Cancel
+  1448→  1448→            </Button>
+  1449→  1449→            <Button
+  1450→  1450→              type="submit"
+  1451→  1451→              disabled={saving || !form.category || !form.amount || !form.date}
+  1452→  1452→              className="bg-emerald-600 hover:bg-emerald-700"
+  1453→  1453→            >
+  1454→  1454→              {saving ? 'Adding...' : 'Add Expense'}
+  1455→  1455→            </Button>
+  1456→  1456→          </DialogFooter>
+  1457→  1457→        </form>
+  1458→  1458→      </DialogContent>
+  1459→  1459→    </Dialog>
+  1460→  1460→  )
+  1461→  1461→}
+  1462→  1462→

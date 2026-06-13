@@ -22,8 +22,7 @@ import {
   AlertCircle,
   Eye,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -102,54 +101,52 @@ interface Expense {
 
 export function FinanceModule() {
   const [activeTab, setActiveTab] = React.useState('overview')
+  const tabs = [
+    { value: 'overview', label: 'Overview', icon: BarChart3 },
+    { value: 'accounts', label: 'Accounts', icon: Wallet },
+    { value: 'entries', label: 'Journal', icon: BookOpen },
+    { value: 'expenses', label: 'Expenses', icon: Receipt },
+  ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <div className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-950/40">
-          <DollarSign className="size-5 text-emerald-600" />
+        <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
+          <DollarSign className="size-4 text-macos-green" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Finance</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-[13px] font-semibold tracking-tight">Finance</h2>
+          <p className="text-[11px] text-muted-foreground">
             Financial management, accounting, and reporting
           </p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="overview" className="gap-1.5">
-            <BarChart3 className="size-3.5" />
-            <span className="hidden sm:inline">Overview</span>
-          </TabsTrigger>
-          <TabsTrigger value="accounts" className="gap-1.5">
-            <Wallet className="size-3.5" />
-            <span className="hidden sm:inline">Accounts</span>
-          </TabsTrigger>
-          <TabsTrigger value="entries" className="gap-1.5">
-            <BookOpen className="size-3.5" />
-            <span className="hidden sm:inline">Journal</span>
-          </TabsTrigger>
-          <TabsTrigger value="expenses" className="gap-1.5">
-            <Receipt className="size-3.5" />
-            <span className="hidden sm:inline">Expenses</span>
-          </TabsTrigger>
-        </TabsList>
+      <div className="macos-segmented inline-flex p-0.5">
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.value
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`px-3 py-1 text-[12px] font-medium rounded-md flex items-center gap-1.5 transition-none ${
+                isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="size-3.5" strokeWidth={1.5} />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
 
-        <TabsContent value="overview" className="mt-4">
-          <OverviewTab />
-        </TabsContent>
-        <TabsContent value="accounts" className="mt-4">
-          <AccountsTab />
-        </TabsContent>
-        <TabsContent value="entries" className="mt-4">
-          <JournalEntriesTab />
-        </TabsContent>
-        <TabsContent value="expenses" className="mt-4">
-          <ExpensesTab />
-        </TabsContent>
-      </Tabs>
+      <div className="mt-4">
+        {activeTab === 'overview' && <OverviewTab />}
+        {activeTab === 'accounts' && <AccountsTab />}
+        {activeTab === 'entries' && <JournalEntriesTab />}
+        {activeTab === 'expenses' && <ExpensesTab />}
+      </div>
     </div>
   )
 }
@@ -188,42 +185,6 @@ function OverviewTab() {
   const netIncome = revenue - expenseTotal
   const pendingExpenses = expenses.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0)
 
-  const summaryCards = [
-    {
-      label: 'Total Revenue',
-      value: `$${revenue.toLocaleString()}`,
-      change: '+8.5%',
-      up: true,
-      icon: TrendingUp,
-      color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-950/40',
-    },
-    {
-      label: 'Total Expenses',
-      value: `$${expenseTotal.toLocaleString()}`,
-      change: '+3.2%',
-      up: false,
-      icon: TrendingDown,
-      color: 'text-red-600 bg-red-100 dark:bg-red-950/40',
-    },
-    {
-      label: 'Net Income',
-      value: `$${netIncome.toLocaleString()}`,
-      change: netIncome >= 0 ? '+12.1%' : '-5.3%',
-      up: netIncome >= 0,
-      icon: DollarSign,
-      color: 'text-teal-600 bg-teal-100 dark:bg-teal-950/40',
-    },
-    {
-      label: 'Pending Payments',
-      value: `$${pendingExpenses.toLocaleString()}`,
-      change: '',
-      up: false,
-      icon: Clock,
-      color: 'text-amber-600 bg-amber-100 dark:bg-amber-950/40',
-    },
-  ]
-
-  // Group accounts by type for P&L display
   const accountTypes = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const
   const accountTypeLabels: Record<string, string> = {
     asset: 'Assets',
@@ -238,7 +199,7 @@ function OverviewTab() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
               <CardContent className="p-4">
                 <div className="h-4 bg-muted rounded w-2/3 mb-3" />
                 <div className="h-6 bg-muted rounded w-1/2" />
@@ -248,114 +209,142 @@ function OverviewTab() {
         </div>
       ) : (
         <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {summaryCards.map((card) => {
-              const Icon = card.icon
-              return (
-                <Card key={card.label} className="relative overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">{card.label}</p>
-                        <p className="text-2xl font-bold tracking-tight">{card.value}</p>
-                      </div>
-                      <div className={`rounded-lg p-2.5 ${card.color}`}>
-                        <Icon className="size-5" />
-                      </div>
-                    </div>
-                    {card.change && (
-                      <div className="mt-2 flex items-center gap-1 text-xs">
-                        {card.up ? (
-                          <ArrowUpRight className="size-3 text-emerald-600" />
-                        ) : (
-                          <ArrowDownRight className="size-3 text-red-500" />
-                        )}
-                        <span className={card.up ? 'text-emerald-600 font-medium' : 'text-red-500 font-medium'}>
-                          {card.change}
-                        </span>
-                        <span className="text-muted-foreground">vs last month</span>
-                      </div>
+          {/* P&L Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="rounded-2xl macos-shadow border-0 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue</p>
+                  <p className="text-2xl font-bold tracking-tight text-macos-green">${revenue.toLocaleString()}</p>
+                  <div className="flex items-center gap-1 text-[11px] mt-1">
+                    <ArrowUpRight className="size-3 text-macos-green" />
+                    <span className="text-macos-green font-medium">+8.5%</span>
+                    <span className="text-muted-foreground">vs last month</span>
+                  </div>
+                </div>
+                <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
+                  <TrendingUp className="size-4 text-macos-green" strokeWidth={1.5} />
+                </div>
+              </div>
+            </Card>
+            <Card className="rounded-2xl macos-shadow border-0 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Expenses</p>
+                  <p className="text-2xl font-bold tracking-tight text-macos-red">${expenseTotal.toLocaleString()}</p>
+                  <div className="flex items-center gap-1 text-[11px] mt-1">
+                    <ArrowDownRight className="size-3 text-macos-red" />
+                    <span className="text-macos-red font-medium">+3.2%</span>
+                    <span className="text-muted-foreground">vs last month</span>
+                  </div>
+                </div>
+                <div className="size-8 rounded-xl bg-macos-red/10 flex items-center justify-center">
+                  <TrendingDown className="size-4 text-macos-red" strokeWidth={1.5} />
+                </div>
+              </div>
+            </Card>
+            <Card className="rounded-2xl macos-shadow border-0 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Net Income</p>
+                  <p className="text-2xl font-bold tracking-tight text-macos-blue">${netIncome.toLocaleString()}</p>
+                  <div className="flex items-center gap-1 text-[11px] mt-1">
+                    {netIncome >= 0 ? (
+                      <>
+                        <ArrowUpRight className="size-3 text-macos-blue" />
+                        <span className="text-macos-blue font-medium">+12.1%</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownRight className="size-3 text-macos-red" />
+                        <span className="text-macos-red font-medium">-5.3%</span>
+                      </>
                     )}
-                  </CardContent>
-                </Card>
-              )
-            })}
+                    <span className="text-muted-foreground">vs last month</span>
+                  </div>
+                </div>
+                <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+                  <DollarSign className="size-4 text-macos-blue" strokeWidth={1.5} />
+                </div>
+              </div>
+            </Card>
           </div>
 
-          {/* P&L and Balance Sheet */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Profit & Loss */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Profit & Loss Summary</CardTitle>
-                <CardDescription>Revenue vs Expenses comparison</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+          {/* Revenue vs Expenses Bar Chart */}
+          <Card className="rounded-2xl macos-shadow border-0">
+            <CardContent className="p-4">
+              <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-4">Revenue vs Expenses</h3>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[13px]">
                     <span className="text-muted-foreground">Revenue</span>
-                    <span className="font-medium text-emerald-600">${revenue.toLocaleString()}</span>
+                    <span className="font-medium text-macos-green">${revenue.toLocaleString()}</span>
                   </div>
-                  <div className="h-3 rounded-full bg-muted overflow-hidden">
+                  <div className="h-3 rounded-full bg-secondary overflow-hidden">
                     <div
-                      className="h-full bg-emerald-500 rounded-full transition-all"
+                      className="h-full bg-macos-green rounded-full transition-all"
                       style={{ width: `${revenue > 0 ? Math.min((revenue / (revenue + expenseTotal || 1)) * 100, 100) : 0}%` }}
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[13px]">
                     <span className="text-muted-foreground">Expenses</span>
-                    <span className="font-medium text-red-600">${expenseTotal.toLocaleString()}</span>
+                    <span className="font-medium text-macos-red">${expenseTotal.toLocaleString()}</span>
                   </div>
-                  <div className="h-3 rounded-full bg-muted overflow-hidden">
+                  <div className="h-3 rounded-full bg-secondary overflow-hidden">
                     <div
-                      className="h-full bg-red-500 rounded-full transition-all"
+                      className="h-full bg-macos-red rounded-full transition-all"
                       style={{ width: `${expenseTotal > 0 ? Math.min((expenseTotal / (revenue + expenseTotal || 1)) * 100, 100) : 0}%` }}
                     />
                   </div>
                 </div>
-                <Separator />
-                <div className="flex justify-between text-sm font-semibold">
+                <Separator className="bg-border/50" />
+                <div className="flex justify-between text-[13px] font-semibold">
                   <span>Net {netIncome >= 0 ? 'Profit' : 'Loss'}</span>
-                  <span className={netIncome >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                  <span className={netIncome >= 0 ? 'text-macos-green' : 'text-macos-red'}>
                     ${Math.abs(netIncome).toLocaleString()}
                   </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Balance Sheet */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="rounded-2xl macos-shadow border-0">
+              <CardContent className="p-4">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-4">Balance Sheet</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-muted-foreground">Total Assets</span>
+                    <span className="font-medium">${assets.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-muted-foreground">Total Liabilities</span>
+                    <span className="font-medium">${liabilities.toLocaleString()}</span>
+                  </div>
+                  <Separator className="bg-border/50" />
+                  <div className="flex justify-between text-[13px] font-semibold">
+                    <span>Net Worth</span>
+                    <span className={(assets - liabilities) >= 0 ? 'text-macos-green' : 'text-macos-red'}>
+                      ${(assets - liabilities).toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Balance Sheet */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Balance Sheet</CardTitle>
-                <CardDescription>Assets, liabilities, and equity</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Assets</span>
-                  <span className="font-medium">${assets.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Liabilities</span>
-                  <span className="font-medium">${liabilities.toLocaleString()}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-sm font-semibold">
-                  <span>Net Worth</span>
-                  <span className={(assets - liabilities) >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                    ${(assets - liabilities).toLocaleString()}
-                  </span>
-                </div>
-                <Separator />
+            <Card className="rounded-2xl macos-shadow border-0">
+              <CardContent className="p-4">
+                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-4">Account Breakdown</h3>
                 <div className="space-y-2">
                   {accountTypes.map((type) => {
                     const typeBalance = accounts
                       .filter((a) => a.type === type)
                       .reduce((sum, a) => sum + a.balance, 0)
                     return (
-                      <div key={type} className="flex justify-between text-xs">
+                      <div key={type} className="flex justify-between text-[13px]">
                         <span className="text-muted-foreground">{accountTypeLabels[type]}</span>
                         <span>${typeBalance.toLocaleString()}</span>
                       </div>
@@ -366,35 +355,49 @@ function OverviewTab() {
             </Card>
           </div>
 
+          {/* Pending Payments */}
+          {pendingExpenses > 0 && (
+            <Card className="rounded-2xl macos-shadow border-0 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="size-8 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+                    <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Payments</p>
+                    <p className="text-2xl font-bold tracking-tight text-macos-orange">${pendingExpenses.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Recent Expenses */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Recent Expenses</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <Card className="rounded-2xl macos-shadow border-0">
+            <CardContent className="p-4">
+              <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">Recent Expenses</h3>
               {expenses.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No expenses recorded</p>
+                <p className="text-[13px] text-muted-foreground text-center py-4">No expenses recorded</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
                   {expenses.slice(0, 5).map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between p-2 rounded border text-sm">
+                    <div key={expense.id} className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/50 text-[13px]">
                       <div>
                         <p className="font-medium">{expense.category}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {expense.description || 'No description'} • {new Date(expense.date).toLocaleDateString()}
+                        <p className="text-[11px] text-muted-foreground">
+                          {expense.description || 'No description'} · {new Date(expense.date).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-red-600">${expense.amount.toLocaleString()}</p>
+                        <p className="font-semibold text-macos-red">${expense.amount.toLocaleString()}</p>
                         <Badge
-                          variant="secondary"
-                          className={
+                          className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
                             expense.status === 'paid'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]'
+                              ? 'bg-macos-green/10 text-macos-green'
                               : expense.status === 'approved'
-                              ? 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400 text-[10px]'
-                              : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]'
-                          }
+                              ? 'bg-macos-blue/10 text-macos-blue'
+                              : 'bg-macos-orange/10 text-macos-orange'
+                          }`}
                         >
                           {expense.status}
                         </Badge>
@@ -435,20 +438,20 @@ function AccountsTab() {
     fetchAccounts()
   }, [fetchAccounts])
 
-  const getTypeColor = (type: string) => {
+  const getTypeBadge = (type: string) => {
     switch (type) {
       case 'asset':
-        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+        return 'bg-macos-green/10 text-macos-green'
       case 'liability':
-        return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+        return 'bg-macos-red/10 text-macos-red'
       case 'equity':
-        return 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400'
+        return 'bg-macos-teal/10 text-macos-teal'
       case 'revenue':
-        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+        return 'bg-macos-orange/10 text-macos-orange'
       case 'expense':
-        return 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400'
+        return 'bg-macos-purple/10 text-macos-purple'
       default:
-        return ''
+        return 'bg-secondary text-secondary-foreground'
     }
   }
 
@@ -464,76 +467,75 @@ function AccountsTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{accounts.length} accounts</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4" /> Create Account
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{accounts.length} accounts</p>
+        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+          <Plus className="size-3.5" strokeWidth={2} /> Create Account
         </Button>
       </div>
 
       {loading ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-6">
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
               ))}
             </div>
           </CardContent>
         </Card>
       ) : accounts.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Wallet className="size-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No accounts found</p>
-            <p className="text-sm text-muted-foreground">Create your chart of accounts</p>
+            <Wallet className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] text-muted-foreground">No accounts found</p>
+            <p className="text-[11px] text-muted-foreground">Create your chart of accounts</p>
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-0">
             <ScrollArea className="max-h-[500px]">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Parent</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
-                    <TableHead>Status</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Code</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Parent</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Balance</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {Object.entries(groupedAccounts).map(([type, typeAccounts]) => (
                     <React.Fragment key={type}>
-                      <TableRow className="bg-muted/50">
-                        <TableCell colSpan={6} className="font-semibold text-xs uppercase tracking-wider text-muted-foreground py-2">
+                      <TableRow className="bg-secondary/30 hover:bg-secondary/30">
+                        <TableCell colSpan={6} className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground py-2">
                           {type} ({typeAccounts.length})
                         </TableCell>
                       </TableRow>
                       {typeAccounts.map((account) => (
-                        <TableRow key={account.id}>
-                          <TableCell className="font-mono text-xs">{account.code}</TableCell>
-                          <TableCell className="font-medium">{account.name}</TableCell>
+                        <TableRow key={account.id} className="hover:bg-secondary/50">
+                          <TableCell className="font-mono text-[11px]">{account.code}</TableCell>
+                          <TableCell className="font-medium text-[13px]">{account.name}</TableCell>
                           <TableCell>
-                            <Badge className={`text-[10px] ${getTypeColor(account.type)}`}>
+                            <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getTypeBadge(account.type)}`}>
                               {account.type}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
+                          <TableCell className="text-[11px] text-muted-foreground">
                             {account.parentCode || '—'}
                           </TableCell>
-                          <TableCell className="text-right font-medium">
+                          <TableCell className="text-right font-medium text-[13px]">
                             ${account.balance.toLocaleString()}
                           </TableCell>
                           <TableCell>
                             <Badge
-                              variant={account.isActive ? 'default' : 'secondary'}
-                              className={
+                              className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
                                 account.isActive
-                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]'
-                                  : 'text-[10px]'
-                              }
+                                  ? 'bg-macos-green/10 text-macos-green'
+                                  : 'bg-macos-red/10 text-macos-red'
+                              }`}
                             >
                               {account.isActive ? 'Active' : 'Inactive'}
                             </Badge>
@@ -594,43 +596,43 @@ function JournalEntriesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{entries.length} entries</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4" /> Create Entry
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{entries.length} entries</p>
+        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+          <Plus className="size-3.5" strokeWidth={2} /> Create Entry
         </Button>
       </div>
 
       {loading ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-6">
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+                <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
               ))}
             </div>
           </CardContent>
         </Card>
       ) : entries.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <BookOpen className="size-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No journal entries found</p>
-            <p className="text-sm text-muted-foreground">Record your first journal entry</p>
+            <BookOpen className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] text-muted-foreground">No journal entries found</p>
+            <p className="text-[11px] text-muted-foreground">Record your first journal entry</p>
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-0">
             <ScrollArea className="max-h-[500px]">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead className="text-right">Debit</TableHead>
-                    <TableHead className="text-right">Credit</TableHead>
-                    <TableHead>Status</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Debit</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Credit</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -639,35 +641,35 @@ function JournalEntriesTab() {
                     const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
                     const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
                     return (
-                      <TableRow key={entry.id} className="cursor-pointer" onClick={() => setSelectedEntry(entry)}>
-                        <TableCell className="text-xs">
+                      <TableRow key={entry.id} className="cursor-pointer hover:bg-secondary/50" onClick={() => setSelectedEntry(entry)}>
+                        <TableCell className="text-[11px]">
                           {new Date(entry.date).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="font-medium text-sm max-w-48 truncate">
+                        <TableCell className="font-medium text-[13px] max-w-48 truncate">
                           {entry.description}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-[11px] text-muted-foreground">
                           {entry.reference || '—'}
                         </TableCell>
-                        <TableCell className="text-right text-xs font-medium">
+                        <TableCell className="text-right text-[13px] font-medium">
                           ${totalDebit.toLocaleString()}
                         </TableCell>
-                        <TableCell className="text-right text-xs font-medium">
+                        <TableCell className="text-right text-[13px] font-medium">
                           ${totalCredit.toLocaleString()}
                         </TableCell>
                         <TableCell>
                           <Badge
-                            className={
+                            className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
                               entry.isPosted
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]'
-                                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 text-[10px]'
-                            }
+                                ? 'bg-macos-green/10 text-macos-green'
+                                : 'bg-macos-orange/10 text-macos-orange'
+                            }`}
                           >
                             {entry.isPosted ? 'Posted' : 'Draft'}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Eye className="size-3.5 text-muted-foreground" />
+                          <Eye className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
                         </TableCell>
                       </TableRow>
                     )
@@ -718,29 +720,16 @@ function ExpensesTab() {
     fetchExpenses()
   }, [fetchExpenses])
 
-  const getStatusIcon = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <CheckCircle2 className="size-4 text-emerald-600" />
+        return 'bg-macos-green/10 text-macos-green'
       case 'approved':
-        return <CheckCircle2 className="size-4 text-teal-600" />
+        return 'bg-macos-blue/10 text-macos-blue'
       case 'pending':
-        return <Clock className="size-4 text-amber-600" />
+        return 'bg-macos-orange/10 text-macos-orange'
       default:
-        return <AlertCircle className="size-4 text-muted-foreground" />
-    }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-      case 'approved':
-        return 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400'
-      case 'pending':
-        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
-      default:
-        return ''
+        return 'bg-secondary text-secondary-foreground'
     }
   }
 
@@ -752,84 +741,99 @@ function ExpensesTab() {
     <div className="space-y-4">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Total Expenses</p>
-            <p className="text-lg font-bold">${totalExpenses.toLocaleString()}</p>
-          </CardContent>
+        <Card className="rounded-2xl macos-shadow border-0 p-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-xl bg-macos-red/10 flex items-center justify-center">
+              <Receipt className="size-4 text-macos-red" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold tracking-tight">${totalExpenses.toLocaleString()}</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Expenses</p>
+            </div>
+          </div>
         </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Pending</p>
-            <p className="text-lg font-bold text-amber-600">${pendingAmount.toLocaleString()}</p>
-          </CardContent>
+        <Card className="rounded-2xl macos-shadow border-0 p-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+              <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold tracking-tight text-macos-orange">${pendingAmount.toLocaleString()}</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
+            </div>
+          </div>
         </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Paid</p>
-            <p className="text-lg font-bold text-emerald-600">${paidAmount.toLocaleString()}</p>
-          </CardContent>
+        <Card className="rounded-2xl macos-shadow border-0 p-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
+              <CheckCircle2 className="size-4 text-macos-green" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold tracking-tight text-macos-green">${paidAmount.toLocaleString()}</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Paid</p>
+            </div>
+          </div>
         </Card>
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{expenses.length} expense records</p>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4" /> Add Expense
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{expenses.length} expense records</p>
+        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+          <Plus className="size-3.5" strokeWidth={2} /> Add Expense
         </Button>
       </div>
 
       {loading ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-6">
             <div className="space-y-3">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
               ))}
             </div>
           </CardContent>
         </Card>
       ) : expenses.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Receipt className="size-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No expenses found</p>
-            <p className="text-sm text-muted-foreground">Record your first expense</p>
+            <Receipt className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] text-muted-foreground">No expenses found</p>
+            <p className="text-[11px] text-muted-foreground">Record your first expense</p>
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-0">
             <ScrollArea className="max-h-[400px]">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Paid By</TableHead>
-                    <TableHead>Status</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Amount</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {expenses.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell className="font-medium">{expense.category}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-32 truncate">
+                    <TableRow key={expense.id} className="hover:bg-secondary/50">
+                      <TableCell className="font-medium text-[13px]">{expense.category}</TableCell>
+                      <TableCell className="text-[11px] text-muted-foreground max-w-32 truncate">
                         {expense.description || '—'}
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-red-600">
+                      <TableCell className="text-right font-semibold text-macos-red text-[13px]">
                         ${expense.amount.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="text-[11px]">
                         {new Date(expense.date).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-[11px] text-muted-foreground">
                         {expense.paidBy || '—'}
                       </TableCell>
                       <TableCell>
-                        <Badge className={`text-[10px] ${getStatusColor(expense.status)}`}>
+                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getStatusBadge(expense.status)}`}>
                           {expense.status}
                         </Badge>
                       </TableCell>
@@ -897,27 +901,21 @@ function CreateAccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Create Account</DialogTitle>
-          <DialogDescription>Add a new account to your chart of accounts</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Account</DialogTitle>
+          <DialogDescription className="text-[11px]">Add a new account to your chart of accounts</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="acc-code">Account Code *</Label>
-              <Input
-                id="acc-code"
-                value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
-                placeholder="1000"
-                required
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Account Code *</Label>
+              <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="1000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
             <div className="space-y-2">
-              <Label>Account Type *</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Account Type *</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -931,33 +929,16 @@ function CreateAccountDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="acc-name">Account Name *</Label>
-            <Input
-              id="acc-name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Cash on Hand"
-              required
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Account Name *</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cash on Hand" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="acc-parent">Parent Code</Label>
-            <Input
-              id="acc-parent"
-              value={form.parentCode}
-              onChange={(e) => setForm({ ...form, parentCode: e.target.value })}
-              placeholder="1000 (optional)"
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Parent Code</Label>
+            <Input value={form.parentCode} onChange={(e) => setForm({ ...form, parentCode: e.target.value })} placeholder="1000 (optional)" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={saving || !form.code.trim() || !form.name.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+            <Button type="submit" disabled={saving || !form.code.trim() || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Creating...' : 'Create Account'}
             </Button>
           </DialogFooter>
@@ -1060,56 +1041,42 @@ function CreateJournalEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Create Journal Entry</DialogTitle>
-          <DialogDescription>Record a double-entry journal transaction</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Journal Entry</DialogTitle>
+          <DialogDescription className="text-[11px]">Record a double-entry journal transaction</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Date *</Label>
-              <Input
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                required
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Date *</Label>
+              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
             <div className="space-y-2">
-              <Label>Reference</Label>
-              <Input
-                value={form.reference}
-                onChange={(e) => setForm({ ...form, reference: e.target.value })}
-                placeholder="JE-001"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Reference</Label>
+              <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="JE-001" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Description *</Label>
-            <Input
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Monthly rent payment"
-              required
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Description *</Label>
+            <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Monthly rent payment" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
           </div>
 
-          <Separator />
+          <Separator className="bg-border/50" />
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Entry Lines</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1">
-                <Plus className="size-3" /> Add Line
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Entry Lines</Label>
+              <Button type="button" variant="ghost" size="sm" onClick={addLine} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
+                <Plus className="size-3" strokeWidth={2} /> Add Line
               </Button>
             </div>
             {lines.map((line) => (
-              <div key={line.key} className="flex items-end gap-2 p-3 rounded-lg border bg-muted/30">
+              <div key={line.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
                 <div className="flex-[2] space-y-1">
-                  <Label className="text-xs text-muted-foreground">Account</Label>
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Account</Label>
                   <Select value={line.accountId} onValueChange={(v) => updateLine(line.key, { accountId: v })}>
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
                       <SelectValue placeholder="Select account..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -1122,41 +1089,22 @@ function CreateJournalEntryDialog({
                   </Select>
                 </div>
                 <div className="w-24 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Debit</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={line.debit}
-                    onChange={(e) => updateLine(line.key, { debit: e.target.value })}
-                    className="h-8 text-xs"
-                  />
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Debit</Label>
+                  <Input type="number" step="0.01" min="0" value={line.debit} onChange={(e) => updateLine(line.key, { debit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
                 </div>
                 <div className="w-24 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Credit</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={line.credit}
-                    onChange={(e) => updateLine(line.key, { credit: e.target.value })}
-                    className="h-8 text-xs"
-                  />
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Credit</Label>
+                  <Input type="number" step="0.01" min="0" value={line.credit} onChange={(e) => updateLine(line.key, { credit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
                 </div>
                 <div className="flex-[1] space-y-1">
-                  <Label className="text-xs text-muted-foreground">Note</Label>
-                  <Input
-                    value={line.description}
-                    onChange={(e) => updateLine(line.key, { description: e.target.value })}
-                    className="h-8 text-xs"
-                    placeholder="Optional"
-                  />
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Note</Label>
+                  <Input value={line.description} onChange={(e) => updateLine(line.key, { description: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" placeholder="Optional" />
                 </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 text-red-500"
+                  className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
                   onClick={() => removeLine(line.key)}
                   disabled={lines.length <= 2}
                 >
@@ -1166,13 +1114,12 @@ function CreateJournalEntryDialog({
             ))}
           </div>
 
-          {/* Validation display */}
-          <div className={`flex items-center justify-between p-3 rounded-lg border ${
+          <div className={`flex items-center justify-between p-3 rounded-xl ${
             isBalanced
-              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
-              : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+              ? 'bg-macos-green/10'
+              : 'bg-macos-orange/10'
           }`}>
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-4 text-[13px]">
               <span>
                 Debit: <strong>${totalDebit.toLocaleString()}</strong>
               </span>
@@ -1180,13 +1127,13 @@ function CreateJournalEntryDialog({
                 Credit: <strong>${totalCredit.toLocaleString()}</strong>
               </span>
             </div>
-            <Badge className={isBalanced ? 'bg-emerald-100 text-emerald-700 text-[10px]' : 'bg-amber-100 text-amber-700 text-[10px]'}>
+            <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${isBalanced ? 'bg-macos-green/10 text-macos-green' : 'bg-macos-orange/10 text-macos-orange'}`}>
               {isBalanced ? 'Balanced' : 'Unbalanced'}
             </Badge>
           </div>
 
           <div className="flex items-center gap-2">
-            <Label htmlFor="post-entry" className="text-sm">Post immediately</Label>
+            <Label htmlFor="post-entry" className="text-[13px]">Post immediately</Label>
             <input
               id="post-entry"
               type="checkbox"
@@ -1197,14 +1144,8 @@ function CreateJournalEntryDialog({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={saving || !form.description.trim() || !isBalanced}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+            <Button type="submit" disabled={saving || !form.description.trim() || !isBalanced} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Creating...' : 'Create Entry'}
             </Button>
           </DialogFooter>
@@ -1230,72 +1171,74 @@ function JournalEntryDetailDialog({
 
   return (
     <Dialog open={!!entry} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BookOpen className="size-5 text-emerald-600" />
+          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold tracking-tight">
+            <div className="size-7 rounded-lg bg-macos-green/10 flex items-center justify-center">
+              <BookOpen className="size-4 text-macos-green" strokeWidth={1.5} />
+            </div>
             Journal Entry
           </DialogTitle>
-          <DialogDescription>{entry.description}</DialogDescription>
+          <DialogDescription className="text-[11px]">{entry.description}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <span className="text-muted-foreground">Date:</span>{' '}
-              <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
+          <div className="flex items-center gap-4">
+            <div className="grid grid-cols-2 gap-3 text-[13px] flex-1">
+              <div>
+                <span className="text-[11px] font-semibold tracking-wide text-muted-foreground">Date: </span>
+                <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
+              </div>
+              <div>
+                <span className="text-[11px] font-semibold tracking-wide text-muted-foreground">Reference: </span>
+                <span className="font-medium">{entry.reference || '—'}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Reference:</span>{' '}
-              <span className="font-medium">{entry.reference || '—'}</span>
+            <Badge
+              className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
+                entry.isPosted
+                  ? 'bg-macos-green/10 text-macos-green'
+                  : 'bg-macos-orange/10 text-macos-orange'
+              }`}
+            >
+              {entry.isPosted ? 'Posted' : 'Draft'}
+            </Badge>
+          </div>
+
+          <Separator className="bg-border/50" />
+
+          <div className="space-y-2">
+            <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Entry Lines</h4>
+            {entry.lines.map((line) => (
+              <div key={line.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
+                <div>
+                  <p className="text-[13px] font-medium">
+                    {line.account?.name || 'Unknown'}
+                    <span className="text-[11px] text-muted-foreground ml-1.5">({line.account?.code})</span>
+                  </p>
+                  {line.description && (
+                    <p className="text-[11px] text-muted-foreground">{line.description}</p>
+                  )}
+                </div>
+                <div className="text-right text-[13px] font-medium">
+                  {line.debit > 0 && <span className="text-macos-blue">${line.debit.toLocaleString()}</span>}
+                  {line.credit > 0 && <span className="text-macos-green">${line.credit.toLocaleString()}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Separator className="bg-border/50" />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-xl bg-macos-blue/10 text-center">
+              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Total Debit</p>
+              <p className="text-[13px] font-bold text-macos-blue">${totalDebit.toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-macos-green/10 text-center">
+              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Total Credit</p>
+              <p className="text-[13px] font-bold text-macos-green">${totalCredit.toLocaleString()}</p>
             </div>
           </div>
-          <Badge
-            className={
-              entry.isPosted
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
-            }
-          >
-            {entry.isPosted ? 'Posted' : 'Draft'}
-          </Badge>
-
-          <Separator />
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Account</TableHead>
-                <TableHead className="text-right">Debit</TableHead>
-                <TableHead className="text-right">Credit</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {entry.lines.map((line) => (
-                <TableRow key={line.id}>
-                  <TableCell className="text-sm">
-                    <div>
-                      <span className="font-medium">{line.account?.name || 'Unknown'}</span>
-                      <span className="text-xs text-muted-foreground ml-1">({line.account?.code})</span>
-                    </div>
-                    {line.description && (
-                      <p className="text-xs text-muted-foreground">{line.description}</p>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {line.debit > 0 ? `$${line.debit.toLocaleString()}` : ''}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {line.credit > 0 ? `$${line.credit.toLocaleString()}` : ''}
-                  </TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="font-bold">
-                <TableCell>Total</TableCell>
-                <TableCell className="text-right">${totalDebit.toLocaleString()}</TableCell>
-                <TableCell className="text-right">${totalCredit.toLocaleString()}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
         </div>
       </DialogContent>
     </Dialog>
@@ -1358,17 +1301,17 @@ function AddExpenseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Add Expense</DialogTitle>
-          <DialogDescription>Record a new expense</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Add Expense</DialogTitle>
+          <DialogDescription className="text-[11px]">Record a new expense</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Category *</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Category *</Label>
               <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1385,34 +1328,19 @@ function AddExpenseDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="exp-amount">Amount ($) *</Label>
-              <Input
-                id="exp-amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                placeholder="500"
-                required
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Amount ($) *</Label>
+              <Input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="500" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="exp-date">Date *</Label>
-              <Input
-                id="exp-date"
-                type="date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-                required
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Date *</Label>
+              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Status</Label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1424,33 +1352,16 @@ function AddExpenseDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="exp-desc">Description</Label>
-            <Textarea
-              id="exp-desc"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Expense details..."
-              rows={2}
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Description</Label>
+            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Expense details..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="exp-paidby">Paid By</Label>
-            <Input
-              id="exp-paidby"
-              value={form.paidBy}
-              onChange={(e) => setForm({ ...form, paidBy: e.target.value })}
-              placeholder="John Smith"
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Paid By</Label>
+            <Input value={form.paidBy} onChange={(e) => setForm({ ...form, paidBy: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={saving || !form.category || !form.amount || !form.date}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+            <Button type="submit" disabled={saving || !form.category || !form.amount || !form.date} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Adding...' : 'Add Expense'}
             </Button>
           </DialogFooter>

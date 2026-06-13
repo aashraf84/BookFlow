@@ -1,0 +1,1046 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Users,
+     6→  Search,
+     7→  Plus,
+     8→  Mail,
+     9→  Phone,
+    10→  MapPin,
+    11→  Star,
+    12→  Crown,
+    13→  Award,
+    14→  Gift,
+    15→  Megaphone,
+    16→  TrendingUp,
+    17→  Eye,
+    18→  Trash2,
+    19→  Send,
+    20→  Calendar,
+    21→  DollarSign,
+    22→  ShoppingBag,
+    23→} from 'lucide-react'
+    24→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+    25→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+    26→import { Button } from '@/components/ui/button'
+    27→import { Input } from '@/components/ui/input'
+    28→import { Label } from '@/components/ui/label'
+    29→import { Badge } from '@/components/ui/badge'
+    30→import {
+    31→  Dialog,
+    32→  DialogContent,
+    33→  DialogDescription,
+    34→  DialogFooter,
+    35→  DialogHeader,
+    36→  DialogTitle,
+    37→} from '@/components/ui/dialog'
+    38→import {
+    39→  Select,
+    40→  SelectContent,
+    41→  SelectItem,
+    42→  SelectTrigger,
+    43→  SelectValue,
+    44→} from '@/components/ui/select'
+    45→import { Textarea } from '@/components/ui/textarea'
+    46→import { Separator } from '@/components/ui/separator'
+    47→import { ScrollArea } from '@/components/ui/scroll-area'
+    48→import { Progress } from '@/components/ui/progress'
+    49→import {
+    50→  Table,
+    51→  TableBody,
+    52→  TableCell,
+    53→  TableHead,
+    54→  TableHeader,
+    55→  TableRow,
+    56→} from '@/components/ui/table'
+    57→
+    58→// ==================== TYPES ====================
+    59→
+    60→interface Customer {
+    61→  id: string
+    62→  name: string
+    63→  email?: string | null
+    64→  phone?: string | null
+    65→  address?: string | null
+    66→  type: string
+    67→  loyaltyPoints: number
+    68→  totalSpent: number
+    69→  creditLimit: number
+    70→  outstanding: number
+    71→  isActive: boolean
+    72→  createdAt: string
+    73→  _count?: { sales: number; wholesaleOrders: number }
+    74→  school?: { id: string; name: string } | null
+    75→}
+    76→
+    77→interface LoyaltyTier {
+    78→  id: string
+    79→  name: string
+    80→  minPoints: number
+    81→  maxPoints?: number | null
+    82→  discount: number
+    83→  benefits?: string | null
+    84→}
+    85→
+    86→interface Campaign {
+    87→  id: string
+    88→  name: string
+    89→  type: string
+    90→  target?: string | null
+    91→  message: string
+    92→  status: string
+    93→  sentCount: number
+    94→  responseCount: number
+    95→  scheduledAt?: string | null
+    96→  sentAt?: string | null
+    97→  createdAt: string
+    98→}
+    99→
+   100→// ==================== CRM & LOYALTY MODULE ====================
+   101→
+   102→export function CRMLoyaltyModule() {
+   103→  const [activeTab, setActiveTab] = React.useState('customers')
+   104→
+   105→  return (
+   106→    <div className="space-y-6">
+   107→      <div className="flex items-center gap-3">
+   108→        <div className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-950/40">
+   109→          <Users className="size-5 text-emerald-600" />
+   110→        </div>
+   111→        <div>
+   112→          <h2 className="text-xl font-bold tracking-tight">CRM & Loyalty</h2>
+   113→          <p className="text-sm text-muted-foreground">
+   114→            Manage customers, loyalty programs, and marketing campaigns
+   115→          </p>
+   116→        </div>
+   117→      </div>
+   118→
+   119→      <Tabs value={activeTab} onValueChange={setActiveTab}>
+   120→        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+   121→          <TabsTrigger value="customers" className="gap-1.5">
+   122→            <Users className="size-3.5" />
+   123→            <span className="hidden sm:inline">Customers</span>
+   124→          </TabsTrigger>
+   125→          <TabsTrigger value="loyalty" className="gap-1.5">
+   126→            <Star className="size-3.5" />
+   127→            <span className="hidden sm:inline">Loyalty</span>
+   128→          </TabsTrigger>
+   129→          <TabsTrigger value="campaigns" className="gap-1.5">
+   130→            <Megaphone className="size-3.5" />
+   131→            <span className="hidden sm:inline">Campaigns</span>
+   132→          </TabsTrigger>
+   133→        </TabsList>
+   134→
+   135→        <TabsContent value="customers" className="mt-4">
+   136→          <CustomersTab />
+   137→        </TabsContent>
+   138→        <TabsContent value="loyalty" className="mt-4">
+   139→          <LoyaltyTab />
+   140→        </TabsContent>
+   141→        <TabsContent value="campaigns" className="mt-4">
+   142→          <CampaignsTab />
+   143→        </TabsContent>
+   144→      </Tabs>
+   145→    </div>
+   146→  )
+   147→}
+   148→
+   149→// ==================== CUSTOMERS TAB ====================
+   150→
+   151→function CustomersTab() {
+   152→  const [customers, setCustomers] = React.useState<Customer[]>([])
+   153→  const [loading, setLoading] = React.useState(true)
+   154→  const [search, setSearch] = React.useState('')
+   155→  const [typeFilter, setTypeFilter] = React.useState('all')
+   156→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   157→  const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null)
+   158→
+   159→  const fetchCustomers = React.useCallback(async () => {
+   160→    setLoading(true)
+   161→    try {
+   162→      const params = new URLSearchParams()
+   163→      if (search) params.set('search', search)
+   164→      if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter)
+   165→      params.set('limit', '50')
+   166→      const res = await fetch(`/api/customers?${params}`)
+   167→      const json = await res.json()
+   168→      if (json.data) setCustomers(json.data)
+   169→    } catch (err) {
+   170→      console.error('Failed to fetch customers:', err)
+   171→    } finally {
+   172→      setLoading(false)
+   173→    }
+   174→  }, [search, typeFilter])
+   175→
+   176→  React.useEffect(() => {
+   177→    fetchCustomers()
+   178→  }, [fetchCustomers])
+   179→
+   180→  const handleDelete = async (id: string) => {
+   181→    if (!confirm('Are you sure you want to deactivate this customer?')) return
+   182→    try {
+   183→      await fetch(`/api/customers`, {
+   184→        method: 'PUT',
+   185→        headers: { 'Content-Type': 'application/json' },
+   186→        body: JSON.stringify({ id, isActive: false }),
+   187→      })
+   188→      fetchCustomers()
+   189→    } catch (err) {
+   190→      console.error('Failed to deactivate customer:', err)
+   191→    }
+   192→  }
+   193→
+   194→  const getTypeBadge = (type: string) => {
+   195→    const styles: Record<string, string> = {
+   196→      retail: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+   197→      wholesale: 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400',
+   198→      school: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+   199→      dealer: 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400',
+   200→      distributor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
+   201→    }
+   202→    return styles[type] || 'bg-gray-100 text-gray-700 dark:bg-gray-950/40 dark:text-gray-400'
+   203→  }
+   204→
+   205→  const totalCustomers = customers.length
+   206→  const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0)
+   207→  const totalOutstanding = customers.reduce((sum, c) => sum + c.outstanding, 0)
+   208→  const totalPoints = customers.reduce((sum, c) => sum + c.loyaltyPoints, 0)
+   209→
+   210→  return (
+   211→    <div className="space-y-4">
+   212→      {/* Summary Cards */}
+   213→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+   214→        <Card>
+   215→          <CardContent className="p-3">
+   216→            <p className="text-xs text-muted-foreground">Total Customers</p>
+   217→            <p className="text-lg font-bold">{totalCustomers}</p>
+   218→          </CardContent>
+   219→        </Card>
+   220→        <Card>
+   221→          <CardContent className="p-3">
+   222→            <p className="text-xs text-muted-foreground">Total Revenue</p>
+   223→            <p className="text-lg font-bold text-emerald-600">${totalRevenue.toLocaleString()}</p>
+   224→          </CardContent>
+   225→        </Card>
+   226→        <Card>
+   227→          <CardContent className="p-3">
+   228→            <p className="text-xs text-muted-foreground">Outstanding</p>
+   229→            <p className="text-lg font-bold text-amber-600">${totalOutstanding.toLocaleString()}</p>
+   230→          </CardContent>
+   231→        </Card>
+   232→        <Card>
+   233→          <CardContent className="p-3">
+   234→            <p className="text-xs text-muted-foreground">Loyalty Points</p>
+   235→            <p className="text-lg font-bold text-teal-600">{totalPoints.toLocaleString()}</p>
+   236→          </CardContent>
+   237→        </Card>
+   238→      </div>
+   239→
+   240→      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+   241→        <div className="flex gap-2 w-full sm:w-auto">
+   242→          <div className="relative flex-1 sm:flex-initial sm:w-64">
+   243→            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+   244→            <Input
+   245→              placeholder="Search customers..."
+   246→              value={search}
+   247→              onChange={(e) => setSearch(e.target.value)}
+   248→              className="pl-8"
+   249→            />
+   250→          </div>
+   251→          <Select value={typeFilter} onValueChange={setTypeFilter}>
+   252→            <SelectTrigger className="w-32">
+   253→              <SelectValue />
+   254→            </SelectTrigger>
+   255→            <SelectContent>
+   256→              <SelectItem value="all">All Types</SelectItem>
+   257→              <SelectItem value="retail">Retail</SelectItem>
+   258→              <SelectItem value="wholesale">Wholesale</SelectItem>
+   259→              <SelectItem value="school">School</SelectItem>
+   260→              <SelectItem value="dealer">Dealer</SelectItem>
+   261→              <SelectItem value="distributor">Distributor</SelectItem>
+   262→            </SelectContent>
+   263→          </Select>
+   264→        </div>
+   265→        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+   266→          <Plus className="size-4" /> Add Customer
+   267→        </Button>
+   268→      </div>
+   269→
+   270→      {loading ? (
+   271→        <Card>
+   272→          <CardContent className="p-6">
+   273→            <div className="space-y-3">
+   274→              {[1, 2, 3, 4, 5].map((i) => (
+   275→                <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+   276→              ))}
+   277→            </div>
+   278→          </CardContent>
+   279→        </Card>
+   280→      ) : customers.length === 0 ? (
+   281→        <Card>
+   282→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   283→            <Users className="size-10 text-muted-foreground mb-3" />
+   284→            <p className="text-muted-foreground">No customers found</p>
+   285→            <p className="text-sm text-muted-foreground">Add your first customer to get started</p>
+   286→          </CardContent>
+   287→        </Card>
+   288→      ) : (
+   289→        <Card>
+   290→          <CardContent className="p-0">
+   291→            <ScrollArea className="max-h-[500px]">
+   292→              <Table>
+   293→                <TableHeader>
+   294→                  <TableRow>
+   295→                    <TableHead>Name</TableHead>
+   296→                    <TableHead>Contact</TableHead>
+   297→                    <TableHead>Type</TableHead>
+   298→                    <TableHead className="text-right">Points</TableHead>
+   299→                    <TableHead className="text-right">Total Spent</TableHead>
+   300→                    <TableHead className="text-right">Outstanding</TableHead>
+   301→                    <TableHead className="w-10"></TableHead>
+   302→                  </TableRow>
+   303→                </TableHeader>
+   304→                <TableBody>
+   305→                  {customers.map((customer) => (
+   306→                    <TableRow
+   307→                      key={customer.id}
+   308→                      className="cursor-pointer"
+   309→                      onClick={() => setSelectedCustomer(customer)}
+   310→                    >
+   311→                      <TableCell className="font-medium">{customer.name}</TableCell>
+   312→                      <TableCell>
+   313→                        <div className="text-xs space-y-0.5">
+   314→                          {customer.email && (
+   315→                            <div className="flex items-center gap-1">
+   316→                              <Mail className="size-3" /> {customer.email}
+   317→                            </div>
+   318→                          )}
+   319→                          {customer.phone && (
+   320→                            <div className="flex items-center gap-1">
+   321→                              <Phone className="size-3" /> {customer.phone}
+   322→                            </div>
+   323→                          )}
+   324→                        </div>
+   325→                      </TableCell>
+   326→                      <TableCell>
+   327→                        <Badge className={`text-[10px] ${getTypeBadge(customer.type)}`}>
+   328→                          {customer.type}
+   329→                        </Badge>
+   330→                      </TableCell>
+   331→                      <TableCell className="text-right">
+   332→                        <span className="text-teal-600 font-medium">{customer.loyaltyPoints}</span>
+   333→                      </TableCell>
+   334→                      <TableCell className="text-right">
+   335→                        ${customer.totalSpent.toLocaleString()}
+   336→                      </TableCell>
+   337→                      <TableCell className="text-right">
+   338→                        <span className={customer.outstanding > 0 ? 'text-amber-600 font-medium' : ''}>
+   339→                          ${customer.outstanding.toLocaleString()}
+   340→                        </span>
+   341→                      </TableCell>
+   342→                      <TableCell>
+   343→                        <Button
+   344→                          variant="ghost"
+   345→                          size="sm"
+   346→                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+   347→                          onClick={(e) => {
+   348→                            e.stopPropagation()
+   349→                            handleDelete(customer.id)
+   350→                          }}
+   351→                        >
+   352→                          <Trash2 className="size-3" />
+   353→                        </Button>
+   354→                      </TableCell>
+   355→                    </TableRow>
+   356→                  ))}
+   357→                </TableBody>
+   358→              </Table>
+   359→            </ScrollArea>
+   360→          </CardContent>
+   361→        </Card>
+   362→      )}
+   363→
+   364→      <AddCustomerDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchCustomers} />
+   365→      <CustomerDetailDialog
+   366→        customer={selectedCustomer}
+   367→        onOpenChange={(open) => !open && setSelectedCustomer(null)}
+   368→      />
+   369→    </div>
+   370→  )
+   371→}
+   372→
+   373→// ==================== LOYALTY TAB ====================
+   374→
+   375→function LoyaltyTab() {
+   376→  const [tiers, setTiers] = React.useState<LoyaltyTier[]>([])
+   377→  const [loading, setLoading] = React.useState(true)
+   378→
+   379→  const fetchTiers = React.useCallback(async () => {
+   380→    setLoading(true)
+   381→    try {
+   382→      const res = await fetch('/api/crm/loyalty-tiers')
+   383→      if (res.ok) {
+   384→        const json = await res.json()
+   385→        if (json.data) setTiers(json.data)
+   386→      }
+   387→    } catch (err) {
+   388→      console.error('Failed to fetch loyalty tiers:', err)
+   389→    } finally {
+   390→      setLoading(false)
+   391→    }
+   392→  }, [])
+   393→
+   394→  React.useEffect(() => {
+   395→    fetchTiers()
+   396→  }, [fetchTiers])
+   397→
+   398→  const tierIcons: Record<string, React.ElementType> = {
+   399→    Bronze: Award,
+   400→    Silver: Star,
+   401→    Gold: Crown,
+   402→    Platinum: Gift,
+   403→  }
+   404→
+   405→  const tierColors: Record<string, string> = {
+   406→    Bronze: 'from-amber-600 to-amber-800',
+   407→    Silver: 'from-gray-400 to-gray-600',
+   408→    Gold: 'from-yellow-500 to-amber-600',
+   409→    Platinum: 'from-emerald-500 to-teal-700',
+   410→  }
+   411→
+   412→  const defaultTiers: LoyaltyTier[] = [
+   413→    { id: '1', name: 'Bronze', minPoints: 0, maxPoints: 499, discount: 2, benefits: 'Birthday discount, Basic support' },
+   414→    { id: '2', name: 'Silver', minPoints: 500, maxPoints: 1999, discount: 5, benefits: 'Priority support, Early access to sales, Free shipping' },
+   415→    { id: '3', name: 'Gold', minPoints: 2000, maxPoints: 4999, discount: 10, benefits: 'VIP support, Exclusive offers, Free shipping, Gift wrapping' },
+   416→    { id: '4', name: 'Platinum', minPoints: 5000, maxPoints: null, discount: 15, benefits: 'Personal account manager, Best prices, Free shipping, Gift wrapping, Invitation to events' },
+   417→  ]
+   418→
+   419→  const displayTiers = tiers.length > 0 ? tiers : defaultTiers
+   420→
+   421→  const pointsRules = [
+   422→    { action: 'Purchase', points: '1 point per $1 spent', icon: ShoppingBag },
+   423→    { action: 'Referral', points: '50 bonus points', icon: Users },
+   424→    { action: 'Review', points: '20 bonus points', icon: Star },
+   425→    { action: 'Birthday', points: '100 bonus points', icon: Gift },
+   426→    { action: 'Social Share', points: '10 bonus points', icon: Megaphone },
+   427→  ]
+   428→
+   429→  return (
+   430→    <div className="space-y-6">
+   431→      {loading ? (
+   432→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   433→          {[1, 2, 3, 4].map((i) => (
+   434→            <Card key={i} className="animate-pulse">
+   435→              <CardContent className="p-6">
+   436→                <div className="h-8 bg-muted rounded w-1/2 mb-4" />
+   437→                <div className="h-3 bg-muted rounded w-3/4 mb-2" />
+   438→                <div className="h-3 bg-muted rounded w-1/2" />
+   439→              </CardContent>
+   440→            </Card>
+   441→          ))}
+   442→        </div>
+   443→      ) : (
+   444→        <>
+   445→          <div>
+   446→            <h3 className="text-lg font-semibold mb-4">Loyalty Tiers</h3>
+   447→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   448→              {displayTiers.map((tier) => {
+   449→                const Icon = tierIcons[tier.name] || Star
+   450→                return (
+   451→                  <Card key={tier.id} className="relative overflow-hidden">
+   452→                    <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${tierColors[tier.name] || 'from-emerald-500 to-teal-600'}`} />
+   453→                    <CardContent className="p-4 pt-5">
+   454→                      <div className="flex items-center gap-2 mb-3">
+   455→                        <div className={`rounded-lg bg-gradient-to-r ${tierColors[tier.name] || 'from-emerald-500 to-teal-600'} p-2`}>
+   456→                          <Icon className="size-4 text-white" />
+   457→                        </div>
+   458→                        <div>
+   459→                          <h4 className="font-bold text-sm">{tier.name}</h4>
+   460→                          <p className="text-xs text-muted-foreground">{tier.discount}% discount</p>
+   461→                        </div>
+   462→                      </div>
+   463→                      <div className="space-y-2">
+   464→                        <div className="flex justify-between text-xs">
+   465→                          <span className="text-muted-foreground">Points Range</span>
+   466→                          <span className="font-medium">
+   467→                            {tier.minPoints} - {tier.maxPoints || '∞'}
+   468→                          </span>
+   469→                        </div>
+   470→                        <Progress
+   471→                          value={tier.maxPoints ? (tier.minPoints / tier.maxPoints) * 100 : 100}
+   472→                          className="h-1.5"
+   473→                        />
+   474→                        {tier.benefits && (
+   475→                          <p className="text-xs text-muted-foreground mt-2">{tier.benefits}</p>
+   476→                        )}
+   477→                      </div>
+   478→                    </CardContent>
+   479→                  </Card>
+   480→                )
+   481→              })}
+   482→            </div>
+   483→          </div>
+   484→
+   485→          <Separator />
+   486→
+   487→          <div>
+   488→            <h3 className="text-lg font-semibold mb-4">Points Rules</h3>
+   489→            <Card>
+   490→              <CardContent className="p-0">
+   491→                <Table>
+   492→                  <TableHeader>
+   493→                    <TableRow>
+   494→                      <TableHead>Action</TableHead>
+   495→                      <TableHead>Points Earned</TableHead>
+   496→                    </TableRow>
+   497→                  </TableHeader>
+   498→                  <TableBody>
+   499→                    {pointsRules.map((rule) => {
+   500→                      const Icon = rule.icon
+   501→                      return (
+   502→                        <TableRow key={rule.action}>
+   503→                          <TableCell className="flex items-center gap-2">
+   504→                            <div className="rounded p-1 bg-emerald-100 dark:bg-emerald-950/40">
+   505→                              <Icon className="size-3.5 text-emerald-600" />
+   506→                            </div>
+   507→                            {rule.action}
+   508→                          </TableCell>
+   509→                          <TableCell className="font-medium text-teal-600">{rule.points}</TableCell>
+   510→                        </TableRow>
+   511→                      )
+   512→                    })}
+   513→                  </TableBody>
+   514→                </Table>
+   515→              </CardContent>
+   516→            </Card>
+   517→          </div>
+   518→        </>
+   519→      )}
+   520→    </div>
+   521→  )
+   522→}
+   523→
+   524→// ==================== CAMPAIGNS TAB ====================
+   525→
+   526→function CampaignsTab() {
+   527→  const [campaigns, setCampaigns] = React.useState<Campaign[]>([])
+   528→  const [loading, setLoading] = React.useState(true)
+   529→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   530→
+   531→  const fetchCampaigns = React.useCallback(async () => {
+   532→    setLoading(true)
+   533→    try {
+   534→      const res = await fetch('/api/crm/campaigns')
+   535→      if (res.ok) {
+   536→        const json = await res.json()
+   537→        if (json.data) setCampaigns(json.data)
+   538→      }
+   539→    } catch (err) {
+   540→      console.error('Failed to fetch campaigns:', err)
+   541→    } finally {
+   542→      setLoading(false)
+   543→    }
+   544→  }, [])
+   545→
+   546→  React.useEffect(() => {
+   547→    fetchCampaigns()
+   548→  }, [fetchCampaigns])
+   549→
+   550→  const getStatusColor = (status: string) => {
+   551→    switch (status) {
+   552→      case 'draft':
+   553→        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+   554→      case 'scheduled':
+   555→        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+   556→      case 'sent':
+   557→        return 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400'
+   558→      case 'completed':
+   559→        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+   560→      default:
+   561→        return ''
+   562→    }
+   563→  }
+   564→
+   565→  const getTypeIcon = (type: string) => {
+   566→    switch (type) {
+   567→      case 'sms':
+   568→        return '📱'
+   569→      case 'whatsapp':
+   570→        return '💬'
+   571→      case 'email':
+   572→        return '📧'
+   573→      case 'social':
+   574→        return '📢'
+   575→      default:
+   576→        return '📣'
+   577→    }
+   578→  }
+   579→
+   580→  return (
+   581→    <div className="space-y-4">
+   582→      <div className="flex items-center justify-between">
+   583→        <p className="text-sm text-muted-foreground">{campaigns.length} campaigns</p>
+   584→        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+   585→          <Plus className="size-4" /> Create Campaign
+   586→        </Button>
+   587→      </div>
+   588→
+   589→      {loading ? (
+   590→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   591→          {[1, 2, 3, 4].map((i) => (
+   592→            <Card key={i} className="animate-pulse">
+   593→              <CardContent className="p-4">
+   594→                <div className="h-4 bg-muted rounded w-2/3 mb-3" />
+   595→                <div className="h-3 bg-muted rounded w-1/2 mb-2" />
+   596→                <div className="h-3 bg-muted rounded w-3/4" />
+   597→              </CardContent>
+   598→            </Card>
+   599→          ))}
+   600→        </div>
+   601→      ) : campaigns.length === 0 ? (
+   602→        <Card>
+   603→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   604→            <Megaphone className="size-10 text-muted-foreground mb-3" />
+   605→            <p className="text-muted-foreground">No campaigns found</p>
+   606→            <p className="text-sm text-muted-foreground">Create your first marketing campaign</p>
+   607→          </CardContent>
+   608→        </Card>
+   609→      ) : (
+   610→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   611→          {campaigns.map((campaign) => (
+   612→            <Card key={campaign.id} className="hover:shadow-md transition-shadow">
+   613→              <CardContent className="p-4">
+   614→                <div className="flex items-start justify-between mb-3">
+   615→                  <div className="flex items-center gap-2">
+   616→                    <span className="text-lg">{getTypeIcon(campaign.type)}</span>
+   617→                    <div>
+   618→                      <h3 className="font-semibold text-sm">{campaign.name}</h3>
+   619→                      <p className="text-xs text-muted-foreground capitalize">{campaign.type}</p>
+   620→                    </div>
+   621→                  </div>
+   622→                  <Badge className={`text-[10px] ${getStatusColor(campaign.status)}`}>
+   623→                    {campaign.status}
+   624→                  </Badge>
+   625→                </div>
+   626→                <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{campaign.message}</p>
+   627→                <div className="flex items-center justify-between text-xs">
+   628→                  <div className="flex gap-3">
+   629→                    <span className="flex items-center gap-1">
+   630→                      <Send className="size-3" /> {campaign.sentCount}
+   631→                    </span>
+   632→                    <span className="flex items-center gap-1 text-emerald-600">
+   633→                      <TrendingUp className="size-3" /> {campaign.responseCount}
+   634→                    </span>
+   635→                  </div>
+   636→                  {campaign.scheduledAt && (
+   637→                    <span className="flex items-center gap-1 text-muted-foreground">
+   638→                      <Calendar className="size-3" />
+   639→                      {new Date(campaign.scheduledAt).toLocaleDateString()}
+   640→                    </span>
+   641→                  )}
+   642→                </div>
+   643→              </CardContent>
+   644→            </Card>
+   645→          ))}
+   646→        </div>
+   647→      )}
+   648→
+   649→      <CreateCampaignDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSuccess={fetchCampaigns} />
+   650→    </div>
+   651→  )
+   652→}
+   653→
+   654→// ==================== ADD CUSTOMER DIALOG ====================
+   655→
+   656→function AddCustomerDialog({
+   657→  open,
+   658→  onOpenChange,
+   659→  onSuccess,
+   660→}: {
+   661→  open: boolean
+   662→  onOpenChange: (open: boolean) => void
+   663→  onSuccess: () => void
+   664→}) {
+   665→  const [saving, setSaving] = React.useState(false)
+   666→  const [form, setForm] = React.useState({
+   667→    name: '',
+   668→    email: '',
+   669→    phone: '',
+   670→    address: '',
+   671→    type: 'retail',
+   672→    creditLimit: '',
+   673→  })
+   674→
+   675→  const handleSubmit = async (e: React.FormEvent) => {
+   676→    e.preventDefault()
+   677→    if (!form.name.trim()) return
+   678→    setSaving(true)
+   679→    try {
+   680→      const res = await fetch('/api/customers', {
+   681→        method: 'POST',
+   682→        headers: { 'Content-Type': 'application/json' },
+   683→        body: JSON.stringify({
+   684→          ...form,
+   685→          creditLimit: parseFloat(form.creditLimit) || 0,
+   686→        }),
+   687→      })
+   688→      if (res.ok) {
+   689→        setForm({ name: '', email: '', phone: '', address: '', type: 'retail', creditLimit: '' })
+   690→        onOpenChange(false)
+   691→        onSuccess()
+   692→      } else {
+   693→        const json = await res.json()
+   694→        alert(json.error || 'Failed to create customer')
+   695→      }
+   696→    } catch (err) {
+   697→      console.error('Failed to create customer:', err)
+   698→      alert('Failed to create customer')
+   699→    } finally {
+   700→      setSaving(false)
+   701→    }
+   702→  }
+   703→
+   704→  return (
+   705→    <Dialog open={open} onOpenChange={onOpenChange}>
+   706→      <DialogContent className="sm:max-w-md">
+   707→        <DialogHeader>
+   708→          <DialogTitle>Add Customer</DialogTitle>
+   709→          <DialogDescription>Register a new customer</DialogDescription>
+   710→        </DialogHeader>
+   711→        <form onSubmit={handleSubmit} className="space-y-4">
+   712→          <div className="space-y-2">
+   713→            <Label htmlFor="cust-name">Name *</Label>
+   714→            <Input
+   715→              id="cust-name"
+   716→              value={form.name}
+   717→              onChange={(e) => setForm({ ...form, name: e.target.value })}
+   718→              placeholder="John Smith"
+   719→              required
+   720→            />
+   721→          </div>
+   722→          <div className="grid grid-cols-2 gap-3">
+   723→            <div className="space-y-2">
+   724→              <Label htmlFor="cust-email">Email</Label>
+   725→              <Input
+   726→                id="cust-email"
+   727→                type="email"
+   728→                value={form.email}
+   729→                onChange={(e) => setForm({ ...form, email: e.target.value })}
+   730→                placeholder="john@example.com"
+   731→              />
+   732→            </div>
+   733→            <div className="space-y-2">
+   734→              <Label htmlFor="cust-phone">Phone</Label>
+   735→              <Input
+   736→                id="cust-phone"
+   737→                value={form.phone}
+   738→                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+   739→                placeholder="+1-555-0100"
+   740→              />
+   741→            </div>
+   742→          </div>
+   743→          <div className="space-y-2">
+   744→            <Label htmlFor="cust-address">Address</Label>
+   745→            <Input
+   746→              id="cust-address"
+   747→              value={form.address}
+   748→              onChange={(e) => setForm({ ...form, address: e.target.value })}
+   749→              placeholder="123 Main Street"
+   750→            />
+   751→          </div>
+   752→          <div className="grid grid-cols-2 gap-3">
+   753→            <div className="space-y-2">
+   754→              <Label>Customer Type</Label>
+   755→              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+   756→                <SelectTrigger>
+   757→                  <SelectValue />
+   758→                </SelectTrigger>
+   759→                <SelectContent>
+   760→                  <SelectItem value="retail">Retail</SelectItem>
+   761→                  <SelectItem value="wholesale">Wholesale</SelectItem>
+   762→                  <SelectItem value="school">School</SelectItem>
+   763→                  <SelectItem value="dealer">Dealer</SelectItem>
+   764→                  <SelectItem value="distributor">Distributor</SelectItem>
+   765→                </SelectContent>
+   766→              </Select>
+   767→            </div>
+   768→            <div className="space-y-2">
+   769→              <Label htmlFor="cust-credit">Credit Limit ($)</Label>
+   770→              <Input
+   771→                id="cust-credit"
+   772→                type="number"
+   773→                step="0.01"
+   774→                value={form.creditLimit}
+   775→                onChange={(e) => setForm({ ...form, creditLimit: e.target.value })}
+   776→                placeholder="5000"
+   777→              />
+   778→            </div>
+   779→          </div>
+   780→          <DialogFooter>
+   781→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+   782→              Cancel
+   783→            </Button>
+   784→            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+   785→              {saving ? 'Saving...' : 'Add Customer'}
+   786→            </Button>
+   787→          </DialogFooter>
+   788→        </form>
+   789→      </DialogContent>
+   790→    </Dialog>
+   791→  )
+   792→}
+   793→
+   794→// ==================== CUSTOMER DETAIL DIALOG ====================
+   795→
+   796→function CustomerDetailDialog({
+   797→  customer,
+   798→  onOpenChange,
+   799→}: {
+   800→  customer: Customer | null
+   801→  onOpenChange: (open: boolean) => void
+   802→}) {
+   803→  if (!customer) return null
+   804→
+   805→  const getTypeBadge = (type: string) => {
+   806→    const styles: Record<string, string> = {
+   807→      retail: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+   808→      wholesale: 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400',
+   809→      school: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+   810→      dealer: 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400',
+   811→      distributor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
+   812→    }
+   813→    return styles[type] || ''
+   814→  }
+   815→
+   816→  return (
+   817→    <Dialog open={!!customer} onOpenChange={onOpenChange}>
+   818→      <DialogContent className="sm:max-w-lg">
+   819→        <DialogHeader>
+   820→          <DialogTitle className="flex items-center gap-2">
+   821→            <Users className="size-5 text-emerald-600" />
+   822→            {customer.name}
+   823→          </DialogTitle>
+   824→          <DialogDescription>
+   825→            Customer details and purchase history
+   826→          </DialogDescription>
+   827→        </DialogHeader>
+   828→        <div className="space-y-4">
+   829→          <div className="grid grid-cols-2 gap-4">
+   830→            <div className="space-y-3">
+   831→              <div className="flex items-center gap-2">
+   832→                <Badge className={`text-xs ${getTypeBadge(customer.type)}`}>{customer.type}</Badge>
+   833→              </div>
+   834→              {customer.email && (
+   835→                <div className="flex items-center gap-2 text-sm">
+   836→                  <Mail className="size-4 text-muted-foreground" />
+   837→                  {customer.email}
+   838→                </div>
+   839→              )}
+   840→              {customer.phone && (
+   841→                <div className="flex items-center gap-2 text-sm">
+   842→                  <Phone className="size-4 text-muted-foreground" />
+   843→                  {customer.phone}
+   844→                </div>
+   845→              )}
+   846→              {customer.address && (
+   847→                <div className="flex items-center gap-2 text-sm">
+   848→                  <MapPin className="size-4 text-muted-foreground" />
+   849→                  {customer.address}
+   850→                </div>
+   851→              )}
+   852→            </div>
+   853→            <div className="space-y-3">
+   854→              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+   855→                <p className="text-xs text-muted-foreground">Total Spent</p>
+   856→                <p className="text-lg font-bold text-emerald-600">${customer.totalSpent.toLocaleString()}</p>
+   857→              </div>
+   858→              <div className="grid grid-cols-2 gap-2">
+   859→                <div className="p-2 rounded-lg border">
+   860→                  <p className="text-xs text-muted-foreground">Points</p>
+   861→                  <p className="font-bold text-teal-600">{customer.loyaltyPoints}</p>
+   862→                </div>
+   863→                <div className="p-2 rounded-lg border">
+   864→                  <p className="text-xs text-muted-foreground">Outstanding</p>
+   865→                  <p className="font-bold text-amber-600">${customer.outstanding.toLocaleString()}</p>
+   866→                </div>
+   867→              </div>
+   868→            </div>
+   869→          </div>
+   870→
+   871→          <Separator />
+   872→
+   873→          <div>
+   874→            <h4 className="text-sm font-semibold mb-3">Purchase History</h4>
+   875→            {(customer._count?.sales || 0) > 0 || (customer._count?.wholesaleOrders || 0) > 0 ? (
+   876→              <div className="space-y-2">
+   877→                <div className="flex items-center justify-between p-2 rounded border text-sm">
+   878→                  <span className="flex items-center gap-2">
+   879→                    <ShoppingBag className="size-3.5 text-emerald-600" />
+   880→                    Retail Sales
+   881→                  </span>
+   882→                  <Badge variant="secondary">{customer._count?.sales || 0} orders</Badge>
+   883→                </div>
+   884→                <div className="flex items-center justify-between p-2 rounded border text-sm">
+   885→                  <span className="flex items-center gap-2">
+   886→                    <DollarSign className="size-3.5 text-teal-600" />
+   887→                    Wholesale Orders
+   888→                  </span>
+   889→                  <Badge variant="secondary">{customer._count?.wholesaleOrders || 0} orders</Badge>
+   890→                </div>
+   891→              </div>
+   892→            ) : (
+   893→              <p className="text-sm text-muted-foreground text-center py-4">No purchase history yet</p>
+   894→            )}
+   895→          </div>
+   896→
+   897→          {customer.school && (
+   898→            <>
+   899→              <Separator />
+   900→              <div>
+   901→                <h4 className="text-sm font-semibold mb-2">Linked School</h4>
+   902→                <div className="flex items-center gap-2 p-2 rounded border text-sm">
+   903→                  <Award className="size-4 text-amber-600" />
+   904→                  <span>{customer.school.name}</span>
+   905→                </div>
+   906→              </div>
+   907→            </>
+   908→          )}
+   909→        </div>
+   910→      </DialogContent>
+   911→    </Dialog>
+   912→  )
+   913→}
+   914→
+   915→// ==================== CREATE CAMPAIGN DIALOG ====================
+   916→
+   917→function CreateCampaignDialog({
+   918→  open,
+   919→  onOpenChange,
+   920→  onSuccess,
+   921→}: {
+   922→  open: boolean
+   923→  onOpenChange: (open: boolean) => void
+   924→  onSuccess: () => void
+   925→}) {
+   926→  const [saving, setSaving] = React.useState(false)
+   927→  const [form, setForm] = React.useState({
+   928→    name: '',
+   929→    type: 'email',
+   930→    target: 'all',
+   931→    message: '',
+   932→    scheduledAt: '',
+   933→  })
+   934→
+   935→  const handleSubmit = async (e: React.FormEvent) => {
+   936→    e.preventDefault()
+   937→    if (!form.name.trim() || !form.message.trim()) return
+   938→    setSaving(true)
+   939→    try {
+   940→      const res = await fetch('/api/crm/campaigns', {
+   941→        method: 'POST',
+   942→        headers: { 'Content-Type': 'application/json' },
+   943→        body: JSON.stringify({
+   944→          ...form,
+   945→          scheduledAt: form.scheduledAt || null,
+   946→        }),
+   947→      })
+   948→      if (res.ok) {
+   949→        setForm({ name: '', type: 'email', target: 'all', message: '', scheduledAt: '' })
+   950→        onOpenChange(false)
+   951→        onSuccess()
+   952→      } else {
+   953→        const json = await res.json()
+   954→        alert(json.error || 'Failed to create campaign')
+   955→      }
+   956→    } catch (err) {
+   957→      console.error('Failed to create campaign:', err)
+   958→      alert('Failed to create campaign')
+   959→    } finally {
+   960→      setSaving(false)
+   961→    }
+   962→  }
+   963→
+   964→  return (
+   965→    <Dialog open={open} onOpenChange={onOpenChange}>
+   966→      <DialogContent className="sm:max-w-md">
+   967→        <DialogHeader>
+   968→          <DialogTitle>Create Campaign</DialogTitle>
+   969→          <DialogDescription>Launch a new marketing campaign</DialogDescription>
+   970→        </DialogHeader>
+   971→        <form onSubmit={handleSubmit} className="space-y-4">
+   972→          <div className="space-y-2">
+   973→            <Label htmlFor="camp-name">Campaign Name *</Label>
+   974→            <Input
+   975→              id="camp-name"
+   976→              value={form.name}
+   977→              onChange={(e) => setForm({ ...form, name: e.target.value })}
+   978→              placeholder="Summer Reading Sale"
+   979→              required
+   980→            />
+   981→          </div>
+   982→          <div className="grid grid-cols-2 gap-3">
+   983→            <div className="space-y-2">
+   984→              <Label>Campaign Type</Label>
+   985→              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+   986→                <SelectTrigger>
+   987→                  <SelectValue />
+   988→                </SelectTrigger>
+   989→                <SelectContent>
+   990→                  <SelectItem value="email">Email</SelectItem>
+   991→                  <SelectItem value="sms">SMS</SelectItem>
+   992→                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+   993→                  <SelectItem value="social">Social Media</SelectItem>
+   994→                </SelectContent>
+   995→              </Select>
+   996→            </div>
+   997→            <div className="space-y-2">
+   998→              <Label>Target Audience</Label>
+   999→              <Select value={form.target} onValueChange={(v) => setForm({ ...form, target: v })}>
+  1000→                <SelectTrigger>
+  1001→                  <SelectValue />
+  1002→                </SelectTrigger>
+  1003→                <SelectContent>
+  1004→                  <SelectItem value="all">All Customers</SelectItem>
+  1005→                  <SelectItem value="retail">Retail</SelectItem>
+  1006→                  <SelectItem value="wholesale">Wholesale</SelectItem>
+  1007→                  <SelectItem value="school">Schools</SelectItem>
+  1008→                  <SelectItem value="dealer">Dealers</SelectItem>
+  1009→                </SelectContent>
+  1010→              </Select>
+  1011→            </div>
+  1012→          </div>
+  1013→          <div className="space-y-2">
+  1014→            <Label htmlFor="camp-message">Message *</Label>
+  1015→            <Textarea
+  1016→              id="camp-message"
+  1017→              value={form.message}
+  1018→              onChange={(e) => setForm({ ...form, message: e.target.value })}
+  1019→              placeholder="Write your campaign message..."
+  1020→              rows={4}
+  1021→              required
+  1022→            />
+  1023→          </div>
+  1024→          <div className="space-y-2">
+  1025→            <Label htmlFor="camp-schedule">Schedule (optional)</Label>
+  1026→            <Input
+  1027→              id="camp-schedule"
+  1028→              type="datetime-local"
+  1029→              value={form.scheduledAt}
+  1030→              onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
+  1031→            />
+  1032→          </div>
+  1033→          <DialogFooter>
+  1034→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+  1035→              Cancel
+  1036→            </Button>
+  1037→            <Button type="submit" disabled={saving || !form.name.trim() || !form.message.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+  1038→              {saving ? 'Creating...' : 'Create Campaign'}
+  1039→            </Button>
+  1040→          </DialogFooter>
+  1041→        </form>
+  1042→      </DialogContent>
+  1043→    </Dialog>
+  1044→  )
+  1045→}
+  1046→

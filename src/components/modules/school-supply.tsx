@@ -20,8 +20,7 @@ import {
   DollarSign,
   Eye,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -124,47 +123,50 @@ interface StationeryProduct {
 
 export function SchoolSupplyModule() {
   const [activeTab, setActiveTab] = React.useState('schools')
+  const tabs = [
+    { value: 'schools', label: 'Schools', icon: GraduationCap },
+    { value: 'contracts', label: 'Contracts', icon: FileText },
+    { value: 'packages', label: 'Packages', icon: Package },
+  ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <div className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-950/40">
-          <GraduationCap className="size-5 text-emerald-600" />
+        <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+          <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-xl font-bold tracking-tight">School Supply</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-[13px] font-semibold tracking-tight">School Supply</h2>
+          <p className="text-[11px] text-muted-foreground">
             Manage schools, contracts, and academic packages
           </p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="schools" className="gap-1.5">
-            <GraduationCap className="size-3.5" />
-            <span className="hidden sm:inline">Schools</span>
-          </TabsTrigger>
-          <TabsTrigger value="contracts" className="gap-1.5">
-            <FileText className="size-3.5" />
-            <span className="hidden sm:inline">Contracts</span>
-          </TabsTrigger>
-          <TabsTrigger value="packages" className="gap-1.5">
-            <Package className="size-3.5" />
-            <span className="hidden sm:inline">Packages</span>
-          </TabsTrigger>
-        </TabsList>
+      <div className="macos-segmented inline-flex p-0.5">
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.value
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`px-3 py-1 text-[12px] font-medium rounded-md flex items-center gap-1.5 transition-none ${
+                isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="size-3.5" strokeWidth={1.5} />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
 
-        <TabsContent value="schools" className="mt-4">
-          <SchoolsTab />
-        </TabsContent>
-        <TabsContent value="contracts" className="mt-4">
-          <ContractsTab />
-        </TabsContent>
-        <TabsContent value="packages" className="mt-4">
-          <PackagesTab />
-        </TabsContent>
-      </Tabs>
+      <div className="mt-4">
+        {activeTab === 'schools' && <SchoolsTab />}
+        {activeTab === 'contracts' && <ContractsTab />}
+        {activeTab === 'packages' && <PackagesTab />}
+      </div>
     </div>
   )
 }
@@ -209,23 +211,23 @@ function SchoolsTab() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="relative flex-1 w-full sm:max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1.5 size-3.5 text-muted-foreground" />
           <Input
             placeholder="Search schools..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8"
+            className="pl-8 rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
           />
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4" /> Add School
+        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+          <Plus className="size-3.5" strokeWidth={2} /> Add School
         </Button>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
               <CardContent className="p-4">
                 <div className="h-4 bg-muted rounded w-2/3 mb-3" />
                 <div className="h-3 bg-muted rounded w-1/2 mb-2" />
@@ -235,11 +237,11 @@ function SchoolsTab() {
           ))}
         </div>
       ) : schools.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <GraduationCap className="size-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No schools found</p>
-            <p className="text-sm text-muted-foreground">Add your first school to get started</p>
+            <GraduationCap className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] text-muted-foreground">No schools found</p>
+            <p className="text-[11px] text-muted-foreground">Add your first school to get started</p>
           </CardContent>
         </Card>
       ) : (
@@ -247,55 +249,56 @@ function SchoolsTab() {
           {schools.map((school) => (
             <Card
               key={school.id}
-              className="hover:shadow-md transition-shadow cursor-pointer group"
+              className="rounded-2xl macos-shadow border-0 macos-card-hover cursor-pointer group"
               onClick={() => setSelectedSchool(school)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-lg bg-emerald-100 p-1.5 dark:bg-emerald-950/40">
-                      <GraduationCap className="size-4 text-emerald-600" />
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+                      <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-sm leading-tight">{school.name}</h3>
+                      <h3 className="font-semibold text-[13px] leading-tight tracking-tight">{school.name}</h3>
                       {school.academicSession && (
-                        <p className="text-xs text-muted-foreground">{school.academicSession}</p>
+                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
+                          {school.academicSession}
+                        </Badge>
                       )}
                     </div>
                   </div>
                   <Badge
-                    variant={school.isActive ? 'default' : 'secondary'}
-                    className={
+                    className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
                       school.isActive
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]'
-                        : 'text-[10px]'
-                    }
+                        ? 'bg-macos-green/10 text-macos-green'
+                        : 'bg-macos-red/10 text-macos-red'
+                    }`}
                   >
                     {school.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
-                <div className="space-y-1.5 text-xs text-muted-foreground">
+                <div className="space-y-1.5 text-[11px] text-muted-foreground">
                   {school.address && (
                     <div className="flex items-center gap-1.5">
-                      <MapPin className="size-3 shrink-0" />
+                      <MapPin className="size-3 shrink-0" strokeWidth={1.5} />
                       <span className="truncate">{school.address}</span>
                     </div>
                   )}
                   {school.phone && (
                     <div className="flex items-center gap-1.5">
-                      <Phone className="size-3 shrink-0" />
+                      <Phone className="size-3 shrink-0" strokeWidth={1.5} />
                       {school.phone}
                     </div>
                   )}
                   {school.contactPerson && (
                     <div className="flex items-center gap-1.5">
-                      <User className="size-3 shrink-0" />
+                      <User className="size-3 shrink-0" strokeWidth={1.5} />
                       {school.contactPerson}
                     </div>
                   )}
                 </div>
-                <Separator className="my-3" />
-                <div className="flex items-center justify-between text-xs">
+                <Separator className="my-3 bg-border/50" />
+                <div className="flex items-center justify-between text-[11px]">
                   <span className="text-muted-foreground">
                     {school._count?.contracts || 0} contracts
                   </span>
@@ -305,13 +308,13 @@ function SchoolsTab() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    className="h-6 px-2 text-[11px] opacity-0 group-hover:opacity-100 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleDelete(school.id)
                     }}
                   >
-                    <Trash2 className="size-3" />
+                    <Trash2 className="size-3" strokeWidth={1.5} />
                   </Button>
                 </div>
               </CardContent>
@@ -342,7 +345,6 @@ function ContractsTab() {
         const json = await res.json()
         if (json.data) setContracts(json.data)
       } else {
-        // Fallback: fetch schools with contracts
         const schoolRes = await fetch('/api/schools?limit=50')
         const schoolJson = await schoolRes.json()
         if (schoolJson.data) {
@@ -377,74 +379,74 @@ function ContractsTab() {
     fetchSchools()
   }, [fetchContracts, fetchSchools])
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+        return 'bg-macos-green/10 text-macos-green'
       case 'expired':
-        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+        return 'bg-macos-orange/10 text-macos-orange'
       case 'cancelled':
-        return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+        return 'bg-macos-red/10 text-macos-red'
       default:
-        return ''
+        return 'bg-secondary text-secondary-foreground'
     }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{contracts.length} contracts</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4" /> Create Contract
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{contracts.length} contracts</p>
+        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+          <Plus className="size-3.5" strokeWidth={2} /> Create Contract
         </Button>
       </div>
 
       {loading ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-6">
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
               ))}
             </div>
           </CardContent>
         </Card>
       ) : contracts.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="size-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No contracts found</p>
-            <p className="text-sm text-muted-foreground">Create your first school contract</p>
+            <FileText className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] text-muted-foreground">No contracts found</p>
+            <p className="text-[11px] text-muted-foreground">Create your first school contract</p>
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-0">
             <ScrollArea className="max-h-[500px]">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>School</TableHead>
-                    <TableHead>Session</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Period</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">School</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Session</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Value</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Period</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {contracts.map((contract) => (
-                    <TableRow key={contract.id}>
-                      <TableCell className="font-medium">{contract.title}</TableCell>
-                      <TableCell>{contract.school?.name || '—'}</TableCell>
-                      <TableCell>{contract.academicSession || '—'}</TableCell>
-                      <TableCell>${contract.totalValue.toLocaleString()}</TableCell>
+                    <TableRow key={contract.id} className="hover:bg-secondary/50">
+                      <TableCell className="font-medium text-[13px]">{contract.title}</TableCell>
+                      <TableCell className="text-[13px]">{contract.school?.name || '—'}</TableCell>
+                      <TableCell className="text-[13px]">{contract.academicSession || '—'}</TableCell>
+                      <TableCell className="text-[13px]">${contract.totalValue.toLocaleString()}</TableCell>
                       <TableCell>
-                        <Badge className={`text-[10px] ${getStatusColor(contract.status)}`}>
+                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getStatusBadge(contract.status)}`}>
                           {contract.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className="text-[11px] text-muted-foreground">
                         {contract.startDate
                           ? `${new Date(contract.startDate).toLocaleDateString()} - ${contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '...'}`
                           : '—'}
@@ -487,7 +489,6 @@ function PackagesTab() {
         const json = await res.json()
         if (json.data) setPackages(json.data)
       } else {
-        // Fallback: fetch schools with packages
         const schoolRes = await fetch('/api/schools?limit=50')
         const schoolJson = await schoolRes.json()
         if (schoolJson.data) {
@@ -535,16 +536,16 @@ function PackagesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{packages.length} academic packages</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4" /> Create Package
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{packages.length} academic packages</p>
+        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+          <Plus className="size-3.5" strokeWidth={2} /> Create Package
         </Button>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
               <CardContent className="p-4">
                 <div className="h-4 bg-muted rounded w-2/3 mb-3" />
                 <div className="h-3 bg-muted rounded w-1/2 mb-2" />
@@ -554,11 +555,11 @@ function PackagesTab() {
           ))}
         </div>
       ) : packages.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Package className="size-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No packages found</p>
-            <p className="text-sm text-muted-foreground">Create your first academic package</p>
+            <Package className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] text-muted-foreground">No packages found</p>
+            <p className="text-[11px] text-muted-foreground">Create your first academic package</p>
           </CardContent>
         </Card>
       ) : (
@@ -566,55 +567,64 @@ function PackagesTab() {
           {packages.map((pkg) => (
             <Card
               key={pkg.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
+              className="rounded-2xl macos-shadow border-0 macos-card-hover cursor-pointer"
               onClick={() => setSelectedPackage(pkg)}
             >
               <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-lg bg-teal-100 p-1.5 dark:bg-teal-950/40">
-                      <Package className="size-4 text-teal-600" />
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+                      <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-sm">{pkg.name}</h3>
+                      <h3 className="font-semibold text-[13px] tracking-tight">{pkg.name}</h3>
                       {pkg.grade && (
-                        <p className="text-xs text-muted-foreground">Grade: {pkg.grade}</p>
+                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-blue/10 text-macos-blue">
+                          Grade {pkg.grade}
+                        </Badge>
                       )}
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-emerald-600">${pkg.totalPrice.toLocaleString()}</p>
+                    <p className="text-[13px] font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
                     {pkg.discount > 0 && (
-                      <p className="text-xs text-muted-foreground">{pkg.discount}% off</p>
+                      <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% off</p>
                     )}
                   </div>
                 </div>
                 {pkg.school && (
-                  <p className="text-xs text-muted-foreground mb-2">
-                    <GraduationCap className="size-3 inline mr-1" />
+                  <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1">
+                    <GraduationCap className="size-3" strokeWidth={1.5} />
                     {pkg.school.name}
                   </p>
                 )}
                 {pkg.items && pkg.items.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {pkg.items.slice(0, 5).map((item) => (
-                      <Badge key={item.id} variant="secondary" className="text-[10px]">
-                        {item.book?.title || item.stationery?.name || 'Item'} x{item.quantity}
-                      </Badge>
+                  <div className="space-y-1.5 mb-3">
+                    {pkg.items.slice(0, 4).map((item) => (
+                      <div key={item.id} className="flex items-center justify-between text-[11px]">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          {item.bookId ? (
+                            <BookOpen className="size-3 text-macos-teal" strokeWidth={1.5} />
+                          ) : (
+                            <PencilRuler className="size-3 text-macos-orange" strokeWidth={1.5} />
+                          )}
+                          {item.book?.title || item.stationery?.name || 'Item'}
+                        </span>
+                        <span className="text-muted-foreground">×{item.quantity} · ${item.unitPrice}</span>
+                      </div>
                     ))}
-                    {pkg.items.length > 5 && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        +{pkg.items.length - 5} more
-                      </Badge>
+                    {pkg.items.length > 4 && (
+                      <p className="text-[10px] text-muted-foreground">+{pkg.items.length - 4} more items</p>
                     )}
                   </div>
                 )}
-                <div className="flex items-center justify-between mt-3 pt-2 border-t">
-                  <span className="text-xs text-muted-foreground">
+                <Separator className="bg-border/50" />
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-[11px] text-muted-foreground">
                     {pkg.items?.length || 0} items
                   </span>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-teal-600">
-                    <Eye className="size-3 mr-1" /> View
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10 rounded-lg">
+                    <Eye className="size-3 mr-1" strokeWidth={1.5} /> View
                   </Button>
                 </div>
               </CardContent>
@@ -689,77 +699,77 @@ function AddSchoolDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Add School</DialogTitle>
-          <DialogDescription>Register a new school for supply programs</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Add School</DialogTitle>
+          <DialogDescription className="text-[11px]">Register a new school for supply programs</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="school-name">Name *</Label>
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
             <Input
-              id="school-name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Springfield Academy"
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="school-address">Address</Label>
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
             <Input
-              id="school-address"
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               placeholder="123 Education Street"
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="school-phone">Phone</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
               <Input
-                id="school-phone"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="+1-555-0100"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="school-email">Email</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
               <Input
-                id="school-email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="school@example.com"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="school-contact">Contact Person</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contact Person</Label>
               <Input
-                id="school-contact"
                 value={form.contactPerson}
                 onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
                 placeholder="John Smith"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="school-session">Academic Session</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
               <Input
-                id="school-session"
                 value={form.academicSession}
                 onChange={(e) => setForm({ ...form, academicSession: e.target.value })}
                 placeholder="2025-2026"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">
               Cancel
             </Button>
-            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Saving...' : 'Add School'}
             </Button>
           </DialogFooter>
@@ -832,65 +842,54 @@ function SchoolDetailDialog({
 
   return (
     <Dialog open={!!school} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Edit School</DialogTitle>
-          <DialogDescription>Update school information</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Edit School</DialogTitle>
+          <DialogDescription className="text-[11px]">Update school information</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Name *</Label>
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label>Address</Label>
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
             <Input
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
             <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Contact Person</Label>
-              <Input
-                value={form.contactPerson}
-                onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contact Person</Label>
+              <Input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
             <div className="space-y-2">
-              <Label>Academic Session</Label>
-              <Input
-                value={form.academicSession}
-                onChange={(e) => setForm({ ...form, academicSession: e.target.value })}
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
+              <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">
               Cancel
             </Button>
-            <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Saving...' : 'Update School'}
             </Button>
           </DialogFooter>
@@ -960,88 +959,56 @@ function CreateContractDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Create Contract</DialogTitle>
-          <DialogDescription>Create a new school supply contract</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Contract</DialogTitle>
+          <DialogDescription className="text-[11px]">Create a new school supply contract</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>School *</Label>
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">School *</Label>
             <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                 <SelectValue placeholder="Select school" />
               </SelectTrigger>
               <SelectContent>
                 {schools.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Contract Title *</Label>
-            <Input
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Annual Supply Agreement"
-              required
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contract Title *</Label>
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Annual Supply Agreement" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Academic Session</Label>
-              <Input
-                value={form.academicSession}
-                onChange={(e) => setForm({ ...form, academicSession: e.target.value })}
-                placeholder="2025-2026"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
+              <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} placeholder="2025-2026" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
             <div className="space-y-2">
-              <Label>Total Value ($)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={form.totalValue}
-                onChange={(e) => setForm({ ...form, totalValue: e.target.value })}
-                placeholder="50000"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Total Value ($)</Label>
+              <Input type="number" step="0.01" value={form.totalValue} onChange={(e) => setForm({ ...form, totalValue: e.target.value })} placeholder="50000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Start Date</Label>
-              <Input
-                type="date"
-                value={form.startDate}
-                onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Start Date</Label>
+              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
             <div className="space-y-2">
-              <Label>End Date</Label>
-              <Input
-                type="date"
-                value={form.endDate}
-                onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">End Date</Label>
+              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Notes</Label>
-            <Textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="Additional contract details..."
-              rows={3}
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Notes</Label>
+            <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional contract details..." rows={3} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving || !form.schoolId || !form.title.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+            <Button type="submit" disabled={saving || !form.schoolId || !form.title.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Creating...' : 'Create Contract'}
             </Button>
           </DialogFooter>
@@ -1110,8 +1077,6 @@ function CreatePackageDialog({
       items.map((item) => {
         if (item.key !== key) return item
         const updated = { ...item, ...updates }
-
-        // Auto-fill price and name when selecting a book/stationery
         if (updates.itemId) {
           if (updated.itemType === 'book') {
             const book = books.find((b) => b.id === updates.itemId)
@@ -1127,7 +1092,6 @@ function CreatePackageDialog({
             }
           }
         }
-
         return updated
       })
     )
@@ -1178,117 +1142,82 @@ function CreatePackageDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Create Academic Package</DialogTitle>
-          <DialogDescription>Build a grade-wise package with books and stationery</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Academic Package</DialogTitle>
+          <DialogDescription className="text-[11px]">Build a grade-wise package with books and stationery</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>School</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">School</Label>
               <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue placeholder="Select school" />
                 </SelectTrigger>
                 <SelectContent>
                   {schools.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Package Name *</Label>
-              <Input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Grade 1 Package"
-                required
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Package Name *</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Grade 1 Package" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
-              <Label>Grade</Label>
-              <Input
-                value={form.grade}
-                onChange={(e) => setForm({ ...form, grade: e.target.value })}
-                placeholder="1"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Grade</Label>
+              <Input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="1" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
             <div className="space-y-2">
-              <Label>Academic Level</Label>
-              <Input
-                value={form.academicLevel}
-                onChange={(e) => setForm({ ...form, academicLevel: e.target.value })}
-                placeholder="Primary"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Level</Label>
+              <Input value={form.academicLevel} onChange={(e) => setForm({ ...form, academicLevel: e.target.value })} placeholder="Primary" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
             <div className="space-y-2">
-              <Label>Discount (%)</Label>
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={form.discount}
-                onChange={(e) => setForm({ ...form, discount: e.target.value })}
-                placeholder="10"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Discount (%)</Label>
+              <Input type="number" min="0" max="100" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} placeholder="10" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Package description..."
-              rows={2}
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Description</Label>
+            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Package description..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
           </div>
 
-          <Separator />
+          <Separator className="bg-border/50" />
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Package Items</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-1">
-                <Plus className="size-3" /> Add Item
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Package Items</Label>
+              <Button type="button" variant="ghost" size="sm" onClick={addItem} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
+                <Plus className="size-3" strokeWidth={2} /> Add Item
               </Button>
             </div>
-            {items.map((item, idx) => (
-              <div key={item.key} className="flex items-end gap-2 p-3 rounded-lg border bg-muted/30">
+            {items.map((item) => (
+              <div key={item.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
                 <div className="flex-1 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Type</Label>
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Type</Label>
                   <Select
                     value={item.itemType}
                     onValueChange={(v: 'book' | 'stationery') =>
                       updateItem(item.key, { itemType: v, itemId: '', unitPrice: 0, name: '' })
                     }
                   >
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="book">
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="size-3" /> Book
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="stationery">
-                        <span className="flex items-center gap-1">
-                          <PencilRuler className="size-3" /> Stationery
-                        </span>
-                      </SelectItem>
+                      <SelectItem value="book"><span className="flex items-center gap-1"><BookOpen className="size-3" /> Book</span></SelectItem>
+                      <SelectItem value="stationery"><span className="flex items-center gap-1"><PencilRuler className="size-3" /> Stationery</span></SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="flex-[2] space-y-1">
-                  <Label className="text-xs text-muted-foreground">Item</Label>
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Item</Label>
                   <Select value={item.itemId} onValueChange={(v) => updateItem(item.key, { itemId: v })}>
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
                       <SelectValue placeholder={`Select ${item.itemType}...`} />
                     </SelectTrigger>
                     <SelectContent>
@@ -1301,31 +1230,18 @@ function CreatePackageDialog({
                   </Select>
                 </div>
                 <div className="w-16 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Qty</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(item.key, { quantity: parseInt(e.target.value) || 1 })}
-                    className="h-8 text-xs"
-                  />
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Qty</Label>
+                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(item.key, { quantity: parseInt(e.target.value) || 1 })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
                 </div>
                 <div className="w-20 space-y-1">
-                  <Label className="text-xs text-muted-foreground">Price</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={item.unitPrice}
-                    onChange={(e) => updateItem(item.key, { unitPrice: parseFloat(e.target.value) || 0 })}
-                    className="h-8 text-xs"
-                  />
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Price</Label>
+                  <Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.key, { unitPrice: parseFloat(e.target.value) || 0 })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
                 </div>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                  className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
                   onClick={() => removeItem(item.key)}
                   disabled={items.length <= 1}
                 >
@@ -1335,16 +1251,14 @@ function CreatePackageDialog({
             ))}
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-            <span className="text-sm font-medium">Total Package Price</span>
-            <span className="text-lg font-bold text-emerald-600">${totalPrice.toLocaleString()}</span>
+          <div className="flex items-center justify-between p-3 rounded-xl bg-macos-green/10">
+            <span className="text-[13px] font-medium">Total Package Price</span>
+            <span className="text-[13px] font-bold tracking-tight text-macos-green">${totalPrice.toLocaleString()}</span>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Creating...' : 'Create Package'}
             </Button>
           </DialogFooter>
@@ -1367,72 +1281,74 @@ function PackageDetailDialog({
 
   return (
     <Dialog open={!!pkg} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="size-5 text-teal-600" />
+          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold tracking-tight">
+            <div className="size-7 rounded-lg bg-macos-teal/10 flex items-center justify-center">
+              <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+            </div>
             {pkg.name}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-[11px]">
             {pkg.grade && `Grade ${pkg.grade}`}
-            {pkg.academicLevel && ` • ${pkg.academicLevel}`}
-            {pkg.school && ` • ${pkg.school.name}`}
+            {pkg.academicLevel && ` · ${pkg.academicLevel}`}
+            {pkg.school && ` · ${pkg.school.name}`}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           {pkg.description && (
-            <p className="text-sm text-muted-foreground">{pkg.description}</p>
+            <p className="text-[13px] text-muted-foreground">{pkg.description}</p>
           )}
 
           <div className="space-y-2">
-            <h4 className="text-sm font-semibold">Package Items</h4>
+            <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Package Items</h4>
             <div className="space-y-2">
               {pkg.items && pkg.items.length > 0 ? (
                 pkg.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
+                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/50"
                   >
                     <div className="flex items-center gap-3">
                       {item.bookId ? (
-                        <div className="rounded p-1.5 bg-teal-100 dark:bg-teal-950/40">
-                          <BookOpen className="size-4 text-teal-600" />
+                        <div className="size-7 rounded-lg bg-macos-teal/10 flex items-center justify-center">
+                          <BookOpen className="size-3.5 text-macos-teal" strokeWidth={1.5} />
                         </div>
                       ) : (
-                        <div className="rounded p-1.5 bg-amber-100 dark:bg-amber-950/40">
-                          <PencilRuler className="size-4 text-amber-600" />
+                        <div className="size-7 rounded-lg bg-macos-orange/10 flex items-center justify-center">
+                          <PencilRuler className="size-3.5 text-macos-orange" strokeWidth={1.5} />
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium">
+                        <p className="text-[13px] font-medium">
                           {item.book?.title || item.stationery?.name || 'Unknown Item'}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.bookId ? 'Book' : 'Stationery'} • Qty: {item.quantity} × ${item.unitPrice}
+                        <p className="text-[11px] text-muted-foreground">
+                          {item.bookId ? 'Book' : 'Stationery'} · Qty: {item.quantity} × ${item.unitPrice}
                         </p>
                       </div>
                     </div>
-                    <p className="font-semibold text-sm">
+                    <p className="font-semibold text-[13px]">
                       ${(item.quantity * item.unitPrice).toLocaleString()}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No items in this package</p>
+                <p className="text-[13px] text-muted-foreground text-center py-4">No items in this package</p>
               )}
             </div>
           </div>
 
-          <Separator />
+          <Separator className="bg-border/50" />
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Price</p>
+              <p className="text-[11px] text-muted-foreground">Total Price</p>
               {pkg.discount > 0 && (
-                <p className="text-xs text-emerald-600">{pkg.discount}% discount applied</p>
+                <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% discount applied</p>
               )}
             </div>
-            <p className="text-2xl font-bold text-emerald-600">${pkg.totalPrice.toLocaleString()}</p>
+            <p className="text-2xl font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
           </div>
         </div>
       </DialogContent>

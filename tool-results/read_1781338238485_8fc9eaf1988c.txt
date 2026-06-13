@@ -1,0 +1,791 @@
+     1→'use client'
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react'
+     4→import {
+     5→  Search,
+     6→  Plus,
+     7→  Pencil,
+     8→  Trash2,
+     9→  ChevronLeft,
+    10→  ChevronRight,
+    11→  BookOpen,
+    12→  RefreshCw,
+    13→  X,
+    14→} from 'lucide-react'
+    15→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+    16→import { Button } from '@/components/ui/button'
+    17→import { Input } from '@/components/ui/input'
+    18→import { Label } from '@/components/ui/label'
+    19→import { Textarea } from '@/components/ui/textarea'
+    20→import { Badge } from '@/components/ui/badge'
+    21→import { Skeleton } from '@/components/ui/skeleton'
+    22→import { Separator } from '@/components/ui/separator'
+    23→import {
+    24→  Table,
+    25→  TableBody,
+    26→  TableCell,
+    27→  TableHead,
+    28→  TableHeader,
+    29→  TableRow,
+    30→} from '@/components/ui/table'
+    31→import {
+    32→  Dialog,
+    33→  DialogContent,
+    34→  DialogHeader,
+    35→  DialogTitle,
+    36→  DialogTrigger,
+    37→} from '@/components/ui/dialog'
+    38→import {
+    39→  Select,
+    40→  SelectContent,
+    41→  SelectItem,
+    42→  SelectTrigger,
+    43→  SelectValue,
+    44→} from '@/components/ui/select'
+    45→
+    46→// ── Types ────────────────────────────────────────────────────────
+    47→interface Author {
+    48→  id: string
+    49→  name: string
+    50→}
+    51→
+    52→interface Publisher {
+    53→  id: string
+    54→  name: string
+    55→}
+    56→
+    57→interface Category {
+    58→  id: string
+    59→  name: string
+    60→  type: string | null
+    61→  _count: { books: number }
+    62→}
+    63→
+    64→interface Book {
+    65→  id: string
+    66→  isbn: string | null
+    67→  title: string
+    68→  subtitle: string | null
+    69→  authorId: string | null
+    70→  publisherId: string | null
+    71→  categoryId: string | null
+    72→  edition: string | null
+    73→  language: string
+    74→  pages: number | null
+    75→  publishYear: number | null
+    76→  description: string | null
+    77→  price: number
+    78→  costPrice: number
+    79→  discount: number
+    80→  academicLevel: string | null
+    81→  subject: string | null
+    82→  barcode: string | null
+    83→  isActive: boolean
+    84→  author: { id: string; name: string } | null
+    85→  publisher: { id: string; name: string } | null
+    86→  category: { id: string; name: string; type: string | null } | null
+    87→}
+    88→
+    89→interface BookFormData {
+    90→  title: string
+    91→  subtitle: string
+    92→  isbn: string
+    93→  authorId: string
+    94→  publisherId: string
+    95→  categoryId: string
+    96→  edition: string
+    97→  language: string
+    98→  pages: string
+    99→  publishYear: string
+   100→  description: string
+   101→  price: string
+   102→  costPrice: string
+   103→  discount: string
+   104→  academicLevel: string
+   105→  subject: string
+   106→  barcode: string
+   107→}
+   108→
+   109→const emptyForm: BookFormData = {
+   110→  title: '',
+   111→  subtitle: '',
+   112→  isbn: '',
+   113→  authorId: '',
+   114→  publisherId: '',
+   115→  categoryId: '',
+   116→  edition: '',
+   117→  language: 'English',
+   118→  pages: '',
+   119→  publishYear: '',
+   120→  description: '',
+   121→  price: '',
+   122→  costPrice: '',
+   123→  discount: '',
+   124→  academicLevel: '',
+   125→  subject: '',
+   126→  barcode: '',
+   127→}
+   128→
+   129→// ── Component ────────────────────────────────────────────────────
+   130→export default function BookCatalogModule() {
+   131→  const [books, setBooks] = useState<Book[]>([])
+   132→  const [totalPages, setTotalPages] = useState(1)
+   133→  const [total, setTotal] = useState(0)
+   134→  const [page, setPage] = useState(1)
+   135→  const [loading, setLoading] = useState(true)
+   136→  const [search, setSearch] = useState('')
+   137→  const [filterCategory, setFilterCategory] = useState('')
+   138→  const [filterAuthor, setFilterAuthor] = useState('')
+   139→  const [filterPublisher, setFilterPublisher] = useState('')
+   140→  const [dialogOpen, setDialogOpen] = useState(false)
+   141→  const [editing, setEditing] = useState<Book | null>(null)
+   142→  const [form, setForm] = useState<BookFormData>(emptyForm)
+   143→  const [saving, setSaving] = useState(false)
+   144→  const [deleting, setDeleting] = useState<string | null>(null)
+   145→
+   146→  // Dropdown data
+   147→  const [authors, setAuthors] = useState<Author[]>([])
+   148→  const [publishers, setPublishers] = useState<Publisher[]>([])
+   149→  const [categories, setCategories] = useState<Category[]>([])
+   150→
+   151→  const limit = 10
+   152→
+   153→  // ── Fetch dropdown data ────────────────────────────────────
+   154→  useEffect(() => {
+   155→    Promise.all([
+   156→      fetch('/api/authors?limit=200').then((r) => r.json()),
+   157→      fetch('/api/publishers?limit=200').then((r) => r.json()),
+   158→      fetch('/api/categories').then((r) => r.json()),
+   159→    ]).then(([authorsJson, publishersJson, categoriesJson]) => {
+   160→      setAuthors(authorsJson.data || [])
+   161→      setPublishers(publishersJson.data || [])
+   162→      setCategories(categoriesJson.data || [])
+   163→    })
+   164→  }, [])
+   165→
+   166→  // ── Fetch books ────────────────────────────────────────────
+   167→  const fetchBooks = useCallback(async () => {
+   168→    setLoading(true)
+   169→    try {
+   170→      const params = new URLSearchParams({
+   171→        page: String(page),
+   172→        limit: String(limit),
+   173→      })
+   174→      if (search) params.set('search', search)
+   175→      if (filterCategory && filterCategory !== 'all') params.set('categoryId', filterCategory)
+   176→      if (filterAuthor && filterAuthor !== 'all') params.set('authorId', filterAuthor)
+   177→      if (filterPublisher && filterPublisher !== 'all') params.set('publisherId', filterPublisher)
+   178→
+   179→      const res = await fetch(`/api/books?${params}`)
+   180→      if (!res.ok) throw new Error('Failed to fetch books')
+   181→      const json = await res.json()
+   182→      setBooks(json.data || [])
+   183→      setTotalPages(json.pagination?.totalPages || 1)
+   184→      setTotal(json.pagination?.total || 0)
+   185→    } catch {
+   186→      setBooks([])
+   187→    } finally {
+   188→      setLoading(false)
+   189→    }
+   190→  }, [page, search, filterCategory, filterAuthor, filterPublisher])
+   191→
+   192→  useEffect(() => {
+   193→    fetchBooks()
+   194→  }, [fetchBooks])
+   195→
+   196→  // Reset to page 1 when filters change
+   197→  useEffect(() => {
+   198→    setPage(1)
+   199→  }, [search, filterCategory, filterAuthor, filterPublisher])
+   200→
+   201→  // ── Save book (create or update) ───────────────────────────
+   202→  const handleSave = async () => {
+   203→    if (!form.title.trim()) return
+   204→    setSaving(true)
+   205→    try {
+   206→      const payload: Record<string, unknown> = {
+   207→        title: form.title.trim(),
+   208→        subtitle: form.subtitle || null,
+   209→        isbn: form.isbn || null,
+   210→        authorId: form.authorId || null,
+   211→        publisherId: form.publisherId || null,
+   212→        categoryId: form.categoryId || null,
+   213→        edition: form.edition || null,
+   214→        language: form.language || 'English',
+   215→        pages: form.pages ? parseInt(form.pages) : null,
+   216→        publishYear: form.publishYear ? parseInt(form.publishYear) : null,
+   217→        description: form.description || null,
+   218→        price: form.price ? parseFloat(form.price) : 0,
+   219→        costPrice: form.costPrice ? parseFloat(form.costPrice) : 0,
+   220→        discount: form.discount ? parseFloat(form.discount) : 0,
+   221→        academicLevel: form.academicLevel || null,
+   222→        subject: form.subject || null,
+   223→        barcode: form.barcode || null,
+   224→      }
+   225→
+   226→      let res: Response
+   227→      if (editing) {
+   228→        payload.id = editing.id
+   229→        res = await fetch('/api/books', {
+   230→          method: 'PUT',
+   231→          headers: { 'Content-Type': 'application/json' },
+   232→          body: JSON.stringify(payload),
+   233→        })
+   234→      } else {
+   235→        res = await fetch('/api/books', {
+   236→          method: 'POST',
+   237→          headers: { 'Content-Type': 'application/json' },
+   238→          body: JSON.stringify(payload),
+   239→        })
+   240→      }
+   241→
+   242→      if (!res.ok) {
+   243→        const err = await res.json()
+   244→        throw new Error(err.error || 'Failed to save book')
+   245→      }
+   246→
+   247→      setDialogOpen(false)
+   248→      setEditing(null)
+   249→      setForm(emptyForm)
+   250→      fetchBooks()
+   251→    } catch (err) {
+   252→      alert(err instanceof Error ? err.message : 'Failed to save book')
+   253→    } finally {
+   254→      setSaving(false)
+   255→    }
+   256→  }
+   257→
+   258→  // ── Delete book ────────────────────────────────────────────
+   259→  const handleDelete = async (id: string) => {
+   260→    if (!confirm('Are you sure you want to delete this book?')) return
+   261→    setDeleting(id)
+   262→    try {
+   263→      const res = await fetch(`/api/books?id=${id}`, { method: 'DELETE' })
+   264→      if (!res.ok) {
+   265→        const err = await res.json()
+   266→        throw new Error(err.error || 'Failed to delete')
+   267→      }
+   268→      fetchBooks()
+   269→    } catch (err) {
+   270→      alert(err instanceof Error ? err.message : 'Failed to delete book')
+   271→    } finally {
+   272→      setDeleting(null)
+   273→    }
+   274→  }
+   275→
+   276→  // ── Open dialog for edit ───────────────────────────────────
+   277→  const openEdit = (book: Book) => {
+   278→    setEditing(book)
+   279→    setForm({
+   280→      title: book.title,
+   281→      subtitle: book.subtitle || '',
+   282→      isbn: book.isbn || '',
+   283→      authorId: book.authorId || '',
+   284→      publisherId: book.publisherId || '',
+   285→      categoryId: book.categoryId || '',
+   286→      edition: book.edition || '',
+   287→      language: book.language || 'English',
+   288→      pages: book.pages?.toString() || '',
+   289→      publishYear: book.publishYear?.toString() || '',
+   290→      description: book.description || '',
+   291→      price: book.price?.toString() || '',
+   292→      costPrice: book.costPrice?.toString() || '',
+   293→      discount: book.discount?.toString() || '',
+   294→      academicLevel: book.academicLevel || '',
+   295→      subject: book.subject || '',
+   296→      barcode: book.barcode || '',
+   297→    })
+   298→    setDialogOpen(true)
+   299→  }
+   300→
+   301→  // ── Open dialog for add ────────────────────────────────────
+   302→  const openAdd = () => {
+   303→    setEditing(null)
+   304→    setForm(emptyForm)
+   305→    setDialogOpen(true)
+   306→  }
+   307→
+   308→  const formatCurrency = (value: number) =>
+   309→    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+   310→
+   311→  // ── Helpers for inventory stock display ──────────────────────
+   312→  // We fetch stock from inventory for each book or show N/A
+   313→  // For now, we'll just show the price and status
+   314→
+   315→  return (
+   316→    <div className="space-y-4">
+   317→      {/* ── Header + Add Button ─────────────────────────────── */}
+   318→      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   319→        <div>
+   320→          <h2 className="text-xl font-bold tracking-tight">Book Catalog</h2>
+   321→          <p className="text-sm text-muted-foreground">{total} books in collection</p>
+   322→        </div>
+   323→        <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-700">
+   324→          <Plus className="size-4 mr-2" /> Add Book
+   325→        </Button>
+   326→      </div>
+   327→
+   328→      {/* ── Search & Filters ────────────────────────────────── */}
+   329→      <Card>
+   330→        <CardContent className="p-4">
+   331→          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+   332→            <div className="relative">
+   333→              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+   334→              <Input
+   335→                placeholder="Search by title, ISBN, author..."
+   336→                value={search}
+   337→                onChange={(e) => setSearch(e.target.value)}
+   338→                className="pl-8"
+   339→              />
+   340→            </div>
+   341→            <Select value={filterCategory} onValueChange={setFilterCategory}>
+   342→              <SelectTrigger>
+   343→                <SelectValue placeholder="All Categories" />
+   344→              </SelectTrigger>
+   345→              <SelectContent>
+   346→                <SelectItem value="all">All Categories</SelectItem>
+   347→                {categories.map((cat) => (
+   348→                  <SelectItem key={cat.id} value={cat.id}>
+   349→                    {cat.name}
+   350→                  </SelectItem>
+   351→                ))}
+   352→              </SelectContent>
+   353→            </Select>
+   354→            <Select value={filterAuthor} onValueChange={setFilterAuthor}>
+   355→              <SelectTrigger>
+   356→                <SelectValue placeholder="All Authors" />
+   357→              </SelectTrigger>
+   358→              <SelectContent>
+   359→                <SelectItem value="all">All Authors</SelectItem>
+   360→                {authors.map((a) => (
+   361→                  <SelectItem key={a.id} value={a.id}>
+   362→                    {a.name}
+   363→                  </SelectItem>
+   364→                ))}
+   365→              </SelectContent>
+   366→            </Select>
+   367→            <Select value={filterPublisher} onValueChange={setFilterPublisher}>
+   368→              <SelectTrigger>
+   369→                <SelectValue placeholder="All Publishers" />
+   370→              </SelectTrigger>
+   371→              <SelectContent>
+   372→                <SelectItem value="all">All Publishers</SelectItem>
+   373→                {publishers.map((p) => (
+   374→                  <SelectItem key={p.id} value={p.id}>
+   375→                    {p.name}
+   376→                  </SelectItem>
+   377→                ))}
+   378→              </SelectContent>
+   379→            </Select>
+   380→          </div>
+   381→          {(search || (filterCategory && filterCategory !== 'all') || (filterAuthor && filterAuthor !== 'all') || (filterPublisher && filterPublisher !== 'all')) && (
+   382→            <div className="mt-2 flex items-center gap-2">
+   383→              <Button
+   384→                variant="ghost"
+   385→                size="sm"
+   386→                onClick={() => {
+   387→                  setSearch('')
+   388→                  setFilterCategory('')
+   389→                  setFilterAuthor('')
+   390→                  setFilterPublisher('')
+   391→                }}
+   392→              >
+   393→                <X className="size-3 mr-1" /> Clear filters
+   394→              </Button>
+   395→            </div>
+   396→          )}
+   397→        </CardContent>
+   398→      </Card>
+   399→
+   400→      {/* ── Books Table ─────────────────────────────────────── */}
+   401→      <Card>
+   402→        <CardContent className="p-0">
+   403→          {loading ? (
+   404→            <div className="p-4 space-y-3">
+   405→              {Array.from({ length: 5 }).map((_, i) => (
+   406→                <Skeleton key={i} className="h-12 w-full" />
+   407→              ))}
+   408→            </div>
+   409→          ) : books.length === 0 ? (
+   410→            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+   411→              <BookOpen className="size-10 mb-3 opacity-40" />
+   412→              <p className="font-medium">No books found</p>
+   413→              <p className="text-sm">Try adjusting your search or filters</p>
+   414→            </div>
+   415→          ) : (
+   416→            <div className="overflow-x-auto">
+   417→              <Table>
+   418→                <TableHeader>
+   419→                  <TableRow>
+   420→                    <TableHead className="min-w-[200px]">Title</TableHead>
+   421→                    <TableHead>Author</TableHead>
+   422→                    <TableHead>ISBN</TableHead>
+   423→                    <TableHead>Category</TableHead>
+   424→                    <TableHead className="text-right">Price</TableHead>
+   425→                    <TableHead>Status</TableHead>
+   426→                    <TableHead className="text-right">Actions</TableHead>
+   427→                  </TableRow>
+   428→                </TableHeader>
+   429→                <TableBody>
+   430→                  {books.map((book) => (
+   431→                    <TableRow key={book.id}>
+   432→                      <TableCell>
+   433→                        <div>
+   434→                          <p className="font-medium truncate max-w-[240px]">{book.title}</p>
+   435→                          {book.subtitle && (
+   436→                            <p className="text-xs text-muted-foreground truncate max-w-[240px]">
+   437→                              {book.subtitle}
+   438→                            </p>
+   439→                          )}
+   440→                        </div>
+   441→                      </TableCell>
+   442→                      <TableCell className="text-muted-foreground">
+   443→                        {book.author?.name || '—'}
+   444→                      </TableCell>
+   445→                      <TableCell className="text-muted-foreground font-mono text-xs">
+   446→                        {book.isbn || '—'}
+   447→                      </TableCell>
+   448→                      <TableCell>
+   449→                        {book.category ? (
+   450→                          <Badge variant="outline" className="text-xs">
+   451→                            {book.category.name}
+   452→                          </Badge>
+   453→                        ) : (
+   454→                          '—'
+   455→                        )}
+   456→                      </TableCell>
+   457→                      <TableCell className="text-right font-medium">
+   458→                        {formatCurrency(book.price)}
+   459→                      </TableCell>
+   460→                      <TableCell>
+   461→                        <Badge
+   462→                          variant={book.isActive ? 'secondary' : 'destructive'}
+   463→                          className="text-xs"
+   464→                        >
+   465→                          {book.isActive ? 'Active' : 'Inactive'}
+   466→                        </Badge>
+   467→                      </TableCell>
+   468→                      <TableCell className="text-right">
+   469→                        <div className="flex justify-end gap-1">
+   470→                          <Button
+   471→                            variant="ghost"
+   472→                            size="icon"
+   473→                            className="size-8"
+   474→                            onClick={() => openEdit(book)}
+   475→                          >
+   476→                            <Pencil className="size-3.5" />
+   477→                          </Button>
+   478→                          <Button
+   479→                            variant="ghost"
+   480→                            size="icon"
+   481→                            className="size-8 text-destructive hover:text-destructive"
+   482→                            onClick={() => handleDelete(book.id)}
+   483→                            disabled={deleting === book.id}
+   484→                          >
+   485→                            {deleting === book.id ? (
+   486→                              <RefreshCw className="size-3.5 animate-spin" />
+   487→                            ) : (
+   488→                              <Trash2 className="size-3.5" />
+   489→                            )}
+   490→                          </Button>
+   491→                        </div>
+   492→                      </TableCell>
+   493→                    </TableRow>
+   494→                  ))}
+   495→                </TableBody>
+   496→              </Table>
+   497→            </div>
+   498→          )}
+   499→        </CardContent>
+   500→      </Card>
+   501→
+   502→      {/* ── Pagination ──────────────────────────────────────── */}
+   503→      {totalPages > 1 && (
+   504→        <div className="flex items-center justify-between">
+   505→          <p className="text-sm text-muted-foreground">
+   506→            Page {page} of {totalPages} ({total} results)
+   507→          </p>
+   508→          <div className="flex gap-1">
+   509→            <Button
+   510→              variant="outline"
+   511→              size="sm"
+   512→              onClick={() => setPage((p) => Math.max(1, p - 1))}
+   513→              disabled={page <= 1}
+   514→            >
+   515→              <ChevronLeft className="size-4" />
+   516→            </Button>
+   517→            <Button
+   518→              variant="outline"
+   519→              size="sm"
+   520→              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+   521→              disabled={page >= totalPages}
+   522→            >
+   523→              <ChevronRight className="size-4" />
+   524→            </Button>
+   525→          </div>
+   526→        </div>
+   527→      )}
+   528→
+   529→      {/* ── Add/Edit Dialog ─────────────────────────────────── */}
+   530→      <Dialog open={dialogOpen} onOpenChange={(open) => {
+   531→        setDialogOpen(open)
+   532→        if (!open) {
+   533→          setEditing(null)
+   534→          setForm(emptyForm)
+   535→        }
+   536→      }}>
+   537→        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+   538→          <DialogHeader>
+   539→            <DialogTitle>{editing ? 'Edit Book' : 'Add New Book'}</DialogTitle>
+   540→          </DialogHeader>
+   541→          <div className="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
+   542→            {/* Title */}
+   543→            <div className="sm:col-span-2">
+   544→              <Label htmlFor="title">Title *</Label>
+   545→              <Input
+   546→                id="title"
+   547→                value={form.title}
+   548→                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+   549→                placeholder="Book title"
+   550→              />
+   551→            </div>
+   552→
+   553→            {/* Subtitle */}
+   554→            <div className="sm:col-span-2">
+   555→              <Label htmlFor="subtitle">Subtitle</Label>
+   556→              <Input
+   557→                id="subtitle"
+   558→                value={form.subtitle}
+   559→                onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
+   560→                placeholder="Subtitle (optional)"
+   561→              />
+   562→            </div>
+   563→
+   564→            {/* ISBN */}
+   565→            <div>
+   566→              <Label htmlFor="isbn">ISBN</Label>
+   567→              <Input
+   568→                id="isbn"
+   569→                value={form.isbn}
+   570→                onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
+   571→                placeholder="978-..."
+   572→              />
+   573→            </div>
+   574→
+   575→            {/* Barcode */}
+   576→            <div>
+   577→              <Label htmlFor="barcode">Barcode</Label>
+   578→              <Input
+   579→                id="barcode"
+   580→                value={form.barcode}
+   581→                onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+   582→                placeholder="Barcode"
+   583→              />
+   584→            </div>
+   585→
+   586→            {/* Author */}
+   587→            <div>
+   588→              <Label>Author</Label>
+   589→              <Select value={form.authorId} onValueChange={(v) => setForm((f) => ({ ...f, authorId: v === '__none__' ? '' : v }))}>
+   590→                <SelectTrigger>
+   591→                  <SelectValue placeholder="Select author" />
+   592→                </SelectTrigger>
+   593→                <SelectContent>
+   594→                  <SelectItem value="__none__">None</SelectItem>
+   595→                  {authors.map((a) => (
+   596→                    <SelectItem key={a.id} value={a.id}>
+   597→                      {a.name}
+   598→                    </SelectItem>
+   599→                  ))}
+   600→                </SelectContent>
+   601→              </Select>
+   602→            </div>
+   603→
+   604→            {/* Publisher */}
+   605→            <div>
+   606→              <Label>Publisher</Label>
+   607→              <Select value={form.publisherId} onValueChange={(v) => setForm((f) => ({ ...f, publisherId: v === '__none__' ? '' : v }))}>
+   608→                <SelectTrigger>
+   609→                  <SelectValue placeholder="Select publisher" />
+   610→                </SelectTrigger>
+   611→                <SelectContent>
+   612→                  <SelectItem value="__none__">None</SelectItem>
+   613→                  {publishers.map((p) => (
+   614→                    <SelectItem key={p.id} value={p.id}>
+   615→                      {p.name}
+   616→                    </SelectItem>
+   617→                  ))}
+   618→                </SelectContent>
+   619→              </Select>
+   620→            </div>
+   621→
+   622→            {/* Category */}
+   623→            <div>
+   624→              <Label>Category</Label>
+   625→              <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v === '__none__' ? '' : v }))}>
+   626→                <SelectTrigger>
+   627→                  <SelectValue placeholder="Select category" />
+   628→                </SelectTrigger>
+   629→                <SelectContent>
+   630→                  <SelectItem value="__none__">None</SelectItem>
+   631→                  {categories.map((c) => (
+   632→                    <SelectItem key={c.id} value={c.id}>
+   633→                      {c.name}
+   634→                    </SelectItem>
+   635→                  ))}
+   636→                </SelectContent>
+   637→              </Select>
+   638→            </div>
+   639→
+   640→            {/* Edition */}
+   641→            <div>
+   642→              <Label htmlFor="edition">Edition</Label>
+   643→              <Input
+   644→                id="edition"
+   645→                value={form.edition}
+   646→                onChange={(e) => setForm((f) => ({ ...f, edition: e.target.value }))}
+   647→                placeholder="e.g. 3rd"
+   648→              />
+   649→            </div>
+   650→
+   651→            {/* Language */}
+   652→            <div>
+   653→              <Label htmlFor="language">Language</Label>
+   654→              <Input
+   655→                id="language"
+   656→                value={form.language}
+   657→                onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
+   658→                placeholder="English"
+   659→              />
+   660→            </div>
+   661→
+   662→            {/* Pages */}
+   663→            <div>
+   664→              <Label htmlFor="pages">Pages</Label>
+   665→              <Input
+   666→                id="pages"
+   667→                type="number"
+   668→                value={form.pages}
+   669→                onChange={(e) => setForm((f) => ({ ...f, pages: e.target.value }))}
+   670→                placeholder="0"
+   671→              />
+   672→            </div>
+   673→
+   674→            {/* Publish Year */}
+   675→            <div>
+   676→              <Label htmlFor="publishYear">Publish Year</Label>
+   677→              <Input
+   678→                id="publishYear"
+   679→                type="number"
+   680→                value={form.publishYear}
+   681→                onChange={(e) => setForm((f) => ({ ...f, publishYear: e.target.value }))}
+   682→                placeholder="2024"
+   683→              />
+   684→            </div>
+   685→
+   686→            <Separator className="sm:col-span-2" />
+   687→
+   688→            {/* Price */}
+   689→            <div>
+   690→              <Label htmlFor="price">Price ($)</Label>
+   691→              <Input
+   692→                id="price"
+   693→                type="number"
+   694→                step="0.01"
+   695→                value={form.price}
+   696→                onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+   697→                placeholder="0.00"
+   698→              />
+   699→            </div>
+   700→
+   701→            {/* Cost Price */}
+   702→            <div>
+   703→              <Label htmlFor="costPrice">Cost Price ($)</Label>
+   704→              <Input
+   705→                id="costPrice"
+   706→                type="number"
+   707→                step="0.01"
+   708→                value={form.costPrice}
+   709→                onChange={(e) => setForm((f) => ({ ...f, costPrice: e.target.value }))}
+   710→                placeholder="0.00"
+   711→              />
+   712→            </div>
+   713→
+   714→            {/* Discount */}
+   715→            <div>
+   716→              <Label htmlFor="discount">Discount (%)</Label>
+   717→              <Input
+   718→                id="discount"
+   719→                type="number"
+   720→                step="0.1"
+   721→                value={form.discount}
+   722→                onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
+   723→                placeholder="0"
+   724→              />
+   725→            </div>
+   726→
+   727→            {/* Academic Level */}
+   728→            <div>
+   729→              <Label htmlFor="academicLevel">Academic Level</Label>
+   730→              <Input
+   731→                id="academicLevel"
+   732→                value={form.academicLevel}
+   733→                onChange={(e) => setForm((f) => ({ ...f, academicLevel: e.target.value }))}
+   734→                placeholder="e.g. University, High School"
+   735→              />
+   736→            </div>
+   737→
+   738→            {/* Subject */}
+   739→            <div className="sm:col-span-2">
+   740→              <Label htmlFor="subject">Subject</Label>
+   741→              <Input
+   742→                id="subject"
+   743→                value={form.subject}
+   744→                onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+   745→                placeholder="e.g. Mathematics, History"
+   746→              />
+   747→            </div>
+   748→
+   749→            {/* Description */}
+   750→            <div className="sm:col-span-2">
+   751→              <Label htmlFor="description">Description</Label>
+   752→              <Textarea
+   753→                id="description"
+   754→                value={form.description}
+   755→                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+   756→                placeholder="Book description..."
+   757→                rows={3}
+   758→              />
+   759→            </div>
+   760→          </div>
+   761→
+   762→          <div className="flex justify-end gap-2 pt-2">
+   763→            <Button
+   764→              variant="outline"
+   765→              onClick={() => {
+   766→                setDialogOpen(false)
+   767→                setEditing(null)
+   768→                setForm(emptyForm)
+   769→              }}
+   770→            >
+   771→              Cancel
+   772→            </Button>
+   773→            <Button
+   774→              onClick={handleSave}
+   775→              disabled={saving || !form.title.trim()}
+   776→              className="bg-emerald-600 hover:bg-emerald-700"
+   777→            >
+   778→              {saving ? (
+   779→                <RefreshCw className="size-4 mr-2 animate-spin" />
+   780→              ) : (
+   781→                <Plus className="size-4 mr-2" />
+   782→              )}
+   783→              {editing ? 'Update Book' : 'Create Book'}
+   784→            </Button>
+   785→          </div>
+   786→        </DialogContent>
+   787→      </Dialog>
+   788→    </div>
+   789→  )
+   790→}
+   791→

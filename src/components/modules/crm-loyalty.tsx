@@ -21,8 +21,7 @@ import {
   DollarSign,
   ShoppingBag,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,7 +44,6 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Progress } from '@/components/ui/progress'
 import {
   Table,
   TableBody,
@@ -101,47 +99,50 @@ interface Campaign {
 
 export function CRMLoyaltyModule() {
   const [activeTab, setActiveTab] = React.useState('customers')
+  const tabs = [
+    { value: 'customers', label: 'Customers', icon: Users },
+    { value: 'loyalty', label: 'Loyalty', icon: Star },
+    { value: 'campaigns', label: 'Campaigns', icon: Megaphone },
+  ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <div className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-950/40">
-          <Users className="size-5 text-emerald-600" />
+        <div className="size-8 rounded-xl bg-macos-purple/10 flex items-center justify-center">
+          <Users className="size-4 text-macos-purple" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-xl font-bold tracking-tight">CRM & Loyalty</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-[13px] font-semibold tracking-tight">CRM & Loyalty</h2>
+          <p className="text-[11px] text-muted-foreground">
             Manage customers, loyalty programs, and marketing campaigns
           </p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="customers" className="gap-1.5">
-            <Users className="size-3.5" />
-            <span className="hidden sm:inline">Customers</span>
-          </TabsTrigger>
-          <TabsTrigger value="loyalty" className="gap-1.5">
-            <Star className="size-3.5" />
-            <span className="hidden sm:inline">Loyalty</span>
-          </TabsTrigger>
-          <TabsTrigger value="campaigns" className="gap-1.5">
-            <Megaphone className="size-3.5" />
-            <span className="hidden sm:inline">Campaigns</span>
-          </TabsTrigger>
-        </TabsList>
+      <div className="macos-segmented inline-flex p-0.5">
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.value
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`px-3 py-1 text-[12px] font-medium rounded-md flex items-center gap-1.5 transition-none ${
+                isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Icon className="size-3.5" strokeWidth={1.5} />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
 
-        <TabsContent value="customers" className="mt-4">
-          <CustomersTab />
-        </TabsContent>
-        <TabsContent value="loyalty" className="mt-4">
-          <LoyaltyTab />
-        </TabsContent>
-        <TabsContent value="campaigns" className="mt-4">
-          <CampaignsTab />
-        </TabsContent>
-      </Tabs>
+      <div className="mt-4">
+        {activeTab === 'customers' && <CustomersTab />}
+        {activeTab === 'loyalty' && <LoyaltyTab />}
+        {activeTab === 'campaigns' && <CampaignsTab />}
+      </div>
     </div>
   )
 }
@@ -193,13 +194,13 @@ function CustomersTab() {
 
   const getTypeBadge = (type: string) => {
     const styles: Record<string, string> = {
-      retail: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-      wholesale: 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400',
-      school: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-      dealer: 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400',
-      distributor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
+      retail: 'bg-macos-green/10 text-macos-green',
+      wholesale: 'bg-macos-teal/10 text-macos-teal',
+      school: 'bg-macos-orange/10 text-macos-orange',
+      dealer: 'bg-macos-purple/10 text-macos-purple',
+      distributor: 'bg-macos-red/10 text-macos-red',
     }
-    return styles[type] || 'bg-gray-100 text-gray-700 dark:bg-gray-950/40 dark:text-gray-400'
+    return styles[type] || 'bg-secondary text-secondary-foreground'
   }
 
   const totalCustomers = customers.length
@@ -209,47 +210,67 @@ function CustomersTab() {
 
   return (
     <div className="space-y-4">
-      {/* Summary Cards */}
+      {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Total Customers</p>
-            <p className="text-lg font-bold">{totalCustomers}</p>
-          </CardContent>
+        <Card className="rounded-2xl macos-shadow border-0 p-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+              <Users className="size-4 text-macos-blue" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold tracking-tight">{totalCustomers}</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Customers</p>
+            </div>
+          </div>
         </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Total Revenue</p>
-            <p className="text-lg font-bold text-emerald-600">${totalRevenue.toLocaleString()}</p>
-          </CardContent>
+        <Card className="rounded-2xl macos-shadow border-0 p-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
+              <DollarSign className="size-4 text-macos-green" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold tracking-tight text-macos-green">${totalRevenue.toLocaleString()}</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Revenue</p>
+            </div>
+          </div>
         </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Outstanding</p>
-            <p className="text-lg font-bold text-amber-600">${totalOutstanding.toLocaleString()}</p>
-          </CardContent>
+        <Card className="rounded-2xl macos-shadow border-0 p-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+              <TrendingUp className="size-4 text-macos-orange" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold tracking-tight text-macos-orange">${totalOutstanding.toLocaleString()}</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Outstanding</p>
+            </div>
+          </div>
         </Card>
-        <Card>
-          <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Loyalty Points</p>
-            <p className="text-lg font-bold text-teal-600">{totalPoints.toLocaleString()}</p>
-          </CardContent>
+        <Card className="rounded-2xl macos-shadow border-0 p-4">
+          <div className="flex items-center gap-3">
+            <div className="size-8 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+              <Star className="size-4 text-macos-teal" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold tracking-tight text-macos-teal">{totalPoints.toLocaleString()}</p>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Loyalty Points</p>
+            </div>
+          </div>
         </Card>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-initial sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1.5 size-3.5 text-muted-foreground" />
             <Input
               placeholder="Search customers..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8"
+              className="pl-8 rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
             />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-32 rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -262,42 +283,42 @@ function CustomersTab() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4" /> Add Customer
+        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+          <Plus className="size-3.5" strokeWidth={2} /> Add Customer
         </Button>
       </div>
 
       {loading ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-6">
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
               ))}
             </div>
           </CardContent>
         </Card>
       ) : customers.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Users className="size-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No customers found</p>
-            <p className="text-sm text-muted-foreground">Add your first customer to get started</p>
+            <Users className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] text-muted-foreground">No customers found</p>
+            <p className="text-[11px] text-muted-foreground">Add your first customer to get started</p>
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="p-0">
             <ScrollArea className="max-h-[500px]">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Points</TableHead>
-                    <TableHead className="text-right">Total Spent</TableHead>
-                    <TableHead className="text-right">Outstanding</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Contact</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Points</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Spent</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Outstanding</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -305,37 +326,37 @@ function CustomersTab() {
                   {customers.map((customer) => (
                     <TableRow
                       key={customer.id}
-                      className="cursor-pointer"
+                      className="cursor-pointer hover:bg-secondary/50"
                       onClick={() => setSelectedCustomer(customer)}
                     >
-                      <TableCell className="font-medium">{customer.name}</TableCell>
+                      <TableCell className="font-medium text-[13px]">{customer.name}</TableCell>
                       <TableCell>
-                        <div className="text-xs space-y-0.5">
+                        <div className="text-[11px] space-y-0.5">
                           {customer.email && (
                             <div className="flex items-center gap-1">
-                              <Mail className="size-3" /> {customer.email}
+                              <Mail className="size-3" strokeWidth={1.5} /> {customer.email}
                             </div>
                           )}
                           {customer.phone && (
                             <div className="flex items-center gap-1">
-                              <Phone className="size-3" /> {customer.phone}
+                              <Phone className="size-3" strokeWidth={1.5} /> {customer.phone}
                             </div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`text-[10px] ${getTypeBadge(customer.type)}`}>
+                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getTypeBadge(customer.type)}`}>
                           {customer.type}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="text-teal-600 font-medium">{customer.loyaltyPoints}</span>
+                        <span className="text-macos-teal font-medium text-[13px]">{customer.loyaltyPoints}</span>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right text-[13px]">
                         ${customer.totalSpent.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className={customer.outstanding > 0 ? 'text-amber-600 font-medium' : ''}>
+                        <span className={`text-[13px] ${customer.outstanding > 0 ? 'text-macos-orange font-medium' : ''}`}>
                           ${customer.outstanding.toLocaleString()}
                         </span>
                       </TableCell>
@@ -343,13 +364,13 @@ function CustomersTab() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                          className="h-6 w-6 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation()
                             handleDelete(customer.id)
                           }}
                         >
-                          <Trash2 className="size-3" />
+                          <Trash2 className="size-3" strokeWidth={1.5} />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -402,11 +423,11 @@ function LoyaltyTab() {
     Platinum: Gift,
   }
 
-  const tierColors: Record<string, string> = {
-    Bronze: 'from-amber-600 to-amber-800',
-    Silver: 'from-gray-400 to-gray-600',
-    Gold: 'from-yellow-500 to-amber-600',
-    Platinum: 'from-emerald-500 to-teal-700',
+  const tierColors: Record<string, { bg: string; text: string; gradient: string; barColor: string }> = {
+    Bronze: { bg: 'bg-macos-orange/10', text: 'text-macos-orange', gradient: 'from-macos-orange to-amber-700', barColor: 'bg-macos-orange' },
+    Silver: { bg: 'bg-secondary', text: 'text-muted-foreground', gradient: 'from-gray-400 to-gray-600', barColor: 'bg-gray-400' },
+    Gold: { bg: 'bg-macos-yellow/10', text: 'text-macos-yellow', gradient: 'from-yellow-500 to-amber-600', barColor: 'bg-macos-yellow' },
+    Platinum: { bg: 'bg-macos-purple/10', text: 'text-macos-purple', gradient: 'from-macos-teal to-macos-blue', barColor: 'bg-macos-purple' },
   }
 
   const defaultTiers: LoyaltyTier[] = [
@@ -419,11 +440,11 @@ function LoyaltyTab() {
   const displayTiers = tiers.length > 0 ? tiers : defaultTiers
 
   const pointsRules = [
-    { action: 'Purchase', points: '1 point per $1 spent', icon: ShoppingBag },
-    { action: 'Referral', points: '50 bonus points', icon: Users },
-    { action: 'Review', points: '20 bonus points', icon: Star },
-    { action: 'Birthday', points: '100 bonus points', icon: Gift },
-    { action: 'Social Share', points: '10 bonus points', icon: Megaphone },
+    { action: 'Purchase', points: '1 point per $1 spent', icon: ShoppingBag, color: 'bg-macos-green/10 text-macos-green' },
+    { action: 'Referral', points: '50 bonus points', icon: Users, color: 'bg-macos-blue/10 text-macos-blue' },
+    { action: 'Review', points: '20 bonus points', icon: Star, color: 'bg-macos-yellow/10 text-macos-yellow' },
+    { action: 'Birthday', points: '100 bonus points', icon: Gift, color: 'bg-macos-purple/10 text-macos-purple' },
+    { action: 'Social Share', points: '10 bonus points', icon: Megaphone, color: 'bg-macos-teal/10 text-macos-teal' },
   ]
 
   return (
@@ -431,7 +452,7 @@ function LoyaltyTab() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
               <CardContent className="p-6">
                 <div className="h-8 bg-muted rounded w-1/2 mb-4" />
                 <div className="h-3 bg-muted rounded w-3/4 mb-2" />
@@ -443,36 +464,40 @@ function LoyaltyTab() {
       ) : (
         <>
           <div>
-            <h3 className="text-lg font-semibold mb-4">Loyalty Tiers</h3>
+            <h3 className="text-[13px] font-semibold tracking-tight mb-4">Loyalty Tiers</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {displayTiers.map((tier) => {
                 const Icon = tierIcons[tier.name] || Star
+                const colors = tierColors[tier.name] || tierColors.Bronze
+                const progress = tier.maxPoints ? Math.min((tier.minPoints / (tier.maxPoints || 1)) * 100, 100) : 100
                 return (
-                  <Card key={tier.id} className="relative overflow-hidden">
-                    <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${tierColors[tier.name] || 'from-emerald-500 to-teal-600'}`} />
+                  <Card key={tier.id} className="rounded-2xl macos-shadow border-0 relative overflow-hidden">
+                    <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient}`} />
                     <CardContent className="p-4 pt-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className={`rounded-lg bg-gradient-to-r ${tierColors[tier.name] || 'from-emerald-500 to-teal-600'} p-2`}>
-                          <Icon className="size-4 text-white" />
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className={`size-8 rounded-xl ${colors.bg} flex items-center justify-center`}>
+                          <Icon className={`size-4 ${colors.text}`} strokeWidth={1.5} />
                         </div>
                         <div>
-                          <h4 className="font-bold text-sm">{tier.name}</h4>
-                          <p className="text-xs text-muted-foreground">{tier.discount}% discount</p>
+                          <h4 className="font-semibold text-[13px] tracking-tight">{tier.name}</h4>
+                          <p className="text-[10px] font-semibold tracking-wide text-macos-green">{tier.discount}% discount</p>
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-[11px]">
                           <span className="text-muted-foreground">Points Range</span>
                           <span className="font-medium">
                             {tier.minPoints} - {tier.maxPoints || '∞'}
                           </span>
                         </div>
-                        <Progress
-                          value={tier.maxPoints ? (tier.minPoints / tier.maxPoints) * 100 : 100}
-                          className="h-1.5"
-                        />
+                        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${colors.barColor} transition-all`}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
                         {tier.benefits && (
-                          <p className="text-xs text-muted-foreground mt-2">{tier.benefits}</p>
+                          <p className="text-[11px] text-muted-foreground mt-2">{tier.benefits}</p>
                         )}
                       </div>
                     </CardContent>
@@ -482,31 +507,31 @@ function LoyaltyTab() {
             </div>
           </div>
 
-          <Separator />
+          <Separator className="bg-border/50" />
 
           <div>
-            <h3 className="text-lg font-semibold mb-4">Points Rules</h3>
-            <Card>
+            <h3 className="text-[13px] font-semibold tracking-tight mb-4">Points Rules</h3>
+            <Card className="rounded-2xl macos-shadow border-0">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Action</TableHead>
-                      <TableHead>Points Earned</TableHead>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Action</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Points Earned</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {pointsRules.map((rule) => {
                       const Icon = rule.icon
                       return (
-                        <TableRow key={rule.action}>
-                          <TableCell className="flex items-center gap-2">
-                            <div className="rounded p-1 bg-emerald-100 dark:bg-emerald-950/40">
-                              <Icon className="size-3.5 text-emerald-600" />
+                        <TableRow key={rule.action} className="hover:bg-secondary/50">
+                          <TableCell className="flex items-center gap-2 text-[13px]">
+                            <div className={`size-6 rounded-lg ${rule.color} flex items-center justify-center`}>
+                              <Icon className="size-3" strokeWidth={1.5} />
                             </div>
                             {rule.action}
                           </TableCell>
-                          <TableCell className="font-medium text-teal-600">{rule.points}</TableCell>
+                          <TableCell className="font-medium text-macos-teal text-[13px]">{rule.points}</TableCell>
                         </TableRow>
                       )
                     })}
@@ -547,103 +572,117 @@ function CampaignsTab() {
     fetchCampaigns()
   }, [fetchCampaigns])
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'draft':
-        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+        return 'bg-secondary text-secondary-foreground'
       case 'scheduled':
-        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+        return 'bg-macos-orange/10 text-macos-orange'
       case 'sent':
-        return 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400'
+        return 'bg-macos-teal/10 text-macos-teal'
       case 'completed':
-        return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+        return 'bg-macos-green/10 text-macos-green'
       default:
-        return ''
+        return 'bg-secondary text-secondary-foreground'
     }
   }
 
-  const getTypeIcon = (type: string) => {
+  const getTypeBadge = (type: string) => {
     switch (type) {
       case 'sms':
-        return '📱'
+        return 'bg-macos-green/10 text-macos-green'
       case 'whatsapp':
-        return '💬'
+        return 'bg-macos-teal/10 text-macos-teal'
       case 'email':
-        return '📧'
+        return 'bg-macos-blue/10 text-macos-blue'
       case 'social':
-        return '📢'
+        return 'bg-macos-purple/10 text-macos-purple'
       default:
-        return '📣'
+        return 'bg-secondary text-secondary-foreground'
     }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{campaigns.length} campaigns</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4" /> Create Campaign
+        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{campaigns.length} campaigns</p>
+        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+          <Plus className="size-3.5" strokeWidth={2} /> Create Campaign
         </Button>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-4">
-                <div className="h-4 bg-muted rounded w-2/3 mb-3" />
-                <div className="h-3 bg-muted rounded w-1/2 mb-2" />
-                <div className="h-3 bg-muted rounded w-3/4" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card className="rounded-2xl macos-shadow border-0">
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : campaigns.length === 0 ? (
-        <Card>
+        <Card className="rounded-2xl macos-shadow border-0">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Megaphone className="size-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No campaigns found</p>
-            <p className="text-sm text-muted-foreground">Create your first marketing campaign</p>
+            <Megaphone className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] text-muted-foreground">No campaigns found</p>
+            <p className="text-[11px] text-muted-foreground">Create your first marketing campaign</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {campaigns.map((campaign) => (
-            <Card key={campaign.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{getTypeIcon(campaign.type)}</span>
-                    <div>
-                      <h3 className="font-semibold text-sm">{campaign.name}</h3>
-                      <p className="text-xs text-muted-foreground capitalize">{campaign.type}</p>
-                    </div>
-                  </div>
-                  <Badge className={`text-[10px] ${getStatusColor(campaign.status)}`}>
-                    {campaign.status}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{campaign.message}</p>
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex gap-3">
-                    <span className="flex items-center gap-1">
-                      <Send className="size-3" /> {campaign.sentCount}
-                    </span>
-                    <span className="flex items-center gap-1 text-emerald-600">
-                      <TrendingUp className="size-3" /> {campaign.responseCount}
-                    </span>
-                  </div>
-                  {campaign.scheduledAt && (
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Calendar className="size-3" />
-                      {new Date(campaign.scheduledAt).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card className="rounded-2xl macos-shadow border-0">
+          <CardContent className="p-0">
+            <ScrollArea className="max-h-[500px]">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Sent</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Responses</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Schedule</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {campaigns.map((campaign) => (
+                    <TableRow key={campaign.id} className="hover:bg-secondary/50">
+                      <TableCell className="font-medium text-[13px]">{campaign.name}</TableCell>
+                      <TableCell>
+                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getTypeBadge(campaign.type)}`}>
+                          {campaign.type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getStatusBadge(campaign.status)}`}>
+                          {campaign.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-[13px]">
+                        <span className="flex items-center justify-end gap-1">
+                          <Send className="size-3 text-muted-foreground" strokeWidth={1.5} /> {campaign.sentCount}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="text-macos-green font-medium text-[13px] flex items-center justify-end gap-1">
+                          <TrendingUp className="size-3" strokeWidth={1.5} /> {campaign.responseCount}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-[11px] text-muted-foreground">
+                        {campaign.scheduledAt ? (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="size-3" strokeWidth={1.5} />
+                            {new Date(campaign.scheduledAt).toLocaleDateString()}
+                          </span>
+                        ) : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </CardContent>
+        </Card>
       )}
 
       <CreateCampaignDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSuccess={fetchCampaigns} />
@@ -703,57 +742,35 @@ function AddCustomerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Add Customer</DialogTitle>
-          <DialogDescription>Register a new customer</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Add Customer</DialogTitle>
+          <DialogDescription className="text-[11px]">Register a new customer</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="cust-name">Name *</Label>
-            <Input
-              id="cust-name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="John Smith"
-              required
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="cust-email">Email</Label>
-              <Input
-                id="cust-email"
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="john@example.com"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cust-phone">Phone</Label>
-              <Input
-                id="cust-phone"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+1-555-0100"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1-555-0100" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cust-address">Address</Label>
-            <Input
-              id="cust-address"
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              placeholder="123 Main Street"
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
+            <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main Street" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Customer Type</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Customer Type</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -766,22 +783,13 @@ function AddCustomerDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cust-credit">Credit Limit ($)</Label>
-              <Input
-                id="cust-credit"
-                type="number"
-                step="0.01"
-                value={form.creditLimit}
-                onChange={(e) => setForm({ ...form, creditLimit: e.target.value })}
-                placeholder="5000"
-              />
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Credit Limit ($)</Label>
+              <Input type="number" step="0.01" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} placeholder="5000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Saving...' : 'Add Customer'}
             </Button>
           </DialogFooter>
@@ -804,103 +812,103 @@ function CustomerDetailDialog({
 
   const getTypeBadge = (type: string) => {
     const styles: Record<string, string> = {
-      retail: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
-      wholesale: 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400',
-      school: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-      dealer: 'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400',
-      distributor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400',
+      retail: 'bg-macos-green/10 text-macos-green',
+      wholesale: 'bg-macos-teal/10 text-macos-teal',
+      school: 'bg-macos-orange/10 text-macos-orange',
+      dealer: 'bg-macos-purple/10 text-macos-purple',
+      distributor: 'bg-macos-red/10 text-macos-red',
     }
-    return styles[type] || ''
+    return styles[type] || 'bg-secondary text-secondary-foreground'
   }
 
   return (
     <Dialog open={!!customer} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="size-5 text-emerald-600" />
+          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold tracking-tight">
+            <div className="size-7 rounded-lg bg-macos-purple/10 flex items-center justify-center">
+              <Users className="size-4 text-macos-purple" strokeWidth={1.5} />
+            </div>
             {customer.name}
           </DialogTitle>
-          <DialogDescription>
-            Customer details and purchase history
-          </DialogDescription>
+          <DialogDescription className="text-[11px]">Customer details and purchase history</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Badge className={`text-xs ${getTypeBadge(customer.type)}`}>{customer.type}</Badge>
+                <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getTypeBadge(customer.type)}`}>{customer.type}</Badge>
               </div>
               {customer.email && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="size-4 text-muted-foreground" />
+                <div className="flex items-center gap-2 text-[13px]">
+                  <Mail className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
                   {customer.email}
                 </div>
               )}
               {customer.phone && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="size-4 text-muted-foreground" />
+                <div className="flex items-center gap-2 text-[13px]">
+                  <Phone className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
                   {customer.phone}
                 </div>
               )}
               {customer.address && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="size-4 text-muted-foreground" />
+                <div className="flex items-center gap-2 text-[13px]">
+                  <MapPin className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
                   {customer.address}
                 </div>
               )}
             </div>
             <div className="space-y-3">
-              <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                <p className="text-xs text-muted-foreground">Total Spent</p>
-                <p className="text-lg font-bold text-emerald-600">${customer.totalSpent.toLocaleString()}</p>
+              <div className="p-3 rounded-xl bg-macos-green/10">
+                <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Spent</p>
+                <p className="text-2xl font-bold tracking-tight text-macos-green">${customer.totalSpent.toLocaleString()}</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div className="p-2 rounded-lg border">
-                  <p className="text-xs text-muted-foreground">Points</p>
-                  <p className="font-bold text-teal-600">{customer.loyaltyPoints}</p>
+                <div className="p-2 rounded-xl bg-secondary/50">
+                  <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Points</p>
+                  <p className="font-bold text-macos-teal text-[13px]">{customer.loyaltyPoints}</p>
                 </div>
-                <div className="p-2 rounded-lg border">
-                  <p className="text-xs text-muted-foreground">Outstanding</p>
-                  <p className="font-bold text-amber-600">${customer.outstanding.toLocaleString()}</p>
+                <div className="p-2 rounded-xl bg-secondary/50">
+                  <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Outstanding</p>
+                  <p className="font-bold text-macos-orange text-[13px]">${customer.outstanding.toLocaleString()}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <Separator />
+          <Separator className="bg-border/50" />
 
           <div>
-            <h4 className="text-sm font-semibold mb-3">Purchase History</h4>
+            <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase mb-3">Purchase History</h4>
             {(customer._count?.sales || 0) > 0 || (customer._count?.wholesaleOrders || 0) > 0 ? (
               <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 rounded border text-sm">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/50 text-[13px]">
                   <span className="flex items-center gap-2">
-                    <ShoppingBag className="size-3.5 text-emerald-600" />
+                    <ShoppingBag className="size-3.5 text-macos-green" strokeWidth={1.5} />
                     Retail Sales
                   </span>
-                  <Badge variant="secondary">{customer._count?.sales || 0} orders</Badge>
+                  <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5">{customer._count?.sales || 0}</Badge>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded border text-sm">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/50 text-[13px]">
                   <span className="flex items-center gap-2">
-                    <DollarSign className="size-3.5 text-teal-600" />
+                    <DollarSign className="size-3.5 text-macos-teal" strokeWidth={1.5} />
                     Wholesale Orders
                   </span>
-                  <Badge variant="secondary">{customer._count?.wholesaleOrders || 0} orders</Badge>
+                  <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5">{customer._count?.wholesaleOrders || 0}</Badge>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No purchase history yet</p>
+              <p className="text-[13px] text-muted-foreground text-center py-4">No purchase history yet</p>
             )}
           </div>
 
           {customer.school && (
             <>
-              <Separator />
+              <Separator className="bg-border/50" />
               <div>
-                <h4 className="text-sm font-semibold mb-2">Linked School</h4>
-                <div className="flex items-center gap-2 p-2 rounded border text-sm">
-                  <Award className="size-4 text-amber-600" />
+                <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase mb-2">Linked School</h4>
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-secondary/50 text-[13px]">
+                  <Award className="size-4 text-macos-orange" strokeWidth={1.5} />
                   <span>{customer.school.name}</span>
                 </div>
               </div>
@@ -963,27 +971,21 @@ function CreateCampaignDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Create Campaign</DialogTitle>
-          <DialogDescription>Launch a new marketing campaign</DialogDescription>
+          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Campaign</DialogTitle>
+          <DialogDescription className="text-[11px]">Launch a new marketing campaign</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="camp-name">Campaign Name *</Label>
-            <Input
-              id="camp-name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Summer Reading Sale"
-              required
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Campaign Name *</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Summer Reading Sale" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Campaign Type</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Campaign Type</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -995,9 +997,9 @@ function CreateCampaignDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Target Audience</Label>
+              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Target Audience</Label>
               <Select value={form.target} onValueChange={(v) => setForm({ ...form, target: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1011,30 +1013,16 @@ function CreateCampaignDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="camp-message">Message *</Label>
-            <Textarea
-              id="camp-message"
-              value={form.message}
-              onChange={(e) => setForm({ ...form, message: e.target.value })}
-              placeholder="Write your campaign message..."
-              rows={4}
-              required
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Message *</Label>
+            <Textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Write your campaign message..." rows={4} className="rounded-lg bg-secondary/80 border-0 text-[13px]" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="camp-schedule">Schedule (optional)</Label>
-            <Input
-              id="camp-schedule"
-              type="datetime-local"
-              value={form.scheduledAt}
-              onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
-            />
+            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Schedule (optional)</Label>
+            <Input type="datetime-local" value={form.scheduledAt} onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving || !form.name.trim() || !form.message.trim()} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+            <Button type="submit" disabled={saving || !form.name.trim() || !form.message.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
               {saving ? 'Creating...' : 'Create Campaign'}
             </Button>
           </DialogFooter>

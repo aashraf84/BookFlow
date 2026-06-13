@@ -27,7 +27,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -341,8 +340,8 @@ export function RetailPOSModule() {
   const paymentMethods = [
     { value: 'cash', label: 'Cash', icon: Banknote },
     { value: 'card', label: 'Card', icon: CreditCard },
-    { value: 'bank', label: 'Bank Transfer', icon: Building },
-    { value: 'wallet', label: 'Digital Wallet', icon: Smartphone },
+    { value: 'bank', label: 'Bank', icon: Building },
+    { value: 'wallet', label: 'Wallet', icon: Smartphone },
   ]
 
   // Category filters
@@ -357,16 +356,16 @@ export function RetailPOSModule() {
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Point of Sale</h2>
-        <p className="text-muted-foreground text-sm">Process retail sales quickly and efficiently</p>
+        <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Point of Sale</h2>
+        <p className="text-[11px] text-muted-foreground tracking-tight">Process retail sales quickly and efficiently</p>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
-          <AlertCircle className="size-4 shrink-0" />
+        <div className="flex items-center gap-2 rounded-xl bg-macos-red/10 p-3 text-[13px] text-macos-red macos-shadow">
+          <AlertCircle className="size-3.5 shrink-0" />
           {error}
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setError(null)}>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[11px] text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
             Dismiss
           </Button>
         </div>
@@ -374,38 +373,38 @@ export function RetailPOSModule() {
 
       {/* Receipt Dialog */}
       <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[450px] rounded-2xl macos-shadow-elevated">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Receipt className="size-5 text-emerald-600" />
+            <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+              <Receipt className="size-4 text-macos-green" />
               Sale Completed
             </DialogTitle>
-            <DialogDescription>Your transaction has been processed successfully</DialogDescription>
+            <DialogDescription className="text-[11px]">Your transaction has been processed successfully</DialogDescription>
           </DialogHeader>
           {completedSale && (
             <div className="space-y-4 py-4">
               <div className="text-center space-y-1">
-                <p className="text-lg font-bold">BookFlow OS</p>
-                <p className="text-xs text-muted-foreground">Invoice: {completedSale.invoiceNumber}</p>
-                <p className="text-xs text-muted-foreground">{new Date().toLocaleString()}</p>
+                <p className="text-[13px] font-semibold tracking-tight">BookFlow OS</p>
+                <p className="text-[11px] text-muted-foreground">Invoice: {completedSale.invoiceNumber}</p>
+                <p className="text-[11px] text-muted-foreground">{new Date().toLocaleString()}</p>
               </div>
               <Separator />
               <div className="space-y-2">
                 {completedSale.items.map((item, i) => (
-                  <div key={i} className="flex justify-between text-sm">
+                  <div key={i} className="flex justify-between text-[13px] tracking-tight">
                     <span className="flex-1 truncate mr-2">{item.name} x{item.quantity}</span>
                     <span className="font-medium">${item.totalPrice.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
               <Separator />
-              <div className="space-y-1 text-sm">
+              <div className="space-y-1.5 text-[13px] tracking-tight">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>${completedSale.subtotal.toFixed(2)}</span>
                 </div>
                 {completedSale.discount > 0 && (
-                  <div className="flex justify-between text-emerald-600">
+                  <div className="flex justify-between text-macos-green">
                     <span>Discount</span>
                     <span>-${completedSale.discount.toFixed(2)}</span>
                   </div>
@@ -417,20 +416,20 @@ export function RetailPOSModule() {
                   </div>
                 )}
                 <Separator />
-                <div className="flex justify-between font-bold text-lg">
+                <div className="flex justify-between font-bold text-base tracking-tight">
                   <span>Total</span>
                   <span>${completedSale.total.toFixed(2)}</span>
                 </div>
               </div>
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="flex justify-between text-[11px] text-muted-foreground">
                 <span>Payment: {completedSale.paymentMethod}</span>
                 {completedSale.customerName && <span>Customer: {completedSale.customerName}</span>}
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button onClick={() => setCompletedSale(null)} className="bg-emerald-600 hover:bg-emerald-700">
-              <Check className="size-4 mr-1.5" />
+            <Button onClick={() => setCompletedSale(null)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+              <Check className="size-3.5 mr-1.5" />
               Done
             </Button>
           </DialogFooter>
@@ -442,103 +441,95 @@ export function RetailPOSModule() {
         {/* Left: Products */}
         <div className="lg:col-span-3 space-y-4">
           {/* Search + Category Filter */}
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, ISBN, or barcode..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {categoryFilters.map((cat) => {
-                  const Icon = cat.icon
-                  const isActive = categoryFilter === cat.value
-                  return (
-                    <Button
-                      key={cat.value}
-                      variant={isActive ? 'default' : 'outline'}
-                      size="sm"
-                      className={isActive ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
-                      onClick={() => setCategoryFilter(cat.value)}
-                    >
-                      <Icon className="size-3.5 mr-1.5" />
-                      {cat.label}
-                    </Button>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="rounded-2xl macos-shadow p-4 space-y-3 bg-background">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, ISBN, or barcode..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {categoryFilters.map((cat) => {
+                const Icon = cat.icon
+                const isActive = categoryFilter === cat.value
+                return (
+                  <button
+                    key={cat.value}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-md transition-all ${isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground bg-secondary/50'}`}
+                    onClick={() => setCategoryFilter(cat.value)}
+                  >
+                    <Icon className="size-3" />
+                    {cat.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           {/* Product Grid */}
           {searchLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardContent className="p-3 space-y-2">
-                    <div className="h-4 bg-muted rounded w-3/4" />
-                    <div className="h-3 bg-muted rounded w-1/2" />
-                    <div className="h-5 bg-muted rounded w-1/3" />
-                  </CardContent>
-                </Card>
+                <div key={i} className="rounded-2xl macos-shadow p-3 bg-background animate-pulse">
+                  <div className="h-3.5 bg-secondary rounded w-3/4 mb-2" />
+                  <div className="h-3 bg-secondary rounded w-1/2 mb-2" />
+                  <div className="h-4 bg-secondary rounded w-1/3" />
+                </div>
               ))}
             </div>
           ) : products.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <Package className="size-12 text-muted-foreground/40 mb-3" />
-                <p className="text-muted-foreground">No products found</p>
-                <p className="text-xs text-muted-foreground mt-1">Try a different search or category</p>
-              </CardContent>
-            </Card>
+            <div className="rounded-2xl macos-shadow bg-background flex flex-col items-center justify-center py-16 text-center">
+              <Package className="size-12 text-muted-foreground/30 mb-3" />
+              <p className="text-[13px] text-muted-foreground">No products found</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Try a different search or category</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {products.map((product) => {
                 const inCart = cart.find((c) => c.product.id === product.id && c.product.type === product.type)
                 return (
-                  <Card
+                  <div
                     key={`${product.type}-${product.id}`}
-                    className={`cursor-pointer transition-all hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-700 ${inCart ? 'ring-2 ring-emerald-500/50 border-emerald-300 dark:border-emerald-700' : ''}`}
+                    className={`rounded-2xl macos-shadow p-3 bg-background cursor-pointer transition-all hover:shadow-lg ${inCart ? 'ring-1 ring-macos-green/40' : ''}`}
                     onClick={() => addToCart(product)}
                   >
-                    <CardContent className="p-3 space-y-1.5">
+                    <div className="space-y-1.5">
                       <div className="flex items-start justify-between gap-1">
-                        <p className="font-medium text-sm leading-tight line-clamp-2">{product.name}</p>
-                        <Badge variant="outline" className="text-[10px] shrink-0">
+                        <p className="text-[13px] font-medium leading-tight line-clamp-2 tracking-tight">{product.name}</p>
+                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple shrink-0">
                           {product.type === 'book' ? 'Book' : 'Item'}
-                        </Badge>
+                        </span>
                       </div>
                       {product.author && (
-                        <p className="text-xs text-muted-foreground truncate">by {product.author}</p>
+                        <p className="text-[11px] text-muted-foreground truncate tracking-tight">by {product.author}</p>
                       )}
                       {product.brand && (
-                        <p className="text-xs text-muted-foreground truncate">{product.brand}</p>
+                        <p className="text-[11px] text-muted-foreground truncate tracking-tight">{product.brand}</p>
                       )}
                       <div className="flex items-center justify-between">
                         <div>
                           {product.discount > 0 ? (
                             <div className="flex items-center gap-1">
-                              <span className="text-xs text-muted-foreground line-through">${product.price.toFixed(2)}</span>
-                              <span className="text-sm font-bold text-emerald-600">${(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
+                              <span className="text-[11px] text-muted-foreground line-through tracking-tight">${product.price.toFixed(2)}</span>
+                              <span className="text-[13px] font-bold text-macos-green tracking-tight">${(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
                             </div>
                           ) : (
-                            <span className="text-sm font-bold">${product.price.toFixed(2)}</span>
+                            <span className="text-[13px] font-bold tracking-tight">${product.price.toFixed(2)}</span>
                           )}
                         </div>
                         {inCart ? (
-                          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-xs">
+                          <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
                             x{inCart.quantity}
-                          </Badge>
+                          </span>
                         ) : (
-                          <Plus className="size-4 text-emerald-600" />
+                          <Plus className="size-4 text-macos-green" />
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 )
               })}
             </div>
@@ -547,43 +538,43 @@ export function RetailPOSModule() {
 
         {/* Right: Cart */}
         <div className="lg:col-span-2">
-          <Card className="sticky top-4">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShoppingCart className="size-4" />
-                  Cart ({cart.length})
-                </CardTitle>
-                {cart.length > 0 && (
-                  <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={clearCart}>
-                    <Trash2 className="size-3.5 mr-1" />
-                    Clear
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="rounded-2xl macos-shadow bg-background sticky top-4">
+            {/* Cart Header */}
+            <div className="p-4 pb-3 flex items-center justify-between border-b border-border/30">
+              <h3 className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+                <ShoppingCart className="size-3.5" />
+                Cart ({cart.length})
+              </h3>
+              {cart.length > 0 && (
+                <Button variant="ghost" size="sm" className="h-6 text-[11px] text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-md" onClick={clearCart}>
+                  <Trash2 className="size-3 mr-1" />
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            <div className="p-4 space-y-4">
               {/* Customer Selection */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-muted-foreground">Customer</Label>
-                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setCustomerLookupOpen(true)}>
+                  <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Customer</Label>
+                  <Button variant="ghost" size="sm" className="h-5 text-[11px] rounded-md" onClick={() => setCustomerLookupOpen(true)}>
                     <UserCircle className="size-3 mr-1" />
                     {selectedCustomer ? 'Change' : 'Select'}
                   </Button>
                 </div>
                 {selectedCustomer ? (
-                  <div className="flex items-center justify-between rounded-lg border p-2">
+                  <div className="flex items-center justify-between rounded-xl bg-secondary/50 p-2.5">
                     <div>
-                      <p className="text-sm font-medium">{selectedCustomer.name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedCustomer.loyaltyPoints} pts</p>
+                      <p className="text-[13px] font-medium tracking-tight">{selectedCustomer.name}</p>
+                      <p className="text-[11px] text-muted-foreground tracking-tight">{selectedCustomer.loyaltyPoints} pts</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="size-6" onClick={() => setSelectedCustomer(null)}>
+                    <Button variant="ghost" size="icon" className="size-5 rounded-md" onClick={() => setSelectedCustomer(null)}>
                       <X className="size-3" />
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Walk-in customer</p>
+                  <p className="text-[11px] text-muted-foreground tracking-tight">Walk-in customer</p>
                 )}
               </div>
 
@@ -593,53 +584,47 @@ export function RetailPOSModule() {
               <ScrollArea className="max-h-64">
                 {cart.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <ShoppingCart className="size-8 text-muted-foreground/40 mb-2" />
-                    <p className="text-sm text-muted-foreground">Cart is empty</p>
+                    <ShoppingCart className="size-8 text-muted-foreground/30 mb-2" />
+                    <p className="text-[13px] text-muted-foreground tracking-tight">Cart is empty</p>
                   </div>
                 ) : (
                   <div className="space-y-2 pr-1">
                     {cart.map((item, index) => (
-                      <div key={`${item.product.type}-${item.product.id}`} className="flex items-start gap-2 rounded-lg border p-2">
+                      <div key={`${item.product.type}-${item.product.id}`} className="flex items-start gap-2 rounded-xl bg-secondary/30 p-2.5">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{item.product.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted-foreground">${item.unitPrice.toFixed(2)}</span>
+                          <p className="text-[13px] font-medium truncate tracking-tight">{item.product.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] text-muted-foreground tracking-tight">${item.unitPrice.toFixed(2)}</span>
                             {item.discount > 0 && (
-                              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px] px-1 py-0">
+                              <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0 bg-macos-green/10 text-macos-green">
                                 -{item.discount}%
-                              </Badge>
+                              </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="size-6"
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            className="size-6 rounded-md bg-secondary/80 flex items-center justify-center hover:bg-secondary transition-colors"
                             onClick={() => updateQuantity(index, item.quantity - 1)}
                           >
-                            <Minus className="size-3" />
-                          </Button>
-                          <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="size-6"
+                            <Minus className="size-2.5" />
+                          </button>
+                          <span className="w-7 text-center text-[13px] font-medium tracking-tight">{item.quantity}</span>
+                          <button
+                            className="size-6 rounded-md bg-secondary/80 flex items-center justify-center hover:bg-secondary transition-colors"
                             onClick={() => updateQuantity(index, item.quantity + 1)}
                           >
-                            <Plus className="size-3" />
-                          </Button>
+                            <Plus className="size-2.5" />
+                          </button>
                         </div>
-                        <div className="text-right min-w-[60px]">
-                          <p className="text-sm font-medium">${item.totalPrice.toFixed(2)}</p>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-5 text-red-500 hover:text-red-600 mt-0.5"
+                        <div className="text-right min-w-[50px]">
+                          <p className="text-[13px] font-medium tracking-tight">${item.totalPrice.toFixed(2)}</p>
+                          <button
+                            className="size-4 text-macos-red hover:text-macos-red/80 mt-0.5 inline-flex items-center justify-center"
                             onClick={() => removeFromCart(index)}
                           >
-                            <X className="size-3" />
-                          </Button>
+                            <X className="size-2.5" />
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -650,14 +635,14 @@ export function RetailPOSModule() {
               <Separator />
 
               {/* Discount */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Tag className="size-3" />
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1">
+                  <Tag className="size-2.5" />
                   Cart Discount
                 </Label>
                 <div className="flex gap-2">
                   <Select value={discountType} onValueChange={(v: 'percentage' | 'fixed') => setDiscountType(v)}>
-                    <SelectTrigger className="w-[110px]">
+                    <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-[100px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -672,14 +657,14 @@ export function RetailPOSModule() {
                     value={cartDiscount || ''}
                     onChange={(e) => setCartDiscount(parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="w-24"
+                    className="w-20 rounded-lg bg-secondary/80 border-0 text-[13px] h-7 focus-visible:ring-1 focus-visible:ring-primary/30"
                   />
                 </div>
               </div>
 
               {/* Tax */}
               <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Tax Rate (%)</Label>
+                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Tax Rate (%)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -687,20 +672,20 @@ export function RetailPOSModule() {
                   value={taxRate || ''}
                   onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
                   placeholder="0"
-                  className="w-20 text-right"
+                  className="w-16 text-right rounded-lg bg-secondary/80 border-0 text-[13px] h-7 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
 
               <Separator />
 
               {/* Totals */}
-              <div className="space-y-1.5 text-sm">
+              <div className="space-y-1.5 text-[13px] tracking-tight">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 {discountAmount > 0 && (
-                  <div className="flex justify-between text-emerald-600">
+                  <div className="flex justify-between text-macos-green">
                     <span>Discount</span>
                     <span>-${discountAmount.toFixed(2)}</span>
                   </div>
@@ -712,7 +697,7 @@ export function RetailPOSModule() {
                   </div>
                 )}
                 <Separator />
-                <div className="flex justify-between font-bold text-lg">
+                <div className="flex justify-between font-bold text-base tracking-tight">
                   <span>Total</span>
                   <span>${total.toFixed(2)}</span>
                 </div>
@@ -720,18 +705,18 @@ export function RetailPOSModule() {
 
               {/* Payment Method */}
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Payment Method</Label>
+                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Payment Method</Label>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-2 gap-2">
                   {paymentMethods.map((pm) => {
                     const Icon = pm.icon
                     return (
                       <Label
                         key={pm.value}
-                        className={`flex items-center gap-2 rounded-lg border p-2.5 cursor-pointer transition-colors ${paymentMethod === pm.value ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30' : 'hover:bg-muted/50'}`}
+                        className={`flex items-center gap-2 rounded-xl p-2.5 cursor-pointer transition-all ${paymentMethod === pm.value ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-secondary/50 hover:bg-secondary/80'}`}
                       >
                         <RadioGroupItem value={pm.value} className="sr-only" />
-                        <Icon className="size-4" />
-                        <span className="text-sm">{pm.label}</span>
+                        <Icon className="size-3.5" />
+                        <span className="text-[12px] font-medium">{pm.label}</span>
                       </Label>
                     )
                   })}
@@ -740,52 +725,52 @@ export function RetailPOSModule() {
 
               {/* Complete Sale */}
               <Button
-                className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-base font-semibold"
+                className="w-full bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-11"
                 onClick={handleCompleteSale}
                 disabled={cart.length === 0 || completing}
               >
                 {completing ? (
                   <>
-                    <Loader2 className="size-5 mr-2 animate-spin" />
+                    <Loader2 className="size-4 mr-2 animate-spin" />
                     Processing...
                   </>
                 ) : (
                   <>
-                    <Check className="size-5 mr-2" />
+                    <Check className="size-4 mr-2" />
                     Complete Sale — ${total.toFixed(2)}
                   </>
                 )}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Customer Lookup Dialog */}
       <Dialog open={customerLookupOpen} onOpenChange={setCustomerLookupOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] rounded-2xl macos-shadow-elevated">
           <DialogHeader>
-            <DialogTitle>Select Customer</DialogTitle>
-            <DialogDescription>Search for an existing customer</DialogDescription>
+            <DialogTitle className="text-[13px] font-semibold tracking-tight">Select Customer</DialogTitle>
+            <DialogDescription className="text-[11px]">Search for an existing customer</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
               <Input
                 placeholder="Search by name, email, or phone..."
                 value={customerSearch}
                 onChange={(e) => setCustomerSearch(e.target.value)}
-                className="pl-8"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
             <div className="max-h-64 overflow-y-auto space-y-1">
               {customers.length === 0 && customerSearch ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No customers found</p>
+                <p className="text-[13px] text-muted-foreground text-center py-4 tracking-tight">No customers found</p>
               ) : (
                 customers.map((c) => (
                   <button
                     key={c.id}
-                    className="w-full flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors text-left"
+                    className="w-full flex items-center justify-between rounded-xl p-3 hover:bg-secondary/50 transition-colors text-left"
                     onClick={() => {
                       setSelectedCustomer(c)
                       setCustomerLookupOpen(false)
@@ -793,10 +778,10 @@ export function RetailPOSModule() {
                     }}
                   >
                     <div>
-                      <p className="text-sm font-medium">{c.name}</p>
-                      <p className="text-xs text-muted-foreground">{c.email || c.phone || 'No contact info'}</p>
+                      <p className="text-[13px] font-medium tracking-tight">{c.name}</p>
+                      <p className="text-[11px] text-muted-foreground tracking-tight">{c.email || c.phone || 'No contact info'}</p>
                     </div>
-                    <Badge variant="outline" className="text-xs">{c.loyaltyPoints} pts</Badge>
+                    <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-teal/10 text-macos-teal">{c.loyaltyPoints} pts</span>
                   </button>
                 ))
               )}
@@ -804,7 +789,8 @@ export function RetailPOSModule() {
           </div>
           <DialogFooter>
             <Button
-              variant="outline"
+              variant="ghost"
+              className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8"
               onClick={() => {
                 setCustomerLookupOpen(false)
                 setCustomerSearch('')

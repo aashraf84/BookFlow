@@ -11,8 +11,8 @@ import {
   BookOpen,
   RefreshCw,
   X,
+  Filter,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,7 +33,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Select,
@@ -124,6 +123,21 @@ const emptyForm: BookFormData = {
   academicLevel: '',
   subject: '',
   barcode: '',
+}
+
+// ── Cover colors for thumbnails ────────────────────────────────
+const coverColors = [
+  'bg-macos-blue', 'bg-macos-green', 'bg-macos-orange',
+  'bg-macos-purple', 'bg-macos-pink', 'bg-macos-teal',
+  'bg-macos-red', 'bg-macos-indigo',
+]
+
+const getCoverColor = (title: string) => {
+  let hash = 0
+  for (let i = 0; i < title.length; i++) {
+    hash = title.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return coverColors[Math.abs(hash) % coverColors.length]
 }
 
 // ── Component ────────────────────────────────────────────────────
@@ -308,219 +322,230 @@ export default function BookCatalogModule() {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
 
-  // ── Helpers for inventory stock display ──────────────────────
-  // We fetch stock from inventory for each book or show N/A
-  // For now, we'll just show the price and status
+  const hasActiveFilters = search || (filterCategory && filterCategory !== 'all') || (filterAuthor && filterAuthor !== 'all') || (filterPublisher && filterPublisher !== 'all')
 
   return (
     <div className="space-y-4">
-      {/* ── Header + Add Button ─────────────────────────────── */}
+      {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold tracking-tight">Book Catalog</h2>
-          <p className="text-sm text-muted-foreground">{total} books in collection</p>
+          <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-blue/10 text-macos-blue">
+            {total} books
+          </Badge>
         </div>
-        <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4 mr-2" /> Add Book
+        <Button onClick={openAdd} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+          <Plus className="size-4 mr-1.5" strokeWidth={1.5} /> Add Book
         </Button>
       </div>
 
       {/* ── Search & Filters ────────────────────────────────── */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by title, ISBN, author..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterAuthor} onValueChange={setFilterAuthor}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Authors" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Authors</SelectItem>
-                {authors.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterPublisher} onValueChange={setFilterPublisher}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Publishers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Publishers</SelectItem>
-                {publishers.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {(search || (filterCategory && filterCategory !== 'all') || (filterAuthor && filterAuthor !== 'all') || (filterPublisher && filterPublisher !== 'all')) && (
-            <div className="mt-2 flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearch('')
-                  setFilterCategory('')
-                  setFilterAuthor('')
-                  setFilterPublisher('')
-                }}
-              >
-                <X className="size-3 mr-1" /> Clear filters
-              </Button>
-            </div>
+      <div className="rounded-2xl macos-shadow bg-card p-4">
+        {/* Spotlight-style search */}
+        <div className="relative mb-3">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" strokeWidth={1.5} />
+          <Input
+            placeholder="Search by title, ISBN, author..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+          />
+        </div>
+        {/* Filter pills */}
+        <div className="flex flex-wrap gap-2">
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-auto min-w-[130px] focus-visible:ring-1 focus-visible:ring-primary/30">
+              <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterAuthor} onValueChange={setFilterAuthor}>
+            <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-auto min-w-[130px] focus-visible:ring-1 focus-visible:ring-primary/30">
+              <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+              <SelectValue placeholder="All Authors" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Authors</SelectItem>
+              {authors.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterPublisher} onValueChange={setFilterPublisher}>
+            <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-auto min-w-[130px] focus-visible:ring-1 focus-visible:ring-primary/30">
+              <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+              <SelectValue placeholder="All Publishers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Publishers</SelectItem>
+              {publishers.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setSearch('')
+                setFilterCategory('')
+                setFilterAuthor('')
+                setFilterPublisher('')
+              }}
+              className="macos-pill flex items-center gap-1 bg-secondary/80 px-3 py-1 text-[11px] font-medium text-muted-foreground hover:bg-secondary"
+            >
+              <X className="size-3" strokeWidth={1.5} /> Clear
+            </button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* ── Books Table ─────────────────────────────────────── */}
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-4 space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : books.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <BookOpen className="size-10 mb-3 opacity-40" />
-              <p className="font-medium">No books found</p>
-              <p className="text-sm">Try adjusting your search or filters</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[200px]">Title</TableHead>
-                    <TableHead>Author</TableHead>
-                    <TableHead>ISBN</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {books.map((book) => (
-                    <TableRow key={book.id}>
+      <div className="rounded-2xl macos-shadow bg-card overflow-hidden">
+        {loading ? (
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : books.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <BookOpen className="size-10 mb-3 opacity-40" strokeWidth={1.5} />
+            <p className="text-[13px] font-semibold">No books found</p>
+            <p className="text-[11px] mt-1">Try adjusting your search or filters</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b">
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground min-w-[220px]">Title</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Stock</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {books.map((book) => {
+                  const colorClass = getCoverColor(book.title)
+                  const initial = book.title.charAt(0).toUpperCase()
+                  return (
+                    <TableRow key={book.id} className="hover:bg-secondary/50">
                       <TableCell>
-                        <div>
-                          <p className="font-medium truncate max-w-[240px]">{book.title}</p>
-                          {book.subtitle && (
-                            <p className="text-xs text-muted-foreground truncate max-w-[240px]">
-                              {book.subtitle}
-                            </p>
-                          )}
+                        <div className="flex items-center gap-3">
+                          <div className={`size-8 rounded-lg ${colorClass} flex items-center justify-center shrink-0`}>
+                            <span className="text-white text-[11px] font-bold">{initial}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-medium truncate max-w-[200px]">{book.title}</p>
+                            {book.subtitle && (
+                              <p className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+                                {book.subtitle}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-[13px] text-muted-foreground">
                         {book.author?.name || '—'}
                       </TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-xs">
+                      <TableCell className="text-[13px] text-muted-foreground font-mono">
                         {book.isbn || '—'}
                       </TableCell>
                       <TableCell>
                         {book.category ? (
-                          <Badge variant="outline" className="text-xs">
+                          <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
                             {book.category.name}
                           </Badge>
                         ) : (
-                          '—'
+                          <span className="text-[13px] text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableCell className="text-[13px] text-right font-semibold tracking-tight">
                         {formatCurrency(book.price)}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={book.isActive ? 'secondary' : 'destructive'}
-                          className="text-xs"
-                        >
-                          {book.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
+                        <div className="flex items-center gap-1.5">
+                          <div className={`size-2 rounded-full ${
+                            book.isActive ? 'bg-macos-green' : 'bg-macos-red'
+                          }`} />
+                          <span className="text-[11px] text-muted-foreground">
+                            {book.isActive ? 'In Stock' : 'Out'}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-8"
+                            className="size-7 rounded-lg"
                             onClick={() => openEdit(book)}
                           >
-                            <Pencil className="size-3.5" />
+                            <Pencil className="size-3.5" strokeWidth={1.5} />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-8 text-destructive hover:text-destructive"
+                            className="size-7 rounded-lg text-macos-red hover:text-macos-red"
                             onClick={() => handleDelete(book.id)}
                             disabled={deleting === book.id}
                           >
                             {deleting === book.id ? (
-                              <RefreshCw className="size-3.5 animate-spin" />
+                              <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
                             ) : (
-                              <Trash2 className="size-3.5" />
+                              <Trash2 className="size-3.5" strokeWidth={1.5} />
                             )}
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
       {/* ── Pagination ──────────────────────────────────────── */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {page} of {totalPages} ({total} results)
+          <p className="text-[11px] text-muted-foreground">
+            Page {page} of {totalPages} · {total} results
           </p>
           <div className="flex gap-1">
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
+              className="rounded-lg h-7 text-[13px]"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
             >
-              <ChevronLeft className="size-4" />
+              <ChevronLeft className="size-4" strokeWidth={1.5} />
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
+              className="rounded-lg h-7 text-[13px]"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >
-              <ChevronRight className="size-4" />
+              <ChevronRight className="size-4" strokeWidth={1.5} />
             </Button>
           </div>
         </div>
@@ -536,58 +561,64 @@ export default function BookCatalogModule() {
       }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Edit Book' : 'Add New Book'}</DialogTitle>
+            <DialogTitle className="text-[13px] font-semibold tracking-tight">
+              {editing ? 'Edit Book' : 'Add New Book'}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
             {/* Title */}
             <div className="sm:col-span-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title" className="text-[11px] font-semibold">Title *</Label>
               <Input
                 id="title"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="Book title"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Subtitle */}
             <div className="sm:col-span-2">
-              <Label htmlFor="subtitle">Subtitle</Label>
+              <Label htmlFor="subtitle" className="text-[11px] font-semibold">Subtitle</Label>
               <Input
                 id="subtitle"
                 value={form.subtitle}
                 onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
                 placeholder="Subtitle (optional)"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* ISBN */}
             <div>
-              <Label htmlFor="isbn">ISBN</Label>
+              <Label htmlFor="isbn" className="text-[11px] font-semibold">ISBN</Label>
               <Input
                 id="isbn"
                 value={form.isbn}
                 onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
                 placeholder="978-..."
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Barcode */}
             <div>
-              <Label htmlFor="barcode">Barcode</Label>
+              <Label htmlFor="barcode" className="text-[11px] font-semibold">Barcode</Label>
               <Input
                 id="barcode"
                 value={form.barcode}
                 onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
                 placeholder="Barcode"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Author */}
             <div>
-              <Label>Author</Label>
+              <Label className="text-[11px] font-semibold">Author</Label>
               <Select value={form.authorId} onValueChange={(v) => setForm((f) => ({ ...f, authorId: v === '__none__' ? '' : v }))}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30">
                   <SelectValue placeholder="Select author" />
                 </SelectTrigger>
                 <SelectContent>
@@ -603,9 +634,9 @@ export default function BookCatalogModule() {
 
             {/* Publisher */}
             <div>
-              <Label>Publisher</Label>
+              <Label className="text-[11px] font-semibold">Publisher</Label>
               <Select value={form.publisherId} onValueChange={(v) => setForm((f) => ({ ...f, publisherId: v === '__none__' ? '' : v }))}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30">
                   <SelectValue placeholder="Select publisher" />
                 </SelectTrigger>
                 <SelectContent>
@@ -621,9 +652,9 @@ export default function BookCatalogModule() {
 
             {/* Category */}
             <div>
-              <Label>Category</Label>
+              <Label className="text-[11px] font-semibold">Category</Label>
               <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v === '__none__' ? '' : v }))}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -639,47 +670,51 @@ export default function BookCatalogModule() {
 
             {/* Edition */}
             <div>
-              <Label htmlFor="edition">Edition</Label>
+              <Label htmlFor="edition" className="text-[11px] font-semibold">Edition</Label>
               <Input
                 id="edition"
                 value={form.edition}
                 onChange={(e) => setForm((f) => ({ ...f, edition: e.target.value }))}
                 placeholder="e.g. 3rd"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Language */}
             <div>
-              <Label htmlFor="language">Language</Label>
+              <Label htmlFor="language" className="text-[11px] font-semibold">Language</Label>
               <Input
                 id="language"
                 value={form.language}
                 onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
                 placeholder="English"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Pages */}
             <div>
-              <Label htmlFor="pages">Pages</Label>
+              <Label htmlFor="pages" className="text-[11px] font-semibold">Pages</Label>
               <Input
                 id="pages"
                 type="number"
                 value={form.pages}
                 onChange={(e) => setForm((f) => ({ ...f, pages: e.target.value }))}
                 placeholder="0"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Publish Year */}
             <div>
-              <Label htmlFor="publishYear">Publish Year</Label>
+              <Label htmlFor="publishYear" className="text-[11px] font-semibold">Publish Year</Label>
               <Input
                 id="publishYear"
                 type="number"
                 value={form.publishYear}
                 onChange={(e) => setForm((f) => ({ ...f, publishYear: e.target.value }))}
                 placeholder="2024"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
@@ -687,7 +722,7 @@ export default function BookCatalogModule() {
 
             {/* Price */}
             <div>
-              <Label htmlFor="price">Price ($)</Label>
+              <Label htmlFor="price" className="text-[11px] font-semibold">Price ($)</Label>
               <Input
                 id="price"
                 type="number"
@@ -695,12 +730,13 @@ export default function BookCatalogModule() {
                 value={form.price}
                 onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                 placeholder="0.00"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Cost Price */}
             <div>
-              <Label htmlFor="costPrice">Cost Price ($)</Label>
+              <Label htmlFor="costPrice" className="text-[11px] font-semibold">Cost Price ($)</Label>
               <Input
                 id="costPrice"
                 type="number"
@@ -708,12 +744,13 @@ export default function BookCatalogModule() {
                 value={form.costPrice}
                 onChange={(e) => setForm((f) => ({ ...f, costPrice: e.target.value }))}
                 placeholder="0.00"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Discount */}
             <div>
-              <Label htmlFor="discount">Discount (%)</Label>
+              <Label htmlFor="discount" className="text-[11px] font-semibold">Discount (%)</Label>
               <Input
                 id="discount"
                 type="number"
@@ -721,47 +758,52 @@ export default function BookCatalogModule() {
                 value={form.discount}
                 onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
                 placeholder="0"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Academic Level */}
             <div>
-              <Label htmlFor="academicLevel">Academic Level</Label>
+              <Label htmlFor="academicLevel" className="text-[11px] font-semibold">Academic Level</Label>
               <Input
                 id="academicLevel"
                 value={form.academicLevel}
                 onChange={(e) => setForm((f) => ({ ...f, academicLevel: e.target.value }))}
                 placeholder="e.g. University, High School"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Subject */}
             <div className="sm:col-span-2">
-              <Label htmlFor="subject">Subject</Label>
+              <Label htmlFor="subject" className="text-[11px] font-semibold">Subject</Label>
               <Input
                 id="subject"
                 value={form.subject}
                 onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
                 placeholder="e.g. Mathematics, History"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Description */}
             <div className="sm:col-span-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-[11px] font-semibold">Description</Label>
               <Textarea
                 id="description"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 placeholder="Book description..."
                 rows={3}
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
-              variant="outline"
+              variant="secondary"
+              className="rounded-lg text-[13px] font-medium h-8"
               onClick={() => {
                 setDialogOpen(false)
                 setEditing(null)
@@ -773,12 +815,12 @@ export default function BookCatalogModule() {
             <Button
               onClick={handleSave}
               disabled={saving || !form.title.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8"
             >
               {saving ? (
-                <RefreshCw className="size-4 mr-2 animate-spin" />
+                <RefreshCw className="size-4 mr-1.5 animate-spin" strokeWidth={1.5} />
               ) : (
-                <Plus className="size-4 mr-2" />
+                <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
               )}
               {editing ? 'Update Book' : 'Create Book'}
             </Button>

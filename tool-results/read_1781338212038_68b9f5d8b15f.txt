@@ -1,0 +1,637 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Printer,
+     6→  Plus,
+     7→  FileText,
+     8→  BookOpen,
+     9→  CheckCircle2,
+    10→  XCircle,
+    11→  Eye,
+    12→  ArrowRight,
+    13→  Clock,
+    14→  Package,
+    15→  DollarSign,
+    16→} from 'lucide-react'
+    17→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+    18→import { Button } from '@/components/ui/button'
+    19→import { Input } from '@/components/ui/input'
+    20→import { Label } from '@/components/ui/label'
+    21→import { Textarea } from '@/components/ui/textarea'
+    22→import { Badge } from '@/components/ui/badge'
+    23→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+    24→import {
+    25→  Dialog,
+    26→  DialogContent,
+    27→  DialogDescription,
+    28→  DialogFooter,
+    29→  DialogHeader,
+    30→  DialogTitle,
+    31→} from '@/components/ui/dialog'
+    32→import {
+    33→  Select,
+    34→  SelectContent,
+    35→  SelectItem,
+    36→  SelectTrigger,
+    37→  SelectValue,
+    38→} from '@/components/ui/select'
+    39→import {
+    40→  Table,
+    41→  TableBody,
+    42→  TableCell,
+    43→  TableHead,
+    44→  TableHeader,
+    45→  TableRow,
+    46→} from '@/components/ui/table'
+    47→import { useToast } from '@/hooks/use-toast'
+    48→
+    49→// Types
+    50→interface Manuscript {
+    51→  id: string
+    52→  title: string
+    53→  author: string | null
+    54→  status: string
+    55→  submittedAt: string
+    56→  reviewedAt: string | null
+    57→  publishedAt: string | null
+    58→  notes: string | null
+    59→  createdAt: string
+    60→  updatedAt: string
+    61→}
+    62→
+    63→interface PrintOrder {
+    64→  id: string
+    65→  bookId: string | null
+    66→  quantity: number
+    67→  status: string
+    68→  costPerUnit: number
+    69→  totalCost: number
+    70→  notes: string | null
+    71→  createdAt: string
+    72→  updatedAt: string
+    73→  book?: { id: string; title: string; isbn: string | null } | null
+    74→}
+    75→
+    76→interface BookOption {
+    77→  id: string
+    78→  title: string
+    79→  isbn: string | null
+    80→}
+    81→
+    82→const manuscriptStatusColors: Record<string, string> = {
+    83→  submitted: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
+    84→  reviewed: 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400',
+    85→  approved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
+    86→  published: 'bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400',
+    87→  rejected: 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400',
+    88→}
+    89→
+    90→const printStatusColors: Record<string, string> = {
+    91→  ordered: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',
+    92→  printing: 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400',
+    93→  completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400',
+    94→}
+    95→
+    96→const statusWorkflow = ['submitted', 'reviewed', 'approved', 'published']
+    97→const rejectionStates = ['rejected']
+    98→
+    99→function getNextStatus(current: string): string[] {
+   100→  if (current === 'rejected') return []
+   101→  const idx = statusWorkflow.indexOf(current)
+   102→  if (idx === -1) return []
+   103→  if (idx === statusWorkflow.length - 1) return []
+   104→  return [statusWorkflow[idx + 1]]
+   105→}
+   106→
+   107→export function PublishingModule() {
+   108→  const { toast } = useToast()
+   109→  const [manuscripts, setManuscripts] = React.useState<Manuscript[]>([])
+   110→  const [printOrders, setPrintOrders] = React.useState<PrintOrder[]>([])
+   111→  const [books, setBooks] = React.useState<BookOption[]>([])
+   112→  const [loading, setLoading] = React.useState(true)
+   113→  const [manuscriptDialogOpen, setManuscriptDialogOpen] = React.useState(false)
+   114→  const [printOrderDialogOpen, setPrintOrderDialogOpen] = React.useState(false)
+   115→  const [submitting, setSubmitting] = React.useState(false)
+   116→
+   117→  // Manuscript form
+   118→  const [msForm, setMsForm] = React.useState({ title: '', author: '', notes: '' })
+   119→  // Print order form
+   120→  const [poForm, setPoForm] = React.useState({ bookId: '', quantity: '', costPerUnit: '' })
+   121→
+   122→  const fetchManuscripts = React.useCallback(async () => {
+   123→    try {
+   124→      const res = await fetch('/api/publishing?type=manuscripts')
+   125→      if (!res.ok) throw new Error('Failed to fetch manuscripts')
+   126→      const json = await res.json()
+   127→      setManuscripts(json.data || [])
+   128→    } catch {
+   129→      toast({ title: 'Error', description: 'Failed to fetch manuscripts', variant: 'destructive' })
+   130→    }
+   131→  }, [toast])
+   132→
+   133→  const fetchPrintOrders = React.useCallback(async () => {
+   134→    try {
+   135→      const res = await fetch('/api/publishing?type=print-orders')
+   136→      if (!res.ok) throw new Error('Failed to fetch print orders')
+   137→      const json = await res.json()
+   138→      setPrintOrders(json.data || [])
+   139→    } catch {
+   140→      toast({ title: 'Error', description: 'Failed to fetch print orders', variant: 'destructive' })
+   141→    }
+   142→  }, [toast])
+   143→
+   144→  const fetchBooks = React.useCallback(async () => {
+   145→    try {
+   146→      const res = await fetch('/api/books')
+   147→      if (!res.ok) throw new Error('Failed to fetch books')
+   148→      const json = await res.json()
+   149→      setBooks(json.data || [])
+   150→    } catch {
+   151→      // Silently fail - books are optional for display
+   152→    }
+   153→  }, [])
+   154→
+   155→  React.useEffect(() => {
+   156→    const loadAll = async () => {
+   157→      setLoading(true)
+   158→      await Promise.all([fetchManuscripts(), fetchPrintOrders(), fetchBooks()])
+   159→      setLoading(false)
+   160→    }
+   161→    loadAll()
+   162→  }, [fetchManuscripts, fetchPrintOrders, fetchBooks])
+   163→
+   164→  const handleSubmitManuscript = async () => {
+   165→    if (!msForm.title) {
+   166→      toast({ title: 'Validation Error', description: 'Title is required', variant: 'destructive' })
+   167→      return
+   168→    }
+   169→    try {
+   170→      setSubmitting(true)
+   171→      const res = await fetch('/api/publishing?type=manuscripts', {
+   172→        method: 'POST',
+   173→        headers: { 'Content-Type': 'application/json' },
+   174→        body: JSON.stringify(msForm),
+   175→      })
+   176→      if (!res.ok) throw new Error('Failed to submit manuscript')
+   177→      toast({ title: 'Success', description: 'Manuscript submitted successfully' })
+   178→      setManuscriptDialogOpen(false)
+   179→      setMsForm({ title: '', author: '', notes: '' })
+   180→      fetchManuscripts()
+   181→    } catch {
+   182→      toast({ title: 'Error', description: 'Failed to submit manuscript', variant: 'destructive' })
+   183→    } finally {
+   184→      setSubmitting(false)
+   185→    }
+   186→  }
+   187→
+   188→  const handleCreatePrintOrder = async () => {
+   189→    if (!poForm.bookId || !poForm.quantity) {
+   190→      toast({ title: 'Validation Error', description: 'Book and quantity are required', variant: 'destructive' })
+   191→      return
+   192→    }
+   193→    try {
+   194→      setSubmitting(true)
+   195→      const res = await fetch('/api/publishing?type=print-orders', {
+   196→        method: 'POST',
+   197→        headers: { 'Content-Type': 'application/json' },
+   198→        body: JSON.stringify({
+   199→          bookId: poForm.bookId,
+   200→          quantity: parseInt(poForm.quantity),
+   201→          costPerUnit: parseFloat(poForm.costPerUnit) || 0,
+   202→        }),
+   203→      })
+   204→      if (!res.ok) throw new Error('Failed to create print order')
+   205→      toast({ title: 'Success', description: 'Print order created successfully' })
+   206→      setPrintOrderDialogOpen(false)
+   207→      setPoForm({ bookId: '', quantity: '', costPerUnit: '' })
+   208→      fetchPrintOrders()
+   209→    } catch {
+   210→      toast({ title: 'Error', description: 'Failed to create print order', variant: 'destructive' })
+   211→    } finally {
+   212→      setSubmitting(false)
+   213→    }
+   214→  }
+   215→
+   216→  const handleManuscriptStatus = async (manuscript: Manuscript, newStatus: string) => {
+   217→    try {
+   218→      const res = await fetch('/api/publishing?type=manuscripts', {
+   219→        method: 'PUT',
+   220→        headers: { 'Content-Type': 'application/json' },
+   221→        body: JSON.stringify({ id: manuscript.id, status: newStatus }),
+   222→      })
+   223→      if (!res.ok) throw new Error('Failed to update status')
+   224→      toast({ title: 'Success', description: `Manuscript status updated to ${newStatus}` })
+   225→      fetchManuscripts()
+   226→    } catch {
+   227→      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' })
+   228→    }
+   229→  }
+   230→
+   231→  const handlePrintOrderStatus = async (order: PrintOrder, newStatus: string) => {
+   232→    try {
+   233→      const res = await fetch('/api/publishing?type=print-orders', {
+   234→        method: 'PUT',
+   235→        headers: { 'Content-Type': 'application/json' },
+   236→        body: JSON.stringify({ id: order.id, status: newStatus }),
+   237→      })
+   238→      if (!res.ok) throw new Error('Failed to update status')
+   239→      toast({ title: 'Success', description: `Print order status updated to ${newStatus}` })
+   240→      fetchPrintOrders()
+   241→    } catch {
+   242→      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' })
+   243→    }
+   244→  }
+   245→
+   246→  // Summary metrics
+   247→  const msByStatus = manuscripts.reduce<Record<string, number>>((acc, m) => {
+   248→    acc[m.status] = (acc[m.status] || 0) + 1
+   249→    return acc
+   250→  }, {})
+   251→
+   252→  const poByStatus = printOrders.reduce<Record<string, number>>((acc, o) => {
+   253→    acc[o.status] = (acc[o.status] || 0) + 1
+   254→    return acc
+   255→  }, {})
+   256→
+   257→  const totalPrintCost = printOrders.reduce((sum, o) => sum + o.totalCost, 0)
+   258→
+   259→  return (
+   260→    <div className="space-y-6">
+   261→      {/* Summary Metrics */}
+   262→      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+   263→        <Card>
+   264→          <CardContent className="p-4">
+   265→            <div className="flex items-center justify-between">
+   266→              <div className="space-y-1">
+   267→                <p className="text-sm text-muted-foreground">Manuscripts</p>
+   268→                <p className="text-2xl font-bold">{manuscripts.length}</p>
+   269→              </div>
+   270→              <div className="rounded-lg bg-emerald-100 p-2.5 dark:bg-emerald-950/30">
+   271→                <FileText className="size-5 text-emerald-600" />
+   272→              </div>
+   273→            </div>
+   274→          </CardContent>
+   275→        </Card>
+   276→        <Card>
+   277→          <CardContent className="p-4">
+   278→            <div className="flex items-center justify-between">
+   279→              <div className="space-y-1">
+   280→                <p className="text-sm text-muted-foreground">Submitted</p>
+   281→                <p className="text-2xl font-bold">{msByStatus['submitted'] || 0}</p>
+   282→              </div>
+   283→              <div className="rounded-lg bg-amber-100 p-2.5 dark:bg-amber-950/30">
+   284→                <Clock className="size-5 text-amber-600" />
+   285→              </div>
+   286→            </div>
+   287→          </CardContent>
+   288→        </Card>
+   289→        <Card>
+   290→          <CardContent className="p-4">
+   291→            <div className="flex items-center justify-between">
+   292→              <div className="space-y-1">
+   293→                <p className="text-sm text-muted-foreground">Published</p>
+   294→                <p className="text-2xl font-bold">{msByStatus['published'] || 0}</p>
+   295→              </div>
+   296→              <div className="rounded-lg bg-teal-100 p-2.5 dark:bg-teal-950/30">
+   297→                <BookOpen className="size-5 text-teal-600" />
+   298→              </div>
+   299→            </div>
+   300→          </CardContent>
+   301→        </Card>
+   302→        <Card>
+   303→          <CardContent className="p-4">
+   304→            <div className="flex items-center justify-between">
+   305→              <div className="space-y-1">
+   306→                <p className="text-sm text-muted-foreground">Print Orders</p>
+   307→                <p className="text-2xl font-bold">{printOrders.length}</p>
+   308→              </div>
+   309→              <div className="rounded-lg bg-rose-100 p-2.5 dark:bg-rose-950/30">
+   310→                <Printer className="size-5 text-rose-600" />
+   311→              </div>
+   312→            </div>
+   313→          </CardContent>
+   314→        </Card>
+   315→        <Card>
+   316→          <CardContent className="p-4">
+   317→            <div className="flex items-center justify-between">
+   318→              <div className="space-y-1">
+   319→                <p className="text-sm text-muted-foreground">Total Print Cost</p>
+   320→                <p className="text-2xl font-bold">${totalPrintCost.toLocaleString()}</p>
+   321→              </div>
+   322→              <div className="rounded-lg bg-purple-100 p-2.5 dark:bg-purple-950/30">
+   323→                <DollarSign className="size-5 text-purple-600" />
+   324→              </div>
+   325→            </div>
+   326→          </CardContent>
+   327→        </Card>
+   328→      </div>
+   329→
+   330→      {/* Tabs */}
+   331→      <Tabs defaultValue="manuscripts">
+   332→        <div className="flex items-center justify-between">
+   333→          <TabsList>
+   334→            <TabsTrigger value="manuscripts">Manuscripts</TabsTrigger>
+   335→            <TabsTrigger value="print-orders">Print Orders</TabsTrigger>
+   336→          </TabsList>
+   337→          <div className="flex gap-2">
+   338→            <Button
+   339→              onClick={() => setManuscriptDialogOpen(true)}
+   340→              variant="outline"
+   341→              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+   342→            >
+   343→              <Plus className="size-4 mr-1.5" />
+   344→              Submit Manuscript
+   345→            </Button>
+   346→            <Button onClick={() => setPrintOrderDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
+   347→              <Plus className="size-4 mr-1.5" />
+   348→              Create Print Order
+   349→            </Button>
+   350→          </div>
+   351→        </div>
+   352→
+   353→        {/* Manuscripts Tab */}
+   354→        <TabsContent value="manuscripts" className="mt-4">
+   355→          {loading ? (
+   356→            <Card>
+   357→              <CardContent className="py-8 text-center text-muted-foreground animate-pulse">Loading manuscripts...</CardContent>
+   358→            </Card>
+   359→          ) : manuscripts.length === 0 ? (
+   360→            <Card>
+   361→              <CardContent className="py-16 text-center">
+   362→                <FileText className="size-12 text-muted-foreground mx-auto mb-4" />
+   363→                <h3 className="text-lg font-semibold mb-1">No manuscripts yet</h3>
+   364→                <p className="text-sm text-muted-foreground">Submit your first manuscript to get started</p>
+   365→              </CardContent>
+   366→            </Card>
+   367→          ) : (
+   368→            <Card>
+   369→              <CardContent className="p-0">
+   370→                <Table>
+   371→                  <TableHeader>
+   372→                    <TableRow>
+   373→                      <TableHead>Title</TableHead>
+   374→                      <TableHead>Author</TableHead>
+   375→                      <TableHead>Status</TableHead>
+   376→                      <TableHead>Submitted</TableHead>
+   377→                      <TableHead>Actions</TableHead>
+   378→                    </TableRow>
+   379→                  </TableHeader>
+   380→                  <TableBody>
+   381→                    {manuscripts.map((ms) => {
+   382→                      const nextStatuses = getNextStatus(ms.status)
+   383→                      return (
+   384→                        <TableRow key={ms.id}>
+   385→                          <TableCell className="font-medium max-w-[200px] truncate">{ms.title}</TableCell>
+   386→                          <TableCell className="text-muted-foreground">{ms.author || '—'}</TableCell>
+   387→                          <TableCell>
+   388→                            <Badge className={manuscriptStatusColors[ms.status] || ''}>
+   389→                              {ms.status.charAt(0).toUpperCase() + ms.status.slice(1)}
+   390→                            </Badge>
+   391→                          </TableCell>
+   392→                          <TableCell className="text-muted-foreground text-sm">
+   393→                            {new Date(ms.submittedAt).toLocaleDateString()}
+   394→                          </TableCell>
+   395→                          <TableCell>
+   396→                            <div className="flex items-center gap-1">
+   397→                              {nextStatuses.map((ns) => (
+   398→                                <Button
+   399→                                  key={ns}
+   400→                                  size="sm"
+   401→                                  variant="outline"
+   402→                                  className="h-7 text-xs"
+   403→                                  onClick={() => handleManuscriptStatus(ms, ns)}
+   404→                                >
+   405→                                  <ArrowRight className="size-3 mr-1" />
+   406→                                  {ns.charAt(0).toUpperCase() + ns.slice(1)}
+   407→                                </Button>
+   408→                              ))}
+   409→                              {!rejectionStates.includes(ms.status) && ms.status !== 'published' && (
+   410→                                <Button
+   411→                                  size="sm"
+   412→                                  variant="outline"
+   413→                                  className="h-7 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-800 dark:hover:bg-rose-950/30"
+   414→                                  onClick={() => handleManuscriptStatus(ms, 'rejected')}
+   415→                                >
+   416→                                  <XCircle className="size-3 mr-1" />
+   417→                                  Reject
+   418→                                </Button>
+   419→                              )}
+   420→                              {ms.status === 'published' && (
+   421→                                <CheckCircle2 className="size-4 text-emerald-600" />
+   422→                              )}
+   423→                              {ms.status === 'rejected' && (
+   424→                                <XCircle className="size-4 text-rose-500" />
+   425→                              )}
+   426→                            </div>
+   427→                          </TableCell>
+   428→                        </TableRow>
+   429→                      )
+   430→                    })}
+   431→                  </TableBody>
+   432→                </Table>
+   433→              </CardContent>
+   434→            </Card>
+   435→          )}
+   436→        </TabsContent>
+   437→
+   438→        {/* Print Orders Tab */}
+   439→        <TabsContent value="print-orders" className="mt-4">
+   440→          {loading ? (
+   441→            <Card>
+   442→              <CardContent className="py-8 text-center text-muted-foreground animate-pulse">Loading print orders...</CardContent>
+   443→            </Card>
+   444→          ) : printOrders.length === 0 ? (
+   445→            <Card>
+   446→              <CardContent className="py-16 text-center">
+   447→                <Printer className="size-12 text-muted-foreground mx-auto mb-4" />
+   448→                <h3 className="text-lg font-semibold mb-1">No print orders yet</h3>
+   449→                <p className="text-sm text-muted-foreground">Create a print order for a published book</p>
+   450→              </CardContent>
+   451→            </Card>
+   452→          ) : (
+   453→            <Card>
+   454→              <CardContent className="p-0">
+   455→                <Table>
+   456→                  <TableHeader>
+   457→                    <TableRow>
+   458→                      <TableHead>Book</TableHead>
+   459→                      <TableHead>Quantity</TableHead>
+   460→                      <TableHead>Cost/Unit</TableHead>
+   461→                      <TableHead>Total Cost</TableHead>
+   462→                      <TableHead>Status</TableHead>
+   463→                      <TableHead>Actions</TableHead>
+   464→                    </TableRow>
+   465→                  </TableHeader>
+   466→                  <TableBody>
+   467→                    {printOrders.map((po) => (
+   468→                      <TableRow key={po.id}>
+   469→                        <TableCell className="font-medium">
+   470→                          {po.book?.title || 'Unknown Book'}
+   471→                        </TableCell>
+   472→                        <TableCell>{po.quantity.toLocaleString()}</TableCell>
+   473→                        <TableCell>${po.costPerUnit.toFixed(2)}</TableCell>
+   474→                        <TableCell className="font-medium">${po.totalCost.toLocaleString()}</TableCell>
+   475→                        <TableCell>
+   476→                          <Badge className={printStatusColors[po.status] || ''}>
+   477→                            {po.status.charAt(0).toUpperCase() + po.status.slice(1)}
+   478→                          </Badge>
+   479→                        </TableCell>
+   480→                        <TableCell>
+   481→                          <div className="flex items-center gap-1">
+   482→                            {po.status === 'ordered' && (
+   483→                              <Button
+   484→                                size="sm"
+   485→                                variant="outline"
+   486→                                className="h-7 text-xs"
+   487→                                onClick={() => handlePrintOrderStatus(po, 'printing')}
+   488→                              >
+   489→                                <ArrowRight className="size-3 mr-1" />
+   490→                                Start Printing
+   491→                              </Button>
+   492→                            )}
+   493→                            {po.status === 'printing' && (
+   494→                              <Button
+   495→                                size="sm"
+   496→                                variant="outline"
+   497→                                className="h-7 text-xs text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950/30"
+   498→                                onClick={() => handlePrintOrderStatus(po, 'completed')}
+   499→                              >
+   500→                                <CheckCircle2 className="size-3 mr-1" />
+   501→                                Complete
+   502→                              </Button>
+   503→                            )}
+   504→                            {po.status === 'completed' && (
+   505→                              <Badge variant="outline" className="text-emerald-600 text-xs">
+   506→                                <CheckCircle2 className="size-3 mr-1" />
+   507→                                Done
+   508→                              </Badge>
+   509→                            )}
+   510→                          </div>
+   511→                        </TableCell>
+   512→                      </TableRow>
+   513→                    ))}
+   514→                  </TableBody>
+   515→                </Table>
+   516→              </CardContent>
+   517→            </Card>
+   518→          )}
+   519→        </TabsContent>
+   520→      </Tabs>
+   521→
+   522→      {/* Submit Manuscript Dialog */}
+   523→      <Dialog open={manuscriptDialogOpen} onOpenChange={setManuscriptDialogOpen}>
+   524→        <DialogContent className="sm:max-w-md">
+   525→          <DialogHeader>
+   526→            <DialogTitle>Submit Manuscript</DialogTitle>
+   527→            <DialogDescription>Submit a new manuscript for review and publishing</DialogDescription>
+   528→          </DialogHeader>
+   529→          <div className="grid gap-4 py-4">
+   530→            <div className="space-y-2">
+   531→              <Label htmlFor="ms-title">Title *</Label>
+   532→              <Input
+   533→                id="ms-title"
+   534→                placeholder="The Great Adventure"
+   535→                value={msForm.title}
+   536→                onChange={(e) => setMsForm((prev) => ({ ...prev, title: e.target.value }))}
+   537→              />
+   538→            </div>
+   539→            <div className="space-y-2">
+   540→              <Label htmlFor="ms-author">Author</Label>
+   541→              <Input
+   542→                id="ms-author"
+   543→                placeholder="Jane Doe"
+   544→                value={msForm.author}
+   545→                onChange={(e) => setMsForm((prev) => ({ ...prev, author: e.target.value }))}
+   546→              />
+   547→            </div>
+   548→            <div className="space-y-2">
+   549→              <Label htmlFor="ms-notes">Notes</Label>
+   550→              <Textarea
+   551→                id="ms-notes"
+   552→                placeholder="Additional notes about this manuscript..."
+   553→                value={msForm.notes}
+   554→                onChange={(e) => setMsForm((prev) => ({ ...prev, notes: e.target.value }))}
+   555→                rows={3}
+   556→              />
+   557→            </div>
+   558→          </div>
+   559→          <DialogFooter>
+   560→            <Button variant="outline" onClick={() => setManuscriptDialogOpen(false)}>Cancel</Button>
+   561→            <Button onClick={handleSubmitManuscript} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700">
+   562→              {submitting ? 'Submitting...' : 'Submit Manuscript'}
+   563→            </Button>
+   564→          </DialogFooter>
+   565→        </DialogContent>
+   566→      </Dialog>
+   567→
+   568→      {/* Create Print Order Dialog */}
+   569→      <Dialog open={printOrderDialogOpen} onOpenChange={setPrintOrderDialogOpen}>
+   570→        <DialogContent className="sm:max-w-md">
+   571→          <DialogHeader>
+   572→            <DialogTitle>Create Print Order</DialogTitle>
+   573→            <DialogDescription>Order a print run for a published book</DialogDescription>
+   574→          </DialogHeader>
+   575→          <div className="grid gap-4 py-4">
+   576→            <div className="space-y-2">
+   577→              <Label htmlFor="po-book">Book *</Label>
+   578→              <Select
+   579→                value={poForm.bookId}
+   580→                onValueChange={(v) => setPoForm((prev) => ({ ...prev, bookId: v }))}
+   581→              >
+   582→                <SelectTrigger id="po-book">
+   583→                  <SelectValue placeholder="Select a book" />
+   584→                </SelectTrigger>
+   585→                <SelectContent>
+   586→                  {books.map((book) => (
+   587→                    <SelectItem key={book.id} value={book.id}>
+   588→                      {book.title}{book.isbn ? ` (${book.isbn})` : ''}
+   589→                    </SelectItem>
+   590→                  ))}
+   591→                </SelectContent>
+   592→              </Select>
+   593→            </div>
+   594→            <div className="grid grid-cols-2 gap-4">
+   595→              <div className="space-y-2">
+   596→                <Label htmlFor="po-qty">Quantity *</Label>
+   597→                <Input
+   598→                  id="po-qty"
+   599→                  type="number"
+   600→                  placeholder="500"
+   601→                  value={poForm.quantity}
+   602→                  onChange={(e) => setPoForm((prev) => ({ ...prev, quantity: e.target.value }))}
+   603→                />
+   604→              </div>
+   605→              <div className="space-y-2">
+   606→                <Label htmlFor="po-cost">Cost Per Unit</Label>
+   607→                <Input
+   608→                  id="po-cost"
+   609→                  type="number"
+   610→                  step="0.01"
+   611→                  placeholder="2.50"
+   612→                  value={poForm.costPerUnit}
+   613→                  onChange={(e) => setPoForm((prev) => ({ ...prev, costPerUnit: e.target.value }))}
+   614→                />
+   615→              </div>
+   616→            </div>
+   617→            {poForm.quantity && poForm.costPerUnit && (
+   618→              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/20 p-3 text-sm">
+   619→                <span className="text-muted-foreground">Total Cost: </span>
+   620→                <span className="font-bold text-emerald-700 dark:text-emerald-400">
+   621→                  ${(parseInt(poForm.quantity) * parseFloat(poForm.costPerUnit)).toLocaleString()}
+   622→                </span>
+   623→              </div>
+   624→            )}
+   625→          </div>
+   626→          <DialogFooter>
+   627→            <Button variant="outline" onClick={() => setPrintOrderDialogOpen(false)}>Cancel</Button>
+   628→            <Button onClick={handleCreatePrintOrder} disabled={submitting} className="bg-emerald-600 hover:bg-emerald-700">
+   629→              {submitting ? 'Creating...' : 'Create Order'}
+   630→            </Button>
+   631→          </DialogFooter>
+   632→        </DialogContent>
+   633→      </Dialog>
+   634→    </div>
+   635→  )
+   636→}
+   637→

@@ -1,0 +1,785 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Search,
+     6→  Warehouse as WarehouseIcon,
+     7→  AlertTriangle,
+     8→  ArrowRightLeft,
+     9→  Loader2,
+    10→  AlertCircle,
+    11→  Plus,
+    12→  Settings2,
+    13→  Package,
+    14→  TrendingDown,
+    15→  Building2,
+    16→  ChevronRight,
+    17→} from 'lucide-react'
+    18→
+    19→import { Button } from '@/components/ui/button'
+    20→import { Input } from '@/components/ui/input'
+    21→import { Label } from '@/components/ui/label'
+    22→import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+    23→import {
+    24→  Dialog,
+    25→  DialogContent,
+    26→  DialogDescription,
+    27→  DialogFooter,
+    28→  DialogHeader,
+    29→  DialogTitle,
+    30→} from '@/components/ui/dialog'
+    31→import {
+    32→  Select,
+    33→  SelectContent,
+    34→  SelectItem,
+    35→  SelectTrigger,
+    36→  SelectValue,
+    37→} from '@/components/ui/select'
+    38→import {
+    39→  Table,
+    40→  TableBody,
+    41→  TableCell,
+    42→  TableHead,
+    43→  TableHeader,
+    44→  TableRow,
+    45→} from '@/components/ui/table'
+    46→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+    47→import { Badge } from '@/components/ui/badge'
+    48→import { Skeleton } from '@/components/ui/skeleton'
+    49→import { Textarea } from '@/components/ui/textarea'
+    50→
+    51→// ─── Types ────────────────────────────────────────────────────────
+    52→interface Branch {
+    53→  id: string
+    54→  name: string
+    55→  code: string
+    56→}
+    57→
+    58→interface Warehouse {
+    59→  id: string
+    60→  name: string
+    61→  code: string
+    62→  address?: string | null
+    63→  branchId?: string | null
+    64→  branch?: Branch | null
+    65→  isActive: boolean
+    66→  inventory?: Array<{ quantity: number; costPrice: number; sellingPrice: number }>
+    67→}
+    68→
+    69→interface InventoryItem {
+    70→  id: string
+    71→  warehouseId: string | null
+    72→  branchId: string | null
+    73→  bookId: string | null
+    74→  stationeryId: string | null
+    75→  quantity: number
+    76→  reorderLevel: number
+    77→  maxStockLevel: number
+    78→  batchNumber: string | null
+    79→  costPrice: number
+    80→  sellingPrice: number
+    81→  location: string | null
+    82→  isLowStock?: boolean
+    83→  book?: { id: string; title: string; isbn: string | null; price: number; author?: { name: string } | null } | null
+    84→  stationery?: { id: string; name: string; sku: string | null; price: number; brand: string | null } | null
+    85→  warehouse?: { id: string; name: string; code: string } | null
+    86→  branch?: { id: string; name: string; code: string } | null
+    87→}
+    88→
+    89→interface StockTransfer {
+    90→  id: string
+    91→  fromBranchId: string
+    92→  toBranchId: string
+    93→  items: string
+    94→  status: string
+    95→  notes: string | null
+    96→  createdAt: string
+    97→  updatedAt: string
+    98→  fromBranch: Branch
+    99→  toBranch: Branch
+   100→}
+   101→
+   102→// ─── Component ────────────────────────────────────────────────────
+   103→export function InventoryModule() {
+   104→  const [activeTab, setActiveTab] = React.useState('overview')
+   105→  const [items, setItems] = React.useState<InventoryItem[]>([])
+   106→  const [warehouses, setWarehouses] = React.useState<Warehouse[]>([])
+   107→  const [transfers, setTransfers] = React.useState<StockTransfer[]>([])
+   108→  const [branches, setBranches] = React.useState<Branch[]>([])
+   109→  const [loading, setLoading] = React.useState(true)
+   110→  const [error, setError] = React.useState<string | null>(null)
+   111→
+   112→  // Filters
+   113→  const [branchFilter, setBranchFilter] = React.useState('all')
+   114→  const [warehouseFilter, setWarehouseFilter] = React.useState('all')
+   115→  const [lowStockOnly, setLowStockOnly] = React.useState(false)
+   116→
+   117→  // Dialogs
+   118→  const [adjustDialogOpen, setAdjustDialogOpen] = React.useState(false)
+   119→  const [transferDialogOpen, setTransferDialogOpen] = React.useState(false)
+   120→  const [adjustingItem, setAdjustingItem] = React.useState<InventoryItem | null>(null)
+   121→  const [saving, setSaving] = React.useState(false)
+   122→
+   123→  // Adjust form
+   124→  const [adjustQty, setAdjustQty] = React.useState('')
+   125→  const [adjustOperation, setAdjustOperation] = React.useState('set')
+   126→
+   127→  // Transfer form
+   128→  const [transferFrom, setTransferFrom] = React.useState('')
+   129→  const [transferTo, setTransferTo] = React.useState('')
+   130→  const [transferNotes, setTransferNotes] = React.useState('')
+   131→
+   132→  // Fetch inventory items
+   133→  const fetchItems = React.useCallback(async () => {
+   134→    setLoading(true)
+   135→    setError(null)
+   136→    try {
+   137→      const params = new URLSearchParams()
+   138→      params.set('limit', '100')
+   139→      if (branchFilter && branchFilter !== 'all') params.set('branchId', branchFilter)
+   140→      if (warehouseFilter && warehouseFilter !== 'all') params.set('warehouseId', warehouseFilter)
+   141→      if (lowStockOnly) params.set('lowStock', 'true')
+   142→
+   143→      const res = await fetch(`/api/inventory?${params.toString()}`)
+   144→      if (!res.ok) throw new Error('Failed to fetch inventory')
+   145→      const json = await res.json()
+   146→      setItems(json.data || [])
+   147→    } catch (err) {
+   148→      setError(err instanceof Error ? err.message : 'Unknown error')
+   149→    } finally {
+   150→      setLoading(false)
+   151→    }
+   152→  }, [branchFilter, warehouseFilter, lowStockOnly])
+   153→
+   154→  // Fetch warehouses
+   155→  const fetchWarehouses = React.useCallback(async () => {
+   156→    try {
+   157→      const res = await fetch('/api/warehouses')
+   158→      if (!res.ok) throw new Error('Failed to fetch warehouses')
+   159→      const json = await res.json()
+   160→      setWarehouses(json.data || [])
+   161→    } catch {
+   162→      // silent
+   163→    }
+   164→  }, [])
+   165→
+   166→  // Fetch branches
+   167→  const fetchBranches = React.useCallback(async () => {
+   168→    try {
+   169→      const res = await fetch('/api/branches')
+   170→      if (!res.ok) throw new Error('Failed to fetch branches')
+   171→      const json = await res.json()
+   172→      setBranches(json.data || [])
+   173→    } catch {
+   174→      // silent
+   175→    }
+   176→  }, [])
+   177→
+   178→  // Fetch transfers
+   179→  const fetchTransfers = React.useCallback(async () => {
+   180→    try {
+   181→      const res = await fetch('/api/inventory?transfers=true&limit=50')
+   182→      if (!res.ok) throw new Error('Failed to fetch transfers')
+   183→      const json = await res.json()
+   184→      setTransfers(json.transfers || [])
+   185→    } catch {
+   186→      // silent
+   187→    }
+   188→  }, [])
+   189→
+   190→  React.useEffect(() => {
+   191→    fetchItems()
+   192→  }, [fetchItems])
+   193→
+   194→  React.useEffect(() => {
+   195→    fetchWarehouses()
+   196→    fetchBranches()
+   197→    fetchTransfers()
+   198→  }, [fetchWarehouses, fetchBranches, fetchTransfers])
+   199→
+   200→  // Product name helper
+   201→  const getProductName = (item: InventoryItem): string => {
+   202→    if (item.book) return item.book.title
+   203→    if (item.stationery) return item.stationery.name
+   204→    return 'Unknown Product'
+   205→  }
+   206→
+   207→  // Stock status
+   208→  const getStockBadge = (item: InventoryItem) => {
+   209→    if (item.quantity === 0) {
+   210→      return <Badge className="bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800 text-xs"><span className="mr-1 inline-block size-1.5 rounded-full bg-red-500" />Out of Stock</Badge>
+   211→    }
+   212→    if (item.isLowStock || item.quantity <= item.reorderLevel) {
+   213→      return <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800 text-xs"><span className="mr-1 inline-block size-1.5 rounded-full bg-amber-500" />Low Stock</Badge>
+   214→    }
+   215→    return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-xs"><span className="mr-1 inline-block size-1.5 rounded-full bg-emerald-500" />In Stock</Badge>
+   216→  }
+   217→
+   218→  // Transfer status badge
+   219→  const getTransferStatusBadge = (status: string) => {
+   220→    const map: Record<string, { className: string; label: string }> = {
+   221→      pending: { className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800', label: 'Pending' },
+   222→      'in-transit': { className: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400 border-sky-200 dark:border-sky-800', label: 'In Transit' },
+   223→      completed: { className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800', label: 'Completed' },
+   224→      cancelled: { className: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800', label: 'Cancelled' },
+   225→    }
+   226→    const s = map[status] || { className: '', label: status }
+   227→    return <Badge className={`text-xs ${s.className}`}>{s.label}</Badge>
+   228→  }
+   229→
+   230→  // Open adjust dialog
+   231→  const handleAdjust = (item: InventoryItem) => {
+   232→    setAdjustingItem(item)
+   233→    setAdjustQty('')
+   234→    setAdjustOperation('set')
+   235→    setAdjustDialogOpen(true)
+   236→  }
+   237→
+   238→  // Save stock adjustment
+   239→  const handleAdjustSave = async () => {
+   240→    if (!adjustingItem || !adjustQty) return
+   241→    setSaving(true)
+   242→    try {
+   243→      const res = await fetch('/api/inventory', {
+   244→        method: 'PUT',
+   245→        headers: { 'Content-Type': 'application/json' },
+   246→        body: JSON.stringify({
+   247→          id: adjustingItem.id,
+   248→          quantity: parseInt(adjustQty),
+   249→          operation: adjustOperation,
+   250→        }),
+   251→      })
+   252→      if (!res.ok) throw new Error('Failed to adjust stock')
+   253→      setAdjustDialogOpen(false)
+   254→      fetchItems()
+   255→      fetchWarehouses()
+   256→    } catch (err) {
+   257→      setError(err instanceof Error ? err.message : 'Failed to adjust stock')
+   258→    } finally {
+   259→      setSaving(false)
+   260→    }
+   261→  }
+   262→
+   263→  // Create transfer
+   264→  const handleTransferCreate = async () => {
+   265→    if (!transferFrom || !transferTo || transferFrom === transferTo) return
+   266→    setSaving(true)
+   267→    try {
+   268→      const res = await fetch('/api/inventory', {
+   269→        method: 'POST',
+   270→        headers: { 'Content-Type': 'application/json' },
+   271→        body: JSON.stringify({
+   272→          type: 'transfer',
+   273→          fromBranchId: transferFrom,
+   274→          toBranchId: transferTo,
+   275→          notes: transferNotes,
+   276→        }),
+   277→      })
+   278→      if (!res.ok) throw new Error('Failed to create transfer')
+   279→      setTransferDialogOpen(false)
+   280→      setTransferFrom('')
+   281→      setTransferTo('')
+   282→      setTransferNotes('')
+   283→      fetchTransfers()
+   284→    } catch (err) {
+   285→      setError(err instanceof Error ? err.message : 'Failed to create transfer')
+   286→    } finally {
+   287→      setSaving(false)
+   288→    }
+   289→  }
+   290→
+   291→  // Compute stats
+   292→  const totalItems = items.length
+   293→  const lowStockItems = items.filter((i) => i.isLowStock || i.quantity <= i.reorderLevel)
+   294→  const outOfStockItems = items.filter((i) => i.quantity === 0)
+   295→  const totalValue = items.reduce((s, i) => s + i.quantity * i.costPrice, 0)
+   296→
+   297→  return (
+   298→    <div className="space-y-6">
+   299→      {/* Header */}
+   300→      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+   301→        <div>
+   302→          <h2 className="text-2xl font-bold tracking-tight">Inventory Management</h2>
+   303→          <p className="text-muted-foreground text-sm">Real-time stock tracking across warehouses and branches</p>
+   304→        </div>
+   305→        <div className="flex gap-2">
+   306→          <Button variant="outline" onClick={() => setTransferDialogOpen(true)}>
+   307→            <ArrowRightLeft className="size-4 mr-1.5" />
+   308→            New Transfer
+   309→          </Button>
+   310→        </div>
+   311→      </div>
+   312→
+   313→      {/* Stats Cards */}
+   314→      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+   315→        <Card>
+   316→          <CardContent className="p-4">
+   317→            <div className="flex items-center justify-between">
+   318→              <div>
+   319→                <p className="text-sm text-muted-foreground">Total Items</p>
+   320→                <p className="text-2xl font-bold">{totalItems}</p>
+   321→              </div>
+   322→              <div className="rounded-lg bg-emerald-100 dark:bg-emerald-950/30 p-2">
+   323→                <Package className="size-5 text-emerald-600" />
+   324→              </div>
+   325→            </div>
+   326→          </CardContent>
+   327→        </Card>
+   328→        <Card>
+   329→          <CardContent className="p-4">
+   330→            <div className="flex items-center justify-between">
+   331→              <div>
+   332→                <p className="text-sm text-muted-foreground">Low Stock</p>
+   333→                <p className="text-2xl font-bold text-amber-600">{lowStockItems.length}</p>
+   334→              </div>
+   335→              <div className="rounded-lg bg-amber-100 dark:bg-amber-950/30 p-2">
+   336→                <TrendingDown className="size-5 text-amber-600" />
+   337→              </div>
+   338→            </div>
+   339→          </CardContent>
+   340→        </Card>
+   341→        <Card>
+   342→          <CardContent className="p-4">
+   343→            <div className="flex items-center justify-between">
+   344→              <div>
+   345→                <p className="text-sm text-muted-foreground">Out of Stock</p>
+   346→                <p className="text-2xl font-bold text-red-600">{outOfStockItems.length}</p>
+   347→              </div>
+   348→              <div className="rounded-lg bg-red-100 dark:bg-red-950/30 p-2">
+   349→                <AlertTriangle className="size-5 text-red-600" />
+   350→              </div>
+   351→            </div>
+   352→          </CardContent>
+   353→        </Card>
+   354→        <Card>
+   355→          <CardContent className="p-4">
+   356→            <div className="flex items-center justify-between">
+   357→              <div>
+   358→                <p className="text-sm text-muted-foreground">Total Value</p>
+   359→                <p className="text-2xl font-bold">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+   360→              </div>
+   361→              <div className="rounded-lg bg-teal-100 dark:bg-teal-950/30 p-2">
+   362→                <WarehouseIcon className="size-5 text-teal-600" />
+   363→              </div>
+   364→            </div>
+   365→          </CardContent>
+   366→        </Card>
+   367→      </div>
+   368→
+   369→      {/* Error Alert */}
+   370→      {error && (
+   371→        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
+   372→          <AlertCircle className="size-4 shrink-0" />
+   373→          {error}
+   374→          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setError(null)}>
+   375→            Dismiss
+   376→          </Button>
+   377→        </div>
+   378→      )}
+   379→
+   380→      {/* Tabs */}
+   381→      <Tabs value={activeTab} onValueChange={setActiveTab}>
+   382→        <TabsList className="grid w-full grid-cols-4">
+   383→          <TabsTrigger value="overview" className="text-xs sm:text-sm">Stock Overview</TabsTrigger>
+   384→          <TabsTrigger value="low-stock" className="text-xs sm:text-sm">Low Stock</TabsTrigger>
+   385→          <TabsTrigger value="warehouses" className="text-xs sm:text-sm">Warehouses</TabsTrigger>
+   386→          <TabsTrigger value="transfers" className="text-xs sm:text-sm">Transfers</TabsTrigger>
+   387→        </TabsList>
+   388→
+   389→        {/* Stock Overview Tab */}
+   390→        <TabsContent value="overview" className="space-y-4">
+   391→          {/* Filters */}
+   392→          <Card>
+   393→            <CardContent className="p-4">
+   394→              <div className="flex flex-col gap-3 sm:flex-row">
+   395→                <div className="flex items-center gap-2 flex-1">
+   396→                  <Building2 className="size-4 text-muted-foreground shrink-0" />
+   397→                  <Select value={branchFilter} onValueChange={setBranchFilter}>
+   398→                    <SelectTrigger className="w-full">
+   399→                      <SelectValue placeholder="All Branches" />
+   400→                    </SelectTrigger>
+   401→                    <SelectContent>
+   402→                      <SelectItem value="all">All Branches</SelectItem>
+   403→                      {branches.map((b) => (
+   404→                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+   405→                      ))}
+   406→                    </SelectContent>
+   407→                  </Select>
+   408→                </div>
+   409→                <div className="flex items-center gap-2 flex-1">
+   410→                  <WarehouseIcon className="size-4 text-muted-foreground shrink-0" />
+   411→                  <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+   412→                    <SelectTrigger className="w-full">
+   413→                      <SelectValue placeholder="All Warehouses" />
+   414→                    </SelectTrigger>
+   415→                    <SelectContent>
+   416→                      <SelectItem value="all">All Warehouses</SelectItem>
+   417→                      {warehouses.map((w) => (
+   418→                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+   419→                      ))}
+   420→                    </SelectContent>
+   421→                  </Select>
+   422→                </div>
+   423→                <Button
+   424→                  variant={lowStockOnly ? 'default' : 'outline'}
+   425→                  size="sm"
+   426→                  className={lowStockOnly ? 'bg-amber-600 hover:bg-amber-700' : ''}
+   427→                  onClick={() => setLowStockOnly(!lowStockOnly)}
+   428→                >
+   429→                  <AlertTriangle className="size-4 mr-1.5" />
+   430→                  Low Stock Only
+   431→                </Button>
+   432→              </div>
+   433→            </CardContent>
+   434→          </Card>
+   435→
+   436→          {/* Inventory Table */}
+   437→          <Card>
+   438→            <CardContent className="p-0">
+   439→              {loading ? (
+   440→                <div className="p-4 space-y-3">
+   441→                  {Array.from({ length: 5 }).map((_, i) => (
+   442→                    <Skeleton key={i} className="h-12 w-full" />
+   443→                  ))}
+   444→                </div>
+   445→              ) : items.length === 0 ? (
+   446→                <div className="flex flex-col items-center justify-center py-12 text-center">
+   447→                  <Package className="size-12 text-muted-foreground/40 mb-3" />
+   448→                  <p className="text-muted-foreground">No inventory items found</p>
+   449→                </div>
+   450→              ) : (
+   451→                <div className="overflow-x-auto">
+   452→                  <Table>
+   453→                    <TableHeader>
+   454→                      <TableRow>
+   455→                        <TableHead>Product</TableHead>
+   456→                        <TableHead className="hidden md:table-cell">Warehouse</TableHead>
+   457→                        <TableHead className="hidden sm:table-cell">Branch</TableHead>
+   458→                        <TableHead className="text-right">Quantity</TableHead>
+   459→                        <TableHead className="hidden sm:table-cell text-right">Reorder Level</TableHead>
+   460→                        <TableHead>Status</TableHead>
+   461→                        <TableHead className="hidden lg:table-cell text-right">Cost</TableHead>
+   462→                        <TableHead className="hidden lg:table-cell text-right">Selling</TableHead>
+   463→                        <TableHead className="text-right">Actions</TableHead>
+   464→                      </TableRow>
+   465→                    </TableHeader>
+   466→                    <TableBody>
+   467→                      {items.map((item) => (
+   468→                        <TableRow key={item.id} className={item.quantity === 0 ? 'bg-red-50/50 dark:bg-red-950/10' : item.quantity <= item.reorderLevel ? 'bg-amber-50/50 dark:bg-amber-950/10' : ''}>
+   469→                          <TableCell className="font-medium max-w-[200px] truncate">
+   470→                            {getProductName(item)}
+   471→                          </TableCell>
+   472→                          <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+   473→                            {item.warehouse?.name || '—'}
+   474→                          </TableCell>
+   475→                          <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
+   476→                            {item.branch?.name || '—'}
+   477→                          </TableCell>
+   478→                          <TableCell className="text-right font-medium">{item.quantity}</TableCell>
+   479→                          <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-sm">{item.reorderLevel}</TableCell>
+   480→                          <TableCell>{getStockBadge(item)}</TableCell>
+   481→                          <TableCell className="hidden lg:table-cell text-right text-sm">${item.costPrice.toFixed(2)}</TableCell>
+   482→                          <TableCell className="hidden lg:table-cell text-right text-sm">${item.sellingPrice.toFixed(2)}</TableCell>
+   483→                          <TableCell className="text-right">
+   484→                            <Button variant="ghost" size="sm" onClick={() => handleAdjust(item)}>
+   485→                              <Settings2 className="size-3.5 mr-1" />
+   486→                              Adjust
+   487→                            </Button>
+   488→                          </TableCell>
+   489→                        </TableRow>
+   490→                      ))}
+   491→                    </TableBody>
+   492→                  </Table>
+   493→                </div>
+   494→              )}
+   495→            </CardContent>
+   496→          </Card>
+   497→        </TabsContent>
+   498→
+   499→        {/* Low Stock Alerts Tab */}
+   500→        <TabsContent value="low-stock" className="space-y-4">
+   501→          <Card>
+   502→            <CardHeader className="pb-3">
+   503→              <CardTitle className="text-base flex items-center gap-2">
+   504→                <AlertTriangle className="size-4 text-amber-600" />
+   505→                Low Stock Alerts ({lowStockItems.length})
+   506→              </CardTitle>
+   507→              <CardDescription>Items below or at reorder level that need attention</CardDescription>
+   508→            </CardHeader>
+   509→            <CardContent className="p-0">
+   510→              {lowStockItems.length === 0 ? (
+   511→                <div className="flex flex-col items-center justify-center py-12 text-center">
+   512→                  <Package className="size-12 text-emerald-500/40 mb-3" />
+   513→                  <p className="text-emerald-600 font-medium">All items are well stocked!</p>
+   514→                </div>
+   515→              ) : (
+   516→                <div className="overflow-x-auto">
+   517→                  <Table>
+   518→                    <TableHeader>
+   519→                      <TableRow>
+   520→                        <TableHead>Product</TableHead>
+   521→                        <TableHead className="text-right">Current Qty</TableHead>
+   522→                        <TableHead className="text-right">Reorder Level</TableHead>
+   523→                        <TableHead className="hidden sm:table-cell">Warehouse</TableHead>
+   524→                        <TableHead className="text-right">Actions</TableHead>
+   525→                      </TableRow>
+   526→                    </TableHeader>
+   527→                    <TableBody>
+   528→                      {lowStockItems.map((item) => (
+   529→                        <TableRow key={item.id} className={item.quantity === 0 ? 'bg-red-50/50 dark:bg-red-950/10' : 'bg-amber-50/50 dark:bg-amber-950/10'}>
+   530→                          <TableCell className="font-medium">{getProductName(item)}</TableCell>
+   531→                          <TableCell className="text-right font-bold text-red-600">{item.quantity}</TableCell>
+   532→                          <TableCell className="text-right text-muted-foreground">{item.reorderLevel}</TableCell>
+   533→                          <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">{item.warehouse?.name || '—'}</TableCell>
+   534→                          <TableCell className="text-right">
+   535→                            <Button variant="ghost" size="sm" onClick={() => handleAdjust(item)}>
+   536→                              <Settings2 className="size-3.5 mr-1" />
+   537→                              Restock
+   538→                            </Button>
+   539→                          </TableCell>
+   540→                        </TableRow>
+   541→                      ))}
+   542→                    </TableBody>
+   543→                  </Table>
+   544→                </div>
+   545→              )}
+   546→            </CardContent>
+   547→          </Card>
+   548→        </TabsContent>
+   549→
+   550→        {/* Warehouses Tab */}
+   551→        <TabsContent value="warehouses" className="space-y-4">
+   552→          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   553→            {warehouses.length === 0 ? (
+   554→              <Card className="sm:col-span-2 lg:col-span-3">
+   555→                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   556→                  <WarehouseIcon className="size-12 text-muted-foreground/40 mb-3" />
+   557→                  <p className="text-muted-foreground">No warehouses found</p>
+   558→                </CardContent>
+   559→              </Card>
+   560→            ) : (
+   561→              warehouses.map((wh) => {
+   562→                const inv = wh.inventory || []
+   563→                const totalItems = inv.length
+   564→                const totalQty = inv.reduce((s, i) => s + i.quantity, 0)
+   565→                const totalValue = inv.reduce((s, i) => s + i.quantity * i.costPrice, 0)
+   566→                return (
+   567→                  <Card key={wh.id}>
+   568→                    <CardHeader className="pb-3">
+   569→                      <div className="flex items-center justify-between">
+   570→                        <CardTitle className="text-base">{wh.name}</CardTitle>
+   571→                        <Badge variant="outline" className="text-xs">{wh.code}</Badge>
+   572→                      </div>
+   573→                      {wh.branch && (
+   574→                        <CardDescription className="text-xs">{wh.branch.name}</CardDescription>
+   575→                      )}
+   576→                    </CardHeader>
+   577→                    <CardContent className="space-y-2">
+   578→                      <div className="flex items-center justify-between text-sm">
+   579→                        <span className="text-muted-foreground">Products</span>
+   580→                        <span className="font-medium">{totalItems}</span>
+   581→                      </div>
+   582→                      <div className="flex items-center justify-between text-sm">
+   583→                        <span className="text-muted-foreground">Total Quantity</span>
+   584→                        <span className="font-medium">{totalQty}</span>
+   585→                      </div>
+   586→                      <div className="flex items-center justify-between text-sm">
+   587→                        <span className="text-muted-foreground">Total Value</span>
+   588→                        <span className="font-medium">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+   589→                      </div>
+   590→                    </CardContent>
+   591→                  </Card>
+   592→                )
+   593→              })
+   594→            )}
+   595→          </div>
+   596→        </TabsContent>
+   597→
+   598→        {/* Transfers Tab */}
+   599→        <TabsContent value="transfers" className="space-y-4">
+   600→          <Card>
+   601→            <CardHeader className="pb-3">
+   602→              <div className="flex items-center justify-between">
+   603→                <div>
+   604→                  <CardTitle className="text-base flex items-center gap-2">
+   605→                    <ArrowRightLeft className="size-4" />
+   606→                    Stock Transfers ({transfers.length})
+   607→                  </CardTitle>
+   608→                  <CardDescription>Track stock movements between branches</CardDescription>
+   609→                </div>
+   610→                <Button size="sm" onClick={() => setTransferDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
+   611→                  <Plus className="size-4 mr-1" />
+   612→                  New Transfer
+   613→                </Button>
+   614→              </div>
+   615→            </CardHeader>
+   616→            <CardContent className="p-0">
+   617→              {transfers.length === 0 ? (
+   618→                <div className="flex flex-col items-center justify-center py-12 text-center">
+   619→                  <ArrowRightLeft className="size-12 text-muted-foreground/40 mb-3" />
+   620→                  <p className="text-muted-foreground">No transfers recorded</p>
+   621→                </div>
+   622→              ) : (
+   623→                <div className="overflow-x-auto">
+   624→                  <Table>
+   625→                    <TableHeader>
+   626→                      <TableRow>
+   627→                        <TableHead>From</TableHead>
+   628→                        <TableHead className="w-8" />
+   629→                        <TableHead>To</TableHead>
+   630→                        <TableHead>Status</TableHead>
+   631→                        <TableHead className="hidden sm:table-cell">Date</TableHead>
+   632→                        <TableHead className="hidden md:table-cell">Notes</TableHead>
+   633→                      </TableRow>
+   634→                    </TableHeader>
+   635→                    <TableBody>
+   636→                      {transfers.map((t) => (
+   637→                        <TableRow key={t.id}>
+   638→                          <TableCell className="font-medium text-sm">{t.fromBranch.name}</TableCell>
+   639→                          <TableCell><ChevronRight className="size-4 text-muted-foreground" /></TableCell>
+   640→                          <TableCell className="font-medium text-sm">{t.toBranch.name}</TableCell>
+   641→                          <TableCell>{getTransferStatusBadge(t.status)}</TableCell>
+   642→                          <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
+   643→                            {new Date(t.createdAt).toLocaleDateString()}
+   644→                          </TableCell>
+   645→                          <TableCell className="hidden md:table-cell text-muted-foreground text-sm max-w-[200px] truncate">
+   646→                            {t.notes || '—'}
+   647→                          </TableCell>
+   648→                        </TableRow>
+   649→                      ))}
+   650→                    </TableBody>
+   651→                  </Table>
+   652→                </div>
+   653→              )}
+   654→            </CardContent>
+   655→          </Card>
+   656→        </TabsContent>
+   657→      </Tabs>
+   658→
+   659→      {/* Adjust Stock Dialog */}
+   660→      <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
+   661→        <DialogContent className="sm:max-w-[425px]">
+   662→          <DialogHeader>
+   663→            <DialogTitle>Adjust Stock</DialogTitle>
+   664→            <DialogDescription>
+   665→              {adjustingItem ? `Adjusting stock for ${getProductName(adjustingItem)}` : ''}
+   666→            </DialogDescription>
+   667→          </DialogHeader>
+   668→          {adjustingItem && (
+   669→            <div className="space-y-4 py-4">
+   670→              <div className="flex items-center justify-between rounded-lg border p-3">
+   671→                <span className="text-sm text-muted-foreground">Current Quantity</span>
+   672→                <span className="text-lg font-bold">{adjustingItem.quantity}</span>
+   673→              </div>
+   674→              <div className="space-y-2">
+   675→                <Label>Operation</Label>
+   676→                <Select value={adjustOperation} onValueChange={setAdjustOperation}>
+   677→                  <SelectTrigger>
+   678→                    <SelectValue />
+   679→                  </SelectTrigger>
+   680→                  <SelectContent>
+   681→                    <SelectItem value="set">Set to value</SelectItem>
+   682→                    <SelectItem value="add">Add to current</SelectItem>
+   683→                    <SelectItem value="subtract">Subtract from current</SelectItem>
+   684→                  </SelectContent>
+   685→                </Select>
+   686→              </div>
+   687→              <div className="space-y-2">
+   688→                <Label htmlFor="adjust-qty">Quantity</Label>
+   689→                <Input
+   690→                  id="adjust-qty"
+   691→                  type="number"
+   692→                  min="0"
+   693→                  value={adjustQty}
+   694→                  onChange={(e) => setAdjustQty(e.target.value)}
+   695→                  placeholder="Enter quantity"
+   696→                />
+   697→              </div>
+   698→              {adjustQty && (
+   699→                <div className="rounded-lg bg-muted p-3 text-sm">
+   700→                  <span className="text-muted-foreground">New quantity will be: </span>
+   701→                  <span className="font-bold">
+   702→                    {adjustOperation === 'add'
+   703→                      ? adjustingItem.quantity + parseInt(adjustQty || '0')
+   704→                      : adjustOperation === 'subtract'
+   705→                      ? Math.max(0, adjustingItem.quantity - parseInt(adjustQty || '0'))
+   706→                      : parseInt(adjustQty || '0')}
+   707→                  </span>
+   708→                </div>
+   709→              )}
+   710→            </div>
+   711→          )}
+   712→          <DialogFooter>
+   713→            <Button variant="outline" onClick={() => setAdjustDialogOpen(false)} disabled={saving}>
+   714→              Cancel
+   715→            </Button>
+   716→            <Button onClick={handleAdjustSave} disabled={saving || !adjustQty} className="bg-emerald-600 hover:bg-emerald-700">
+   717→              {saving ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : null}
+   718→              Apply Adjustment
+   719→            </Button>
+   720→          </DialogFooter>
+   721→        </DialogContent>
+   722→      </Dialog>
+   723→
+   724→      {/* Create Transfer Dialog */}
+   725→      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+   726→        <DialogContent className="sm:max-w-[425px]">
+   727→          <DialogHeader>
+   728→            <DialogTitle>Create Stock Transfer</DialogTitle>
+   729→            <DialogDescription>Transfer stock between branches</DialogDescription>
+   730→          </DialogHeader>
+   731→          <div className="space-y-4 py-4">
+   732→            <div className="space-y-2">
+   733→              <Label>From Branch</Label>
+   734→              <Select value={transferFrom} onValueChange={setTransferFrom}>
+   735→                <SelectTrigger>
+   736→                  <SelectValue placeholder="Select source branch" />
+   737→                </SelectTrigger>
+   738→                <SelectContent>
+   739→                  {branches.map((b) => (
+   740→                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+   741→                  ))}
+   742→                </SelectContent>
+   743→              </Select>
+   744→            </div>
+   745→            <div className="space-y-2">
+   746→              <Label>To Branch</Label>
+   747→              <Select value={transferTo} onValueChange={setTransferTo}>
+   748→                <SelectTrigger>
+   749→                  <SelectValue placeholder="Select destination branch" />
+   750→                </SelectTrigger>
+   751→                <SelectContent>
+   752→                  {branches.map((b) => (
+   753→                    <SelectItem key={b.id} value={b.id} disabled={b.id === transferFrom}>
+   754→                      {b.name}
+   755→                    </SelectItem>
+   756→                  ))}
+   757→                </SelectContent>
+   758→              </Select>
+   759→            </div>
+   760→            <div className="space-y-2">
+   761→              <Label htmlFor="transfer-notes">Notes</Label>
+   762→              <Textarea
+   763→                id="transfer-notes"
+   764→                value={transferNotes}
+   765→                onChange={(e) => setTransferNotes(e.target.value)}
+   766→                placeholder="Optional notes about this transfer..."
+   767→                rows={3}
+   768→              />
+   769→            </div>
+   770→          </div>
+   771→          <DialogFooter>
+   772→            <Button variant="outline" onClick={() => setTransferDialogOpen(false)} disabled={saving}>
+   773→              Cancel
+   774→            </Button>
+   775→            <Button onClick={handleTransferCreate} disabled={saving || !transferFrom || !transferTo || transferFrom === transferTo} className="bg-emerald-600 hover:bg-emerald-700">
+   776→              {saving ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : null}
+   777→              Create Transfer
+   778→            </Button>
+   779→          </DialogFooter>
+   780→        </DialogContent>
+   781→      </Dialog>
+   782→    </div>
+   783→  )
+   784→}
+   785→

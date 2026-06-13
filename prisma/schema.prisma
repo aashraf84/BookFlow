@@ -133,6 +133,7 @@ model Book {
   saleItems     SaleItem[]
   packageItems  AcademicPackageItem[]
   orderItems    WholesaleOrderItem[]
+  printOrders   PrintOrder[]
 }
 
 // ==================== STATIONERY ====================
@@ -498,6 +499,7 @@ model Manuscript {
 model PrintOrder {
   id          String   @id @default(cuid())
   bookId      String?
+  book        Book?    @relation(fields: [bookId], references: [id])
   quantity    Int      @default(0)
   status      String   @default("ordered") // ordered, printing, completed
   costPerUnit Float    @default(0)

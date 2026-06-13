@@ -1,22 +1,30 @@
 ---
-Task ID: 1
+Task ID: 2
 Agent: Main Orchestrator
-Task: Build BookFlow OS - Enterprise Bookstore, Publishing & Stationery Business Operating System
+Task: Redesign entire UI/UX to macOS 27 Retina with light/dark mode support
 
 Work Log:
-- Designed comprehensive Prisma database schema with 25+ models covering all business domains
-- Built main app shell with collapsible sidebar navigation (17 modules), header with breadcrumb/search/dark mode/notifications, and sticky footer
-- Created Zustand store for navigation state management
-- Built 17 complete module components with full CRUD functionality
-- Created 16+ API routes for all backend operations
-- Integrated AI Suite using z-ai-web-dev-sdk with 5 specialized AI assistants
-- Seeded database with comprehensive test data (books, authors, publishers, stationery, schools, customers, employees, finance, etc.)
-- All modules verified via browser testing - no errors, clean lint, 200 API responses
+- Completely redesigned globals.css with macOS Sequoia color system (light: #FFFFFF/#F5F5F7/#007AFF, dark: #000000/#1C1C1E/#0A84FF)
+- Added frosted glass effects (glass, glass-thin, glass-sidebar with backdrop-filter blur+saturate)
+- Added macOS window shadows (macos-shadow, macos-shadow-elevated) with multi-layer shadows
+- Added traffic light button styles, segmented controls, pill buttons, gradient utilities
+- Added Retina-quality typography with SF Pro font stack and -webkit-font-smoothing
+- Rebuilt app-shell with macOS titlebar (traffic lights, breadcrumb, spotlight search, theme toggle, notifications)
+- Redesigned sidebar with vibrancy effect, rounded active states, gradient brand icon
+- Redesigned footer with macOS-style status bar (online indicator, version badge)
+- Redesigned all 17 module components with macOS design patterns
+- Fixed nested button hydration error in header
+- Fixed PrintOrder model missing book relation (Prisma schema)
+- Verified light and dark modes both work correctly
+- All APIs return 200, lint passes clean, no browser console errors
 
 Stage Summary:
-- Complete enterprise-grade BookFlow OS application built and running
-- 17 modules: Dashboard, Book Catalog, Authors, Publishers, Stationery, Inventory, Retail POS, Wholesale, School Supply, CRM & Loyalty, Finance, Employees, Branches, Publishing, E-Commerce, Reports, AI Suite
-- Real-time data integration with SQLite via Prisma ORM
-- AI Suite integrated with z-ai-web-dev-sdk for 5 AI assistant types
-- Dark mode support, responsive design, emerald/teal color scheme
-- All API routes return proper JSON with pagination, search, and filtering
+- Complete macOS 27 Retina UI/UX redesign across entire application
+- macOS color system: #007AFF (blue), #34C759 (green), #FF9500 (orange), #FF3B30 (red), #AF52DE (purple), #5AC8FA (teal)
+- Light mode: Clean white with subtle warmth, vibrant accent colors
+- Dark mode: Rich black with elevated surfaces, same vibrant accents
+- Frosted glass sidebar with vibrancy effect
+- macOS traffic lights in titlebar
+- Segmented controls replacing standard tabs
+- Rounded-2xl cards with shadow-only elevation (no borders)
+- Retina typography with SF Pro font stack

@@ -14,16 +14,12 @@ import {
   Phone,
   PenTool,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Table,
   TableBody,
@@ -77,6 +73,45 @@ const emptyForm: AuthorFormData = {
   website: '',
   email: '',
   phone: '',
+}
+
+// ── Avatar colors ──────────────────────────────────────────────
+const avatarColors = [
+  { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
+  { bg: 'bg-macos-green/10', text: 'text-macos-green' },
+  { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
+  { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
+  { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
+  { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
+  { bg: 'bg-macos-red/10', text: 'text-macos-red' },
+  { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
+]
+
+const getAvatarColor = (name: string) => {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return avatarColors[Math.abs(hash) % avatarColors.length]
+}
+
+// ── Nationality flag emoji ────────────────────────────────────
+const nationalityFlags: Record<string, string> = {
+  'American': '🇺🇸', 'British': '🇬🇧', 'French': '🇫🇷', 'German': '🇩🇪',
+  'Japanese': '🇯🇵', 'Chinese': '🇨🇳', 'Indian': '🇮🇳', 'Spanish': '🇪🇸',
+  'Italian': '🇮🇹', 'Russian': '🇷🇺', 'Brazilian': '🇧🇷', 'Canadian': '🇨🇦',
+  'Australian': '🇦🇺', 'Mexican': '🇲🇽', 'Korean': '🇰🇷', 'Arab': '🌍',
+  'Egyptian': '🇪🇬', 'Turkish': '🇹🇷', 'Iranian': '🇮🇷', 'Pakistani': '🇵🇰',
+  'Nigerian': '🇳🇬', 'South African': '🇿🇦', 'Swedish': '🇸🇪', 'Norwegian': '🇳🇴',
+  'Danish': '🇩🇰', 'Dutch': '🇳🇱', 'Portuguese': '🇵🇹', 'Greek': '🇬🇷',
+  'Polish': '🇵🇱', 'Czech': '🇨🇿', 'Argentine': '🇦🇷', 'Colombian': '🇨🇴',
+  'Thai': '🇹🇭', 'Vietnamese': '🇻🇳', 'Indonesian': '🇮🇩', 'Filipino': '🇵🇭',
+  'Malaysian': '🇲🇾', 'Singaporean': '🇸🇬', 'Lebanese': '🇱🇧', 'Moroccan': '🇲🇦',
+}
+
+const getFlag = (nationality: string | null) => {
+  if (!nationality) return ''
+  return nationalityFlags[nationality] || '🌍'
 }
 
 // ── Component ────────────────────────────────────────────────────
@@ -246,108 +281,108 @@ export default function AuthorsModule() {
 
   // ── Detail View ────────────────────────────────────────────
   if (selectedAuthor) {
+    const avatarColor = getAvatarColor(selectedAuthor.name)
     return (
       <div className="space-y-4">
-        <Button variant="ghost" onClick={() => setSelectedAuthor(null)} className="mb-2">
-          <ArrowLeft className="size-4 mr-2" /> Back to Authors
-        </Button>
+        <button
+          onClick={() => setSelectedAuthor(null)}
+          className="flex items-center gap-1.5 text-[13px] font-medium text-macos-blue hover:opacity-80 transition-opacity"
+        >
+          <ArrowLeft className="size-4" strokeWidth={1.5} /> Back to Authors
+        </button>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Avatar className="size-16">
-                <AvatarFallback className="bg-emerald-100 text-emerald-700 text-lg font-semibold dark:bg-emerald-950/30 dark:text-emerald-400">
-                  {getInitials(selectedAuthor.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="space-y-1 flex-1">
-                <h2 className="text-xl font-bold">{selectedAuthor.name}</h2>
-                {selectedAuthor.nationality && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Globe className="size-3" /> {selectedAuthor.nationality}
-                  </p>
+        <div className="rounded-2xl macos-shadow bg-card p-5">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className={`size-14 rounded-2xl ${avatarColor.bg} flex items-center justify-center shrink-0`}>
+              <span className={`text-lg font-bold ${avatarColor.text}`}>
+                {getInitials(selectedAuthor.name)}
+              </span>
+            </div>
+            <div className="space-y-1 flex-1">
+              <h2 className="text-xl font-bold tracking-tight">{selectedAuthor.name}</h2>
+              {selectedAuthor.nationality && (
+                <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
+                  <Globe className="size-3.5" strokeWidth={1.5} /> {getFlag(selectedAuthor.nationality)} {selectedAuthor.nationality}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-3 text-[13px] text-muted-foreground mt-1">
+                {selectedAuthor.email && (
+                  <span className="flex items-center gap-1">
+                    <Mail className="size-3.5" strokeWidth={1.5} /> {selectedAuthor.email}
+                  </span>
                 )}
-                <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                  {selectedAuthor.email && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="size-3" /> {selectedAuthor.email}
-                    </span>
-                  )}
-                  {selectedAuthor.phone && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="size-3" /> {selectedAuthor.phone}
-                    </span>
-                  )}
-                </div>
-                {selectedAuthor.bio && (
-                  <p className="text-sm text-muted-foreground mt-2">{selectedAuthor.bio}</p>
+                {selectedAuthor.phone && (
+                  <span className="flex items-center gap-1">
+                    <Phone className="size-3.5" strokeWidth={1.5} /> {selectedAuthor.phone}
+                  </span>
                 )}
-                <div className="mt-2">
-                  <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-                    {selectedAuthor._count.books} books
-                  </Badge>
-                </div>
+              </div>
+              {selectedAuthor.bio && (
+                <p className="text-[13px] text-muted-foreground mt-2">{selectedAuthor.bio}</p>
+              )}
+              <div className="mt-2">
+                <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+                  {selectedAuthor._count.books} {selectedAuthor._count.books === 1 ? 'book' : 'books'}
+                </Badge>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Books by {selectedAuthor.name}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingBooks ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
-                ))}
-              </div>
-            ) : authorBooks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                <BookOpen className="size-8 mb-2 opacity-40" />
-                <p className="text-sm">No books by this author yet</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>ISBN</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Publisher</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
+        <div className="rounded-2xl macos-shadow bg-card p-5">
+          <h3 className="text-[13px] font-semibold tracking-tight mb-3">
+            Books by {selectedAuthor.name}
+          </h3>
+          {loadingBooks ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : authorBooks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <BookOpen className="size-8 mb-2 opacity-40" strokeWidth={1.5} />
+              <p className="text-[13px]">No books by this author yet</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b">
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Publisher</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {authorBooks.map((book) => (
+                  <TableRow key={book.id} className="hover:bg-secondary/50">
+                    <TableCell className="text-[13px] font-medium">{book.title}</TableCell>
+                    <TableCell className="text-[13px] text-muted-foreground font-mono">
+                      {book.isbn || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {book.category ? (
+                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
+                          {book.category.name}
+                        </Badge>
+                      ) : (
+                        <span className="text-[13px] text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-[13px] text-muted-foreground">
+                      {book.publisher?.name || '—'}
+                    </TableCell>
+                    <TableCell className="text-[13px] text-right font-semibold tracking-tight">
+                      ${book.price.toFixed(2)}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {authorBooks.map((book) => (
-                    <TableRow key={book.id}>
-                      <TableCell className="font-medium">{book.title}</TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-xs">
-                        {book.isbn || '—'}
-                      </TableCell>
-                      <TableCell>
-                        {book.category ? (
-                          <Badge variant="outline" className="text-xs">
-                            {book.category.name}
-                          </Badge>
-                        ) : (
-                          '—'
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {book.publisher?.name || '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${book.price.toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
       </div>
     )
   }
@@ -357,89 +392,81 @@ export default function AuthorsModule() {
     <div className="space-y-4">
       {/* Header + Add */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold tracking-tight">Authors</h2>
-          <p className="text-sm text-muted-foreground">{total} authors in database</p>
+          <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
+            {total} authors
+          </Badge>
         </div>
-        <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="size-4 mr-2" /> Add Author
+        <Button onClick={openAdd} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+          <Plus className="size-4 mr-1.5" strokeWidth={1.5} /> Add Author
         </Button>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, nationality, email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Spotlight Search */}
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" strokeWidth={1.5} />
+        <Input
+          placeholder="Search by name, nationality, email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+        />
+      </div>
 
       {/* Authors Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="size-12 rounded-full" />
-                  <div className="space-y-1.5 flex-1">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
+            <div key={i} className="rounded-2xl macos-shadow bg-card p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="size-10 rounded-xl" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-16" />
                 </div>
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-3 w-2/3" />
-              </CardContent>
-            </Card>
+              </div>
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
           ))}
         </div>
       ) : authors.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <PenTool className="size-10 mb-3 opacity-40" />
-            <p className="font-medium">No authors found</p>
-            <p className="text-sm">Try adjusting your search or add a new author</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl macos-shadow bg-card p-8 flex flex-col items-center justify-center text-muted-foreground">
+          <PenTool className="size-10 mb-3 opacity-40" strokeWidth={1.5} />
+          <p className="text-[13px] font-semibold">No authors found</p>
+          <p className="text-[11px] mt-1">Try adjusting your search or add a new author</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {authors.map((author) => (
-            <Card
-              key={author.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => openDetail(author)}
-            >
-              <CardContent className="p-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {authors.map((author) => {
+            const avatarColor = getAvatarColor(author.name)
+            return (
+              <div
+                key={author.id}
+                className="rounded-2xl macos-shadow macos-card-hover bg-card p-4 cursor-pointer"
+                onClick={() => openDetail(author)}
+              >
                 <div className="flex items-start gap-3">
-                  <Avatar className="size-12 shrink-0">
-                    <AvatarFallback className="bg-emerald-100 text-emerald-700 font-semibold dark:bg-emerald-950/30 dark:text-emerald-400">
+                  <div className={`size-10 rounded-xl ${avatarColor.bg} flex items-center justify-center shrink-0`}>
+                    <span className={`text-sm font-bold ${avatarColor.text}`}>
                       {getInitials(author.name)}
-                    </AvatarFallback>
-                  </Avatar>
+                    </span>
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{author.name}</h3>
+                    <h3 className="text-[13px] font-semibold truncate">{author.name}</h3>
                     {author.nationality && (
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Globe className="size-3" /> {author.nationality}
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        {getFlag(author.nationality)} {author.nationality}
                       </p>
                     )}
-                    <Badge
-                      variant="secondary"
-                      className="mt-1 text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
-                    >
+                    <Badge className="mt-1.5 rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
                       {author._count.books} {author._count.books === 1 ? 'book' : 'books'}
                     </Badge>
                   </div>
                 </div>
                 {author.bio && (
-                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                  <p className="text-[13px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
                     {author.bio}
                   </p>
                 )}
@@ -447,49 +474,51 @@ export default function AuthorsModule() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="size-8"
+                    className="size-7 rounded-lg"
                     onClick={() => openEdit(author)}
                   >
-                    <Pencil className="size-3.5" />
+                    <Pencil className="size-3.5" strokeWidth={1.5} />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="size-8 text-destructive hover:text-destructive"
+                    className="size-7 rounded-lg text-macos-red hover:text-macos-red"
                     onClick={() => handleDelete(author.id)}
                     disabled={deleting === author.id}
                   >
                     {deleting === author.id ? (
-                      <RefreshCw className="size-3.5 animate-spin" />
+                      <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
                     ) : (
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="size-3.5" strokeWidth={1.5} />
                     )}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            )
+          })}
         </div>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {page} of {totalPages} ({total} results)
+          <p className="text-[11px] text-muted-foreground">
+            Page {page} of {totalPages} · {total} results
           </p>
           <div className="flex gap-1">
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
+              className="rounded-lg h-7 text-[13px]"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
             >
               Prev
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
+              className="rounded-lg h-7 text-[13px]"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >
@@ -512,73 +541,82 @@ export default function AuthorsModule() {
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Edit Author' : 'Add New Author'}</DialogTitle>
+            <DialogTitle className="text-[13px] font-semibold tracking-tight">
+              {editing ? 'Edit Author' : 'Add New Author'}
+            </DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-2">
+          <div className="grid gap-3 py-2">
             <div>
-              <Label htmlFor="author-name">Name *</Label>
+              <Label htmlFor="author-name" className="text-[11px] font-semibold">Name *</Label>
               <Input
                 id="author-name"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Author name"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
             <div>
-              <Label htmlFor="author-bio">Bio</Label>
+              <Label htmlFor="author-bio" className="text-[11px] font-semibold">Bio</Label>
               <Textarea
                 id="author-bio"
                 value={form.bio}
                 onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
                 placeholder="Author biography..."
                 rows={3}
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="author-nationality">Nationality</Label>
+                <Label htmlFor="author-nationality" className="text-[11px] font-semibold">Nationality</Label>
                 <Input
                   id="author-nationality"
                   value={form.nationality}
                   onChange={(e) => setForm((f) => ({ ...f, nationality: e.target.value }))}
                   placeholder="e.g. American"
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div>
-                <Label htmlFor="author-website">Website</Label>
+                <Label htmlFor="author-website" className="text-[11px] font-semibold">Website</Label>
                 <Input
                   id="author-website"
                   value={form.website}
                   onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
                   placeholder="https://..."
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="author-email">Email</Label>
+                <Label htmlFor="author-email" className="text-[11px] font-semibold">Email</Label>
                 <Input
                   id="author-email"
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   placeholder="author@example.com"
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div>
-                <Label htmlFor="author-phone">Phone</Label>
+                <Label htmlFor="author-phone" className="text-[11px] font-semibold">Phone</Label>
                 <Input
                   id="author-phone"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                   placeholder="+1-..."
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button
-              variant="outline"
+              variant="secondary"
+              className="rounded-lg text-[13px] font-medium h-8"
               onClick={() => {
                 setDialogOpen(false)
                 setEditing(null)
@@ -590,12 +628,12 @@ export default function AuthorsModule() {
             <Button
               onClick={handleSave}
               disabled={saving || !form.name.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8"
             >
               {saving ? (
-                <RefreshCw className="size-4 mr-2 animate-spin" />
+                <RefreshCw className="size-4 mr-1.5 animate-spin" strokeWidth={1.5} />
               ) : (
-                <Plus className="size-4 mr-2" />
+                <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
               )}
               {editing ? 'Update Author' : 'Create Author'}
             </Button>

@@ -19,7 +19,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -43,7 +42,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
@@ -205,26 +203,26 @@ export function InventoryModule() {
   }
 
   // Stock status
-  const getStockBadge = (item: InventoryItem) => {
+  const getStockStatus = (item: InventoryItem): { dotClass: string; textClass: string; label: string } => {
     if (item.quantity === 0) {
-      return <Badge className="bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800 text-xs"><span className="mr-1 inline-block size-1.5 rounded-full bg-red-500" />Out of Stock</Badge>
+      return { dotClass: 'bg-macos-red', textClass: 'text-macos-red', label: 'Out of Stock' }
     }
     if (item.isLowStock || item.quantity <= item.reorderLevel) {
-      return <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800 text-xs"><span className="mr-1 inline-block size-1.5 rounded-full bg-amber-500" />Low Stock</Badge>
+      return { dotClass: 'bg-macos-orange', textClass: 'text-macos-orange', label: 'Low Stock' }
     }
-    return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 text-xs"><span className="mr-1 inline-block size-1.5 rounded-full bg-emerald-500" />In Stock</Badge>
+    return { dotClass: 'bg-macos-green', textClass: 'text-macos-green', label: 'In Stock' }
   }
 
   // Transfer status badge
   const getTransferStatusBadge = (status: string) => {
     const map: Record<string, { className: string; label: string }> = {
-      pending: { className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800', label: 'Pending' },
-      'in-transit': { className: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400 border-sky-200 dark:border-sky-800', label: 'In Transit' },
-      completed: { className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800', label: 'Completed' },
-      cancelled: { className: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800', label: 'Cancelled' },
+      pending: { className: 'bg-macos-orange/10 text-macos-orange', label: 'Pending' },
+      'in-transit': { className: 'bg-macos-blue/10 text-macos-blue', label: 'In Transit' },
+      completed: { className: 'bg-macos-green/10 text-macos-green', label: 'Completed' },
+      cancelled: { className: 'bg-macos-red/10 text-macos-red', label: 'Cancelled' },
     }
-    const s = map[status] || { className: '', label: status }
-    return <Badge className={`text-xs ${s.className}`}>{s.label}</Badge>
+    const s = map[status] || { className: 'bg-secondary text-secondary-foreground', label: status }
+    return <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${s.className}`}>{s.label}</span>
   }
 
   // Open adjust dialog
@@ -294,387 +292,367 @@ export function InventoryModule() {
   const outOfStockItems = items.filter((i) => i.quantity === 0)
   const totalValue = items.reduce((s, i) => s + i.quantity * i.costPrice, 0)
 
+  // Segmented tabs
+  const tabs = [
+    { id: 'overview', label: 'Stock Overview' },
+    { id: 'low-stock', label: 'Low Stock' },
+    { id: 'warehouses', label: 'Warehouses' },
+    { id: 'transfers', label: 'Transfers' },
+  ]
+
+  // Quantity bar visualization
+  const QuantityBar = ({ quantity, max }: { quantity: number; max: number }) => {
+    const pct = max > 0 ? Math.min(100, (quantity / max) * 100) : 0
+    const barColor = quantity === 0 ? 'bg-macos-red' : pct < 30 ? 'bg-macos-orange' : 'bg-macos-green'
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-16 h-1.5 rounded-full bg-secondary/80 overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+        </div>
+        <span className="text-[13px] font-medium tracking-tight">{quantity}</span>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Inventory Management</h2>
-          <p className="text-muted-foreground text-sm">Real-time stock tracking across warehouses and branches</p>
+          <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Inventory Management</h2>
+          <p className="text-[11px] text-muted-foreground tracking-tight">Real-time stock tracking across warehouses and branches</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setTransferDialogOpen(true)}>
-            <ArrowRightLeft className="size-4 mr-1.5" />
+          <Button onClick={() => setTransferDialogOpen(true)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+            <ArrowRightLeft className="size-3.5 mr-1.5" />
             New Transfer
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Items</p>
-                <p className="text-2xl font-bold">{totalItems}</p>
-              </div>
-              <div className="rounded-lg bg-emerald-100 dark:bg-emerald-950/30 p-2">
-                <Package className="size-5 text-emerald-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Low Stock</p>
-                <p className="text-2xl font-bold text-amber-600">{lowStockItems.length}</p>
-              </div>
-              <div className="rounded-lg bg-amber-100 dark:bg-amber-950/30 p-2">
-                <TrendingDown className="size-5 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Out of Stock</p>
-                <p className="text-2xl font-bold text-red-600">{outOfStockItems.length}</p>
-              </div>
-              <div className="rounded-lg bg-red-100 dark:bg-red-950/30 p-2">
-                <AlertTriangle className="size-5 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-2xl font-bold">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              </div>
-              <div className="rounded-lg bg-teal-100 dark:bg-teal-950/30 p-2">
-                <WarehouseIcon className="size-5 text-teal-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-2xl macos-shadow p-4 bg-background">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Items</p>
+          <p className="text-2xl font-bold tracking-tight">{totalItems}</p>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-background">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Low Stock</p>
+          <p className="text-2xl font-bold tracking-tight text-macos-orange">{lowStockItems.length}</p>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-background">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Out of Stock</p>
+          <p className="text-2xl font-bold tracking-tight text-macos-red">{outOfStockItems.length}</p>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-background">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Value</p>
+          <p className="text-2xl font-bold tracking-tight">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
-          <AlertCircle className="size-4 shrink-0" />
+        <div className="flex items-center gap-2 rounded-xl bg-macos-red/10 p-3 text-[13px] text-macos-red macos-shadow">
+          <AlertCircle className="size-3.5 shrink-0" />
           {error}
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setError(null)}>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[11px] text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
             Dismiss
           </Button>
         </div>
       )}
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="text-xs sm:text-sm">Stock Overview</TabsTrigger>
-          <TabsTrigger value="low-stock" className="text-xs sm:text-sm">Low Stock</TabsTrigger>
-          <TabsTrigger value="warehouses" className="text-xs sm:text-sm">Warehouses</TabsTrigger>
-          <TabsTrigger value="transfers" className="text-xs sm:text-sm">Transfers</TabsTrigger>
-        </TabsList>
+      {/* Segmented Tabs */}
+      <div className="macos-segmented inline-flex p-0.5">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${activeTab === tab.id ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Stock Overview Tab */}
-        <TabsContent value="overview" className="space-y-4">
+      {/* Stock Overview Tab */}
+      {activeTab === 'overview' && (
+        <div className="space-y-4">
           {/* Filters */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="flex items-center gap-2 flex-1">
-                  <Building2 className="size-4 text-muted-foreground shrink-0" />
-                  <Select value={branchFilter} onValueChange={setBranchFilter}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All Branches" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Branches</SelectItem>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2 flex-1">
-                  <WarehouseIcon className="size-4 text-muted-foreground shrink-0" />
-                  <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All Warehouses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Warehouses</SelectItem>
-                      {warehouses.map((w) => (
-                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  variant={lowStockOnly ? 'default' : 'outline'}
-                  size="sm"
-                  className={lowStockOnly ? 'bg-amber-600 hover:bg-amber-700' : ''}
-                  onClick={() => setLowStockOnly(!lowStockOnly)}
-                >
-                  <AlertTriangle className="size-4 mr-1.5" />
-                  Low Stock Only
-                </Button>
+          <div className="rounded-2xl macos-shadow p-4 bg-background">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex items-center gap-2 flex-1">
+                <Building2 className="size-3.5 text-muted-foreground shrink-0" />
+                <Select value={branchFilter} onValueChange={setBranchFilter}>
+                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 w-full focus-visible:ring-1 focus-visible:ring-primary/30">
+                    <SelectValue placeholder="All Branches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex items-center gap-2 flex-1">
+                <WarehouseIcon className="size-3.5 text-muted-foreground shrink-0" />
+                <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 w-full focus-visible:ring-1 focus-visible:ring-primary/30">
+                    <SelectValue placeholder="All Warehouses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Warehouses</SelectItem>
+                    {warehouses.map((w) => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`rounded-lg text-[13px] h-8 ${lowStockOnly ? 'bg-macos-orange/10 text-macos-orange hover:bg-macos-orange/20' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
+                onClick={() => setLowStockOnly(!lowStockOnly)}
+              >
+                <AlertTriangle className="size-3.5 mr-1.5" />
+                Low Stock Only
+              </Button>
+            </div>
+          </div>
 
           {/* Inventory Table */}
-          <Card>
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="p-4 space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : items.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Package className="size-12 text-muted-foreground/40 mb-3" />
-                  <p className="text-muted-foreground">No inventory items found</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead className="hidden md:table-cell">Warehouse</TableHead>
-                        <TableHead className="hidden sm:table-cell">Branch</TableHead>
-                        <TableHead className="text-right">Quantity</TableHead>
-                        <TableHead className="hidden sm:table-cell text-right">Reorder Level</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="hidden lg:table-cell text-right">Cost</TableHead>
-                        <TableHead className="hidden lg:table-cell text-right">Selling</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {items.map((item) => (
-                        <TableRow key={item.id} className={item.quantity === 0 ? 'bg-red-50/50 dark:bg-red-950/10' : item.quantity <= item.reorderLevel ? 'bg-amber-50/50 dark:bg-amber-950/10' : ''}>
-                          <TableCell className="font-medium max-w-[200px] truncate">
+          <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+            {loading ? (
+              <div className="p-4 space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Package className="size-12 text-muted-foreground/30 mb-3" />
+                <p className="text-[13px] text-muted-foreground">No inventory items found</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Warehouse</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Branch</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Quantity</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell text-right">Reorder</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell text-right">Cost</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell text-right">Selling</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((item) => {
+                      const status = getStockStatus(item)
+                      return (
+                        <TableRow key={item.id} className={`hover:bg-secondary/50 border-b border-border/30 ${item.quantity === 0 ? 'bg-macos-red/5' : item.quantity <= item.reorderLevel ? 'bg-macos-orange/5' : ''}`}>
+                          <TableCell className="text-[13px] font-medium max-w-[200px] truncate tracking-tight">
                             {getProductName(item)}
                           </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+                          <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] tracking-tight">
                             {item.warehouse?.name || '—'}
                           </TableCell>
-                          <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
+                          <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight">
                             {item.branch?.name || '—'}
                           </TableCell>
-                          <TableCell className="text-right font-medium">{item.quantity}</TableCell>
-                          <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-sm">{item.reorderLevel}</TableCell>
-                          <TableCell>{getStockBadge(item)}</TableCell>
-                          <TableCell className="hidden lg:table-cell text-right text-sm">${item.costPrice.toFixed(2)}</TableCell>
-                          <TableCell className="hidden lg:table-cell text-right text-sm">${item.sellingPrice.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <QuantityBar quantity={item.quantity} max={item.maxStockLevel || item.reorderLevel * 3} />
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-[13px] tracking-tight">{item.reorderLevel}</TableCell>
+                          <TableCell>
+                            <span className={`inline-flex items-center gap-1.5 text-[13px] font-medium ${status.textClass}`}>
+                              <span className={`inline-block size-2 rounded-full ${status.dotClass}`} />
+                              {status.label}
+                            </span>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-right text-[13px] tracking-tight">${item.costPrice.toFixed(2)}</TableCell>
+                          <TableCell className="hidden lg:table-cell text-right text-[13px] tracking-tight">${item.sellingPrice.toFixed(2)}</TableCell>
                           <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" onClick={() => handleAdjust(item)}>
-                              <Settings2 className="size-3.5 mr-1" />
+                            <Button variant="ghost" size="sm" onClick={() => handleAdjust(item)} className="h-7 text-[13px] rounded-md hover:bg-secondary">
+                              <Settings2 className="size-3 mr-1" />
                               Adjust
                             </Button>
                           </TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Low Stock Alerts Tab */}
-        <TabsContent value="low-stock" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="size-4 text-amber-600" />
-                Low Stock Alerts ({lowStockItems.length})
-              </CardTitle>
-              <CardDescription>Items below or at reorder level that need attention</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {lowStockItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Package className="size-12 text-emerald-500/40 mb-3" />
-                  <p className="text-emerald-600 font-medium">All items are well stocked!</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead className="text-right">Current Qty</TableHead>
-                        <TableHead className="text-right">Reorder Level</TableHead>
-                        <TableHead className="hidden sm:table-cell">Warehouse</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lowStockItems.map((item) => (
-                        <TableRow key={item.id} className={item.quantity === 0 ? 'bg-red-50/50 dark:bg-red-950/10' : 'bg-amber-50/50 dark:bg-amber-950/10'}>
-                          <TableCell className="font-medium">{getProductName(item)}</TableCell>
-                          <TableCell className="text-right font-bold text-red-600">{item.quantity}</TableCell>
-                          <TableCell className="text-right text-muted-foreground">{item.reorderLevel}</TableCell>
-                          <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">{item.warehouse?.name || '—'}</TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" onClick={() => handleAdjust(item)}>
-                              <Settings2 className="size-3.5 mr-1" />
-                              Restock
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Warehouses Tab */}
-        <TabsContent value="warehouses" className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {warehouses.length === 0 ? (
-              <Card className="sm:col-span-2 lg:col-span-3">
-                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                  <WarehouseIcon className="size-12 text-muted-foreground/40 mb-3" />
-                  <p className="text-muted-foreground">No warehouses found</p>
-                </CardContent>
-              </Card>
-            ) : (
-              warehouses.map((wh) => {
-                const inv = wh.inventory || []
-                const totalItems = inv.length
-                const totalQty = inv.reduce((s, i) => s + i.quantity, 0)
-                const totalValue = inv.reduce((s, i) => s + i.quantity * i.costPrice, 0)
-                return (
-                  <Card key={wh.id}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">{wh.name}</CardTitle>
-                        <Badge variant="outline" className="text-xs">{wh.code}</Badge>
-                      </div>
-                      {wh.branch && (
-                        <CardDescription className="text-xs">{wh.branch.name}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Products</span>
-                        <span className="font-medium">{totalItems}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Total Quantity</span>
-                        <span className="font-medium">{totalQty}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Total Value</span>
-                        <span className="font-medium">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Transfers Tab */}
-        <TabsContent value="transfers" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <ArrowRightLeft className="size-4" />
-                    Stock Transfers ({transfers.length})
-                  </CardTitle>
-                  <CardDescription>Track stock movements between branches</CardDescription>
+      {/* Low Stock Alerts Tab */}
+      {activeTab === 'low-stock' && (
+        <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+          {lowStockItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Package className="size-12 text-macos-green/30 mb-3" />
+              <p className="text-[13px] text-macos-green font-medium">All items are well stocked!</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Current Qty</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Reorder Level</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Warehouse</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lowStockItems.map((item) => (
+                    <TableRow key={item.id} className={`hover:bg-secondary/50 border-b border-border/30 ${item.quantity === 0 ? 'bg-macos-red/5' : 'bg-macos-orange/5'}`}>
+                      <TableCell className="text-[13px] font-medium tracking-tight">{getProductName(item)}</TableCell>
+                      <TableCell className="text-right text-[13px] font-bold text-macos-red tracking-tight">{item.quantity}</TableCell>
+                      <TableCell className="text-right text-muted-foreground text-[13px] tracking-tight">{item.reorderLevel}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight">{item.warehouse?.name || '—'}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => handleAdjust(item)} className="h-7 text-[13px] rounded-md hover:bg-secondary">
+                          <Settings2 className="size-3 mr-1" />
+                          Restock
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Warehouses Tab */}
+      {activeTab === 'warehouses' && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {warehouses.length === 0 ? (
+            <div className="sm:col-span-2 lg:col-span-3 rounded-2xl macos-shadow bg-background flex flex-col items-center justify-center py-16 text-center">
+              <WarehouseIcon className="size-12 text-muted-foreground/30 mb-3" />
+              <p className="text-[13px] text-muted-foreground">No warehouses found</p>
+            </div>
+          ) : (
+            warehouses.map((wh) => {
+              const inv = wh.inventory || []
+              const totalItems = inv.length
+              const totalQty = inv.reduce((s, i) => s + i.quantity, 0)
+              const totalValue = inv.reduce((s, i) => s + i.quantity * i.costPrice, 0)
+              return (
+                <div key={wh.id} className="rounded-2xl macos-shadow p-4 bg-background">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-[13px] font-semibold tracking-tight">{wh.name}</h3>
+                    <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-teal/10 text-macos-teal">{wh.code}</span>
+                  </div>
+                  {wh.branch && (
+                    <p className="text-[11px] text-muted-foreground mb-3 tracking-tight">{wh.branch.name}</p>
+                  )}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[13px] tracking-tight">
+                      <span className="text-muted-foreground">Products</span>
+                      <span className="font-medium">{totalItems}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[13px] tracking-tight">
+                      <span className="text-muted-foreground">Total Quantity</span>
+                      <span className="font-medium">{totalQty}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[13px] tracking-tight">
+                      <span className="text-muted-foreground">Total Value</span>
+                      <span className="font-medium">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
                 </div>
-                <Button size="sm" onClick={() => setTransferDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700">
-                  <Plus className="size-4 mr-1" />
-                  New Transfer
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {transfers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <ArrowRightLeft className="size-12 text-muted-foreground/40 mb-3" />
-                  <p className="text-muted-foreground">No transfers recorded</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>From</TableHead>
-                        <TableHead className="w-8" />
-                        <TableHead>To</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="hidden sm:table-cell">Date</TableHead>
-                        <TableHead className="hidden md:table-cell">Notes</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {transfers.map((t) => (
-                        <TableRow key={t.id}>
-                          <TableCell className="font-medium text-sm">{t.fromBranch.name}</TableCell>
-                          <TableCell><ChevronRight className="size-4 text-muted-foreground" /></TableCell>
-                          <TableCell className="font-medium text-sm">{t.toBranch.name}</TableCell>
-                          <TableCell>{getTransferStatusBadge(t.status)}</TableCell>
-                          <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
-                            {new Date(t.createdAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground text-sm max-w-[200px] truncate">
-                            {t.notes || '—'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {/* Transfers Tab */}
+      {activeTab === 'transfers' && (
+        <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+          <div className="p-4 flex items-center justify-between border-b border-border/30">
+            <div>
+              <h3 className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+                <ArrowRightLeft className="size-3.5" />
+                Stock Transfers ({transfers.length})
+              </h3>
+              <p className="text-[11px] text-muted-foreground tracking-tight">Track stock movements between branches</p>
+            </div>
+            <Button size="sm" onClick={() => setTransferDialogOpen(true)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-7">
+              <Plus className="size-3 mr-1" />
+              New Transfer
+            </Button>
+          </div>
+          {transfers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <ArrowRightLeft className="size-12 text-muted-foreground/30 mb-3" />
+              <p className="text-[13px] text-muted-foreground">No transfers recorded</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">From</TableHead>
+                    <TableHead className="w-8" />
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">To</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Date</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transfers.map((t) => (
+                    <TableRow key={t.id} className="hover:bg-secondary/50 border-b border-border/30">
+                      <TableCell className="text-[13px] font-medium tracking-tight">{t.fromBranch.name}</TableCell>
+                      <TableCell><ChevronRight className="size-3.5 text-muted-foreground" /></TableCell>
+                      <TableCell className="text-[13px] font-medium tracking-tight">{t.toBranch.name}</TableCell>
+                      <TableCell>{getTransferStatusBadge(t.status)}</TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight">
+                        {new Date(t.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] max-w-[200px] truncate tracking-tight">
+                        {t.notes || '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Adjust Stock Dialog */}
       <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] rounded-2xl macos-shadow-elevated">
           <DialogHeader>
-            <DialogTitle>Adjust Stock</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-[13px] font-semibold tracking-tight">Adjust Stock</DialogTitle>
+            <DialogDescription className="text-[11px]">
               {adjustingItem ? `Adjusting stock for ${getProductName(adjustingItem)}` : ''}
             </DialogDescription>
           </DialogHeader>
           {adjustingItem && (
             <div className="space-y-4 py-4">
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <span className="text-sm text-muted-foreground">Current Quantity</span>
-                <span className="text-lg font-bold">{adjustingItem.quantity}</span>
+              <div className="flex items-center justify-between rounded-xl bg-secondary/50 p-3">
+                <span className="text-[13px] text-muted-foreground tracking-tight">Current Quantity</span>
+                <span className="text-lg font-bold tracking-tight">{adjustingItem.quantity}</span>
               </div>
-              <div className="space-y-2">
-                <Label>Operation</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Operation</Label>
                 <Select value={adjustOperation} onValueChange={setAdjustOperation}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -684,8 +662,8 @@ export function InventoryModule() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="adjust-qty">Quantity</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="adjust-qty" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Quantity</Label>
                 <Input
                   id="adjust-qty"
                   type="number"
@@ -693,10 +671,11 @@ export function InventoryModule() {
                   value={adjustQty}
                   onChange={(e) => setAdjustQty(e.target.value)}
                   placeholder="Enter quantity"
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               {adjustQty && (
-                <div className="rounded-lg bg-muted p-3 text-sm">
+                <div className="rounded-xl bg-secondary/50 p-3 text-[13px] tracking-tight">
                   <span className="text-muted-foreground">New quantity will be: </span>
                   <span className="font-bold">
                     {adjustOperation === 'add'
@@ -709,12 +688,12 @@ export function InventoryModule() {
               )}
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAdjustDialogOpen(false)} disabled={saving}>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setAdjustDialogOpen(false)} disabled={saving} className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8">
               Cancel
             </Button>
-            <Button onClick={handleAdjustSave} disabled={saving || !adjustQty} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : null}
+            <Button onClick={handleAdjustSave} disabled={saving || !adjustQty} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+              {saving ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : null}
               Apply Adjustment
             </Button>
           </DialogFooter>
@@ -723,16 +702,16 @@ export function InventoryModule() {
 
       {/* Create Transfer Dialog */}
       <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] rounded-2xl macos-shadow-elevated">
           <DialogHeader>
-            <DialogTitle>Create Stock Transfer</DialogTitle>
-            <DialogDescription>Transfer stock between branches</DialogDescription>
+            <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Stock Transfer</DialogTitle>
+            <DialogDescription className="text-[11px]">Transfer stock between branches</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>From Branch</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">From Branch</Label>
               <Select value={transferFrom} onValueChange={setTransferFrom}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue placeholder="Select source branch" />
                 </SelectTrigger>
                 <SelectContent>
@@ -742,10 +721,10 @@ export function InventoryModule() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>To Branch</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">To Branch</Label>
               <Select value={transferTo} onValueChange={setTransferTo}>
-                <SelectTrigger>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue placeholder="Select destination branch" />
                 </SelectTrigger>
                 <SelectContent>
@@ -757,23 +736,24 @@ export function InventoryModule() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="transfer-notes">Notes</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="transfer-notes" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Notes</Label>
               <Textarea
                 id="transfer-notes"
                 value={transferNotes}
                 onChange={(e) => setTransferNotes(e.target.value)}
                 placeholder="Optional notes about this transfer..."
                 rows={3}
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTransferDialogOpen(false)} disabled={saving}>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setTransferDialogOpen(false)} disabled={saving} className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8">
               Cancel
             </Button>
-            <Button onClick={handleTransferCreate} disabled={saving || !transferFrom || !transferTo || transferFrom === transferTo} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : null}
+            <Button onClick={handleTransferCreate} disabled={saving || !transferFrom || !transferTo || transferFrom === transferTo} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+              {saving ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : null}
               Create Transfer
             </Button>
           </DialogFooter>

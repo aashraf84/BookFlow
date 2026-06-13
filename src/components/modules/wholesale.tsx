@@ -16,7 +16,6 @@ import {
   PackageCheck,
   DollarSign,
   TrendingUp,
-  UserPlus,
   X,
   ShoppingCart,
 } from 'lucide-react'
@@ -24,7 +23,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -48,7 +46,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
@@ -278,24 +275,24 @@ export function WholesaleModule() {
   // Status badges
   const getStatusBadge = (status: string) => {
     const map: Record<string, { className: string; label: string }> = {
-      pending: { className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800', label: 'Pending' },
-      confirmed: { className: 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400 border-sky-200 dark:border-sky-800', label: 'Confirmed' },
-      shipped: { className: 'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400 border-teal-200 dark:border-teal-800', label: 'Shipped' },
-      delivered: { className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800', label: 'Delivered' },
-      cancelled: { className: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800', label: 'Cancelled' },
+      pending: { className: 'bg-macos-orange/10 text-macos-orange', label: 'Pending' },
+      confirmed: { className: 'bg-macos-blue/10 text-macos-blue', label: 'Confirmed' },
+      shipped: { className: 'bg-macos-teal/10 text-macos-teal', label: 'Shipped' },
+      delivered: { className: 'bg-macos-green/10 text-macos-green', label: 'Delivered' },
+      cancelled: { className: 'bg-macos-red/10 text-macos-red', label: 'Cancelled' },
     }
-    const s = map[status] || { className: '', label: status }
-    return <Badge className={`text-xs ${s.className}`}>{s.label}</Badge>
+    const s = map[status] || { className: 'bg-secondary text-secondary-foreground', label: status }
+    return <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${s.className}`}>{s.label}</span>
   }
 
   const getPaymentBadge = (status: string) => {
     const map: Record<string, { className: string; label: string }> = {
-      unpaid: { className: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 border-red-200 dark:border-red-800', label: 'Unpaid' },
-      partial: { className: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200 dark:border-amber-800', label: 'Partial' },
-      paid: { className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800', label: 'Paid' },
+      unpaid: { className: 'bg-macos-red/10 text-macos-red', label: 'Unpaid' },
+      partial: { className: 'bg-macos-orange/10 text-macos-orange', label: 'Partial' },
+      paid: { className: 'bg-macos-green/10 text-macos-green', label: 'Paid' },
     }
-    const s = map[status] || { className: '', label: status }
-    return <Badge className={`text-xs ${s.className}`}>{s.label}</Badge>
+    const s = map[status] || { className: 'bg-secondary text-secondary-foreground', label: status }
+    return <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${s.className}`}>{s.label}</span>
   }
 
   // Compute order total
@@ -395,375 +392,373 @@ export function WholesaleModule() {
     return 'Unknown Item'
   }
 
+  // Stats
+  const pendingOrders = orders.filter((o) => o.status === 'pending').length
+  const shippedOrders = orders.filter((o) => o.status === 'shipped').length
+
+  // Segmented tabs
+  const tabs = [
+    { id: 'orders', label: 'Orders' },
+    { id: 'dealers', label: 'Dealers' },
+    { id: 'analytics', label: 'Analytics' },
+  ]
+
+  // Status filter tabs
+  const statusTabs = [
+    { id: 'all', label: 'All' },
+    { id: 'pending', label: 'Pending' },
+    { id: 'confirmed', label: 'Confirmed' },
+    { id: 'shipped', label: 'Shipped' },
+    { id: 'delivered', label: 'Delivered' },
+    { id: 'cancelled', label: 'Cancelled' },
+  ]
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Wholesale Management</h2>
-          <p className="text-muted-foreground text-sm">Manage bulk orders, dealers, and distributor relationships</p>
+          <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Wholesale Management</h2>
+          <p className="text-[11px] text-muted-foreground tracking-tight">Manage bulk orders, dealers, and distributor relationships</p>
         </div>
-        <Button onClick={() => setOrderDialogOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 shrink-0">
-          <Plus className="size-4 mr-1.5" />
+        <Button onClick={() => setOrderDialogOpen(true)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0">
+          <Plus className="size-3.5 mr-1.5" />
           New Order
         </Button>
       </div>
 
       {/* Error Alert */}
       {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-400">
-          <AlertCircle className="size-4 shrink-0" />
+        <div className="flex items-center gap-2 rounded-xl bg-macos-red/10 p-3 text-[13px] text-macos-red macos-shadow">
+          <AlertCircle className="size-3.5 shrink-0" />
           {error}
-          <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setError(null)}>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[11px] text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
             Dismiss
           </Button>
         </div>
       )}
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="orders" className="text-xs sm:text-sm">
-            <Package className="size-4 mr-1.5 hidden sm:inline" />
-            Orders
-          </TabsTrigger>
-          <TabsTrigger value="dealers" className="text-xs sm:text-sm">
-            <Users className="size-4 mr-1.5 hidden sm:inline" />
-            Dealers
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs sm:text-sm">
-            <BarChart3 className="size-4 mr-1.5 hidden sm:inline" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-2xl macos-shadow p-4 bg-background">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Orders</p>
+          <p className="text-2xl font-bold tracking-tight">{orders.length}</p>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-background">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
+          <p className="text-2xl font-bold tracking-tight text-macos-orange">{pendingOrders}</p>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-background">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Shipped</p>
+          <p className="text-2xl font-bold tracking-tight text-macos-blue">{shippedOrders}</p>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-background">
+          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Outstanding</p>
+          <p className="text-2xl font-bold tracking-tight text-macos-red">${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+      </div>
 
-        {/* Orders Tab */}
-        <TabsContent value="orders" className="space-y-4">
+      {/* Segmented Tabs */}
+      <div className="macos-segmented inline-flex p-0.5">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${activeTab === tab.id ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Orders Tab */}
+      {activeTab === 'orders' && (
+        <div className="space-y-4">
           {/* Status Filter */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-muted-foreground">Filter:</span>
-                {['all', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => (
-                  <Button
-                    key={status}
-                    variant={statusFilter === status ? 'default' : 'outline'}
-                    size="sm"
-                    className={statusFilter === status ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
-                    onClick={() => setStatusFilter(status)}
-                  >
-                    {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="macos-segmented inline-flex p-0.5">
+            {statusTabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${statusFilter === tab.id ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => setStatusFilter(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
           {/* Orders Table */}
-          <Card>
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="p-4 space-y-3">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Package className="size-12 text-muted-foreground/40 mb-3" />
-                  <p className="text-muted-foreground">No wholesale orders found</p>
-                  <p className="text-xs text-muted-foreground mt-1">Create your first wholesale order</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Order #</TableHead>
-                        <TableHead>Dealer</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                        <TableHead>Payment</TableHead>
-                        <TableHead className="hidden sm:table-cell">Date</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-mono text-sm font-medium">{order.orderNumber}</TableCell>
-                          <TableCell className="text-sm">
-                            {order.customer?.name || order.dealerName || '—'}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(order.status)}</TableCell>
-                          <TableCell className="text-right font-medium">${order.total.toFixed(2)}</TableCell>
-                          <TableCell>{getPaymentBadge(order.paymentStatus)}</TableCell>
-                          <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
-                            {new Date(order.createdAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => handleViewOrder(order)}>
-                                <Eye className="size-3.5 mr-1" />
-                                View
+          <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+            {loading ? (
+              <div className="p-4 space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <Package className="size-12 text-muted-foreground/30 mb-3" />
+                <p className="text-[13px] text-muted-foreground tracking-tight">No wholesale orders found</p>
+                <p className="text-[11px] text-muted-foreground mt-1 tracking-tight">Create your first wholesale order</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Order #</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Payment</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Date</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.map((order) => (
+                      <TableRow key={order.id} className="hover:bg-secondary/50 border-b border-border/30">
+                        <TableCell className="font-mono text-[13px] font-medium tracking-tight">{order.orderNumber}</TableCell>
+                        <TableCell className="text-[13px] tracking-tight">
+                          {order.customer?.name || order.dealerName || '—'}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(order.status)}</TableCell>
+                        <TableCell className="text-right text-[13px] font-medium tracking-tight">${order.total.toFixed(2)}</TableCell>
+                        <TableCell>{getPaymentBadge(order.paymentStatus)}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button variant="ghost" size="sm" onClick={() => handleViewOrder(order)} className="h-7 text-[13px] rounded-md hover:bg-secondary">
+                              <Eye className="size-3 mr-1" />
+                              View
+                            </Button>
+                            {order.status === 'pending' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-[13px] text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10 rounded-md"
+                                onClick={() => handleStatusUpdate(order.id, 'confirmed')}
+                                disabled={updatingStatus === order.id}
+                              >
+                                <CheckCircle2 className="size-3 mr-1" />
+                                Confirm
                               </Button>
-                              {order.status === 'pending' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-sky-600 hover:text-sky-700"
-                                  onClick={() => handleStatusUpdate(order.id, 'confirmed')}
-                                  disabled={updatingStatus === order.id}
-                                >
-                                  <CheckCircle2 className="size-3.5 mr-1" />
-                                  Confirm
-                                </Button>
-                              )}
-                              {order.status === 'confirmed' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-teal-600 hover:text-teal-700"
-                                  onClick={() => handleStatusUpdate(order.id, 'shipped')}
-                                  disabled={updatingStatus === order.id}
-                                >
-                                  <Ship className="size-3.5 mr-1" />
-                                  Ship
-                                </Button>
-                              )}
-                              {order.status === 'shipped' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-emerald-600 hover:text-emerald-700"
-                                  onClick={() => handleStatusUpdate(order.id, 'delivered')}
-                                  disabled={updatingStatus === order.id}
-                                >
-                                  <PackageCheck className="size-3.5 mr-1" />
-                                  Deliver
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Dealers Tab */}
-        <TabsContent value="dealers" className="space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="size-4" />
-                Wholesale Dealers & Distributors ({dealers.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {dealers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Users className="size-12 text-muted-foreground/40 mb-3" />
-                  <p className="text-muted-foreground">No dealers found</p>
-                  <p className="text-xs text-muted-foreground mt-1">Add wholesale customers from the CRM module</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="hidden sm:table-cell">Type</TableHead>
-                        <TableHead className="hidden md:table-cell">Contact</TableHead>
-                        <TableHead className="text-right">Total Spent</TableHead>
-                        <TableHead className="text-right">Outstanding</TableHead>
-                        <TableHead className="hidden sm:table-cell text-right">Orders</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {dealers.map((dealer) => (
-                        <TableRow key={dealer.id}>
-                          <TableCell className="font-medium">{dealer.name}</TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            <Badge variant="outline" className="text-xs capitalize">{dealer.type}</Badge>
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                            {dealer.email || dealer.phone || '—'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">${dealer.totalSpent.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">
-                            {dealer.outstanding > 0 ? (
-                              <span className="text-red-600 font-medium">${dealer.outstanding.toFixed(2)}</span>
-                            ) : (
-                              <span className="text-muted-foreground">$0.00</span>
                             )}
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell text-right text-muted-foreground">
-                            {dealer._count?.wholesaleOrders || 0}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                            {order.status === 'confirmed' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-[13px] text-macos-teal hover:text-macos-teal hover:bg-macos-teal/10 rounded-md"
+                                onClick={() => handleStatusUpdate(order.id, 'shipped')}
+                                disabled={updatingStatus === order.id}
+                              >
+                                <Ship className="size-3 mr-1" />
+                                Ship
+                              </Button>
+                            )}
+                            {order.status === 'shipped' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-[13px] text-macos-green hover:text-macos-green hover:bg-macos-green/10 rounded-md"
+                                onClick={() => handleStatusUpdate(order.id, 'delivered')}
+                                disabled={updatingStatus === order.id}
+                              >
+                                <PackageCheck className="size-3 mr-1" />
+                                Deliver
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-4">
+      {/* Dealers Tab */}
+      {activeTab === 'dealers' && (
+        <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+          <div className="p-4 border-b border-border/30">
+            <h3 className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+              <Users className="size-3.5" />
+              Wholesale Dealers & Distributors ({dealers.length})
+            </h3>
+          </div>
+          {dealers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Users className="size-12 text-muted-foreground/30 mb-3" />
+              <p className="text-[13px] text-muted-foreground tracking-tight">No dealers found</p>
+              <p className="text-[11px] text-muted-foreground mt-1 tracking-tight">Add wholesale customers from the CRM module</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Type</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Contact</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Spent</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Outstanding</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell text-right">Orders</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dealers.map((dealer) => (
+                    <TableRow key={dealer.id} className="hover:bg-secondary/50 border-b border-border/30">
+                      <TableCell className="text-[13px] font-medium tracking-tight">{dealer.name}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple capitalize">{dealer.type}</span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] tracking-tight">
+                        {dealer.email || dealer.phone || '—'}
+                      </TableCell>
+                      <TableCell className="text-right text-[13px] font-medium tracking-tight">${dealer.totalSpent.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-[13px] tracking-tight">
+                        {dealer.outstanding > 0 ? (
+                          <span className="text-macos-red font-medium">${dealer.outstanding.toFixed(2)}</span>
+                        ) : (
+                          <span className="text-muted-foreground">$0.00</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-[13px] tracking-tight">
+                        {dealer._count?.wholesaleOrders || 0}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Analytics Tab */}
+      {activeTab === 'analytics' && (
+        <div className="space-y-4">
           {/* Metrics Cards */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Revenue (Delivered)</p>
-                    <p className="text-2xl font-bold">${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  </div>
-                  <div className="rounded-lg bg-emerald-100 dark:bg-emerald-950/30 p-2">
-                    <DollarSign className="size-5 text-emerald-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pending Amount</p>
-                    <p className="text-2xl font-bold text-amber-600">${pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  </div>
-                  <div className="rounded-lg bg-amber-100 dark:bg-amber-950/30 p-2">
-                    <TrendingUp className="size-5 text-amber-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Dealers</p>
-                    <p className="text-2xl font-bold">{dealers.filter((d) => d.isActive).length}</p>
-                  </div>
-                  <div className="rounded-lg bg-teal-100 dark:bg-teal-950/30 p-2">
-                    <Users className="size-5 text-teal-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Outstanding</p>
-                    <p className="text-2xl font-bold text-red-600">${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  </div>
-                  <div className="rounded-lg bg-red-100 dark:bg-red-950/30 p-2">
-                    <AlertCircle className="size-5 text-red-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-2xl macos-shadow p-4 bg-background">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue (Delivered)</p>
+              <p className="text-2xl font-bold tracking-tight">${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+            <div className="rounded-2xl macos-shadow p-4 bg-background">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Amount</p>
+              <p className="text-2xl font-bold tracking-tight text-macos-orange">${pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+            <div className="rounded-2xl macos-shadow p-4 bg-background">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Active Dealers</p>
+              <p className="text-2xl font-bold tracking-tight">{dealers.filter((d) => d.isActive).length}</p>
+            </div>
+            <div className="rounded-2xl macos-shadow p-4 bg-background">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Outstanding</p>
+              <p className="text-2xl font-bold tracking-tight text-macos-red">${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
           </div>
 
           {/* Top Dealers */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Top Dealers by Revenue</CardTitle>
-              <CardDescription>Highest grossing wholesale partners</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {topDealers.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground text-sm">No dealer data available</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Rank</TableHead>
-                        <TableHead>Dealer</TableHead>
-                        <TableHead className="text-right">Total Spent</TableHead>
-                        <TableHead className="text-right">Outstanding</TableHead>
+          <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+            <div className="p-4 border-b border-border/30">
+              <h3 className="text-[13px] font-semibold tracking-tight">Top Dealers by Revenue</h3>
+              <p className="text-[11px] text-muted-foreground tracking-tight">Highest grossing wholesale partners</p>
+            </div>
+            {topDealers.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground text-[13px] tracking-tight">No dealer data available</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Rank</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Spent</TableHead>
+                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Outstanding</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {topDealers.map((dealer, i) => (
+                      <TableRow key={dealer.id} className="hover:bg-secondary/50 border-b border-border/30">
+                        <TableCell>
+                          <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${i === 0 ? 'bg-macos-green/10 text-macos-green' : 'bg-secondary text-secondary-foreground'}`}>
+                            #{i + 1}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-[13px] font-medium tracking-tight">{dealer.name}</TableCell>
+                        <TableCell className="text-right text-[13px] font-medium tracking-tight">${dealer.totalSpent.toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-[13px] tracking-tight">
+                          {dealer.outstanding > 0 ? (
+                            <span className="text-macos-red">${dealer.outstanding.toFixed(2)}</span>
+                          ) : (
+                            <span className="text-muted-foreground">$0.00</span>
+                          )}
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {topDealers.map((dealer, i) => (
-                        <TableRow key={dealer.id}>
-                          <TableCell>
-                            <Badge variant="outline" className={`text-xs ${i === 0 ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800' : ''}`}>
-                              #{i + 1}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-medium">{dealer.name}</TableCell>
-                          <TableCell className="text-right font-medium">${dealer.totalSpent.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">
-                            {dealer.outstanding > 0 ? (
-                              <span className="text-red-600">${dealer.outstanding.toFixed(2)}</span>
-                            ) : (
-                              <span className="text-muted-foreground">$0.00</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
 
           {/* Order Status Breakdown */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Order Status Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+            <div className="p-4 border-b border-border/30">
+              <h3 className="text-[13px] font-semibold tracking-tight">Order Status Breakdown</h3>
+            </div>
+            <div className="p-4">
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => {
                   const count = orders.filter((o) => o.status === status).length
                   const total = orders.filter((o) => o.status === status).reduce((s, o) => s + o.total, 0)
+                  const colorMap: Record<string, string> = {
+                    pending: 'bg-macos-orange/10 text-macos-orange',
+                    confirmed: 'bg-macos-blue/10 text-macos-blue',
+                    shipped: 'bg-macos-teal/10 text-macos-teal',
+                    delivered: 'bg-macos-green/10 text-macos-green',
+                    cancelled: 'bg-macos-red/10 text-macos-red',
+                  }
                   return (
-                    <div key={status} className="rounded-lg border p-3 text-center space-y-1">
-                      <p className="text-xs text-muted-foreground capitalize">{status}</p>
-                      <p className="text-xl font-bold">{count}</p>
-                      <p className="text-xs text-muted-foreground">${total.toFixed(2)}</p>
+                    <div key={status} className="rounded-xl bg-secondary/50 p-3 text-center space-y-1">
+                      <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{status}</p>
+                      <p className="text-xl font-bold tracking-tight">{count}</p>
+                      <p className="text-[11px] text-muted-foreground tracking-tight">${total.toFixed(2)}</p>
                     </div>
                   )
                 })}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Order Dialog */}
       <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
-        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-elevated">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="size-5" />
+            <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+              <ShoppingCart className="size-4" />
               New Wholesale Order
             </DialogTitle>
-            <DialogDescription>Create a new bulk order for a dealer or distributor</DialogDescription>
+            <DialogDescription className="text-[11px]">Create a new bulk order for a dealer or distributor</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {/* Dealer Selection */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Dealer / Customer</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer / Customer</Label>
                 <Select value={selectedDealerId} onValueChange={(v) => {
                   setSelectedDealerId(v)
                   const dealer = dealers.find((d) => d.id === v)
                   if (dealer) setDealerName(dealer.name)
                 }}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                     <SelectValue placeholder="Select dealer" />
                   </SelectTrigger>
                   <SelectContent>
@@ -773,49 +768,51 @@ export function WholesaleModule() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="dealer-name">Or Dealer Name</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="dealer-name" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Or Dealer Name</Label>
                 <Input
                   id="dealer-name"
                   value={dealerName}
                   onChange={(e) => setDealerName(e.target.value)}
                   placeholder="Enter dealer name"
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="delivery-addr">Delivery Address</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="delivery-addr" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery Address</Label>
               <Input
                 id="delivery-addr"
                 value={deliveryAddress}
                 onChange={(e) => setDeliveryAddress(e.target.value)}
                 placeholder="Delivery address"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
 
             {/* Add Products */}
-            <div className="space-y-2">
-              <Label>Add Products</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Add Products</Label>
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Search books or stationery..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  className="pl-8"
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               {searchResults.length > 0 && (
-                <div className="border rounded-lg max-h-40 overflow-y-auto">
+                <div className="rounded-xl bg-secondary/50 max-h-40 overflow-y-auto border border-border/50">
                   {searchResults.map((product) => (
                     <button
                       key={`${product.type}-${product.id}`}
-                      className="w-full flex items-center justify-between p-2 hover:bg-muted/50 transition-colors text-left text-sm"
+                      className="w-full flex items-center justify-between p-2.5 hover:bg-secondary/80 transition-colors text-left text-[13px] tracking-tight"
                       onClick={() => addItemToOrder(product)}
                     >
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">{product.type}</Badge>
+                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple">{product.type}</span>
                         <span>{product.name}</span>
                       </div>
                       <span className="text-muted-foreground">${product.price.toFixed(2)}</span>
@@ -827,19 +824,19 @@ export function WholesaleModule() {
 
             {/* Order Items */}
             {orderItems.length > 0 && (
-              <div className="space-y-2">
-                <Label>Order Items</Label>
-                <div className="border rounded-lg divide-y">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Order Items</Label>
+                <div className="rounded-xl bg-secondary/30 border border-border/50 divide-y divide-border/30">
                   {orderItems.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2">
-                      <Badge variant="outline" className="text-[10px] shrink-0">{item.productType}</Badge>
-                      <span className="text-sm flex-1 truncate">{item.productName}</span>
+                    <div key={index} className="flex items-center gap-2 p-2.5">
+                      <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple shrink-0">{item.productType}</span>
+                      <span className="text-[13px] flex-1 truncate tracking-tight">{item.productName}</span>
                       <Input
                         type="number"
                         min="1"
                         value={item.quantity}
                         onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                        className="w-16 text-center text-sm"
+                        className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
                       />
                       <Input
                         type="number"
@@ -847,7 +844,7 @@ export function WholesaleModule() {
                         min="0"
                         value={item.unitPrice}
                         onChange={(e) => updateOrderItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        className="w-20 text-right text-sm"
+                        className="w-20 text-right text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
                       />
                       <Input
                         type="number"
@@ -855,11 +852,11 @@ export function WholesaleModule() {
                         max="100"
                         value={item.discount}
                         onChange={(e) => updateOrderItem(index, 'discount', parseFloat(e.target.value) || 0)}
-                        className="w-16 text-center text-sm"
+                        className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
                         placeholder="%"
                       />
-                      <Button variant="ghost" size="icon" className="size-7 text-red-500" onClick={() => removeOrderItem(index)}>
-                        <X className="size-3.5" />
+                      <Button variant="ghost" size="icon" className="size-6 rounded-md text-macos-red hover:text-macos-red hover:bg-macos-red/10" onClick={() => removeOrderItem(index)}>
+                        <X className="size-3" />
                       </Button>
                     </div>
                   ))}
@@ -869,8 +866,8 @@ export function WholesaleModule() {
 
             {/* Discount / Tax */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="order-discount">Discount ($)</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="order-discount" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Discount ($)</Label>
                 <Input
                   id="order-discount"
                   type="number"
@@ -879,10 +876,11 @@ export function WholesaleModule() {
                   value={orderDiscount}
                   onChange={(e) => setOrderDiscount(e.target.value)}
                   placeholder="0.00"
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="order-tax">Tax (%)</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="order-tax" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Tax (%)</Label>
                 <Input
                   id="order-tax"
                   type="number"
@@ -891,19 +889,20 @@ export function WholesaleModule() {
                   value={orderTax}
                   onChange={(e) => setOrderTax(e.target.value)}
                   placeholder="0"
+                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
             </div>
 
             {/* Order Total Preview */}
             {orderItems.length > 0 && (
-              <div className="rounded-lg bg-muted p-3 space-y-1 text-sm">
+              <div className="rounded-xl bg-secondary/50 p-3 space-y-1 text-[13px] tracking-tight">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>${orderSubtotal.toFixed(2)}</span>
                 </div>
                 {orderDiscountAmt > 0 && (
-                  <div className="flex justify-between text-emerald-600">
+                  <div className="flex justify-between text-macos-green">
                     <span>Discount</span>
                     <span>-${orderDiscountAmt.toFixed(2)}</span>
                   </div>
@@ -915,32 +914,33 @@ export function WholesaleModule() {
                   </div>
                 )}
                 <Separator />
-                <div className="flex justify-between font-bold text-base">
+                <div className="flex justify-between font-bold text-base tracking-tight">
                   <span>Total</span>
                   <span>${orderTotal.toFixed(2)}</span>
                 </div>
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="order-notes">Notes</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="order-notes" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Notes</Label>
               <Textarea
                 id="order-notes"
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
                 placeholder="Order notes..."
                 rows={2}
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOrderDialogOpen(false)} disabled={saving}>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setOrderDialogOpen(false)} disabled={saving} className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8">
               Cancel
             </Button>
-            <Button onClick={handleCreateOrder} disabled={saving || orderItems.length === 0} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={handleCreateOrder} disabled={saving || orderItems.length === 0} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
               {saving ? (
                 <>
-                  <Loader2 className="size-4 mr-1.5 animate-spin" />
+                  <Loader2 className="size-3.5 mr-1.5 animate-spin" />
                   Creating...
                 </>
               ) : (
@@ -953,41 +953,41 @@ export function WholesaleModule() {
 
       {/* Order Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-elevated">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="size-5" />
+            <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+              <Eye className="size-4" />
               Order Details
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-[11px]">
               {detailOrder?.orderNumber || ''}
             </DialogDescription>
           </DialogHeader>
           {detailOrder && (
             <div className="space-y-4 py-4">
               {/* Order Info */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-[13px] tracking-tight">
                 <div>
-                  <p className="text-muted-foreground">Dealer</p>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</p>
                   <p className="font-medium">{detailOrder.customer?.name || detailOrder.dealerName || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Status</p>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</p>
                   <div className="mt-1">{getStatusBadge(detailOrder.status)}</div>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Payment</p>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Payment</p>
                   <div className="mt-1">{getPaymentBadge(detailOrder.paymentStatus)}</div>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Date</p>
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Date</p>
                   <p className="font-medium">{new Date(detailOrder.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
 
               {detailOrder.deliveryAddress && (
-                <div className="text-sm">
-                  <p className="text-muted-foreground">Delivery Address</p>
+                <div className="text-[13px] tracking-tight">
+                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery Address</p>
                   <p className="font-medium">{detailOrder.deliveryAddress}</p>
                 </div>
               )}
@@ -996,15 +996,15 @@ export function WholesaleModule() {
 
               {/* Items */}
               <div className="space-y-2">
-                <Label className="text-sm">Items ({detailOrder.items.length})</Label>
-                <div className="border rounded-lg divide-y">
+                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Items ({detailOrder.items.length})</Label>
+                <div className="rounded-xl bg-secondary/30 border border-border/50 divide-y divide-border/30">
                   {detailOrder.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-2.5 text-sm">
+                    <div key={item.id} className="flex items-center justify-between p-2.5 text-[13px] tracking-tight">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{getItemName(item)}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-[11px] text-muted-foreground tracking-tight">
                           ${item.unitPrice.toFixed(2)} x {item.quantity}
-                          {item.discount > 0 && <span className="text-emerald-600 ml-1">-{item.discount}%</span>}
+                          {item.discount > 0 && <span className="text-macos-green ml-1">-{item.discount}%</span>}
                         </p>
                       </div>
                       <span className="font-medium ml-2">${item.totalPrice.toFixed(2)}</span>
@@ -1016,13 +1016,13 @@ export function WholesaleModule() {
               <Separator />
 
               {/* Totals */}
-              <div className="space-y-1.5 text-sm">
+              <div className="space-y-1.5 text-[13px] tracking-tight">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>${detailOrder.subtotal.toFixed(2)}</span>
                 </div>
                 {detailOrder.discount > 0 && (
-                  <div className="flex justify-between text-emerald-600">
+                  <div className="flex justify-between text-macos-green">
                     <span>Discount</span>
                     <span>-${detailOrder.discount.toFixed(2)}</span>
                   </div>
@@ -1034,7 +1034,7 @@ export function WholesaleModule() {
                   </div>
                 )}
                 <Separator />
-                <div className="flex justify-between font-bold text-lg">
+                <div className="flex justify-between font-bold text-base tracking-tight">
                   <span>Total</span>
                   <span>${detailOrder.total.toFixed(2)}</span>
                 </div>
@@ -1043,25 +1043,25 @@ export function WholesaleModule() {
               {/* Status Actions */}
               <div className="flex gap-2 pt-2">
                 {detailOrder.status === 'pending' && (
-                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'confirmed')} disabled={updatingStatus === detailOrder.id} className="bg-sky-600 hover:bg-sky-700">
-                    <CheckCircle2 className="size-4 mr-1.5" />
+                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'confirmed')} disabled={updatingStatus === detailOrder.id} className="bg-macos-blue text-white rounded-lg font-medium text-[13px] h-8">
+                    <CheckCircle2 className="size-3.5 mr-1.5" />
                     Confirm Order
                   </Button>
                 )}
                 {detailOrder.status === 'confirmed' && (
-                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'shipped')} disabled={updatingStatus === detailOrder.id} className="bg-teal-600 hover:bg-teal-700">
-                    <Ship className="size-4 mr-1.5" />
+                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'shipped')} disabled={updatingStatus === detailOrder.id} className="bg-macos-teal text-white rounded-lg font-medium text-[13px] h-8">
+                    <Ship className="size-3.5 mr-1.5" />
                     Mark as Shipped
                   </Button>
                 )}
                 {detailOrder.status === 'shipped' && (
-                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'delivered')} disabled={updatingStatus === detailOrder.id} className="bg-emerald-600 hover:bg-emerald-700">
-                    <PackageCheck className="size-4 mr-1.5" />
+                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'delivered')} disabled={updatingStatus === detailOrder.id} className="bg-macos-green text-white rounded-lg font-medium text-[13px] h-8">
+                    <PackageCheck className="size-3.5 mr-1.5" />
                     Mark as Delivered
                   </Button>
                 )}
                 {(detailOrder.status === 'pending' || detailOrder.status === 'confirmed') && (
-                  <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={() => handleStatusUpdate(detailOrder.id, 'cancelled')} disabled={updatingStatus === detailOrder.id}>
+                  <Button variant="ghost" className="text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg text-[13px] h-8" onClick={() => handleStatusUpdate(detailOrder.id, 'cancelled')} disabled={updatingStatus === detailOrder.id}>
                     Cancel Order
                   </Button>
                 )}

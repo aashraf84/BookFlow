@@ -19,11 +19,8 @@ import {
   DollarSign,
   Lightbulb,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 
@@ -67,7 +64,7 @@ const aiTabs: AITabConfig[] = [
   },
   {
     id: 'inventory',
-    label: 'Inventory Intelligence',
+    label: 'Inventory AI',
     icon: Package,
     type: 'assistant',
     suggestions: [
@@ -151,7 +148,6 @@ function AIChatPanel({ config }: { config: AITabConfig }) {
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
-  // Add welcome message on first render
   React.useEffect(() => {
     setMessages([{
       id: 'welcome',
@@ -161,7 +157,6 @@ function AIChatPanel({ config }: { config: AITabConfig }) {
     }])
   }, [config])
 
-  // Auto-scroll to bottom
   React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -229,76 +224,75 @@ function AIChatPanel({ config }: { config: AITabConfig }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-[calc(100vh-240px)] min-h-[500px]">
       {/* Context Panel */}
-      <div className="lg:col-span-1 space-y-4">
-        <Card className="h-full">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <div className="rounded-lg bg-emerald-100 p-1.5 dark:bg-emerald-950/30">
-                <Icon className="size-4 text-emerald-600" />
-              </div>
-              <CardTitle className="text-sm">Context Data</CardTitle>
+      <div className="lg:col-span-1">
+        <div className="rounded-2xl macos-shadow p-4 bg-card h-full">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-lg bg-macos-blue/10 p-1.5">
+              <Icon className="size-4 text-macos-blue" />
             </div>
-            <CardDescription className="text-xs">Current business metrics</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
+            <div>
+              <h3 className="text-[13px] font-semibold tracking-tight">Context Data</h3>
+              <p className="text-[11px] text-muted-foreground">Current business metrics</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
             {config.contextData.map((item) => {
               const ItemIcon = item.icon
               return (
-                <div key={item.label} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                <div key={item.label} className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/50">
                   <div className="flex items-center gap-2">
                     <ItemIcon className="size-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{item.label}</span>
+                    <span className="text-[11px] text-muted-foreground font-medium">{item.label}</span>
                   </div>
-                  <span className="text-sm font-semibold">{item.value}</span>
+                  <span className="text-[13px] font-semibold tracking-tight">{item.value}</span>
                 </div>
               )
             })}
+          </div>
 
-            <Separator className="my-3" />
+          <Separator className="my-3" />
 
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                <Lightbulb className="size-3" />
-                Quick Suggestions
-              </p>
-              <div className="space-y-1.5">
-                {config.suggestions.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    onClick={() => handleSuggestion(suggestion)}
-                    className="w-full text-left text-xs p-2 rounded-md bg-muted/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors"
-                    disabled={isLoading}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
+          <div>
+            <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase mb-2 flex items-center gap-1">
+              <Lightbulb className="size-3" />
+              Quick Suggestions
+            </p>
+            <div className="space-y-1.5">
+              {config.suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => handleSuggestion(suggestion)}
+                  className="w-full text-left text-[11px] p-2 rounded-lg bg-secondary/30 hover:bg-primary/10 hover:text-primary transition-colors font-medium"
+                  disabled={isLoading}
+                >
+                  {suggestion}
+                </button>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Chat Area */}
       <div className="lg:col-span-3 flex flex-col">
-        <Card className="flex-1 flex flex-col">
+        <div className="rounded-2xl macos-shadow bg-card flex-1 flex flex-col">
           {/* Chat Header */}
-          <CardHeader className="pb-3 border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-emerald-100 p-1.5 dark:bg-emerald-950/30">
-                  <Brain className="size-4 text-emerald-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-sm">{config.label}</CardTitle>
-                  <CardDescription className="text-xs">AI-powered insights and recommendations</CardDescription>
-                </div>
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center gap-2.5">
+              <div className="rounded-lg bg-macos-purple/10 p-1.5">
+                <Brain className="size-4 text-macos-purple" />
               </div>
-              <Badge variant="outline" className="text-[10px] gap-1">
-                <Sparkles className="size-3" />
-                AI Powered
-              </Badge>
+              <div>
+                <h3 className="text-[13px] font-semibold tracking-tight">{config.label}</h3>
+                <p className="text-[11px] text-muted-foreground">AI-powered insights and recommendations</p>
+              </div>
             </div>
-          </CardHeader>
+            <Badge className="bg-macos-purple/10 text-macos-purple rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5">
+              <Sparkles className="size-3 mr-1" />
+              AI
+            </Badge>
+          </div>
 
           {/* Messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
@@ -308,19 +302,21 @@ function AIChatPanel({ config }: { config: AITabConfig }) {
                 className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.role === 'assistant' && (
-                  <div className="shrink-0 rounded-lg bg-emerald-100 p-1.5 dark:bg-emerald-950/30 h-fit mt-1">
-                    <Bot className="size-4 text-emerald-600" />
+                  <div className="shrink-0 rounded-lg bg-macos-purple/10 p-1.5 h-fit mt-1">
+                    <Bot className="size-4 text-macos-purple" />
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 text-sm ${
+                  className={`max-w-[80%] p-3 text-[13px] leading-relaxed ${
                     msg.role === 'user'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-muted/50 text-foreground'
+                      ? 'bg-primary text-primary-foreground rounded-2xl'
+                      : 'bg-secondary rounded-2xl'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
-                  <p className={`text-[10px] mt-1.5 ${msg.role === 'user' ? 'text-emerald-200' : 'text-muted-foreground'}`}>
+                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                  <p className={`text-[10px] mt-1.5 ${
+                    msg.role === 'user' ? 'text-primary-foreground/60' : 'text-muted-foreground'
+                  }`}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -334,12 +330,16 @@ function AIChatPanel({ config }: { config: AITabConfig }) {
 
             {isLoading && (
               <div className="flex gap-3 justify-start">
-                <div className="shrink-0 rounded-lg bg-emerald-100 p-1.5 dark:bg-emerald-950/30 h-fit mt-1">
-                  <Bot className="size-4 text-emerald-600" />
+                <div className="shrink-0 rounded-lg bg-macos-purple/10 p-1.5 h-fit mt-1">
+                  <Bot className="size-4 text-macos-purple" />
                 </div>
-                <div className="max-w-[80%] rounded-lg p-3 bg-muted/50">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="size-4 animate-spin" />
+                <div className="max-w-[80%] p-3 bg-secondary rounded-2xl">
+                  <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
+                    <div className="flex gap-1">
+                      <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
                     <span>Thinking...</span>
                   </div>
                 </div>
@@ -348,7 +348,7 @@ function AIChatPanel({ config }: { config: AITabConfig }) {
           </div>
 
           {/* Input Area */}
-          <div className="border-t p-3">
+          <div className="border-t border-border p-3">
             <form onSubmit={handleSubmit} className="flex items-center gap-2">
               <input
                 ref={inputRef}
@@ -356,20 +356,20 @@ function AIChatPanel({ config }: { config: AITabConfig }) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={`Ask about ${config.label.toLowerCase()}...`}
-                className="flex-1 h-9 rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex-1 rounded-xl bg-secondary/80 border-0 text-[13px] h-9 px-4 shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 disabled={isLoading}
               />
               <Button
                 type="submit"
                 size="sm"
                 disabled={isLoading || !input.trim()}
-                className="bg-emerald-600 hover:bg-emerald-700 h-9"
+                className="bg-primary text-primary-foreground rounded-lg h-9 w-9 p-0"
               >
                 <Send className="size-4" />
               </Button>
             </form>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   )
@@ -383,35 +383,39 @@ export function AiSuiteModule() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div>
-        <h2 className="text-lg font-semibold">AI Suite</h2>
-        <p className="text-sm text-muted-foreground">AI-powered business intelligence and automated workflows</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">AI Suite</h2>
+          <p className="text-[13px] text-muted-foreground mt-0.5">AI-powered business intelligence and automated workflows</p>
+        </div>
+        <Badge className="bg-macos-purple/10 text-macos-purple rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5">
+          <Sparkles className="size-3 mr-1" />
+          AI Powered
+        </Badge>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex-wrap h-auto gap-1 bg-transparent p-0">
-          {aiTabs.map((tab) => {
-            const TabIcon = tab.icon
-            return (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700 dark:data-[state=active]:bg-emerald-950/30 dark:data-[state=active]:text-emerald-400 gap-1.5 text-xs px-3 py-1.5"
-              >
-                <TabIcon className="size-3.5" />
-                {tab.label}
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
+      {/* Segmented Tabs */}
+      <div className="macos-segmented inline-flex p-0.5 flex-wrap gap-0.5">
+        {aiTabs.map((tab) => {
+          const TabIcon = tab.icon
+          const isActive = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-md transition-colors ${
+                isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <TabIcon className="size-3.5" />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
 
-        {aiTabs.map((tab) => (
-          <TabsContent key={tab.id} value={tab.id} className="mt-4">
-            <AIChatPanel config={tab} />
-          </TabsContent>
-        ))}
-      </Tabs>
+      {/* Chat Panel */}
+      <AIChatPanel config={activeConfig} />
     </div>
   )
 }

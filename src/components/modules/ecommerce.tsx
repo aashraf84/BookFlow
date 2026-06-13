@@ -15,7 +15,6 @@ import {
   Filter,
   Eye,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -67,17 +66,17 @@ interface OnlineOrder {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400', icon: Clock },
-  confirmed: { label: 'Confirmed', color: 'bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400', icon: CheckCircle2 },
-  shipped: { label: 'Shipped', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400', icon: Truck },
-  delivered: { label: 'Delivered', color: 'bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400', icon: Package },
-  cancelled: { label: 'Cancelled', color: 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400', icon: XCircle },
+  pending: { label: 'Pending', color: 'bg-macos-orange/10 text-macos-orange', icon: Clock },
+  confirmed: { label: 'Confirmed', color: 'bg-macos-blue/10 text-macos-blue', icon: CheckCircle2 },
+  shipped: { label: 'Shipped', color: 'bg-macos-teal/10 text-macos-teal', icon: Truck },
+  delivered: { label: 'Delivered', color: 'bg-macos-green/10 text-macos-green', icon: Package },
+  cancelled: { label: 'Cancelled', color: 'bg-macos-red/10 text-macos-red', icon: XCircle },
 }
 
 const deliveryMethodConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  home: { label: 'Home Delivery', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400', icon: Truck },
-  pickup: { label: 'Store Pickup', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400', icon: Store },
-  'click-collect': { label: 'Click & Collect', color: 'bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400', icon: ShoppingBag },
+  home: { label: 'Home Delivery', color: 'bg-macos-blue/10 text-macos-blue', icon: Truck },
+  pickup: { label: 'Store Pickup', color: 'bg-macos-green/10 text-macos-green', icon: Store },
+  'click-collect': { label: 'Click & Collect', color: 'bg-macos-purple/10 text-macos-purple', icon: ShoppingBag },
 }
 
 const nextStatusMap: Record<string, string[]> = {
@@ -149,80 +148,71 @@ export function EcommerceModule() {
     setDetailDialogOpen(true)
   }
 
-  // Summary metrics
   const pendingCount = orders.filter((o) => o.status === 'pending').length
-  const confirmedCount = orders.filter((o) => o.status === 'confirmed').length
   const shippedCount = orders.filter((o) => o.status === 'shipped').length
+  const deliveredCount = orders.filter((o) => o.status === 'delivered').length
   const totalRevenue = orders.filter((o) => o.status !== 'cancelled').reduce((sum, o) => sum + o.total, 0)
 
   return (
     <div className="space-y-6">
-      {/* Summary Metrics */}
+      {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Pending Orders</p>
-                <p className="text-2xl font-bold">{pendingCount}</p>
-              </div>
-              <div className="rounded-lg bg-amber-100 p-2.5 dark:bg-amber-950/30">
-                <Clock className="size-5 text-amber-600" />
-              </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Orders</p>
+              <p className="text-2xl font-bold tracking-tight">{orders.length}</p>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Confirmed</p>
-                <p className="text-2xl font-bold">{confirmedCount}</p>
-              </div>
-              <div className="rounded-lg bg-emerald-100 p-2.5 dark:bg-emerald-950/30">
-                <CheckCircle2 className="size-5 text-emerald-600" />
-              </div>
+            <div className="rounded-lg bg-macos-blue/10 p-2.5">
+              <Globe className="size-5 text-macos-blue" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Shipped</p>
-                <p className="text-2xl font-bold">{shippedCount}</p>
-              </div>
-              <div className="rounded-lg bg-teal-100 p-2.5 dark:bg-teal-950/30">
-                <Truck className="size-5 text-teal-600" />
-              </div>
+          </div>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
+              <p className="text-2xl font-bold tracking-tight">{pendingCount}</p>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Revenue</p>
-                <p className="text-2xl font-bold">${totalRevenue.toLocaleString()}</p>
-              </div>
-              <div className="rounded-lg bg-rose-100 p-2.5 dark:bg-rose-950/30">
-                <Globe className="size-5 text-rose-600" />
-              </div>
+            <div className="rounded-lg bg-macos-orange/10 p-2.5">
+              <Clock className="size-5 text-macos-orange" />
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Shipped</p>
+              <p className="text-2xl font-bold tracking-tight">{shippedCount}</p>
+            </div>
+            <div className="rounded-lg bg-macos-teal/10 p-2.5">
+              <Truck className="size-5 text-macos-teal" />
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl macos-shadow p-4 bg-card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Delivered</p>
+              <p className="text-2xl font-bold tracking-tight">{deliveredCount}</p>
+            </div>
+            <div className="rounded-lg bg-macos-green/10 p-2.5">
+              <Package className="size-5 text-macos-green" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Header + Filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Online Orders</h2>
-          <p className="text-sm text-muted-foreground">Manage e-commerce orders, fulfillment, and delivery</p>
+          <h2 className="text-xl font-bold tracking-tight">E-Commerce</h2>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Manage online orders, fulfillment, and delivery</p>
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="size-4 text-muted-foreground" />
+          <Filter className="size-3.5 text-muted-foreground" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px] h-8 text-sm">
+            <SelectTrigger className="w-[150px] h-8 text-[13px] rounded-lg bg-secondary/80 border-0">
               <SelectValue placeholder="Filter status" />
             </SelectTrigger>
             <SelectContent>
@@ -239,137 +229,134 @@ export function EcommerceModule() {
 
       {/* Orders Table */}
       {loading ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground animate-pulse">
-            Loading orders...
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl macos-shadow p-8 bg-card text-center text-muted-foreground animate-pulse text-[13px]">
+          Loading orders...
+        </div>
       ) : orders.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <Globe className="size-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-1">No orders found</h3>
-            <p className="text-sm text-muted-foreground">
-              {statusFilter !== 'all' ? 'No orders match the selected filter' : 'Online orders will appear here'}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl macos-shadow p-5 bg-card text-center py-16">
+          <Globe className="size-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-xl font-semibold tracking-tight mb-1">No orders found</h3>
+          <p className="text-[13px] text-muted-foreground">
+            {statusFilter !== 'all' ? 'No orders match the selected filter' : 'Online orders will appear here'}
+          </p>
+        </div>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Delivery</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order) => {
-                  const st = statusConfig[order.status] || statusConfig.pending
-                  const dm = deliveryMethodConfig[order.deliveryMethod] || deliveryMethodConfig.home
-                  const DmIcon = dm.icon
-                  return (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-mono font-medium text-sm">{order.orderNumber}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-sm">{order.customerName}</p>
-                          {order.customerEmail && (
-                            <p className="text-xs text-muted-foreground">{order.customerEmail}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">${order.total.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge className={st.color}>
-                          {st.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="gap-1 text-xs">
-                          <DmIcon className="size-3" />
-                          {dm.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {nextStatusMap[order.status]?.map((ns) => {
-                            const nsConfig = statusConfig[ns]
-                            const NsIcon = nsConfig?.icon || ChevronRight
-                            return (
-                              <Button
-                                key={ns}
-                                size="sm"
-                                variant="outline"
-                                className={`h-7 text-xs ${ns === 'cancelled' ? 'text-rose-600 border-rose-200 hover:bg-rose-50 dark:border-rose-800 dark:hover:bg-rose-950/30' : ''}`}
-                                onClick={() => handleStatusUpdate(order, ns)}
-                              >
-                                <NsIcon className="size-3 mr-1" />
-                                {ns.charAt(0).toUpperCase() + ns.slice(1)}
-                              </Button>
-                            )
-                          })}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-xs"
-                            onClick={() => openOrderDetail(order)}
-                          >
-                            <Eye className="size-3 mr-1" />
-                            View
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl macos-shadow bg-card overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Order #</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Customer</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
+                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.map((order) => {
+                const st = statusConfig[order.status] || statusConfig.pending
+                const dm = deliveryMethodConfig[order.deliveryMethod] || deliveryMethodConfig.home
+                const DmIcon = dm.icon
+                return (
+                  <TableRow key={order.id} className="hover:bg-secondary/50">
+                    <TableCell className="text-[13px] font-mono font-medium">{order.orderNumber}</TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-[13px]">{order.customerName}</p>
+                        {order.customerEmail && (
+                          <p className="text-[11px] text-muted-foreground">{order.customerEmail}</p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-[13px] font-medium">${order.total.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${st.color}`}>
+                        {st.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 gap-1 ${dm.color}`}>
+                        <DmIcon className="size-3" />
+                        {dm.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-[13px] text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {nextStatusMap[order.status]?.map((ns) => {
+                          const NsIcon = ns === 'cancelled' ? XCircle : ChevronRight
+                          return (
+                            <Button
+                              key={ns}
+                              size="sm"
+                              variant="outline"
+                              className={`h-7 text-[11px] rounded-md font-medium px-2 ${
+                                ns === 'cancelled' ? 'text-macos-red border-macos-red/20 hover:bg-macos-red/10' : ''
+                              }`}
+                              onClick={() => handleStatusUpdate(order, ns)}
+                            >
+                              <NsIcon className="size-3 mr-1" />
+                              {ns.charAt(0).toUpperCase() + ns.slice(1)}
+                            </Button>
+                          )
+                        })}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-[11px] rounded-md"
+                          onClick={() => openOrderDetail(order)}
+                        >
+                          <Eye className="size-3 mr-1" />
+                          View
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {/* Order Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
               Order {selectedOrder?.orderNumber}
               {selectedOrder && (() => {
                 const st = statusConfig[selectedOrder.status] || statusConfig.pending
-                return <Badge className={st.color}>{st.label}</Badge>
+                return <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${st.color}`}>{st.label}</Badge>
               })()}
             </DialogTitle>
-            <DialogDescription>Order details and item breakdown</DialogDescription>
+            <DialogDescription className="text-[13px]">Order details and item breakdown</DialogDescription>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
               {/* Customer Info */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 text-[13px]">
                 <div>
-                  <p className="text-muted-foreground">Customer</p>
-                  <p className="font-medium">{selectedOrder.customerName}</p>
+                  <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Customer</p>
+                  <p className="font-medium mt-0.5">{selectedOrder.customerName}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Email</p>
-                  <p className="font-medium">{selectedOrder.customerEmail || '—'}</p>
+                  <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Email</p>
+                  <p className="font-medium mt-0.5">{selectedOrder.customerEmail || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Phone</p>
-                  <p className="font-medium">{selectedOrder.customerPhone || '—'}</p>
+                  <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Phone</p>
+                  <p className="font-medium mt-0.5">{selectedOrder.customerPhone || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Delivery Method</p>
-                  <Badge variant="outline" className="gap-1 mt-0.5">
+                  <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Delivery</p>
+                  <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 gap-1 mt-1 ${
+                    (deliveryMethodConfig[selectedOrder.deliveryMethod] || deliveryMethodConfig.home).color
+                  }`}>
                     {(() => {
                       const dm = deliveryMethodConfig[selectedOrder.deliveryMethod] || deliveryMethodConfig.home
                       const DmIcon = dm.icon
@@ -380,8 +367,8 @@ export function EcommerceModule() {
               </div>
 
               {selectedOrder.deliveryAddress && (
-                <div className="text-sm">
-                  <p className="text-muted-foreground">Delivery Address</p>
+                <div className="text-[13px]">
+                  <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Address</p>
                   <div className="flex items-start gap-1.5 mt-0.5">
                     <MapPin className="size-3.5 mt-0.5 text-muted-foreground shrink-0" />
                     <p>{selectedOrder.deliveryAddress}</p>
@@ -393,19 +380,19 @@ export function EcommerceModule() {
 
               {/* Items */}
               <div>
-                <p className="font-medium text-sm mb-2">Order Items</p>
+                <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase mb-2">Order Items</p>
                 <div className="space-y-2">
                   {parseItems(selectedOrder.items).map((item, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm py-1.5 px-2 rounded bg-muted/50">
+                    <div key={i} className="flex items-center justify-between text-[13px] py-1.5 px-3 rounded-xl bg-secondary/50">
                       <div>
                         <p className="font-medium">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">Qty: {item.quantity} × ${item.price.toFixed(2)}</p>
+                        <p className="text-[11px] text-muted-foreground">Qty: {item.quantity} × ${item.price.toFixed(2)}</p>
                       </div>
                       <p className="font-medium">${(item.quantity * item.price).toFixed(2)}</p>
                     </div>
                   ))}
                   {parseItems(selectedOrder.items).length === 0 && (
-                    <p className="text-sm text-muted-foreground">No items data available</p>
+                    <p className="text-[13px] text-muted-foreground">No items data available</p>
                   )}
                 </div>
               </div>
@@ -414,13 +401,13 @@ export function EcommerceModule() {
 
               {/* Total */}
               <div className="flex items-center justify-between">
-                <span className="font-semibold">Total</span>
-                <span className="text-lg font-bold text-emerald-600">${selectedOrder.total.toLocaleString()}</span>
+                <span className="font-semibold text-[13px]">Total</span>
+                <span className="text-2xl font-bold tracking-tight text-macos-blue">${selectedOrder.total.toLocaleString()}</span>
               </div>
 
               {selectedOrder.notes && (
-                <div className="text-sm">
-                  <p className="text-muted-foreground">Notes</p>
+                <div className="text-[13px]">
+                  <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Notes</p>
                   <p className="mt-0.5">{selectedOrder.notes}</p>
                 </div>
               )}
@@ -428,13 +415,13 @@ export function EcommerceModule() {
               {/* Status Actions */}
               {nextStatusMap[selectedOrder.status]?.length > 0 && (
                 <div className="flex items-center gap-2 pt-2">
-                  <span className="text-sm text-muted-foreground">Update Status:</span>
+                  <span className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Update:</span>
                   {nextStatusMap[selectedOrder.status].map((ns) => (
                     <Button
                       key={ns}
                       size="sm"
                       variant={ns === 'cancelled' ? 'destructive' : 'default'}
-                      className={ns !== 'cancelled' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+                      className={`rounded-lg font-medium text-[13px] ${ns !== 'cancelled' ? 'bg-primary text-primary-foreground' : ''}`}
                       onClick={() => {
                         handleStatusUpdate(selectedOrder, ns)
                         setDetailDialogOpen(false)

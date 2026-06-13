@@ -1,0 +1,903 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import * as React from 'react'
+     4→     4→import {
+     5→     5→  UserCog,
+     6→     6→  Search,
+     7→     7→  Plus,
+     8→     8→  Mail,
+     9→     9→  Phone,
+    10→    10→  Building2,
+    11→    11→  Briefcase,
+    12→    12→  Calendar,
+    13→    13→  DollarSign,
+    14→    14→  Trash2,
+    15→    15→  Pencil,
+    16→    16→  Eye,
+    17→    17→  Users,
+    18→    18→  MapPin,
+    19→    19→  UserCheck,
+    20→    20→  UserX,
+    21→    21→} from 'lucide-react'
+    22→    22→import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+    23→    23→import { Button } from '@/components/ui/button'
+    24→    24→import { Input } from '@/components/ui/input'
+    25→    25→import { Label } from '@/components/ui/label'
+    26→    26→import { Badge } from '@/components/ui/badge'
+    27→    27→import {
+    28→    28→  Dialog,
+    29→    29→  DialogContent,
+    30→    30→  DialogDescription,
+    31→    31→  DialogFooter,
+    32→    32→  DialogHeader,
+    33→    33→  DialogTitle,
+    34→    34→} from '@/components/ui/dialog'
+    35→    35→import {
+    36→    36→  Select,
+    37→    37→  SelectContent,
+    38→    38→  SelectItem,
+    39→    39→  SelectTrigger,
+    40→    40→  SelectValue,
+    41→    41→} from '@/components/ui/select'
+    42→    42→import { Separator } from '@/components/ui/separator'
+    43→    43→import { ScrollArea } from '@/components/ui/scroll-area'
+    44→    44→import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+    45→    45→import {
+    46→    46→  Table,
+    47→    47→  TableBody,
+    48→    48→  TableCell,
+    49→    49→  TableHead,
+    50→    50→  TableHeader,
+    51→    51→  TableRow,
+    52→    52→} from '@/components/ui/table'
+    53→    53→
+    54→    54→// ==================== TYPES ====================
+    55→    55→
+    56→    56→interface Branch {
+    57→    57→  id: string
+    58→    58→  name: string
+    59→    59→  code: string
+    60→    60→}
+    61→    61→
+    62→    62→interface Employee {
+    63→    63→  id: string
+    64→    64→  name: string
+    65→    65→  email: string
+    66→    66→  phone?: string | null
+    67→    67→  department?: string | null
+    68→    68→  position?: string | null
+    69→    69→  salary: number
+    70→    70→  hireDate?: string | null
+    71→    71→  isActive: boolean
+    72→    72→  branchId?: string | null
+    73→    73→  branch?: Branch | null
+    74→    74→  createdAt: string
+    75→    75→  _count?: { sales: number; attendance: number }
+    76→    76→}
+    77→    77→
+    78→    78→// ==================== EMPLOYEES MODULE ====================
+    79→    79→
+    80→    80→export function EmployeesModule() {
+    81→    81→  const [employees, setEmployees] = React.useState<Employee[]>([])
+    82→    82→  const [branches, setBranches] = React.useState<Branch[]>([])
+    83→    83→  const [loading, setLoading] = React.useState(true)
+    84→    84→  const [search, setSearch] = React.useState('')
+    85→    85→  const [departmentFilter, setDepartmentFilter] = React.useState('all')
+    86→    86→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+    87→    87→  const [editEmployee, setEditEmployee] = React.useState<Employee | null>(null)
+    88→    88→  const [selectedEmployee, setSelectedEmployee] = React.useState<Employee | null>(null)
+    89→    89→
+    90→    90→  const fetchEmployees = React.useCallback(async () => {
+    91→    91→    setLoading(true)
+    92→    92→    try {
+    93→    93→      const params = new URLSearchParams()
+    94→    94→      if (search) params.set('search', search)
+    95→    95→      if (departmentFilter && departmentFilter !== 'all') params.set('department', departmentFilter)
+    96→    96→      params.set('limit', '50')
+    97→    97→      const res = await fetch(`/api/employees?${params}`)
+    98→    98→      const json = await res.json()
+    99→    99→      if (json.data) setEmployees(json.data)
+   100→   100→    } catch (err) {
+   101→   101→      console.error('Failed to fetch employees:', err)
+   102→   102→    } finally {
+   103→   103→      setLoading(false)
+   104→   104→    }
+   105→   105→  }, [search, departmentFilter])
+   106→   106→
+   107→   107→  const fetchBranches = React.useCallback(async () => {
+   108→   108→    try {
+   109→   109→      const res = await fetch('/api/branches')
+   110→   110→      const json = await res.json()
+   111→   111→      if (json.data) setBranches(json.data)
+   112→   112→    } catch (err) {
+   113→   113→      console.error('Failed to fetch branches:', err)
+   114→   114→    }
+   115→   115→  }, [])
+   116→   116→
+   117→   117→  React.useEffect(() => {
+   118→   118→    fetchEmployees()
+   119→   119→  }, [fetchEmployees])
+   120→   120→
+   121→   121→  React.useEffect(() => {
+   122→   122→    fetchBranches()
+   123→   123→  }, [fetchBranches])
+   124→   124→
+   125→   125→  const handleDelete = async (id: string) => {
+   126→   126→    if (!confirm('Are you sure you want to deactivate this employee?')) return
+   127→   127→    try {
+   128→   128→      await fetch(`/api/employees?id=${id}`, { method: 'DELETE' })
+   129→   129→      fetchEmployees()
+   130→   130→    } catch (err) {
+   131→   131→      console.error('Failed to deactivate employee:', err)
+   132→   132→    }
+   133→   133→  }
+   134→   134→
+   135→   135→  // Department stats
+   136→   136→  const departments = employees.reduce(
+   137→   137→    (acc, emp) => {
+   138→   138→      const dept = emp.department || 'Unassigned'
+   139→   139→      if (!acc[dept]) acc[dept] = { total: 0, active: 0, inactive: 0 }
+   140→   140→      acc[dept].total++
+   141→   141→      if (emp.isActive) acc[dept].active++
+   142→   142→      else acc[dept].inactive++
+   143→   143→      return acc
+   144→   144→    },
+   145→   145→    {} as Record<string, { total: number; active: number; inactive: number }>
+   146→   146→  )
+   147→   147→
+   148→   148→  const totalEmployees = employees.length
+   149→   149→  const activeEmployees = employees.filter((e) => e.isActive).length
+   150→   150→  const inactiveEmployees = employees.filter((e) => !e.isActive).length
+   151→   151→  const totalPayroll = employees.filter((e) => e.isActive).reduce((sum, e) => sum + e.salary, 0)
+   152→   152→
+   153→   153→  const departmentList = [...new Set(employees.map((e) => e.department).filter(Boolean))] as string[]
+   154→   154→
+   155→   155→  return (
+   156→   156→    <div className="space-y-6">
+   157→   157→      <div className="flex items-center gap-3">
+   158→   158→        <div className="rounded-lg bg-emerald-100 p-2 dark:bg-emerald-950/40">
+   159→   159→          <UserCog className="size-5 text-emerald-600" />
+   160→   160→        </div>
+   161→   161→        <div>
+   162→   162→          <h2 className="text-xl font-bold tracking-tight">Employees</h2>
+   163→   163→          <p className="text-sm text-muted-foreground">
+   164→   164→            Manage your team, departments, and payroll
+   165→   165→          </p>
+   166→   166→        </div>
+   167→   167→      </div>
+   168→   168→
+   169→   169→      {/* Department Stats */}
+   170→   170→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+   171→   171→        <Card>
+   172→   172→          <CardContent className="p-3">
+   173→   173→            <div className="flex items-center gap-2">
+   174→   174→              <div className="rounded p-1.5 bg-emerald-100 dark:bg-emerald-950/40">
+   175→   175→                <Users className="size-4 text-emerald-600" />
+   176→   176→              </div>
+   177→   177→              <div>
+   178→   178→                <p className="text-xs text-muted-foreground">Total</p>
+   179→   179→                <p className="text-lg font-bold">{totalEmployees}</p>
+   180→   180→              </div>
+   181→   181→            </div>
+   182→   182→          </CardContent>
+   183→   183→        </Card>
+   184→   184→        <Card>
+   185→   185→          <CardContent className="p-3">
+   186→   186→            <div className="flex items-center gap-2">
+   187→   187→              <div className="rounded p-1.5 bg-teal-100 dark:bg-teal-950/40">
+   188→   188→                <UserCheck className="size-4 text-teal-600" />
+   189→   189→              </div>
+   190→   190→              <div>
+   191→   191→                <p className="text-xs text-muted-foreground">Active</p>
+   192→   192→                <p className="text-lg font-bold text-teal-600">{activeEmployees}</p>
+   193→   193→              </div>
+   194→   194→            </div>
+   195→   195→          </CardContent>
+   196→   196→        </Card>
+   197→   197→        <Card>
+   198→   198→          <CardContent className="p-3">
+   199→   199→            <div className="flex items-center gap-2">
+   200→   200→              <div className="rounded p-1.5 bg-amber-100 dark:bg-amber-950/40">
+   201→   201→                <UserX className="size-4 text-amber-600" />
+   202→   202→              </div>
+   203→   203→              <div>
+   204→   204→                <p className="text-xs text-muted-foreground">Inactive</p>
+   205→   205→                <p className="text-lg font-bold text-amber-600">{inactiveEmployees}</p>
+   206→   206→              </div>
+   207→   207→            </div>
+   208→   208→          </CardContent>
+   209→   209→        </Card>
+   210→   210→        <Card>
+   211→   211→          <CardContent className="p-3">
+   212→   212→            <div className="flex items-center gap-2">
+   213→   213→              <div className="rounded p-1.5 bg-emerald-100 dark:bg-emerald-950/40">
+   214→   214→                <DollarSign className="size-4 text-emerald-600" />
+   215→   215→              </div>
+   216→   216→              <div>
+   217→   217→                <p className="text-xs text-muted-foreground">Monthly Payroll</p>
+   218→   218→                <p className="text-lg font-bold text-emerald-600">${totalPayroll.toLocaleString()}</p>
+   219→   219→              </div>
+   220→   220→            </div>
+   221→   221→          </CardContent>
+   222→   222→        </Card>
+   223→   223→      </div>
+   224→   224→
+   225→   225→      {/* Department breakdown */}
+   226→   226→      {Object.keys(departments).length > 0 && (
+   227→   227→        <Card>
+   228→   228→          <CardHeader className="pb-3">
+   229→   229→            <CardTitle className="text-sm">Department Breakdown</CardTitle>
+   230→   230→          </CardHeader>
+   231→   231→          <CardContent>
+   232→   232→            <div className="flex flex-wrap gap-2">
+   233→   233→              {Object.entries(departments).map(([dept, stats]) => (
+   234→   234→                <div
+   235→   235→                  key={dept}
+   236→   236→                  className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+   237→   237→                  onClick={() => setDepartmentFilter(dept === 'Unassigned' ? 'all' : dept)}
+   238→   238→                >
+   239→   239→                  <span className="font-medium">{dept}</span>
+   240→   240→                  <Badge variant="secondary" className="text-[10px]">
+   241→   241→                    {stats.active} active
+   242→   242→                  </Badge>
+   243→   243→                </div>
+   244→   244→              ))}
+   245→   245→            </div>
+   246→   246→          </CardContent>
+   247→   247→        </Card>
+   248→   248→      )}
+   249→   249→
+   250→   250→      {/* Search & Filter */}
+   251→   251→      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+   252→   252→        <div className="flex gap-2 w-full sm:w-auto">
+   253→   253→          <div className="relative flex-1 sm:flex-initial sm:w-64">
+   254→   254→            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+   255→   255→            <Input
+   256→   256→              placeholder="Search employees..."
+   257→   257→              value={search}
+   258→   258→              onChange={(e) => setSearch(e.target.value)}
+   259→   259→              className="pl-8"
+   260→   260→            />
+   261→   261→          </div>
+   262→   262→          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+   263→   263→            <SelectTrigger className="w-36">
+   264→   264→              <SelectValue />
+   265→   265→            </SelectTrigger>
+   266→   266→            <SelectContent>
+   267→   267→              <SelectItem value="all">All Departments</SelectItem>
+   268→   268→              {departmentList.map((dept) => (
+   269→   269→                <SelectItem key={dept} value={dept!}>
+   270→   270→                  {dept}
+   271→   271→                </SelectItem>
+   272→   272→              ))}
+   273→   273→            </SelectContent>
+   274→   274→          </Select>
+   275→   275→        </div>
+   276→   276→        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-emerald-600 hover:bg-emerald-700">
+   277→   277→          <Plus className="size-4" /> Add Employee
+   278→   278→        </Button>
+   279→   279→      </div>
+   280→   280→
+   281→   281→      {/* Employee Table */}
+   282→   282→      {loading ? (
+   283→   283→        <Card>
+   284→   284→          <CardContent className="p-6">
+   285→   285→            <div className="space-y-3">
+   286→   286→              {[1, 2, 3, 4, 5].map((i) => (
+   287→   287→                <div key={i} className="h-14 bg-muted rounded animate-pulse" />
+   288→   288→              ))}
+   289→   289→            </div>
+   290→   290→          </CardContent>
+   291→   291→        </Card>
+   292→   292→      ) : employees.length === 0 ? (
+   293→   293→        <Card>
+   294→   294→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   295→   295→            <UserCog className="size-10 text-muted-foreground mb-3" />
+   296→   296→            <p className="text-muted-foreground">No employees found</p>
+   297→   297→            <p className="text-sm text-muted-foreground">Add your first team member</p>
+   298→   298→          </CardContent>
+   299→   299→        </Card>
+   300→   300→      ) : (
+   301→   301→        <Card>
+   302→   302→          <CardContent className="p-0">
+   303→   303→            <ScrollArea className="max-h-[500px]">
+   304→   304→              <Table>
+   305→   305→                <TableHeader>
+   306→   306→                  <TableRow>
+   307→   307→                    <TableHead>Employee</TableHead>
+   308→   308→                    <TableHead>Department</TableHead>
+   309→   309→                    <TableHead>Position</TableHead>
+   310→   310→                    <TableHead>Branch</TableHead>
+   311→   311→                    <TableHead className="text-right">Salary</TableHead>
+   312→   312→                    <TableHead>Status</TableHead>
+   313→   313→                    <TableHead className="w-20">Actions</TableHead>
+   314→   314→                  </TableRow>
+   315→   315→                </TableHeader>
+   316→   316→                <TableBody>
+   317→   317→                  {employees.map((employee) => (
+   318→   318→                    <TableRow
+   319→   319→                      key={employee.id}
+   320→   320→                      className="cursor-pointer"
+   321→   321→                      onClick={() => setSelectedEmployee(employee)}
+   322→   322→                    >
+   323→   323→                      <TableCell>
+   324→   324→                        <div className="flex items-center gap-3">
+   325→   325→                          <Avatar className="size-8">
+   326→   326→                            <AvatarFallback className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-xs font-semibold">
+   327→   327→                              {employee.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+   328→   328→                            </AvatarFallback>
+   329→   329→                          </Avatar>
+   330→   330→                          <div>
+   331→   331→                            <p className="font-medium text-sm">{employee.name}</p>
+   332→   332→                            <p className="text-xs text-muted-foreground">{employee.email}</p>
+   333→   333→                          </div>
+   334→   334→                        </div>
+   335→   335→                      </TableCell>
+   336→   336→                      <TableCell>
+   337→   337→                        <Badge variant="secondary" className="text-[10px]">
+   338→   338→                          {employee.department || 'Unassigned'}
+   339→   339→                        </Badge>
+   340→   340→                      </TableCell>
+   341→   341→                      <TableCell className="text-sm">{employee.position || '—'}</TableCell>
+   342→   342→                      <TableCell className="text-sm">
+   343→   343→                        {employee.branch?.name || '—'}
+   344→   344→                      </TableCell>
+   345→   345→                      <TableCell className="text-right font-medium text-sm">
+   346→   346→                        ${employee.salary.toLocaleString()}
+   347→   347→                      </TableCell>
+   348→   348→                      <TableCell>
+   349→   349→                        <Badge
+   350→   350→                          className={
+   351→   351→                            employee.isActive
+   352→   352→                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 text-[10px]'
+   353→   353→                              : 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400 text-[10px]'
+   354→   354→                          }
+   355→   355→                        >
+   356→   356→                          {employee.isActive ? 'Active' : 'Inactive'}
+   357→   357→                        </Badge>
+   358→   358→                      </TableCell>
+   359→   359→                      <TableCell>
+   360→   360→                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+   361→   361→                          <Button
+   362→   362→                            variant="ghost"
+   363→   363→                            size="sm"
+   364→   364→                            className="h-7 w-7 p-0 text-teal-600 hover:text-teal-700"
+   365→   365→                            onClick={() => setEditEmployee(employee)}
+   366→   366→                          >
+   367→   367→                            <Pencil className="size-3.5" />
+   368→   368→                          </Button>
+   369→   369→                          <Button
+   370→   370→                            variant="ghost"
+   371→   371→                            size="sm"
+   372→   372→                            className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+   373→   373→                            onClick={() => handleDelete(employee.id)}
+   374→   374→                          >
+   375→   375→                            <Trash2 className="size-3.5" />
+   376→   376→                          </Button>
+   377→   377→                        </div>
+   378→   378→                      </TableCell>
+   379→   379→                    </TableRow>
+   380→   380→                  ))}
+   381→   381→                </TableBody>
+   382→   382→              </Table>
+   383→   383→            </ScrollArea>
+   384→   384→          </CardContent>
+   385→   385→        </Card>
+   386→   386→      )}
+   387→   387→
+   388→   388→      <AddEmployeeDialog
+   389→   389→        open={showAddDialog}
+   390→   390→        onOpenChange={setShowAddDialog}
+   391→   391→        branches={branches}
+   392→   392→        onSuccess={fetchEmployees}
+   393→   393→      />
+   394→   394→      <EditEmployeeDialog
+   395→   395→        employee={editEmployee}
+   396→   396→        onOpenChange={(open) => !open && setEditEmployee(null)}
+   397→   397→        branches={branches}
+   398→   398→        onSuccess={fetchEmployees}
+   399→   399→      />
+   400→   400→      <EmployeeDetailDialog
+   401→   401→        employee={selectedEmployee}
+   402→   402→        onOpenChange={(open) => !open && setSelectedEmployee(null)}
+   403→   403→      />
+   404→   404→    </div>
+   405→   405→  )
+   406→   406→}
+   407→   407→
+   408→   408→// ==================== ADD EMPLOYEE DIALOG ====================
+   409→   409→
+   410→   410→function AddEmployeeDialog({
+   411→   411→  open,
+   412→   412→  onOpenChange,
+   413→   413→  branches,
+   414→   414→  onSuccess,
+   415→   415→}: {
+   416→   416→  open: boolean
+   417→   417→  onOpenChange: (open: boolean) => void
+   418→   418→  branches: Branch[]
+   419→   419→  onSuccess: () => void
+   420→   420→}) {
+   421→   421→  const [saving, setSaving] = React.useState(false)
+   422→   422→  const [form, setForm] = React.useState({
+   423→   423→    name: '',
+   424→   424→    email: '',
+   425→   425→    phone: '',
+   426→   426→    department: '',
+   427→   427→    position: '',
+   428→   428→    salary: '',
+   429→   429→    hireDate: '',
+   430→   430→    branchId: '',
+   431→   431→  })
+   432→   432→
+   433→   433→  const handleSubmit = async (e: React.FormEvent) => {
+   434→   434→    e.preventDefault()
+   435→   435→    if (!form.name.trim() || !form.email.trim()) return
+   436→   436→    setSaving(true)
+   437→   437→    try {
+   438→   438→      const res = await fetch('/api/employees', {
+   439→   439→        method: 'POST',
+   440→   440→        headers: { 'Content-Type': 'application/json' },
+   441→   441→        body: JSON.stringify({
+   442→   442→          ...form,
+   443→   443→          salary: parseFloat(form.salary) || 0,
+   444→   444→          hireDate: form.hireDate || null,
+   445→   445→          branchId: form.branchId || null,
+   446→   446→        }),
+   447→   447→      })
+   448→   448→      if (res.ok) {
+   449→   449→        setForm({ name: '', email: '', phone: '', department: '', position: '', salary: '', hireDate: '', branchId: '' })
+   450→   450→        onOpenChange(false)
+   451→   451→        onSuccess()
+   452→   452→      } else {
+   453→   453→        const json = await res.json()
+   454→   454→        alert(json.error || 'Failed to create employee')
+   455→   455→      }
+   456→   456→    } catch (err) {
+   457→   457→      console.error('Failed to create employee:', err)
+   458→   458→      alert('Failed to create employee')
+   459→   459→    } finally {
+   460→   460→      setSaving(false)
+   461→   461→    }
+   462→   462→  }
+   463→   463→
+   464→   464→  return (
+   465→   465→    <Dialog open={open} onOpenChange={onOpenChange}>
+   466→   466→      <DialogContent className="sm:max-w-md">
+   467→   467→        <DialogHeader>
+   468→   468→          <DialogTitle>Add Employee</DialogTitle>
+   469→   469→          <DialogDescription>Register a new team member</DialogDescription>
+   470→   470→        </DialogHeader>
+   471→   471→        <form onSubmit={handleSubmit} className="space-y-4">
+   472→   472→          <div className="space-y-2">
+   473→   473→            <Label htmlFor="emp-name">Full Name *</Label>
+   474→   474→            <Input
+   475→   475→              id="emp-name"
+   476→   476→              value={form.name}
+   477→   477→              onChange={(e) => setForm({ ...form, name: e.target.value })}
+   478→   478→              placeholder="John Smith"
+   479→   479→              required
+   480→   480→            />
+   481→   481→          </div>
+   482→   482→          <div className="grid grid-cols-2 gap-3">
+   483→   483→            <div className="space-y-2">
+   484→   484→              <Label htmlFor="emp-email">Email *</Label>
+   485→   485→              <Input
+   486→   486→                id="emp-email"
+   487→   487→                type="email"
+   488→   488→                value={form.email}
+   489→   489→                onChange={(e) => setForm({ ...form, email: e.target.value })}
+   490→   490→                placeholder="john@bookflow.com"
+   491→   491→                required
+   492→   492→              />
+   493→   493→            </div>
+   494→   494→            <div className="space-y-2">
+   495→   495→              <Label htmlFor="emp-phone">Phone</Label>
+   496→   496→              <Input
+   497→   497→                id="emp-phone"
+   498→   498→                value={form.phone}
+   499→   499→                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+   500→   500→                placeholder="+1-555-0100"
+   501→   501→              />
+   502→   502→            </div>
+   503→   503→          </div>
+   504→   504→          <div className="grid grid-cols-2 gap-3">
+   505→   505→            <div className="space-y-2">
+   506→   506→              <Label>Department</Label>
+   507→   507→              <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+   508→   508→                <SelectTrigger>
+   509→   509→                  <SelectValue placeholder="Select..." />
+   510→   510→                </SelectTrigger>
+   511→   511→                <SelectContent>
+   512→   512→                  <SelectItem value="Sales">Sales</SelectItem>
+   513→   513→                  <SelectItem value="Management">Management</SelectItem>
+   514→   514→                  <SelectItem value="Finance">Finance</SelectItem>
+   515→   515→                  <SelectItem value="Warehouse">Warehouse</SelectItem>
+   516→   516→                  <SelectItem value="IT">IT</SelectItem>
+   517→   517→                  <SelectItem value="Marketing">Marketing</SelectItem>
+   518→   518→                  <SelectItem value="HR">HR</SelectItem>
+   519→   519→                  <SelectItem value="Operations">Operations</SelectItem>
+   520→   520→                </SelectContent>
+   521→   521→              </Select>
+   522→   522→            </div>
+   523→   523→            <div className="space-y-2">
+   524→   524→              <Label htmlFor="emp-position">Position</Label>
+   525→   525→              <Input
+   526→   526→                id="emp-position"
+   527→   527→                value={form.position}
+   528→   528→                onChange={(e) => setForm({ ...form, position: e.target.value })}
+   529→   529→                placeholder="Sales Manager"
+   530→   530→              />
+   531→   531→            </div>
+   532→   532→          </div>
+   533→   533→          <div className="grid grid-cols-2 gap-3">
+   534→   534→            <div className="space-y-2">
+   535→   535→              <Label htmlFor="emp-salary">Monthly Salary ($)</Label>
+   536→   536→              <Input
+   537→   537→                id="emp-salary"
+   538→   538→                type="number"
+   539→   539→                step="0.01"
+   540→   540→                min="0"
+   541→   541→                value={form.salary}
+   542→   542→                onChange={(e) => setForm({ ...form, salary: e.target.value })}
+   543→   543→                placeholder="5000"
+   544→   544→              />
+   545→   545→            </div>
+   546→   546→            <div className="space-y-2">
+   547→   547→              <Label htmlFor="emp-hire">Hire Date</Label>
+   548→   548→              <Input
+   549→   549→                id="emp-hire"
+   550→   550→                type="date"
+   551→   551→                value={form.hireDate}
+   552→   552→                onChange={(e) => setForm({ ...form, hireDate: e.target.value })}
+   553→   553→              />
+   554→   554→            </div>
+   555→   555→          </div>
+   556→   556→          <div className="space-y-2">
+   557→   557→            <Label>Branch</Label>
+   558→   558→            <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+   559→   559→              <SelectTrigger>
+   560→   560→                <SelectValue placeholder="Select branch..." />
+   561→   561→              </SelectTrigger>
+   562→   562→              <SelectContent>
+   563→   563→                {branches.map((b) => (
+   564→   564→                  <SelectItem key={b.id} value={b.id}>
+   565→   565→                    {b.name} ({b.code})
+   566→   566→                  </SelectItem>
+   567→   567→                ))}
+   568→   568→              </SelectContent>
+   569→   569→            </Select>
+   570→   570→          </div>
+   571→   571→          <DialogFooter>
+   572→   572→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+   573→   573→              Cancel
+   574→   574→            </Button>
+   575→   575→            <Button
+   576→   576→              type="submit"
+   577→   577→              disabled={saving || !form.name.trim() || !form.email.trim()}
+   578→   578→              className="bg-emerald-600 hover:bg-emerald-700"
+   579→   579→            >
+   580→   580→              {saving ? 'Saving...' : 'Add Employee'}
+   581→   581→            </Button>
+   582→   582→          </DialogFooter>
+   583→   583→        </form>
+   584→   584→      </DialogContent>
+   585→   585→    </Dialog>
+   586→   586→  )
+   587→   587→}
+   588→   588→
+   589→   589→// ==================== EDIT EMPLOYEE DIALOG ====================
+   590→   590→
+   591→   591→function EditEmployeeDialog({
+   592→   592→  employee,
+   593→   593→  onOpenChange,
+   594→   594→  branches,
+   595→   595→  onSuccess,
+   596→   596→}: {
+   597→   597→  employee: Employee | null
+   598→   598→  onOpenChange: (open: boolean) => void
+   599→   599→  branches: Branch[]
+   600→   600→  onSuccess: () => void
+   601→   601→}) {
+   602→   602→  const [saving, setSaving] = React.useState(false)
+   603→   603→  const [form, setForm] = React.useState({
+   604→   604→    name: '',
+   605→   605→    email: '',
+   606→   606→    phone: '',
+   607→   607→    department: '',
+   608→   608→    position: '',
+   609→   609→    salary: '',
+   610→   610→    hireDate: '',
+   611→   611→    branchId: '',
+   612→   612→    isActive: true,
+   613→   613→  })
+   614→   614→
+   615→   615→  React.useEffect(() => {
+   616→   616→    if (employee) {
+   617→   617→      setForm({
+   618→   618→        name: employee.name || '',
+   619→   619→        email: employee.email || '',
+   620→   620→        phone: employee.phone || '',
+   621→   621→        department: employee.department || '',
+   622→   622→        position: employee.position || '',
+   623→   623→        salary: employee.salary?.toString() || '',
+   624→   624→        hireDate: employee.hireDate ? new Date(employee.hireDate).toISOString().split('T')[0] : '',
+   625→   625→        branchId: employee.branchId || '',
+   626→   626→        isActive: employee.isActive,
+   627→   627→      })
+   628→   628→    }
+   629→   629→  }, [employee])
+   630→   630→
+   631→   631→  const handleSubmit = async (e: React.FormEvent) => {
+   632→   632→    e.preventDefault()
+   633→   633→    if (!employee) return
+   634→   634→    setSaving(true)
+   635→   635→    try {
+   636→   636→      const res = await fetch('/api/employees', {
+   637→   637→        method: 'PUT',
+   638→   638→        headers: { 'Content-Type': 'application/json' },
+   639→   639→        body: JSON.stringify({
+   640→   640→          id: employee.id,
+   641→   641→          name: form.name,
+   642→   642→          email: form.email,
+   643→   643→          phone: form.phone,
+   644→   644→          department: form.department,
+   645→   645→          position: form.position,
+   646→   646→          salary: parseFloat(form.salary) || 0,
+   647→   647→          hireDate: form.hireDate || null,
+   648→   648→          branchId: form.branchId || null,
+   649→   649→          isActive: form.isActive,
+   650→   650→        }),
+   651→   651→      })
+   652→   652→      if (res.ok) {
+   653→   653→        onOpenChange(false)
+   654→   654→        onSuccess()
+   655→   655→      } else {
+   656→   656→        const json = await res.json()
+   657→   657→        alert(json.error || 'Failed to update employee')
+   658→   658→      }
+   659→   659→    } catch (err) {
+   660→   660→      console.error('Failed to update employee:', err)
+   661→   661→      alert('Failed to update employee')
+   662→   662→    } finally {
+   663→   663→      setSaving(false)
+   664→   664→    }
+   665→   665→  }
+   666→   666→
+   667→   667→  if (!employee) return null
+   668→   668→
+   669→   669→  return (
+   670→   670→    <Dialog open={!!employee} onOpenChange={onOpenChange}>
+   671→   671→      <DialogContent className="sm:max-w-md">
+   672→   672→        <DialogHeader>
+   673→   673→          <DialogTitle>Edit Employee</DialogTitle>
+   674→   674→          <DialogDescription>Update employee information</DialogDescription>
+   675→   675→        </DialogHeader>
+   676→   676→        <form onSubmit={handleSubmit} className="space-y-4">
+   677→   677→          <div className="space-y-2">
+   678→   678→            <Label>Full Name *</Label>
+   679→   679→            <Input
+   680→   680→              value={form.name}
+   681→   681→              onChange={(e) => setForm({ ...form, name: e.target.value })}
+   682→   682→              required
+   683→   683→            />
+   684→   684→          </div>
+   685→   685→          <div className="grid grid-cols-2 gap-3">
+   686→   686→            <div className="space-y-2">
+   687→   687→              <Label>Email *</Label>
+   688→   688→              <Input
+   689→   689→                type="email"
+   690→   690→                value={form.email}
+   691→   691→                onChange={(e) => setForm({ ...form, email: e.target.value })}
+   692→   692→                required
+   693→   693→              />
+   694→   694→            </div>
+   695→   695→            <div className="space-y-2">
+   696→   696→              <Label>Phone</Label>
+   697→   697→              <Input
+   698→   698→                value={form.phone}
+   699→   699→                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+   700→   700→              />
+   701→   701→            </div>
+   702→   702→          </div>
+   703→   703→          <div className="grid grid-cols-2 gap-3">
+   704→   704→            <div className="space-y-2">
+   705→   705→              <Label>Department</Label>
+   706→   706→              <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+   707→   707→                <SelectTrigger>
+   708→   708→                  <SelectValue placeholder="Select..." />
+   709→   709→                </SelectTrigger>
+   710→   710→                <SelectContent>
+   711→   711→                  <SelectItem value="Sales">Sales</SelectItem>
+   712→   712→                  <SelectItem value="Management">Management</SelectItem>
+   713→   713→                  <SelectItem value="Finance">Finance</SelectItem>
+   714→   714→                  <SelectItem value="Warehouse">Warehouse</SelectItem>
+   715→   715→                  <SelectItem value="IT">IT</SelectItem>
+   716→   716→                  <SelectItem value="Marketing">Marketing</SelectItem>
+   717→   717→                  <SelectItem value="HR">HR</SelectItem>
+   718→   718→                  <SelectItem value="Operations">Operations</SelectItem>
+   719→   719→                </SelectContent>
+   720→   720→              </Select>
+   721→   721→            </div>
+   722→   722→            <div className="space-y-2">
+   723→   723→              <Label>Position</Label>
+   724→   724→              <Input
+   725→   725→                value={form.position}
+   726→   726→                onChange={(e) => setForm({ ...form, position: e.target.value })}
+   727→   727→              />
+   728→   728→            </div>
+   729→   729→          </div>
+   730→   730→          <div className="grid grid-cols-2 gap-3">
+   731→   731→            <div className="space-y-2">
+   732→   732→              <Label>Monthly Salary ($)</Label>
+   733→   733→              <Input
+   734→   734→                type="number"
+   735→   735→                step="0.01"
+   736→   736→                min="0"
+   737→   737→                value={form.salary}
+   738→   738→                onChange={(e) => setForm({ ...form, salary: e.target.value })}
+   739→   739→              />
+   740→   740→            </div>
+   741→   741→            <div className="space-y-2">
+   742→   742→              <Label>Hire Date</Label>
+   743→   743→              <Input
+   744→   744→                type="date"
+   745→   745→                value={form.hireDate}
+   746→   746→                onChange={(e) => setForm({ ...form, hireDate: e.target.value })}
+   747→   747→              />
+   748→   748→            </div>
+   749→   749→          </div>
+   750→   750→          <div className="grid grid-cols-2 gap-3">
+   751→   751→            <div className="space-y-2">
+   752→   752→              <Label>Branch</Label>
+   753→   753→              <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+   754→   754→                <SelectTrigger>
+   755→   755→                  <SelectValue placeholder="Select branch..." />
+   756→   756→                </SelectTrigger>
+   757→   757→                <SelectContent>
+   758→   758→                  {branches.map((b) => (
+   759→   759→                    <SelectItem key={b.id} value={b.id}>
+   760→   760→                      {b.name} ({b.code})
+   761→   761→                    </SelectItem>
+   762→   762→                  ))}
+   763→   763→                </SelectContent>
+   764→   764→              </Select>
+   765→   765→            </div>
+   766→   766→            <div className="space-y-2">
+   767→   767→              <Label>Status</Label>
+   768→   768→              <Select value={form.isActive ? 'active' : 'inactive'} onValueChange={(v) => setForm({ ...form, isActive: v === 'active' })}>
+   769→   769→                <SelectTrigger>
+   770→   770→                  <SelectValue />
+   771→   771→                </SelectTrigger>
+   772→   772→                <SelectContent>
+   773→   773→                  <SelectItem value="active">Active</SelectItem>
+   774→   774→                  <SelectItem value="inactive">Inactive</SelectItem>
+   775→   775→                </SelectContent>
+   776→   776→              </Select>
+   777→   777→            </div>
+   778→   778→          </div>
+   779→   779→          <DialogFooter>
+   780→   780→            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+   781→   781→              Cancel
+   782→   782→            </Button>
+   783→   783→            <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+   784→   784→              {saving ? 'Saving...' : 'Update Employee'}
+   785→   785→            </Button>
+   786→   786→          </DialogFooter>
+   787→   787→        </form>
+   788→   788→      </DialogContent>
+   789→   789→    </Dialog>
+   790→   790→  )
+   791→   791→}
+   792→   792→
+   793→   793→// ==================== EMPLOYEE DETAIL DIALOG ====================
+   794→   794→
+   795→   795→function EmployeeDetailDialog({
+   796→   796→  employee,
+   797→   797→  onOpenChange,
+   798→   798→}: {
+   799→   799→  employee: Employee | null
+   800→   800→  onOpenChange: (open: boolean) => void
+   801→   801→}) {
+   802→   802→  if (!employee) return null
+   803→   803→
+   804→   804→  const initials = employee.name
+   805→   805→    .split(' ')
+   806→   806→    .map((n) => n[0])
+   807→   807→    .join('')
+   808→   808→    .slice(0, 2)
+   809→   809→    .toUpperCase()
+   810→   810→
+   811→   811→  return (
+   812→   812→    <Dialog open={!!employee} onOpenChange={onOpenChange}>
+   813→   813→      <DialogContent className="sm:max-w-lg">
+   814→   814→        <DialogHeader>
+   815→   815→          <DialogTitle className="flex items-center gap-3">
+   816→   816→            <Avatar className="size-10">
+   817→   817→              <AvatarFallback className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-semibold">
+   818→   818→                {initials}
+   819→   819→              </AvatarFallback>
+   820→   820→            </Avatar>
+   821→   821→            <div>
+   822→   822→              <p>{employee.name}</p>
+   823→   823→              <p className="text-sm font-normal text-muted-foreground">{employee.position || 'No position assigned'}</p>
+   824→   824→            </div>
+   825→   825→          </DialogTitle>
+   826→   826→        </DialogHeader>
+   827→   827→        <div className="space-y-4">
+   828→   828→          <div className="grid grid-cols-2 gap-4">
+   829→   829→            <div className="space-y-3">
+   830→   830→              <div className="flex items-center gap-2 text-sm">
+   831→   831→                <Mail className="size-4 text-muted-foreground" />
+   832→   832→                <span>{employee.email}</span>
+   833→   833→              </div>
+   834→   834→              {employee.phone && (
+   835→   835→                <div className="flex items-center gap-2 text-sm">
+   836→   836→                  <Phone className="size-4 text-muted-foreground" />
+   837→   837→                  <span>{employee.phone}</span>
+   838→   838→                </div>
+   839→   839→              )}
+   840→   840→              {employee.department && (
+   841→   841→                <div className="flex items-center gap-2 text-sm">
+   842→   842→                  <Briefcase className="size-4 text-muted-foreground" />
+   843→   843→                  <span>{employee.department}</span>
+   844→   844→                </div>
+   845→   845→              )}
+   846→   846→            </div>
+   847→   847→            <div className="space-y-3">
+   848→   848→              {employee.branch && (
+   849→   849→                <div className="flex items-center gap-2 text-sm">
+   850→   850→                  <Building2 className="size-4 text-muted-foreground" />
+   851→   851→                  <span>{employee.branch.name}</span>
+   852→   852→                </div>
+   853→   853→              )}
+   854→   854→              {employee.hireDate && (
+   855→   855→                <div className="flex items-center gap-2 text-sm">
+   856→   856→                  <Calendar className="size-4 text-muted-foreground" />
+   857→   857→                  <span>Hired {new Date(employee.hireDate).toLocaleDateString()}</span>
+   858→   858→                </div>
+   859→   859→              )}
+   860→   860→              <Badge
+   861→   861→                className={
+   862→   862→                  employee.isActive
+   863→   863→                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+   864→   864→                    : 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+   865→   865→                }
+   866→   866→              >
+   867→   867→                {employee.isActive ? 'Active' : 'Inactive'}
+   868→   868→              </Badge>
+   869→   869→            </div>
+   870→   870→          </div>
+   871→   871→
+   872→   872→          <Separator />
+   873→   873→
+   874→   874→          <div className="grid grid-cols-2 gap-3">
+   875→   875→            <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+   876→   876→              <p className="text-xs text-muted-foreground">Monthly Salary</p>
+   877→   877→              <p className="text-xl font-bold text-emerald-600">${employee.salary.toLocaleString()}</p>
+   878→   878→            </div>
+   879→   879→            <div className="p-3 rounded-lg border">
+   880→   880→              <p className="text-xs text-muted-foreground">Sales Recorded</p>
+   881→   881→              <p className="text-xl font-bold">{employee._count?.sales || 0}</p>
+   882→   882→            </div>
+   883→   883→          </div>
+   884→   884→
+   885→   885→          <div>
+   886→   886→            <h4 className="text-sm font-semibold mb-2">Activity</h4>
+   887→   887→            <div className="flex gap-2">
+   888→   888→              <div className="flex items-center gap-1.5 p-2 rounded border text-xs">
+   889→   889→                <Calendar className="size-3 text-muted-foreground" />
+   890→   890→                Attendance Records: {employee._count?.attendance || 0}
+   891→   891→              </div>
+   892→   892→              <div className="flex items-center gap-1.5 p-2 rounded border text-xs">
+   893→   893→                <DollarSign className="size-3 text-muted-foreground" />
+   894→   894→                Sales Processed: {employee._count?.sales || 0}
+   895→   895→              </div>
+   896→   896→            </div>
+   897→   897→          </div>
+   898→   898→        </div>
+   899→   899→      </DialogContent>
+   900→   900→    </Dialog>
+   901→   901→  )
+   902→   902→}
+   903→   903→
