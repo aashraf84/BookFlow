@@ -1,0 +1,695 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import { useTheme } from 'next-themes'
+     5→import { motion, AnimatePresence } from 'framer-motion'
+     6→import {
+     7→  Lock,
+     8→  Key,
+     9→  ArrowRight,
+    10→  Eye,
+    11→  EyeOff,
+    12→  BookOpen,
+    13→  Wifi,
+    14→  Battery,
+    15→  BatteryCharging,
+    16→  Accessibility,
+    17→  Power,
+    18→  Monitor,
+    19→  Sparkles,
+    20→  Shield,
+    21→  User,
+    22→  ChevronUp,
+    23→} from 'lucide-react'
+    24→import { Input } from '@/components/ui/input'
+    25→import { useAppStore } from '@/store/app-store'
+    26→
+    27→// ─── macOS 27 Lock Screen Clock ────────────────────────────────
+    28→function LockScreenClock() {
+    29→  const [time, setTime] = React.useState<Date | null>(null)
+    30→
+    31→  React.useEffect(() => {
+    32→    setTime(new Date())
+    33→    const timer = setInterval(() => setTime(new Date()), 1000)
+    34→    return () => clearInterval(timer)
+    35→  }, [])
+    36→
+    37→  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    38→  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    39→
+    40→  // Don't render until client-side hydration is complete
+    41→  if (!time) {
+    42→    return (
+    43→      <div className="text-center select-none">
+    44→        <div className="text-[96px] sm:text-[108px] font-extralight tracking-[-0.02em] leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+    45→          &ndash;&ndash;:&ndash;&ndash;
+    46→        </div>
+    47→        <div className="text-[20px] sm:text-[22px] font-light text-white/80 mt-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)] tracking-wide">
+    48→          &nbsp;
+    49→        </div>
+    50→      </div>
+    51→    )
+    52→  }
+    53→
+    54→  const hours = time.getHours()
+    55→  const minutes = time.getMinutes().toString().padStart(2, '0')
+    56→  const displayHours = hours % 12 || 12
+    57→
+    58→  return (
+    59→    <div className="text-center select-none">
+    60→      <div className="text-[96px] sm:text-[108px] font-extralight tracking-[-0.02em] leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+    61→        {displayHours}:{minutes}
+    62→      </div>
+    63→      <div className="text-[20px] sm:text-[22px] font-light text-white/80 mt-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)] tracking-wide">
+    64→        {days[time.getDay()]}, {months[time.getMonth()]} {time.getDate()}
+    65→      </div>
+    66→    </div>
+    67→  )
+    68→}
+    69→
+    70→// ─── Star Field (client-side only to avoid hydration mismatch) ──
+    71→function StarField() {
+    72→  const [stars, setStars] = React.useState<Array<{
+    73→    w: number; h: number; top: number; left: number;
+    74→    opacity: number; duration: number; delay: number;
+    75→  }>>([])
+    76→
+    77→  React.useEffect(() => {
+    78→    // Use a seeded approach via index to stay deterministic per render cycle,
+    79→    // but only compute on the client to avoid SSR/client mismatch
+    80→    const generated = Array.from({ length: 80 }, (_, i) => {
+    81→      // Simple seeded pseudo-random based on index
+    82→      const seed = (i * 2654435761) >>> 0
+    83→      const rand = (offset: number) => ((seed + offset) % 10000) / 10000
+    84→      return {
+    85→        w: rand(0) * 2 + 0.5,
+    86→        h: rand(1000) * 2 + 0.5,
+    87→        top: rand(2000) * 45,
+    88→        left: rand(3000) * 100,
+    89→        opacity: rand(4000) * 0.5 + 0.15,
+    90→        duration: rand(5000) * 4 + 2,
+    91→        delay: rand(6000) * 3,
+    92→      }
+    93→    })
+    94→    setStars(generated)
+    95→  }, [])
+    96→
+    97→  return (
+    98→    <div className="absolute inset-0">
+    99→      {stars.map((s, i) => (
+   100→        <div
+   101→          key={i}
+   102→          className="absolute rounded-full bg-white"
+   103→          style={{
+   104→            width: `${s.w}px`,
+   105→            height: `${s.h}px`,
+   106→            top: `${s.top}%`,
+   107→            left: `${s.left}%`,
+   108→            opacity: s.opacity,
+   109→            animation: `twinkle ${s.duration}s ease-in-out ${s.delay}s infinite alternate`,
+   110→          }}
+   111→        />
+   112→      ))}
+   113→    </div>
+   114→  )
+   115→}
+   116→
+   117→// ─── Golden Gate Wallpaper ─────────────────────────────────────
+   118→function GoldenGateWallpaper() {
+   119→  const { resolvedTheme } = useTheme()
+   120→  const [mounted, setMounted] = React.useState(false)
+   121→  React.useEffect(() => setMounted(true), [])
+   122→
+   123→  const isDark = mounted && resolvedTheme === 'dark'
+   124→
+   125→  return (
+   126→    <div className="absolute inset-0 overflow-hidden">
+   127→      {/* Sky gradient - Golden Gate sunset */}
+   128→      <div className="absolute inset-0 bg-gradient-to-b from-[#1a0533] via-[#2d1569] to-[#0f0c29]" />
+   129→
+   130→      {/* Warm horizon glow */}
+   131→      <div className="absolute bottom-[20%] left-0 right-0 h-[30%] bg-gradient-to-t from-[#FF6B35]/15 via-[#FF9500]/8 to-transparent" />
+   132→
+   133→      {/* Fog layers */}
+   134→      <div className="absolute inset-0 bg-gradient-to-t from-white/3 via-transparent to-transparent" />
+   135→
+   136→      {/* Golden Gate Bridge silhouette - CSS art */}
+   137→      <div className="absolute bottom-0 left-0 right-0 h-[45%]">
+   138→        {/* Water */}
+   139→        <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-b from-[#1a2744]/70 to-[#0d1926]/90" />
+   140→
+   141→        {/* Water reflections — deterministic values to avoid hydration mismatch */}
+   142→        <div className="absolute bottom-0 left-0 right-0 h-[15%]">
+   143→          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF6B35]/5 to-transparent" />
+   144→          {[7.2, 10.5, 5.8, 12.1, 6.4, 9.3, 8.7, 11.2].map((w, i) => (
+   145→            <div
+   146→              key={i}
+   147→              className="absolute bottom-0 h-[1px] bg-white/5"
+   148→              style={{
+   149→                left: `${10 + i * 10}%`,
+   150→                width: `${w}%`,
+   151→                opacity: [0.35, 0.42, 0.38, 0.55, 0.31, 0.48, 0.36, 0.52][i],
+   152→              }}
+   153→            />
+   154→          ))}
+   155→        </div>
+   156→
+   157→        {/* Fog over water */}
+   158→        <div className="absolute bottom-[20%] left-0 right-0 h-[25%] bg-gradient-to-t from-[#2d1b69]/20 via-[#4a2c8a]/8 to-transparent" />
+   159→
+   160→        {/* Bridge deck */}
+   161→        <div className="absolute bottom-[38%] left-0 right-0 h-[3px] bg-[#c0392b]/80" />
+   162→
+   163→        {/* Left tower */}
+   164→        <div className="absolute bottom-[25%] left-[22%] w-[6px] h-[28%] bg-[#c0392b]/90 rounded-t-sm">
+   165→          <div className="absolute -top-[4px] -left-[2px] w-[10px] h-[4px] bg-[#c0392b]/90 rounded-t" />
+   166→        </div>
+   167→
+   168→        {/* Right tower */}
+   169→        <div className="absolute bottom-[25%] right-[22%] w-[6px] h-[28%] bg-[#c0392b]/90 rounded-t-sm">
+   170→          <div className="absolute -top-[4px] -left-[2px] w-[10px] h-[4px] bg-[#c0392b]/90 rounded-t" />
+   171→        </div>
+   172→
+   173→        {/* Suspension cables */}
+   174→        <svg className="absolute bottom-[38%] left-0 right-0 h-[30%]" viewBox="0 0 1000 200" preserveAspectRatio="none">
+   175→          <path d="M 0 200 Q 220 0, 220 0" stroke="#c0392b" strokeWidth="1.5" fill="none" opacity="0.6" />
+   176→          <path d="M 220 0 Q 500 180, 780 0" stroke="#c0392b" strokeWidth="2" fill="none" opacity="0.7" />
+   177→          <path d="M 780 0 Q 780 0, 1000 200" stroke="#c0392b" strokeWidth="1.5" fill="none" opacity="0.6" />
+   178→          {Array.from({ length: 20 }, (_, i) => {
+   179→            const x = 50 + i * 45
+   180→            let y
+   181→            if (x < 220) {
+   182→              y = 200 - (200 * (x / 220))
+   183→            } else if (x < 780) {
+   184→              const mid = (x - 220) / (780 - 220)
+   185→              y = 200 - (200 * (1 - 4 * (mid - 0.5) * (mid - 0.5)))
+   186→              y = Math.min(y, 200)
+   187→            } else {
+   188→              y = 200 - (200 * ((1000 - x) / 220))
+   189→            }
+   190→            return (
+   191→              <line key={i} x1={x} y1={y} x2={x} y2={200} stroke="#c0392b" strokeWidth="0.5" opacity="0.35" />
+   192→            )
+   193→          })}
+   194→        </svg>
+   195→      </div>
+   196→
+   197→      {/* Stars — generated client-side only to avoid hydration mismatch */}
+   198→      {isDark && <StarField />}
+   199→
+   200→      {/* Ambient light overlays */}
+   201→      <div className="absolute inset-0 bg-gradient-to-br from-[#FF9500]/5 via-transparent to-[#AF52DE]/5" />
+   202→
+   203→      {isDark && <div className="absolute inset-0 bg-black/30" />}
+   204→
+   205→      {/* Blur overlay for lock screen depth */}
+   206→      <div className="absolute inset-0 backdrop-blur-[1px]" />
+   207→
+   208→      {/* Vignette */}
+   209→      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.5)_100%)]" />
+   210→
+   211→      {/* Subtle grain texture */}
+   212→      <div className="absolute inset-0 opacity-[0.02]" style={{
+   213→        backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")',
+   214→      }} />
+   215→    </div>
+   216→  )
+   217→}
+   218→
+   219→// ─── Bottom Status Bar (macOS lock screen style) ───────────────
+   220→function LockScreenStatusBar() {
+   221→  const { resolvedTheme, setTheme } = useTheme()
+   222→  const [mounted, setMounted] = React.useState(false)
+   223→  React.useEffect(() => setMounted(true), [])
+   224→
+   225→  const isDark = mounted && resolvedTheme === 'dark'
+   226→
+   227→  return (
+   228→    <div className="absolute bottom-0 left-0 right-0 z-50 flex items-center justify-between h-[32px] px-5 bg-black/10 backdrop-blur-md">
+   229→      <div className="flex items-center gap-3">
+   230→        <Wifi className="size-3.5 text-white/50" strokeWidth={2} />
+   231→        <Battery className="size-4 text-white/50" strokeWidth={2} />
+   232→      </div>
+   233→      <div className="flex items-center gap-3">
+   234→        {mounted && (
+   235→          <button
+   236→            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+   237→            className="text-[12px] text-white/50 hover:text-white/80 transition-colors"
+   238→          >
+   239→            {isDark ? '☀️' : '🌙'}
+   240→          </button>
+   241→        )}
+   242→        <Accessibility className="size-3.5 text-white/50 hover:text-white/70 cursor-pointer transition-colors" strokeWidth={2} />
+   243→        <Power className="size-3.5 text-white/50 hover:text-white/70 cursor-pointer transition-colors" strokeWidth={2} />
+   244→      </div>
+   245→    </div>
+   246→  )
+   247→}
+   248→
+   249→// ─── Login Stage Types ────────────────────────────────────────
+   250→type LoginStage = 'initial' | 'serial-key' | 'login' | 'loading'
+   251→
+   252→// ─── Login Gate Component (macOS 27 Lock Screen) ──────────────
+   253→export function LoginGate() {
+   254→  const { setAuth, setDeviceActivated } = useAppStore()
+   255→  const [stage, setStage] = React.useState<LoginStage>('initial')
+   256→  const [serialKey, setSerialKey] = React.useState('')
+   257→  const [email, setEmail] = React.useState('')
+   258→  const [password, setPassword] = React.useState('')
+   259→  const [showPassword, setShowPassword] = React.useState(false)
+   260→  const [error, setError] = React.useState('')
+   261→  const [isActivating, setIsActivating] = React.useState(false)
+   262→  const [isLoggingIn, setIsLoggingIn] = React.useState(false)
+   263→
+   264→  // Check if device is already activated
+   265→  React.useEffect(() => {
+   266→    const activated = localStorage.getItem('bf_device_activated')
+   267→    if (activated === 'true') {
+   268→      setDeviceActivated(true)
+   269→      setStage('login')
+   270→    }
+   271→  }, [setDeviceActivated])
+   272→
+   273→  // Check if already authenticated
+   274→  React.useEffect(() => {
+   275→    const token = localStorage.getItem('bf_auth_token')
+   276→    const userStr = localStorage.getItem('bf_auth_user')
+   277→    if (token && userStr) {
+   278→      try {
+   279→        const user = JSON.parse(userStr)
+   280→        fetch('/api/auth/verify', {
+   281→          headers: { Authorization: `Bearer ${token}` },
+   282→        })
+   283→          .then(res => res.json())
+   284→          .then(data => {
+   285→            if (data.success) {
+   286→              setAuth(data.user, token)
+   287→            } else {
+   288→              localStorage.removeItem('bf_auth_token')
+   289→              localStorage.removeItem('bf_auth_user')
+   290→            }
+   291→          })
+   292→          .catch(() => {
+   293→            localStorage.removeItem('bf_auth_token')
+   294→            localStorage.removeItem('bf_auth_user')
+   295→          })
+   296→      } catch {
+   297→        localStorage.removeItem('bf_auth_token')
+   298→        localStorage.removeItem('bf_auth_user')
+   299→      }
+   300→    }
+   301→  }, [setAuth])
+   302→
+   303→  const handleActivate = async () => {
+   304→    if (!serialKey.trim()) {
+   305→      setError('Please enter a serial key')
+   306→      return
+   307→    }
+   308→    setIsActivating(true)
+   309→    setError('')
+   310→    try {
+   311→      const res = await fetch('/api/auth/activate', {
+   312→        method: 'POST',
+   313→        headers: { 'Content-Type': 'application/json' },
+   314→        body: JSON.stringify({ key: serialKey.trim() }),
+   315→      })
+   316→      const data = await res.json()
+   317→      if (data.success) {
+   318→        localStorage.setItem('bf_device_activated', 'true')
+   319→        setDeviceActivated(true)
+   320→        setStage('login')
+   321→      } else {
+   322→        setError(data.error || 'Invalid serial key')
+   323→      }
+   324→    } catch {
+   325→      setError('Failed to activate. Please try again.')
+   326→    } finally {
+   327→      setIsActivating(false)
+   328→    }
+   329→  }
+   330→
+   331→  const handleLogin = async () => {
+   332→    if (!email.trim() || !password.trim()) {
+   333→      setError('Please enter email and password')
+   334→      return
+   335→    }
+   336→    setIsLoggingIn(true)
+   337→    setError('')
+   338→    try {
+   339→      const res = await fetch('/api/auth/login', {
+   340→        method: 'POST',
+   341→        headers: { 'Content-Type': 'application/json' },
+   342→        body: JSON.stringify({ email: email.trim(), password }),
+   343→      })
+   344→      const data = await res.json()
+   345→      if (data.success) {
+   346→        localStorage.setItem('bf_auth_token', data.token)
+   347→        localStorage.setItem('bf_auth_user', JSON.stringify(data.user))
+   348→        setAuth(data.user, data.token)
+   349→      } else {
+   350→        setError(data.error || 'Invalid credentials')
+   351→      }
+   352→    } catch {
+   353→      setError('Login failed. Please try again.')
+   354→    } finally {
+   355→      setIsLoggingIn(false)
+   356→    }
+   357→  }
+   358→
+   359→  const handleDemoLogin = async () => {
+   360→    setIsLoggingIn(true)
+   361→    setError('')
+   362→    try {
+   363→      const res = await fetch('/api/auth/demo', {
+   364→        method: 'POST',
+   365→        headers: { 'Content-Type': 'application/json' },
+   366→      })
+   367→      const data = await res.json()
+   368→      if (data.success) {
+   369→        localStorage.setItem('bf_auth_token', data.token)
+   370→        localStorage.setItem('bf_auth_user', JSON.stringify(data.user))
+   371→        localStorage.setItem('bf_device_activated', 'true')
+   372→        setDeviceActivated(true)
+   373→        setAuth(data.user, data.token)
+   374→      } else {
+   375→        setError(data.error || 'Demo login failed')
+   376→      }
+   377→    } catch {
+   378→      setError('Demo login failed. Please try again.')
+   379→    } finally {
+   380→      setIsLoggingIn(false)
+   381→    }
+   382→  }
+   383→
+   384→  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+   385→    if (e.key === 'Enter') action()
+   386→  }
+   387→
+   388→  return (
+   389→    <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden select-none cursor-default">
+   390→      <GoldenGateWallpaper />
+   391→
+   392→      {/* Bottom Status Bar */}
+   393→      <LockScreenStatusBar />
+   394→
+   395→      {/* ─── Main Content ──────────────────────────────────────── */}
+   396→      <div className="relative z-10 flex flex-col items-center w-full">
+   397→
+   398→        {/* ─── INITIAL STATE: Lock Screen ─────────────────────── */}
+   399→        <AnimatePresence mode="wait">
+   400→          {stage === 'initial' && (
+   401→            <motion.div
+   402→              key="lock-initial"
+   403→              initial={{ opacity: 0, y: 20 }}
+   404→              animate={{ opacity: 1, y: 0 }}
+   405→              exit={{ opacity: 0, y: -40, scale: 0.95 }}
+   406→              transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+   407→              className="flex flex-col items-center"
+   408→            >
+   409→              {/* Large Clock */}
+   410→              <div className="mb-12 sm:mb-16">
+   411→                <LockScreenClock />
+   412→              </div>
+   413→
+   414→              {/* User Avatar */}
+   415→              <motion.button
+   416→                onClick={() => setStage('serial-key')}
+   417→                className="group flex flex-col items-center gap-3"
+   418→                whileHover={{ scale: 1.03 }}
+   419→                whileTap={{ scale: 0.97 }}
+   420→              >
+   421→                <div className="w-[80px] h-[80px] sm:w-[96px] sm:h-[96px] rounded-full bg-white/[0.08] backdrop-blur-2xl border-[0.5px] border-white/[0.15] flex items-center justify-center shadow-[0_8px_40px_rgba(0,0,0,0.3)] group-hover:bg-white/[0.12] group-hover:border-white/[0.25] transition-all duration-300">
+   422→                  <User className="size-9 sm:size-10 text-white/70 group-hover:text-white/90 transition-colors duration-300" strokeWidth={1.3} />
+   423→                </div>
+   424→                <div className="text-center">
+   425→                  <p className="text-[17px] sm:text-[19px] font-semibold text-white/90 group-hover:text-white transition-colors drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)]">
+   426→                    BookFlow OS
+   427→                  </p>
+   428→                  <div className="flex items-center justify-center gap-1 mt-1">
+   429→                    <ChevronUp className="size-3 text-white/40 group-hover:text-white/60 transition-colors animate-bounce" strokeWidth={2} />
+   430→                    <p className="text-[12px] text-white/40 group-hover:text-white/60 transition-colors">Click to unlock</p>
+   431→                  </div>
+   432→                </div>
+   433→              </motion.button>
+   434→            </motion.div>
+   435→          )}
+   436→
+   437→          {/* ─── SERIAL KEY STATE ──────────────────────────────── */}
+   438→          {stage === 'serial-key' && (
+   439→            <motion.div
+   440→              key="serial-key"
+   441→              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+   442→              animate={{ opacity: 1, y: 0, scale: 1 }}
+   443→              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+   444→              transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+   445→              className="flex flex-col items-center w-full max-w-[380px] px-6"
+   446→            >
+   447→              {/* User Avatar (smaller) */}
+   448→              <div className="w-[64px] h-[64px] rounded-full bg-white/[0.08] backdrop-blur-2xl border-[0.5px] border-white/[0.15] flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.3)] mb-3">
+   449→                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#FF9500]/20">
+   450→                  <Key className="size-4 text-[#FF9500]" strokeWidth={2} />
+   451→                </div>
+   452→              </div>
+   453→
+   454→              {/* Title */}
+   455→              <h2 className="text-[17px] font-semibold text-white/90 mb-0.5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
+   456→                Activate Your Device
+   457→              </h2>
+   458→              <p className="text-[13px] text-white/50 mb-5">
+   459→                Enter your serial key to continue
+   460→              </p>
+   461→
+   462→              {/* Serial Key Input - macOS pill style */}
+   463→              <div className="w-full space-y-3">
+   464→                <div className="relative">
+   465→                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/30" strokeWidth={2} />
+   466→                  <input
+   467→                    type="text"
+   468→                    placeholder="BF-XXX-2027-XXXX"
+   469→                    value={serialKey}
+   470→                    onChange={(e) => { setSerialKey(e.target.value.toUpperCase()); setError('') }}
+   471→                    onKeyDown={(e) => handleKeyDown(e, handleActivate)}
+   472→                    disabled={isActivating}
+   473→                    className="w-full h-12 pl-10 pr-4 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-white/[0.12] text-white/90 placeholder:text-white/25 text-[15px] font-medium tracking-wide outline-none focus:border-white/[0.25] focus:bg-white/[0.12] focus:ring-2 focus:ring-white/[0.08] transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+   474→                    autoFocus
+   475→                  />
+   476→                </div>
+   477→
+   478→                {error && (
+   479→                  <motion.p
+   480→                    initial={{ opacity: 0, y: -5 }}
+   481→                    animate={{ opacity: 1, y: 0 }}
+   482→                    className="text-[12px] text-[#FF453A] text-center flex items-center justify-center gap-1.5"
+   483→                  >
+   484→                    <span className="size-1.5 rounded-full bg-[#FF453A]" />
+   485→                    {error}
+   486→                  </motion.p>
+   487→                )}
+   488→
+   489→                {/* Activate Button - macOS pill */}
+   490→                <button
+   491→                  onClick={handleActivate}
+   492→                  disabled={isActivating || !serialKey.trim()}
+   493→                  className="w-full h-12 rounded-full bg-white/[0.15] backdrop-blur-xl border-[0.5px] border-white/[0.12] text-white/90 text-[15px] font-semibold tracking-tight shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:bg-white/[0.2] hover:border-white/[0.2] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+   494→                >
+   495→                  {isActivating ? (
+   496→                    <motion.div
+   497→                      animate={{ rotate: 360 }}
+   498→                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+   499→                      className="size-4 border-2 border-white/30 border-t-white rounded-full"
+   500→                    />
+   501→                  ) : (
+   502→                    <>
+   503→                      Activate
+   504→                      <ArrowRight className="size-4" strokeWidth={2} />
+   505→                    </>
+   506→                  )}
+   507→                </button>
+   508→
+   509→                {/* Separator */}
+   510→                <div className="relative py-2">
+   511→                  <div className="absolute inset-0 flex items-center">
+   512→                    <div className="w-full border-t border-white/[0.06]" />
+   513→                  </div>
+   514→                  <div className="relative flex justify-center">
+   515→                    <span className="px-3 text-[11px] text-white/25">or explore</span>
+   516→                  </div>
+   517→                </div>
+   518→
+   519→                {/* Demo Login - macOS secondary style */}
+   520→                <button
+   521→                  onClick={handleDemoLogin}
+   522→                  disabled={isLoggingIn}
+   523→                  className="w-full h-12 rounded-full bg-white/[0.04] border-[0.5px] border-white/[0.06] text-white/60 hover:text-white/80 hover:bg-white/[0.08] hover:border-white/[0.12] text-[15px] font-medium tracking-tight transition-all duration-200 flex items-center justify-center gap-2.5"
+   524→                >
+   525→                  {isLoggingIn ? (
+   526→                    <motion.div
+   527→                      animate={{ rotate: 360 }}
+   528→                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+   529→                      className="size-4 border-2 border-white/20 border-t-white/60 rounded-full"
+   530→                    />
+   531→                  ) : (
+   532→                    <>
+   533→                      <Sparkles className="size-4 text-[#BF5AF2]" strokeWidth={2} />
+   534→                      <span>Try Demo</span>
+   535→                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#BF5AF2]/20 text-[#BF5AF2]/90 font-bold uppercase tracking-wider">View Only</span>
+   536→                    </>
+   537→                  )}
+   538→                </button>
+   539→              </div>
+   540→            </motion.div>
+   541→          )}
+   542→
+   543→          {/* ─── LOGIN STATE ───────────────────────────────────── */}
+   544→          {stage === 'login' && (
+   545→            <motion.div
+   546→              key="login"
+   547→              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+   548→              animate={{ opacity: 1, y: 0, scale: 1 }}
+   549→              exit={{ opacity: 0, y: -30, scale: 0.95 }}
+   550→              transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+   551→              className="flex flex-col items-center w-full max-w-[380px] px-6"
+   552→            >
+   553→              {/* User Avatar */}
+   554→              <div className="w-[72px] h-[72px] rounded-full bg-white/[0.08] backdrop-blur-2xl border-[0.5px] border-white/[0.15] flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.3)] mb-3">
+   555→                <User className="size-8 text-white/70" strokeWidth={1.3} />
+   556→              </div>
+   557→
+   558→              {/* User Name */}
+   559→              <h2 className="text-[17px] font-semibold text-white/90 mb-0.5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
+   560→                Sign In
+   561→              </h2>
+   562→              <p className="text-[13px] text-white/50 mb-5">
+   563→                Enter your credentials to continue
+   564→              </p>
+   565→
+   566→              {/* Login Fields */}
+   567→              <div className="w-full space-y-3">
+   568→                {/* Email Field - macOS pill */}
+   569→                <div className="relative">
+   570→                  <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/25" strokeWidth={2} />
+   571→                  <input
+   572→                    type="email"
+   573→                    placeholder="Email address"
+   574→                    value={email}
+   575→                    onChange={(e) => { setEmail(e.target.value); setError('') }}
+   576→                    onKeyDown={(e) => handleKeyDown(e, handleLogin)}
+   577→                    disabled={isLoggingIn}
+   578→                    className="w-full h-12 pl-10 pr-4 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-white/[0.12] text-white/90 placeholder:text-white/25 text-[15px] font-medium outline-none focus:border-white/[0.25] focus:bg-white/[0.12] focus:ring-2 focus:ring-white/[0.08] transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+   579→                    autoFocus
+   580→                  />
+   581→                </div>
+   582→
+   583→                {/* Password Field - macOS pill */}
+   584→                <div className="relative">
+   585→                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/25" strokeWidth={2} />
+   586→                  <input
+   587→                    type={showPassword ? 'text' : 'password'}
+   588→                    placeholder="Password"
+   589→                    value={password}
+   590→                    onChange={(e) => { setPassword(e.target.value); setError('') }}
+   591→                    onKeyDown={(e) => handleKeyDown(e, handleLogin)}
+   592→                    disabled={isLoggingIn}
+   593→                    className="w-full h-12 pl-10 pr-12 rounded-full bg-white/[0.08] backdrop-blur-xl border-[0.5px] border-white/[0.12] text-white/90 placeholder:text-white/25 text-[15px] font-medium outline-none focus:border-white/[0.25] focus:bg-white/[0.12] focus:ring-2 focus:ring-white/[0.08] transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+   594→                  />
+   595→                  <button
+   596→                    type="button"
+   597→                    onClick={() => setShowPassword(!showPassword)}
+   598→                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors"
+   599→                  >
+   600→                    {showPassword ? <EyeOff className="size-4" strokeWidth={2} /> : <Eye className="size-4" strokeWidth={2} />}
+   601→                  </button>
+   602→                </div>
+   603→
+   604→                {error && (
+   605→                  <motion.p
+   606→                    initial={{ opacity: 0, y: -5 }}
+   607→                    animate={{ opacity: 1, y: 0 }}
+   608→                    className="text-[12px] text-[#FF453A] text-center flex items-center justify-center gap-1.5"
+   609→                  >
+   610→                    <span className="size-1.5 rounded-full bg-[#FF453A]" />
+   611→                    {error}
+   612→                  </motion.p>
+   613→                )}
+   614→
+   615→                {/* Sign In Button - macOS pill */}
+   616→                <button
+   617→                  onClick={handleLogin}
+   618→                  disabled={isLoggingIn || !email.trim() || !password.trim()}
+   619→                  className="w-full h-12 rounded-full bg-white/[0.15] backdrop-blur-xl border-[0.5px] border-white/[0.12] text-white/90 text-[15px] font-semibold tracking-tight shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:bg-white/[0.2] hover:border-white/[0.2] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+   620→                >
+   621→                  {isLoggingIn ? (
+   622→                    <motion.div
+   623→                      animate={{ rotate: 360 }}
+   624→                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+   625→                      className="size-4 border-2 border-white/30 border-t-white rounded-full"
+   626→                    />
+   627→                  ) : (
+   628→                    <>
+   629→                      Sign In
+   630→                      <ArrowRight className="size-4" strokeWidth={2} />
+   631→                    </>
+   632→                  )}
+   633→                </button>
+   634→
+   635→                {/* Separator */}
+   636→                <div className="relative py-2">
+   637→                  <div className="absolute inset-0 flex items-center">
+   638→                    <div className="w-full border-t border-white/[0.06]" />
+   639→                  </div>
+   640→                  <div className="relative flex justify-center">
+   641→                    <span className="px-3 text-[11px] text-white/25">or</span>
+   642→                  </div>
+   643→                </div>
+   644→
+   645→                {/* Demo Login */}
+   646→                <button
+   647→                  onClick={handleDemoLogin}
+   648→                  disabled={isLoggingIn}
+   649→                  className="w-full h-12 rounded-full bg-white/[0.04] border-[0.5px] border-white/[0.06] text-white/60 hover:text-white/80 hover:bg-white/[0.08] hover:border-white/[0.12] text-[15px] font-medium tracking-tight transition-all duration-200 flex items-center justify-center gap-2.5"
+   650→                >
+   651→                  {isLoggingIn ? (
+   652→                    <motion.div
+   653→                      animate={{ rotate: 360 }}
+   654→                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+   655→                      className="size-4 border-2 border-white/20 border-t-white/60 rounded-full"
+   656→                    />
+   657→                  ) : (
+   658→                    <>
+   659→                      <Sparkles className="size-4 text-[#BF5AF2]" strokeWidth={2} />
+   660→                      <span>Try Demo</span>
+   661→                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#BF5AF2]/20 text-[#BF5AF2]/90 font-bold uppercase tracking-wider">View Only</span>
+   662→                    </>
+   663→                  )}
+   664→                </button>
+   665→              </div>
+   666→            </motion.div>
+   667→          )}
+   668→        </AnimatePresence>
+   669→
+   670→        {/* Footer branding */}
+   671→        <motion.div
+   672→          initial={{ opacity: 0 }}
+   673→          animate={{ opacity: 1 }}
+   674→          transition={{ delay: 1, duration: 0.8 }}
+   675→          className="absolute bottom-10 left-0 right-0 flex flex-col items-center"
+   676→        >
+   677→          <div className="flex items-center gap-1.5 mb-1">
+   678→            <BookOpen className="size-3 text-white/25" strokeWidth={2} />
+   679→            <span className="text-[11px] text-white/30 font-medium tracking-wide">ApexFlow Ecosystem</span>
+   680→          </div>
+   681→          <p className="text-[10px] text-white/20">BookFlow OS v27.0 · Golden Gate · Retina</p>
+   682→        </motion.div>
+   683→      </div>
+   684→
+   685→      {/* CSS Animation for stars */}
+   686→      <style jsx>{`
+   687→        @keyframes twinkle {
+   688→          from { opacity: 0.15; }
+   689→          to { opacity: 0.6; }
+   690→        }
+   691→      `}</style>
+   692→    </div>
+   693→  )
+   694→}
+   695→
