@@ -9,15 +9,15 @@ export async function POST(request: NextRequest) {
 
     if (!email || typeof email !== 'string') {
       return NextResponse.json(
-        { success: false, message: 'Email is required' },
-        { status: 400 }
+        { success: false, error: 'Email is required' },
+        { status: 200 }
       )
     }
 
     if (!password || typeof password !== 'string') {
       return NextResponse.json(
-        { success: false, message: 'Password is required' },
-        { status: 400 }
+        { success: false, error: 'Password is required' },
+        { status: 200 }
       )
     }
 
@@ -27,23 +27,23 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { success: false, message: 'Invalid email or password' },
-        { status: 401 }
+        { success: false, error: 'Invalid email or password' },
+        { status: 200 }
       )
     }
 
     // Simple string comparison (no hashing)
     if (user.password !== password) {
       return NextResponse.json(
-        { success: false, message: 'Invalid email or password' },
-        { status: 401 }
+        { success: false, error: 'Invalid email or password' },
+        { status: 200 }
       )
     }
 
     if (!user.isActive) {
       return NextResponse.json(
-        { success: false, message: 'Account is deactivated' },
-        { status: 403 }
+        { success: false, error: 'Account is deactivated' },
+        { status: 200 }
       )
     }
 
@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: 'Login failed. Please try again.' },
+      { status: 200 }
     )
   }
 }

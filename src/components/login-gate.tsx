@@ -209,7 +209,7 @@ export function LoginGate() {
         // Auto-transition to login after success animation
         setTimeout(() => setStage('login'), 1500)
       } else {
-        setError(data.error || 'Invalid serial key')
+        setError(data.error || data.message || 'Invalid serial key')
       }
     } catch {
       setError('Failed to activate. Please try again.')
@@ -237,7 +237,7 @@ export function LoginGate() {
         localStorage.setItem('bf_auth_user', JSON.stringify(data.user))
         setAuth(data.user, data.token)
       } else {
-        setError(data.error || 'Invalid credentials')
+        setError(data.error || data.message || 'Invalid credentials')
       }
     } catch {
       setError('Login failed. Please try again.')
@@ -262,7 +262,7 @@ export function LoginGate() {
         setDeviceActivated(true)
         setAuth(data.user, data.token)
       } else {
-        setError(data.error || 'Demo login failed')
+        setError(data.error || data.message || 'Demo login failed')
       }
     } catch {
       setError('Demo login failed. Please try again.')

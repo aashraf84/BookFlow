@@ -51,8 +51,8 @@ export async function POST() {
   } catch (error) {
     console.error('Demo login error:', error)
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: 'Demo login failed. Please try again.' },
+      { status: 200 }
     )
   }
 }

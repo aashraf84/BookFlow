@@ -19,22 +19,22 @@ export async function POST(request: NextRequest) {
 
     if (!serialKey) {
       return NextResponse.json(
-        { success: false, message: 'Invalid serial key' },
-        { status: 404 }
+        { success: false, error: 'Invalid serial key' },
+        { status: 200 }
       )
     }
 
     if (!serialKey.isActive) {
       return NextResponse.json(
-        { success: false, message: 'This serial key has been deactivated' },
-        { status: 403 }
+        { success: false, error: 'This serial key has been deactivated' },
+        { status: 200 }
       )
     }
 
     if (serialKey.expiresAt && new Date() > serialKey.expiresAt) {
       return NextResponse.json(
-        { success: false, message: 'This serial key has expired' },
-        { status: 403 }
+        { success: false, error: 'This serial key has expired' },
+        { status: 200 }
       )
     }
 
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Activation error:', error)
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: 'Failed to activate. Please try again.' },
+      { status: 200 }
     )
   }
 }
