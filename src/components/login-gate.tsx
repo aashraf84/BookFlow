@@ -26,19 +26,34 @@ import { useAppStore } from '@/store/app-store'
 
 // ─── macOS 27 Lock Screen Clock ────────────────────────────────
 function LockScreenClock() {
-  const [time, setTime] = React.useState(new Date())
+  const [time, setTime] = React.useState<Date | null>(null)
 
   React.useEffect(() => {
+    setTime(new Date())
     const timer = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
 
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+  // Don't render until client-side hydration is complete
+  if (!time) {
+    return (
+      <div className="text-center select-none">
+        <div className="text-[96px] sm:text-[108px] font-extralight tracking-[-0.02em] leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+          &ndash;&ndash;:&ndash;&ndash;
+        </div>
+        <div className="text-[20px] sm:text-[22px] font-light text-white/80 mt-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)] tracking-wide">
+          &nbsp;
+        </div>
+      </div>
+    )
+  }
+
   const hours = time.getHours()
   const minutes = time.getMinutes().toString().padStart(2, '0')
   const displayHours = hours % 12 || 12
-
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
   return (
     <div className="text-center select-none">
@@ -48,6 +63,53 @@ function LockScreenClock() {
       <div className="text-[20px] sm:text-[22px] font-light text-white/80 mt-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)] tracking-wide">
         {days[time.getDay()]}, {months[time.getMonth()]} {time.getDate()}
       </div>
+    </div>
+  )
+}
+
+// ─── Star Field (client-side only to avoid hydration mismatch) ──
+function StarField() {
+  const [stars, setStars] = React.useState<Array<{
+    w: number; h: number; top: number; left: number;
+    opacity: number; duration: number; delay: number;
+  }>>([])
+
+  React.useEffect(() => {
+    // Use a seeded approach via index to stay deterministic per render cycle,
+    // but only compute on the client to avoid SSR/client mismatch
+    const generated = Array.from({ length: 80 }, (_, i) => {
+      // Simple seeded pseudo-random based on index
+      const seed = (i * 2654435761) >>> 0
+      const rand = (offset: number) => ((seed + offset) % 10000) / 10000
+      return {
+        w: rand(0) * 2 + 0.5,
+        h: rand(1000) * 2 + 0.5,
+        top: rand(2000) * 45,
+        left: rand(3000) * 100,
+        opacity: rand(4000) * 0.5 + 0.15,
+        duration: rand(5000) * 4 + 2,
+        delay: rand(6000) * 3,
+      }
+    })
+    setStars(generated)
+  }, [])
+
+  return (
+    <div className="absolute inset-0">
+      {stars.map((s, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full bg-white"
+          style={{
+            width: `${s.w}px`,
+            height: `${s.h}px`,
+            top: `${s.top}%`,
+            left: `${s.left}%`,
+            opacity: s.opacity,
+            animation: `twinkle ${s.duration}s ease-in-out ${s.delay}s infinite alternate`,
+          }}
+        />
+      ))}
     </div>
   )
 }
@@ -76,17 +138,17 @@ function GoldenGateWallpaper() {
         {/* Water */}
         <div className="absolute bottom-0 left-0 right-0 h-[40%] bg-gradient-to-b from-[#1a2744]/70 to-[#0d1926]/90" />
 
-        {/* Water reflections */}
+        {/* Water reflections — deterministic values to avoid hydration mismatch */}
         <div className="absolute bottom-0 left-0 right-0 h-[15%]">
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FF6B35]/5 to-transparent" />
-          {Array.from({ length: 8 }, (_, i) => (
+          {[7.2, 10.5, 5.8, 12.1, 6.4, 9.3, 8.7, 11.2].map((w, i) => (
             <div
               key={i}
               className="absolute bottom-0 h-[1px] bg-white/5"
               style={{
                 left: `${10 + i * 10}%`,
-                width: `${5 + Math.random() * 8}%`,
-                opacity: 0.3 + Math.random() * 0.3,
+                width: `${w}%`,
+                opacity: [0.35, 0.42, 0.38, 0.55, 0.31, 0.48, 0.36, 0.52][i],
               }}
             />
           ))}
@@ -132,25 +194,8 @@ function GoldenGateWallpaper() {
         </svg>
       </div>
 
-      {/* Stars */}
-      {isDark && (
-        <div className="absolute inset-0">
-          {Array.from({ length: 80 }, (_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-white"
-              style={{
-                width: `${Math.random() * 2 + 0.5}px`,
-                height: `${Math.random() * 2 + 0.5}px`,
-                top: `${Math.random() * 45}%`,
-                left: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.5 + 0.15,
-                animation: `twinkle ${Math.random() * 4 + 2}s ease-in-out ${Math.random() * 3}s infinite alternate`,
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {/* Stars — generated client-side only to avoid hydration mismatch */}
+      {isDark && <StarField />}
 
       {/* Ambient light overlays */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#FF9500]/5 via-transparent to-[#AF52DE]/5" />
