@@ -35,10 +35,10 @@ function LockScreenClock() {
   if (!time) {
     return (
       <div className="text-center select-none">
-        <div className="text-[96px] sm:text-[108px] font-extralight tracking-[-0.02em] leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+        <div className="text-[72px] sm:text-[84px] font-extralight tracking-[-0.02em] leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
           &ndash;&ndash;:&ndash;&ndash;
         </div>
-        <div className="text-[20px] sm:text-[22px] font-light text-white/80 mt-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)] tracking-wide">
+        <div className="text-[18px] sm:text-[20px] font-light text-white/70 mt-1 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)] tracking-wide">
           &nbsp;
         </div>
       </div>
@@ -51,10 +51,10 @@ function LockScreenClock() {
 
   return (
     <div className="text-center select-none">
-      <div className="text-[96px] sm:text-[108px] font-extralight tracking-[-0.02em] leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
+      <div className="text-[72px] sm:text-[84px] font-extralight tracking-[-0.02em] leading-none text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
         {displayHours}:{minutes}
       </div>
-      <div className="text-[20px] sm:text-[22px] font-light text-white/80 mt-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)] tracking-wide">
+      <div className="text-[18px] sm:text-[20px] font-light text-white/70 mt-1 drop-shadow-[0_1px_4px_rgba(0,0,0,0.3)] tracking-wide">
         {days[time.getDay()]}, {months[time.getMonth()]} {time.getDate()}
       </div>
     </div>
@@ -206,7 +206,6 @@ export function LoginGate() {
         localStorage.setItem('bf_device_activated', 'true')
         setDeviceActivated(true)
         setStage('activation-success')
-        // Auto-transition to login after success animation
         setTimeout(() => setStage('login'), 1500)
       } else {
         setError(data.error || data.message || 'Invalid serial key')
@@ -286,7 +285,7 @@ export function LoginGate() {
       <div className="relative z-10 flex flex-col items-center w-full">
 
         {/* Clock — always visible at top */}
-        <div className="mb-8 sm:mb-12">
+        <div className="mb-6 sm:mb-8">
           <LockScreenClock />
         </div>
 
@@ -295,31 +294,29 @@ export function LoginGate() {
           {stage === 'serial-key' && (
             <motion.div
               key="serial-key"
-              initial={{ opacity: 0, y: 30, scale: 0.96 }}
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -30, scale: 0.96 }}
-              transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="flex flex-col items-center w-full max-w-[400px] px-6"
+              exit={{ opacity: 0, y: -20, scale: 0.97 }}
+              transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+              className="w-full max-w-[380px] mx-6"
             >
-              {/* Key Icon */}
-              <div className="w-[80px] h-[80px] sm:w-[96px] sm:h-[96px] rounded-full bg-white/[0.07] backdrop-blur-2xl border-[0.5px] border-white/[0.12] flex items-center justify-center shadow-[0_8px_40px_rgba(0,0,0,0.3)] mb-4">
-                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#FF9500]/20">
-                  <Key className="size-5 text-[#FF9500]" strokeWidth={2} />
+              {/* macOS Frosted Glass Card */}
+              <div className="rounded-2xl bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] shadow-[0_20px_60px_rgba(0,0,0,0.35),0_0_0_0.5px_rgba(255,255,255,0.05)_inset] p-8">
+                {/* Avatar + Title */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="w-[64px] h-[64px] rounded-full bg-[#FF9500]/15 border border-[#FF9500]/20 flex items-center justify-center mb-3">
+                    <Key className="size-6 text-[#FF9500]" strokeWidth={2} />
+                  </div>
+                  <h2 className="text-[17px] font-semibold text-white/90 mb-0.5">
+                    Activate Your Device
+                  </h2>
+                  <p className="text-[13px] text-white/40 text-center">
+                    Enter your license key to continue
+                  </p>
                 </div>
-              </div>
 
-              {/* Title */}
-              <h2 className="text-[19px] sm:text-[21px] font-semibold text-white/90 mb-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
-                Activate Your Device
-              </h2>
-              <p className="text-[13px] text-white/45 mb-6 text-center max-w-[280px]">
-                This device needs a serial key before you can sign in. Enter your license key below.
-              </p>
-
-              {/* Serial Key Input */}
-              <div className="w-full space-y-3">
-                <div className="relative">
-                  <Key className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/25" strokeWidth={2} />
+                {/* Serial Key Input */}
+                <div className="space-y-3">
                   <input
                     type="text"
                     placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
@@ -327,49 +324,49 @@ export function LoginGate() {
                     onChange={(e) => { setSerialKey(e.target.value.toUpperCase()); setError('') }}
                     onKeyDown={(e) => handleKeyDown(e, handleActivate)}
                     disabled={isActivating}
-                    className="w-full h-12 pl-10 pr-4 rounded-full bg-white/[0.07] backdrop-blur-xl border-[0.5px] border-white/[0.1] text-white/90 placeholder:text-white/20 text-[15px] font-medium tracking-wider outline-none focus:border-white/[0.22] focus:bg-white/[0.1] focus:ring-2 focus:ring-white/[0.06] transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+                    className="w-full h-11 px-4 rounded-xl bg-black/20 border border-white/[0.08] text-white/90 placeholder:text-white/20 text-[14px] font-medium tracking-wider outline-none focus:border-[#FF9500]/40 focus:bg-black/25 focus:ring-1 focus:ring-[#FF9500]/20 transition-all duration-200 text-center"
                     autoFocus
                   />
+
+                  {error && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-[12px] text-[#FF453A] text-center flex items-center justify-center gap-1.5"
+                    >
+                      <span className="size-1.5 rounded-full bg-[#FF453A]" />
+                      {error}
+                    </motion.p>
+                  )}
+
+                  {/* Activate Button */}
+                  <button
+                    onClick={handleActivate}
+                    disabled={isActivating || !serialKey.trim()}
+                    className="w-full h-11 rounded-xl bg-[#FF9500] text-white text-[14px] font-semibold tracking-tight shadow-[0_2px_12px_rgba(255,149,0,0.25)] hover:bg-[#FF9F0A] active:bg-[#E88E00] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2"
+                  >
+                    {isActivating ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="size-4 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                    ) : (
+                      <>
+                        Activate
+                        <ArrowRight className="size-4" strokeWidth={2} />
+                      </>
+                    )}
+                  </button>
                 </div>
 
-                {error && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-[12px] text-[#FF453A] text-center flex items-center justify-center gap-1.5"
-                  >
-                    <span className="size-1.5 rounded-full bg-[#FF453A]" />
-                    {error}
-                  </motion.p>
-                )}
-
-                {/* Activate Button */}
-                <button
-                  onClick={handleActivate}
-                  disabled={isActivating || !serialKey.trim()}
-                  className="w-full h-12 rounded-full bg-[#FF9500]/80 backdrop-blur-xl border-[0.5px] border-[#FF9500]/30 text-white text-[15px] font-semibold tracking-tight shadow-[0_4px_20px_rgba(255,149,0,0.2)] hover:bg-[#FF9500] hover:border-[#FF9500]/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  {isActivating ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      className="size-4 border-2 border-white/30 border-t-white rounded-full"
-                    />
-                  ) : (
-                    <>
-                      Activate Device
-                      <ArrowRight className="size-4" strokeWidth={2} />
-                    </>
-                  )}
-                </button>
-
-                {/* Separator */}
-                <div className="relative py-2">
+                {/* Divider */}
+                <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-white/[0.06]" />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="px-3 text-[11px] text-white/20 bg-transparent">or explore</span>
+                    <span className="px-3 text-[11px] text-white/20 bg-[rgba(255,255,255,0.08)] backdrop-blur-xl">or</span>
                   </div>
                 </div>
 
@@ -377,7 +374,7 @@ export function LoginGate() {
                 <button
                   onClick={handleDemoLogin}
                   disabled={isLoggingIn}
-                  className="w-full h-12 rounded-full bg-white/[0.04] border-[0.5px] border-white/[0.06] text-white/50 hover:text-white/70 hover:bg-white/[0.07] hover:border-white/[0.1] text-[15px] font-medium tracking-tight transition-all duration-200 flex items-center justify-center gap-2.5"
+                  className="w-full h-11 rounded-xl bg-white/[0.06] border border-white/[0.06] text-white/60 hover:text-white/80 hover:bg-white/[0.1] text-[14px] font-medium tracking-tight transition-all duration-150 flex items-center justify-center gap-2"
                 >
                   {isLoggingIn ? (
                     <motion.div
@@ -387,18 +384,18 @@ export function LoginGate() {
                     />
                   ) : (
                     <>
-                      <Sparkles className="size-4 text-[#BF5AF2]" strokeWidth={2} />
+                      <Sparkles className="size-3.5 text-[#BF5AF2]" strokeWidth={2} />
                       <span>Try Demo</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#BF5AF2]/20 text-[#BF5AF2]/80 font-bold uppercase tracking-wider">View Only</span>
+                      <span className="text-[8px] px-1.5 py-0.5 rounded-md bg-[#BF5AF2]/15 text-[#BF5AF2]/70 font-bold uppercase tracking-wider">View Only</span>
                     </>
                   )}
                 </button>
+              </div>
 
-                {/* Version & branding */}
-                <div className="flex flex-col items-center pt-4 gap-0.5">
-                  <p className="text-[11px] text-white/25 font-medium tracking-wide">BookFlow OS v27.0</p>
-                  <p className="text-[10px] text-white/15">Powered by ApexFlow Ecosystem</p>
-                </div>
+              {/* Version & branding — outside card */}
+              <div className="flex flex-col items-center pt-4 gap-0.5">
+                <p className="text-[11px] text-white/20 font-medium tracking-wide">BookFlow OS v27.0</p>
+                <p className="text-[10px] text-white/12">Powered by ApexFlow Ecosystem</p>
               </div>
             </motion.div>
           )}
@@ -411,32 +408,34 @@ export function LoginGate() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-              className="flex flex-col items-center"
+              className="w-full max-w-[300px] mx-6"
             >
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
-                className="w-[80px] h-[80px] rounded-full bg-[#30D158]/20 border-[0.5px] border-[#30D158]/30 flex items-center justify-center shadow-[0_8px_40px_rgba(48,209,88,0.15)]"
-              >
-                <Check className="size-9 text-[#30D158]" strokeWidth={2.5} />
-              </motion.div>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-[17px] font-semibold text-white/90 mt-4 drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
-              >
-                Device Activated
-              </motion.p>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="text-[13px] text-white/45 mt-1"
-              >
-                Preparing sign in...
-              </motion.p>
+              <div className="rounded-2xl bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-8 flex flex-col items-center">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
+                  className="w-[64px] h-[64px] rounded-full bg-[#30D158]/15 border border-[#30D158]/20 flex items-center justify-center"
+                >
+                  <Check className="size-7 text-[#30D158]" strokeWidth={2.5} />
+                </motion.div>
+                <motion.p
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-[17px] font-semibold text-white/90 mt-4"
+                >
+                  Device Activated
+                </motion.p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-[13px] text-white/40 mt-1"
+                >
+                  Preparing sign in...
+                </motion.p>
+              </div>
             </motion.div>
           )}
 
@@ -444,30 +443,30 @@ export function LoginGate() {
           {stage === 'login' && (
             <motion.div
               key="login"
-              initial={{ opacity: 0, y: 30, scale: 0.96 }}
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -30, scale: 0.96 }}
-              transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-              className="flex flex-col items-center w-full max-w-[400px] px-6"
+              exit={{ opacity: 0, y: -20, scale: 0.97 }}
+              transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+              className="w-full max-w-[380px] mx-6"
             >
-              {/* User Avatar */}
-              <div className="w-[80px] h-[80px] sm:w-[96px] sm:h-[96px] rounded-full bg-white/[0.07] backdrop-blur-2xl border-[0.5px] border-white/[0.12] flex items-center justify-center shadow-[0_8px_40px_rgba(0,0,0,0.3)] mb-4">
-                <User className="size-9 sm:size-10 text-white/60" strokeWidth={1.3} />
-              </div>
+              {/* macOS Frosted Glass Card */}
+              <div className="rounded-2xl bg-white/[0.08] backdrop-blur-2xl border border-white/[0.12] shadow-[0_20px_60px_rgba(0,0,0,0.35),0_0_0_0.5px_rgba(255,255,255,0.05)_inset] p-8">
+                {/* Avatar + Title */}
+                <div className="flex flex-col items-center mb-6">
+                  <div className="w-[64px] h-[64px] rounded-full bg-white/[0.08] border border-white/[0.1] flex items-center justify-center mb-3">
+                    <User className="size-7 text-white/50" strokeWidth={1.5} />
+                  </div>
+                  <h2 className="text-[17px] font-semibold text-white/90 mb-0.5">
+                    Sign In
+                  </h2>
+                  <p className="text-[13px] text-white/40">
+                    Enter your credentials to continue
+                  </p>
+                </div>
 
-              {/* User Name */}
-              <h2 className="text-[19px] sm:text-[21px] font-semibold text-white/90 mb-1 drop-shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
-                Sign In
-              </h2>
-              <p className="text-[13px] text-white/45 mb-6">
-                Enter your credentials to continue
-              </p>
-
-              {/* Login Fields */}
-              <div className="w-full space-y-3">
-                {/* Email Field */}
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/25" strokeWidth={2} />
+                {/* Login Fields */}
+                <div className="space-y-3">
+                  {/* Email Field */}
                   <input
                     type="email"
                     placeholder="Email address"
@@ -475,70 +474,69 @@ export function LoginGate() {
                     onChange={(e) => { setEmail(e.target.value); setError('') }}
                     onKeyDown={(e) => handleKeyDown(e, handleLogin)}
                     disabled={isLoggingIn}
-                    className="w-full h-12 pl-10 pr-4 rounded-full bg-white/[0.07] backdrop-blur-xl border-[0.5px] border-white/[0.1] text-white/90 placeholder:text-white/20 text-[15px] font-medium outline-none focus:border-white/[0.22] focus:bg-white/[0.1] focus:ring-2 focus:ring-white/[0.06] transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+                    className="w-full h-11 px-4 rounded-xl bg-black/20 border border-white/[0.08] text-white/90 placeholder:text-white/20 text-[14px] font-medium outline-none focus:border-white/[0.18] focus:bg-black/25 focus:ring-1 focus:ring-white/[0.06] transition-all duration-200"
                     autoFocus
                   />
-                </div>
 
-                {/* Password Field */}
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/25" strokeWidth={2} />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); setError('') }}
-                    onKeyDown={(e) => handleKeyDown(e, handleLogin)}
-                    disabled={isLoggingIn}
-                    className="w-full h-12 pl-10 pr-12 rounded-full bg-white/[0.07] backdrop-blur-xl border-[0.5px] border-white/[0.1] text-white/90 placeholder:text-white/20 text-[15px] font-medium outline-none focus:border-white/[0.22] focus:bg-white/[0.1] focus:ring-2 focus:ring-white/[0.06] transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
-                  />
+                  {/* Password Field */}
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); setError('') }}
+                      onKeyDown={(e) => handleKeyDown(e, handleLogin)}
+                      disabled={isLoggingIn}
+                      className="w-full h-11 pl-4 pr-11 rounded-xl bg-black/20 border border-white/[0.08] text-white/90 placeholder:text-white/20 text-[14px] font-medium outline-none focus:border-white/[0.18] focus:bg-black/25 focus:ring-1 focus:ring-white/[0.06] transition-all duration-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50 transition-colors p-1"
+                    >
+                      {showPassword ? <EyeOff className="size-4" strokeWidth={2} /> : <Eye className="size-4" strokeWidth={2} />}
+                    </button>
+                  </div>
+
+                  {error && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-[12px] text-[#FF453A] text-center flex items-center justify-center gap-1.5"
+                    >
+                      <span className="size-1.5 rounded-full bg-[#FF453A]" />
+                      {error}
+                    </motion.p>
+                  )}
+
+                  {/* Sign In Button */}
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60 transition-colors"
+                    onClick={handleLogin}
+                    disabled={isLoggingIn || !email.trim() || !password.trim()}
+                    className="w-full h-11 rounded-xl bg-white/[0.15] border border-white/[0.1] text-white/90 text-[14px] font-semibold tracking-tight shadow-[0_2px_12px_rgba(0,0,0,0.15)] hover:bg-white/[0.22] active:bg-white/[0.10] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2"
                   >
-                    {showPassword ? <EyeOff className="size-4" strokeWidth={2} /> : <Eye className="size-4" strokeWidth={2} />}
+                    {isLoggingIn ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="size-4 border-2 border-white/30 border-t-white rounded-full"
+                      />
+                    ) : (
+                      <>
+                        Sign In
+                        <ArrowRight className="size-4" strokeWidth={2} />
+                      </>
+                    )}
                   </button>
                 </div>
 
-                {error && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-[12px] text-[#FF453A] text-center flex items-center justify-center gap-1.5"
-                  >
-                    <span className="size-1.5 rounded-full bg-[#FF453A]" />
-                    {error}
-                  </motion.p>
-                )}
-
-                {/* Sign In Button */}
-                <button
-                  onClick={handleLogin}
-                  disabled={isLoggingIn || !email.trim() || !password.trim()}
-                  className="w-full h-12 rounded-full bg-white/[0.14] backdrop-blur-xl border-[0.5px] border-white/[0.12] text-white/90 text-[15px] font-semibold tracking-tight shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:bg-white/[0.2] hover:border-white/[0.2] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  {isLoggingIn ? (
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      className="size-4 border-2 border-white/30 border-t-white rounded-full"
-                    />
-                  ) : (
-                    <>
-                      Sign In
-                      <ArrowRight className="size-4" strokeWidth={2} />
-                    </>
-                  )}
-                </button>
-
-                {/* Separator */}
-                <div className="relative py-2">
+                {/* Divider */}
+                <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-white/[0.06]" />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="px-3 text-[11px] text-white/20 bg-transparent">or</span>
+                    <span className="px-3 text-[11px] text-white/20 bg-[rgba(255,255,255,0.08)] backdrop-blur-xl">or</span>
                   </div>
                 </div>
 
@@ -546,7 +544,7 @@ export function LoginGate() {
                 <button
                   onClick={handleDemoLogin}
                   disabled={isLoggingIn}
-                  className="w-full h-12 rounded-full bg-white/[0.04] border-[0.5px] border-white/[0.06] text-white/50 hover:text-white/70 hover:bg-white/[0.07] hover:border-white/[0.1] text-[15px] font-medium tracking-tight transition-all duration-200 flex items-center justify-center gap-2.5"
+                  className="w-full h-11 rounded-xl bg-white/[0.06] border border-white/[0.06] text-white/60 hover:text-white/80 hover:bg-white/[0.1] text-[14px] font-medium tracking-tight transition-all duration-150 flex items-center justify-center gap-2"
                 >
                   {isLoggingIn ? (
                     <motion.div
@@ -556,18 +554,18 @@ export function LoginGate() {
                     />
                   ) : (
                     <>
-                      <Sparkles className="size-4 text-[#BF5AF2]" strokeWidth={2} />
+                      <Sparkles className="size-3.5 text-[#BF5AF2]" strokeWidth={2} />
                       <span>Try Demo</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#BF5AF2]/20 text-[#BF5AF2]/80 font-bold uppercase tracking-wider">View Only</span>
+                      <span className="text-[8px] px-1.5 py-0.5 rounded-md bg-[#BF5AF2]/15 text-[#BF5AF2]/70 font-bold uppercase tracking-wider">View Only</span>
                     </>
                   )}
                 </button>
+              </div>
 
-                {/* Version & branding */}
-                <div className="flex flex-col items-center pt-4 gap-0.5">
-                  <p className="text-[11px] text-white/25 font-medium tracking-wide">BookFlow OS v27.0</p>
-                  <p className="text-[10px] text-white/15">Powered by ApexFlow Ecosystem</p>
-                </div>
+              {/* Version & branding — outside card */}
+              <div className="flex flex-col items-center pt-4 gap-0.5">
+                <p className="text-[11px] text-white/20 font-medium tracking-wide">BookFlow OS v27.0</p>
+                <p className="text-[10px] text-white/12">Powered by ApexFlow Ecosystem</p>
               </div>
             </motion.div>
           )}
