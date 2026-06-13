@@ -20,6 +20,7 @@ import { EcommerceModule } from '@/components/modules/ecommerce'
 import { ReportsModule } from '@/components/modules/reports'
 import { AiSuiteModule } from '@/components/modules/ai-suite'
 import { OwnerModule } from '@/components/modules/owner'
+import { SettingsModule } from '@/components/modules/settings'
 
 // Modules that require owner role
 const ownerOnlyModules = new Set(['owner'])
@@ -47,6 +48,7 @@ const moduleComponents: Record<string, React.ComponentType> = {
   'reports': ReportsModule,
   'ai-suite': AiSuiteModule,
   'owner': OwnerModule,
+  'settings': SettingsModule,
 }
 
 function AccessDenied() {
