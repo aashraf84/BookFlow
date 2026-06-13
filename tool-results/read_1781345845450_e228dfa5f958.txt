@@ -1,0 +1,1592 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  DollarSign,
+     6→  TrendingUp,
+     7→  TrendingDown,
+     8→  BarChart3,
+     9→  Wallet,
+    10→  BookOpen,
+    11→  Plus,
+    12→  Trash2,
+    13→  X,
+    14→  ArrowUpRight,
+    15→  ArrowDownRight,
+    16→  Calendar,
+    17→  FileText,
+    18→  CreditCard,
+    19→  Receipt,
+    20→  CheckCircle2,
+    21→  Clock,
+    22→  AlertCircle,
+    23→  Eye,
+    24→  PieChart,
+    25→  Activity,
+    26→} from 'lucide-react'
+    27→import { Button } from '@/components/ui/button'
+    28→import { Input } from '@/components/ui/input'
+    29→import { Label } from '@/components/ui/label'
+    30→import { Badge } from '@/components/ui/badge'
+    31→import {
+    32→  Dialog,
+    33→  DialogContent,
+    34→  DialogDescription,
+    35→  DialogFooter,
+    36→  DialogHeader,
+    37→  DialogTitle,
+    38→} from '@/components/ui/dialog'
+    39→import {
+    40→  Select,
+    41→  SelectContent,
+    42→  SelectItem,
+    43→  SelectTrigger,
+    44→  SelectValue,
+    45→} from '@/components/ui/select'
+    46→import { Textarea } from '@/components/ui/textarea'
+    47→import { Separator } from '@/components/ui/separator'
+    48→import { ScrollArea } from '@/components/ui/scroll-area'
+    49→import {
+    50→  Table,
+    51→  TableBody,
+    52→  TableCell,
+    53→  TableHead,
+    54→  TableHeader,
+    55→  TableRow,
+    56→} from '@/components/ui/table'
+    57→import {
+    58→  AreaChart,
+    59→  Area,
+    60→  XAxis,
+    61→  YAxis,
+    62→  CartesianGrid,
+    63→  Tooltip,
+    64→  ResponsiveContainer,
+    65→  BarChart,
+    66→  Bar,
+    67→  PieChart as RechartsPieChart,
+    68→  Pie,
+    69→  Cell,
+    70→  Legend,
+    71→} from 'recharts'
+    72→import { useAppStore } from '@/store/app-store'
+    73→
+    74→// ==================== TYPES ====================
+    75→
+    76→interface Account {
+    77→  id: string
+    78→  code: string
+    79→  name: string
+    80→  type: string
+    81→  parentCode?: string | null
+    82→  balance: number
+    83→  isActive: boolean
+    84→}
+    85→
+    86→interface JournalEntryLine {
+    87→  id: string
+    88→  accountId: string
+    89→  account?: { id: string; code: string; name: string; type: string }
+    90→  debit: number
+    91→  credit: number
+    92→  description?: string | null
+    93→}
+    94→
+    95→interface JournalEntry {
+    96→  id: string
+    97→  date: string
+    98→  description: string
+    99→  reference?: string | null
+   100→  isPosted: boolean
+   101→  createdAt: string
+   102→  lines: JournalEntryLine[]
+   103→}
+   104→
+   105→interface Expense {
+   106→  id: string
+   107→  category: string
+   108→  amount: number
+   109→  date: string
+   110→  description?: string | null
+   111→  paidBy?: string | null
+   112→  receipt?: string | null
+   113→  status: string
+   114→  createdAt: string
+   115→}
+   116→
+   117→// ==================== CHART COLORS ====================
+   118→
+   119→const CHART_COLORS = {
+   120→  blue: '#007AFF',
+   121→  green: '#34C759',
+   122→  orange: '#FF9500',
+   123→  red: '#FF3B30',
+   124→  purple: '#AF52DE',
+   125→  teal: '#5AC8FA',
+   126→  bridge: '#C0392B',
+   127→  golden: '#D4A853',
+   128→  bay: '#2D5F8A',
+   129→  sunset: '#FF6B35',
+   130→}
+   131→
+   132→// ==================== FINANCE MODULE ====================
+   133→
+   134→export function FinanceModule() {
+   135→  const [activeTab, setActiveTab] = React.useState('overview')
+   136→  const tabs = [
+   137→    { value: 'overview', label: 'Overview', icon: Activity },
+   138→    { value: 'accounts', label: 'Accounts', icon: Wallet },
+   139→    { value: 'entries', label: 'Journal', icon: BookOpen },
+   140→    { value: 'expenses', label: 'Expenses', icon: Receipt },
+   141→  ]
+   142→
+   143→  return (
+   144→    <div className="space-y-5">
+   145→      {/* Page Header */}
+   146→      <div className="macos-page-header">
+   147→        <div className="flex items-center gap-3">
+   148→          <div className="size-10 rounded-xl bg-macos-green/10 flex items-center justify-center macos-shadow-card">
+   149→            <DollarSign className="size-5 text-macos-green" strokeWidth={1.5} />
+   150→          </div>
+   151→          <div>
+   152→            <h2 className="macos-page-title">Finance</h2>
+   153→            <p className="macos-page-subtitle">Financial management, accounting, and reporting</p>
+   154→          </div>
+   155→        </div>
+   156→      </div>
+   157→
+   158→      {/* Filter Bar */}
+   159→      <div className="macos-filter-bar">
+   160→        {tabs.map((tab) => {
+   161→          const Icon = tab.icon
+   162→          const isActive = activeTab === tab.value
+   163→          return (
+   164→            <button
+   165→              key={tab.value}
+   166→              onClick={() => setActiveTab(tab.value)}
+   167→              className={`macos-filter-item flex items-center gap-1.5 ${isActive ? 'macos-filter-item-active' : ''}`}
+   168→            >
+   169→              <Icon className="size-3.5" strokeWidth={1.5} />
+   170→              {tab.label}
+   171→            </button>
+   172→          )
+   173→        })}
+   174→      </div>
+   175→
+   176→      <div className="mt-4">
+   177→        {activeTab === 'overview' && <OverviewTab />}
+   178→        {activeTab === 'accounts' && <AccountsTab />}
+   179→        {activeTab === 'entries' && <JournalEntriesTab />}
+   180→        {activeTab === 'expenses' && <ExpensesTab />}
+   181→      </div>
+   182→    </div>
+   183→  )
+   184→}
+   185→
+   186→// ==================== OVERVIEW TAB ====================
+   187→
+   188→function OverviewTab() {
+   189→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   190→  const [expenses, setExpenses] = React.useState<Expense[]>([])
+   191→  const [loading, setLoading] = React.useState(true)
+   192→
+   193→  React.useEffect(() => {
+   194→    async function fetchData() {
+   195→      setLoading(true)
+   196→      try {
+   197→        const [accRes, expRes] = await Promise.all([
+   198→          fetch('/api/finance?type=accounts&limit=100'),
+   199→          fetch('/api/finance?type=expenses&limit=100'),
+   200→        ])
+   201→        const [accJson, expJson] = await Promise.all([accRes.json(), expRes.json()])
+   202→        if (accJson.data) setAccounts(accJson.data)
+   203→        if (expJson.data) setExpenses(expJson.data)
+   204→      } catch (err) {
+   205→        console.error('Failed to fetch finance data:', err)
+   206→      } finally {
+   207→        setLoading(false)
+   208→      }
+   209→    }
+   210→    fetchData()
+   211→  }, [])
+   212→
+   213→  const revenue = accounts.filter((a) => a.type === 'revenue').reduce((sum, a) => sum + a.balance, 0)
+   214→  const expenseTotal = accounts.filter((a) => a.type === 'expense').reduce((sum, a) => sum + a.balance, 0)
+   215→  const assets = accounts.filter((a) => a.type === 'asset').reduce((sum, a) => sum + a.balance, 0)
+   216→  const liabilities = accounts.filter((a) => a.type === 'liability').reduce((sum, a) => sum + a.balance, 0)
+   217→  const netIncome = revenue - expenseTotal
+   218→  const pendingExpenses = expenses.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0)
+   219→
+   220→  const accountTypes = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const
+   221→  const accountTypeLabels: Record<string, string> = {
+   222→    asset: 'Assets',
+   223→    liability: 'Liabilities',
+   224→    equity: 'Equity',
+   225→    revenue: 'Revenue',
+   226→    expense: 'Expenses',
+   227→  }
+   228→  const accountTypeColors: Record<string, string> = {
+   229→    asset: CHART_COLORS.green,
+   230→    liability: CHART_COLORS.red,
+   231→    equity: CHART_COLORS.teal,
+   232→    revenue: CHART_COLORS.blue,
+   233→    expense: CHART_COLORS.orange,
+   234→  }
+   235→
+   236→  // Generate mock monthly data for charts
+   237→  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+   238→  const revenueExpenseData = months.map((month, i) => ({
+   239→    month,
+   240→    revenue: Math.round(revenue * (0.6 + Math.random() * 0.5 + i * 0.03)),
+   241→    expenses: Math.round(expenseTotal * (0.5 + Math.random() * 0.5 + i * 0.02)),
+   242→  }))
+   243→
+   244→  // Account breakdown for pie chart
+   245→  const accountBreakdown = accountTypes.map((type) => {
+   246→    const balance = accounts.filter((a) => a.type === type).reduce((sum, a) => sum + a.balance, 0)
+   247→    return { name: accountTypeLabels[type], value: Math.abs(balance), color: accountTypeColors[type] }
+   248→  }).filter((d) => d.value > 0)
+   249→
+   250→  // Expense categories for bar chart
+   251→  const expenseByCategory = expenses.reduce((acc, e) => {
+   252→    acc[e.category] = (acc[e.category] || 0) + e.amount
+   253→    return acc
+   254→  }, {} as Record<string, number>)
+   255→
+   256→  const expenseCategoryData = Object.entries(expenseByCategory)
+   257→    .map(([category, amount]) => ({ category, amount }))
+   258→    .sort((a, b) => b.amount - a.amount)
+   259→    .slice(0, 8)
+   260→
+   261→  const categoryColors = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.orange, CHART_COLORS.purple, CHART_COLORS.teal, CHART_COLORS.red, CHART_COLORS.golden, CHART_COLORS.sunset]
+   262→
+   263→  // Cash flow area chart data
+   264→  const cashFlowData = months.map((month, i) => ({
+   265→    month,
+   266→    inflow: Math.round(revenue * (0.7 + Math.random() * 0.4 + i * 0.02)),
+   267→    outflow: Math.round(expenseTotal * (0.6 + Math.random() * 0.4 + i * 0.015)),
+   268→  }))
+   269→
+   270→  return (
+   271→    <div className="space-y-5">
+   272→      {loading ? (
+   273→        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   274→          {[1, 2, 3].map((i) => (
+   275→            <div key={i} className="macos-card macos-shadow-card p-5 animate-pulse">
+   276→              <div className="h-4 bg-muted/50 rounded w-2/3 mb-3" />
+   277→              <div className="h-8 bg-muted/50 rounded w-1/2" />
+   278→            </div>
+   279→          ))}
+   280→        </div>
+   281→      ) : (
+   282→        <>
+   283→          {/* P&L Summary Cards */}
+   284→          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   285→            <div className="macos-stat macos-shadow-card">
+   286→              <div className="flex items-center justify-between">
+   287→                <div>
+   288→                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue</p>
+   289→                  <p className="text-[24px] font-bold text-macos-green" style={{ letterSpacing: '-0.03em' }}>${revenue.toLocaleString()}</p>
+   290→                  <div className="flex items-center gap-1 text-[11px] mt-1">
+   291→                    <ArrowUpRight className="size-3 text-macos-green" />
+   292→                    <span className="text-macos-green font-medium">+8.5%</span>
+   293→                    <span className="text-muted-foreground">vs last month</span>
+   294→                  </div>
+   295→                </div>
+   296→                <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
+   297→                  <TrendingUp className="size-4 text-macos-green" strokeWidth={1.5} />
+   298→                </div>
+   299→              </div>
+   300→            </div>
+   301→            <div className="macos-stat macos-shadow-card">
+   302→              <div className="flex items-center justify-between">
+   303→                <div>
+   304→                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Expenses</p>
+   305→                  <p className="text-[24px] font-bold text-macos-red" style={{ letterSpacing: '-0.03em' }}>${expenseTotal.toLocaleString()}</p>
+   306→                  <div className="flex items-center gap-1 text-[11px] mt-1">
+   307→                    <ArrowDownRight className="size-3 text-macos-red" />
+   308→                    <span className="text-macos-red font-medium">+3.2%</span>
+   309→                    <span className="text-muted-foreground">vs last month</span>
+   310→                  </div>
+   311→                </div>
+   312→                <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
+   313→                  <TrendingDown className="size-4 text-macos-red" strokeWidth={1.5} />
+   314→                </div>
+   315→              </div>
+   316→            </div>
+   317→            <div className="macos-stat macos-shadow-card">
+   318→              <div className="flex items-center justify-between">
+   319→                <div>
+   320→                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Net Income</p>
+   321→                  <p className="text-[24px] font-bold text-macos-blue" style={{ letterSpacing: '-0.03em' }}>${netIncome.toLocaleString()}</p>
+   322→                  <div className="flex items-center gap-1 text-[11px] mt-1">
+   323→                    {netIncome >= 0 ? (
+   324→                      <>
+   325→                        <ArrowUpRight className="size-3 text-macos-blue" />
+   326→                        <span className="text-macos-blue font-medium">+12.1%</span>
+   327→                      </>
+   328→                    ) : (
+   329→                      <>
+   330→                        <ArrowDownRight className="size-3 text-macos-red" />
+   331→                        <span className="text-macos-red font-medium">-5.3%</span>
+   332→                      </>
+   333→                    )}
+   334→                    <span className="text-muted-foreground">vs last month</span>
+   335→                  </div>
+   336→                </div>
+   337→                <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+   338→                  <DollarSign className="size-4 text-macos-blue" strokeWidth={1.5} />
+   339→                </div>
+   340→              </div>
+   341→            </div>
+   342→          </div>
+   343→
+   344→          {/* Revenue vs Expenses Area Chart */}
+   345→          <div className="macos-card macos-shadow-card p-5">
+   346→            <div className="macos-section-header mb-4">
+   347→              <div>
+   348→                <h3 className="macos-section-title">Revenue vs Expenses</h3>
+   349→                <p className="macos-section-desc">Monthly financial performance</p>
+   350→              </div>
+   351→              <div className="flex items-center gap-3">
+   352→                <div className="flex items-center gap-1.5">
+   353→                  <div className="size-2.5 rounded-full bg-macos-green" />
+   354→                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue</span>
+   355→                </div>
+   356→                <div className="flex items-center gap-1.5">
+   357→                  <div className="size-2.5 rounded-full bg-macos-red" />
+   358→                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Expenses</span>
+   359→                </div>
+   360→              </div>
+   361→            </div>
+   362→            <div className="h-64">
+   363→              <ResponsiveContainer width="100%" height="100%">
+   364→                <AreaChart data={revenueExpenseData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+   365→                  <defs>
+   366→                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+   367→                      <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.3} />
+   368→                      <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0} />
+   369→                    </linearGradient>
+   370→                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+   371→                      <stop offset="5%" stopColor={CHART_COLORS.red} stopOpacity={0.3} />
+   372→                      <stop offset="95%" stopColor={CHART_COLORS.red} stopOpacity={0} />
+   373→                    </linearGradient>
+   374→                  </defs>
+   375→                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+   376→                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   377→                  <YAxis tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   378→                  <Tooltip
+   379→                    contentStyle={{
+   380→                      borderRadius: '10px',
+   381→                      border: '0.5px solid rgba(0,0,0,0.06)',
+   382→                      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+   383→                      fontSize: '12px',
+   384→                      padding: '8px 12px',
+   385→                    }}
+   386→                    formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+   387→                  />
+   388→                  <Area type="monotone" dataKey="revenue" stroke={CHART_COLORS.green} strokeWidth={2} fill="url(#revenueGradient)" />
+   389→                  <Area type="monotone" dataKey="expenses" stroke={CHART_COLORS.red} strokeWidth={2} fill="url(#expenseGradient)" />
+   390→                </AreaChart>
+   391→              </ResponsiveContainer>
+   392→            </div>
+   393→          </div>
+   394→
+   395→          {/* Two column: Cash Flow + Account Breakdown Pie */}
+   396→          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   397→            {/* Cash Flow Area Chart */}
+   398→            <div className="macos-card macos-shadow-card p-5">
+   399→              <div className="macos-section-header mb-4">
+   400→                <div>
+   401→                  <h3 className="macos-section-title">Cash Flow</h3>
+   402→                  <p className="macos-section-desc">Monthly inflow vs outflow</p>
+   403→                </div>
+   404→              </div>
+   405→              <div className="h-56">
+   406→                <ResponsiveContainer width="100%" height="100%">
+   407→                  <AreaChart data={cashFlowData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+   408→                    <defs>
+   409→                      <linearGradient id="inflowGradient" x1="0" y1="0" x2="0" y2="1">
+   410→                        <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3} />
+   411→                        <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
+   412→                      </linearGradient>
+   413→                      <linearGradient id="outflowGradient" x1="0" y1="0" x2="0" y2="1">
+   414→                        <stop offset="5%" stopColor={CHART_COLORS.orange} stopOpacity={0.3} />
+   415→                        <stop offset="95%" stopColor={CHART_COLORS.orange} stopOpacity={0} />
+   416→                      </linearGradient>
+   417→                    </defs>
+   418→                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+   419→                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   420→                    <YAxis tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   421→                    <Tooltip
+   422→                      contentStyle={{
+   423→                        borderRadius: '10px',
+   424→                        border: '0.5px solid rgba(0,0,0,0.06)',
+   425→                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+   426→                        fontSize: '12px',
+   427→                        padding: '8px 12px',
+   428→                      }}
+   429→                      formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+   430→                    />
+   431→                    <Area type="monotone" dataKey="inflow" stroke={CHART_COLORS.blue} strokeWidth={2} fill="url(#inflowGradient)" />
+   432→                    <Area type="monotone" dataKey="outflow" stroke={CHART_COLORS.orange} strokeWidth={2} fill="url(#outflowGradient)" />
+   433→                  </AreaChart>
+   434→                </ResponsiveContainer>
+   435→              </div>
+   436→            </div>
+   437→
+   438→            {/* Account Breakdown Pie */}
+   439→            <div className="macos-card macos-shadow-card p-5">
+   440→              <div className="macos-section-header mb-4">
+   441→                <div>
+   442→                  <h3 className="macos-section-title">Account Breakdown</h3>
+   443→                  <p className="macos-section-desc">Distribution by type</p>
+   444→                </div>
+   445→              </div>
+   446→              {accountBreakdown.length > 0 ? (
+   447→                <div className="h-56">
+   448→                  <ResponsiveContainer width="100%" height="100%">
+   449→                    <RechartsPieChart>
+   450→                      <Pie
+   451→                        data={accountBreakdown}
+   452→                        cx="50%"
+   453→                        cy="50%"
+   454→                        innerRadius={55}
+   455→                        outerRadius={80}
+   456→                        paddingAngle={3}
+   457→                        dataKey="value"
+   458→                        strokeWidth={0}
+   459→                      >
+   460→                        {accountBreakdown.map((entry, index) => (
+   461→                          <Cell key={`cell-${index}`} fill={entry.color} />
+   462→                        ))}
+   463→                      </Pie>
+   464→                      <Tooltip
+   465→                        contentStyle={{
+   466→                          borderRadius: '10px',
+   467→                          border: '0.5px solid rgba(0,0,0,0.06)',
+   468→                          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+   469→                          fontSize: '12px',
+   470→                          padding: '8px 12px',
+   471→                        }}
+   472→                        formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+   473→                      />
+   474→                      <Legend
+   475→                        iconType="circle"
+   476→                        iconSize={8}
+   477→                        wrapperStyle={{ fontSize: '11px' }}
+   478→                      />
+   479→                    </RechartsPieChart>
+   480→                  </ResponsiveContainer>
+   481→                </div>
+   482→              ) : (
+   483→                <div className="h-56 flex items-center justify-center">
+   484→                  <p className="text-[13px] text-muted-foreground">No account data</p>
+   485→                </div>
+   486→              )}
+   487→            </div>
+   488→          </div>
+   489→
+   490→          {/* Balance Sheet + Expense Categories */}
+   491→          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   492→            {/* Balance Sheet */}
+   493→            <div className="macos-card macos-shadow-card p-5">
+   494→              <div className="macos-section-header mb-4">
+   495→                <div>
+   496→                  <h3 className="macos-section-title">Balance Sheet</h3>
+   497→                  <p className="macos-section-desc">Financial position summary</p>
+   498→                </div>
+   499→              </div>
+   500→              <div className="space-y-3">
+   501→                <div className="flex justify-between text-[13px]">
+   502→                  <span className="text-muted-foreground">Total Assets</span>
+   503→                  <span className="font-medium">${assets.toLocaleString()}</span>
+   504→                </div>
+   505→                <div className="h-2 rounded-full bg-secondary overflow-hidden">
+   506→                  <div
+   507→                    className="h-full bg-macos-green rounded-full transition-all"
+   508→                    style={{ width: `${assets > 0 ? Math.min((assets / (assets + liabilities || 1)) * 100, 100) : 0}%` }}
+   509→                  />
+   510→                </div>
+   511→                <div className="flex justify-between text-[13px]">
+   512→                  <span className="text-muted-foreground">Total Liabilities</span>
+   513→                  <span className="font-medium">${liabilities.toLocaleString()}</span>
+   514→                </div>
+   515→                <div className="h-2 rounded-full bg-secondary overflow-hidden">
+   516→                  <div
+   517→                    className="h-full bg-macos-red rounded-full transition-all"
+   518→                    style={{ width: `${liabilities > 0 ? Math.min((liabilities / (assets + liabilities || 1)) * 100, 100) : 0}%` }}
+   519→                  />
+   520→                </div>
+   521→                <Separator className="bg-border/50" />
+   522→                <div className="flex justify-between text-[13px] font-semibold">
+   523→                  <span>Net Worth</span>
+   524→                  <span className={(assets - liabilities) >= 0 ? 'text-macos-green' : 'text-macos-red'}>
+   525→                    ${(assets - liabilities).toLocaleString()}
+   526→                  </span>
+   527→                </div>
+   528→              </div>
+   529→            </div>
+   530→
+   531→            {/* Expense Categories Bar Chart */}
+   532→            <div className="macos-card macos-shadow-card p-5">
+   533→              <div className="macos-section-header mb-4">
+   534→                <div>
+   535→                  <h3 className="macos-section-title">Expense Categories</h3>
+   536→                  <p className="macos-section-desc">Spending by category</p>
+   537→                </div>
+   538→              </div>
+   539→              {expenseCategoryData.length > 0 ? (
+   540→                <div className="h-56">
+   541→                  <ResponsiveContainer width="100%" height="100%">
+   542→                    <BarChart data={expenseCategoryData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} layout="vertical">
+   543→                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" horizontal={false} />
+   544→                      <XAxis type="number" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   545→                      <YAxis type="category" dataKey="category" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} width={80} />
+   546→                      <Tooltip
+   547→                        contentStyle={{
+   548→                          borderRadius: '10px',
+   549→                          border: '0.5px solid rgba(0,0,0,0.06)',
+   550→                          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+   551→                          fontSize: '12px',
+   552→                          padding: '8px 12px',
+   553→                        }}
+   554→                        formatter={(value: number) => [`$${value.toLocaleString()}`, 'Amount']}
+   555→                      />
+   556→                      <Bar dataKey="amount" radius={[0, 4, 4, 0]} maxBarSize={24}>
+   557→                        {expenseCategoryData.map((_, index) => (
+   558→                          <Cell key={`bar-${index}`} fill={categoryColors[index % categoryColors.length]} />
+   559→                        ))}
+   560→                      </Bar>
+   561→                    </BarChart>
+   562→                  </ResponsiveContainer>
+   563→                </div>
+   564→              ) : (
+   565→                <div className="h-56 flex items-center justify-center">
+   566→                  <p className="text-[13px] text-muted-foreground">No expense data</p>
+   567→                </div>
+   568→              )}
+   569→            </div>
+   570→          </div>
+   571→
+   572→          {/* Pending Payments */}
+   573→          {pendingExpenses > 0 && (
+   574→            <div className="macos-stat macos-shadow-card">
+   575→              <div className="flex items-center justify-between">
+   576→                <div className="flex items-center gap-3">
+   577→                  <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+   578→                    <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
+   579→                  </div>
+   580→                  <div>
+   581→                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Payments</p>
+   582→                    <p className="text-[24px] font-bold text-macos-orange" style={{ letterSpacing: '-0.03em' }}>${pendingExpenses.toLocaleString()}</p>
+   583→                  </div>
+   584→                </div>
+   585→                <Badge className="rounded-md bg-macos-orange/10 text-macos-orange border-0 text-[10px] font-semibold px-2.5 py-1">
+   586→                  Requires Attention
+   587→                </Badge>
+   588→              </div>
+   589→            </div>
+   590→          )}
+   591→
+   592→          {/* Recent Expenses */}
+   593→          <div className="macos-card macos-shadow-card p-5">
+   594→            <div className="macos-section-header mb-4">
+   595→              <div>
+   596→                <h3 className="macos-section-title">Recent Expenses</h3>
+   597→                <p className="macos-section-desc">Latest expense records</p>
+   598→              </div>
+   599→            </div>
+   600→            {expenses.length === 0 ? (
+   601→              <p className="text-[13px] text-muted-foreground text-center py-4">No expenses recorded</p>
+   602→            ) : (
+   603→              <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+   604→                {expenses.slice(0, 5).map((expense) => (
+   605→                  <div key={expense.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+   606→                    <div className="flex items-center gap-3">
+   607→                      <div className="size-8 rounded-lg bg-macos-red/10 flex items-center justify-center">
+   608→                        <Receipt className="size-3.5 text-macos-red" strokeWidth={1.5} />
+   609→                      </div>
+   610→                      <div>
+   611→                        <p className="font-medium">{expense.category}</p>
+   612→                        <p className="text-[11px] text-muted-foreground">
+   613→                          {expense.description || 'No description'} · {new Date(expense.date).toLocaleDateString()}
+   614→                        </p>
+   615→                      </div>
+   616→                    </div>
+   617→                    <div className="text-right">
+   618→                      <p className="font-semibold text-macos-red">${expense.amount.toLocaleString()}</p>
+   619→                      <Badge
+   620→                        className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
+   621→                          expense.status === 'paid'
+   622→                            ? 'bg-macos-green/10 text-macos-green'
+   623→                            : expense.status === 'approved'
+   624→                            ? 'bg-macos-blue/10 text-macos-blue'
+   625→                            : 'bg-macos-orange/10 text-macos-orange'
+   626→                        }`}
+   627→                      >
+   628→                        {expense.status}
+   629→                      </Badge>
+   630→                    </div>
+   631→                  </div>
+   632→                ))}
+   633→              </div>
+   634→            )}
+   635→          </div>
+   636→        </>
+   637→      )}
+   638→    </div>
+   639→  )
+   640→}
+   641→
+   642→// ==================== ACCOUNTS TAB ====================
+   643→
+   644→function AccountsTab() {
+   645→  const { authUser } = useAppStore()
+   646→  const isViewOnly = authUser?.isViewOnly ?? false
+   647→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   648→  const [loading, setLoading] = React.useState(true)
+   649→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   650→
+   651→  const fetchAccounts = React.useCallback(async () => {
+   652→    setLoading(true)
+   653→    try {
+   654→      const res = await fetch('/api/finance?type=accounts&limit=100')
+   655→      const json = await res.json()
+   656→      if (json.data) setAccounts(json.data)
+   657→    } catch (err) {
+   658→      console.error('Failed to fetch accounts:', err)
+   659→    } finally {
+   660→      setLoading(false)
+   661→    }
+   662→  }, [])
+   663→
+   664→  React.useEffect(() => {
+   665→    fetchAccounts()
+   666→  }, [fetchAccounts])
+   667→
+   668→  const getTypeBadge = (type: string) => {
+   669→    switch (type) {
+   670→      case 'asset':
+   671→        return 'bg-macos-green/10 text-macos-green'
+   672→      case 'liability':
+   673→        return 'bg-macos-red/10 text-macos-red'
+   674→      case 'equity':
+   675→        return 'bg-macos-teal/10 text-macos-teal'
+   676→      case 'revenue':
+   677→        return 'bg-macos-blue/10 text-macos-blue'
+   678→      case 'expense':
+   679→        return 'bg-macos-orange/10 text-macos-orange'
+   680→      default:
+   681→        return 'bg-secondary text-secondary-foreground'
+   682→    }
+   683→  }
+   684→
+   685→  const groupedAccounts = accounts.reduce(
+   686→    (groups, account) => {
+   687→      if (!groups[account.type]) groups[account.type] = []
+   688→      groups[account.type].push(account)
+   689→      return groups
+   690→    },
+   691→    {} as Record<string, Account[]>
+   692→  )
+   693→
+   694→  return (
+   695→    <div className="space-y-5">
+   696→      <div className="flex items-center justify-between">
+   697→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{accounts.length} accounts</p>
+   698→        {!isViewOnly && (
+   699→          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   700→            <Plus className="size-3.5" strokeWidth={2} /> Create Account
+   701→          </Button>
+   702→        )}
+   703→      </div>
+   704→
+   705→      {loading ? (
+   706→        <div className="macos-card macos-shadow-card p-6">
+   707→          <div className="space-y-3">
+   708→            {[1, 2, 3, 4, 5].map((i) => (
+   709→              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+   710→            ))}
+   711→          </div>
+   712→        </div>
+   713→      ) : accounts.length === 0 ? (
+   714→        <div className="macos-card macos-shadow-card macos-empty">
+   715→          <Wallet className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
+   716→          <p className="text-[13px] font-medium text-muted-foreground">No accounts found</p>
+   717→          <p className="text-[11px] text-muted-foreground mt-1">Create your chart of accounts</p>
+   718→        </div>
+   719→      ) : (
+   720→        <div className="macos-card macos-shadow-card overflow-hidden">
+   721→          <ScrollArea className="max-h-[500px]">
+   722→            <Table>
+   723→              <TableHeader>
+   724→                <TableRow className="hover:bg-transparent border-border/50">
+   725→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Code</TableHead>
+   726→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+   727→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
+   728→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Parent</TableHead>
+   729→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Balance</TableHead>
+   730→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+   731→                </TableRow>
+   732→              </TableHeader>
+   733→              <TableBody>
+   734→                {Object.entries(groupedAccounts).map(([type, typeAccounts]) => (
+   735→                  <React.Fragment key={type}>
+   736→                    <TableRow className="bg-secondary/30 hover:bg-secondary/30 border-border/50">
+   737→                      <TableCell colSpan={6} className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground py-2">
+   738→                        {type} ({typeAccounts.length})
+   739→                      </TableCell>
+   740→                    </TableRow>
+   741→                    {typeAccounts.map((account) => (
+   742→                      <TableRow key={account.id} className="macos-table-row">
+   743→                        <TableCell className="font-mono text-[11px] text-muted-foreground">{account.code}</TableCell>
+   744→                        <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{account.name}</TableCell>
+   745→                        <TableCell>
+   746→                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getTypeBadge(account.type)}`}>
+   747→                            {account.type}
+   748→                          </Badge>
+   749→                        </TableCell>
+   750→                        <TableCell className="text-[11px] text-muted-foreground">
+   751→                          {account.parentCode || '—'}
+   752→                        </TableCell>
+   753→                        <TableCell className="text-right font-medium text-[13px]">
+   754→                          ${account.balance.toLocaleString()}
+   755→                        </TableCell>
+   756→                        <TableCell>
+   757→                          <Badge
+   758→                            className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
+   759→                              account.isActive
+   760→                                ? 'bg-macos-green/10 text-macos-green'
+   761→                                : 'bg-macos-red/10 text-macos-red'
+   762→                            }`}
+   763→                          >
+   764→                            {account.isActive ? 'Active' : 'Inactive'}
+   765→                          </Badge>
+   766→                        </TableCell>
+   767→                      </TableRow>
+   768→                    ))}
+   769→                  </React.Fragment>
+   770→                ))}
+   771→              </TableBody>
+   772→            </Table>
+   773→          </ScrollArea>
+   774→        </div>
+   775→      )}
+   776→
+   777→      <CreateAccountDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSuccess={fetchAccounts} />
+   778→    </div>
+   779→  )
+   780→}
+   781→
+   782→// ==================== JOURNAL ENTRIES TAB ====================
+   783→
+   784→function JournalEntriesTab() {
+   785→  const { authUser } = useAppStore()
+   786→  const isViewOnly = authUser?.isViewOnly ?? false
+   787→  const [entries, setEntries] = React.useState<JournalEntry[]>([])
+   788→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   789→  const [loading, setLoading] = React.useState(true)
+   790→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   791→  const [selectedEntry, setSelectedEntry] = React.useState<JournalEntry | null>(null)
+   792→
+   793→  const fetchEntries = React.useCallback(async () => {
+   794→    setLoading(true)
+   795→    try {
+   796→      const res = await fetch('/api/finance?type=entries&limit=50')
+   797→      const json = await res.json()
+   798→      if (json.data) setEntries(json.data)
+   799→    } catch (err) {
+   800→      console.error('Failed to fetch entries:', err)
+   801→    } finally {
+   802→      setLoading(false)
+   803→    }
+   804→  }, [])
+   805→
+   806→  const fetchAccounts = React.useCallback(async () => {
+   807→    try {
+   808→      const res = await fetch('/api/finance?type=accounts&limit=100')
+   809→      const json = await res.json()
+   810→      if (json.data) setAccounts(json.data)
+   811→    } catch (err) {
+   812→      console.error('Failed to fetch accounts:', err)
+   813→    }
+   814→  }, [])
+   815→
+   816→  React.useEffect(() => {
+   817→    fetchEntries()
+   818→    fetchAccounts()
+   819→  }, [fetchEntries, fetchAccounts])
+   820→
+   821→  return (
+   822→    <div className="space-y-5">
+   823→      <div className="flex items-center justify-between">
+   824→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{entries.length} entries</p>
+   825→        {!isViewOnly && (
+   826→          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   827→            <Plus className="size-3.5" strokeWidth={2} /> Create Entry
+   828→          </Button>
+   829→        )}
+   830→      </div>
+   831→
+   832→      {loading ? (
+   833→        <div className="macos-card macos-shadow-card p-6">
+   834→          <div className="space-y-3">
+   835→            {[1, 2, 3].map((i) => (
+   836→              <div key={i} className="h-16 bg-muted/50 rounded-xl animate-pulse" />
+   837→            ))}
+   838→          </div>
+   839→        </div>
+   840→      ) : entries.length === 0 ? (
+   841→        <div className="macos-card macos-shadow-card macos-empty">
+   842→          <BookOpen className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
+   843→          <p className="text-[13px] font-medium text-muted-foreground">No journal entries found</p>
+   844→          <p className="text-[11px] text-muted-foreground mt-1">Record your first journal entry</p>
+   845→        </div>
+   846→      ) : (
+   847→        <div className="macos-card macos-shadow-card overflow-hidden">
+   848→          <ScrollArea className="max-h-[500px]">
+   849→            <Table>
+   850→              <TableHeader>
+   851→                <TableRow className="hover:bg-transparent border-border/50">
+   852→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
+   853→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
+   854→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</TableHead>
+   855→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Debit</TableHead>
+   856→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Credit</TableHead>
+   857→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+   858→                  <TableHead className="w-10"></TableHead>
+   859→                </TableRow>
+   860→              </TableHeader>
+   861→              <TableBody>
+   862→                {entries.map((entry) => {
+   863→                  const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+   864→                  const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
+   865→                  return (
+   866→                    <TableRow key={entry.id} className="macos-table-row cursor-pointer" onClick={() => setSelectedEntry(entry)}>
+   867→                      <TableCell className="text-[11px] text-muted-foreground">
+   868→                        {new Date(entry.date).toLocaleDateString()}
+   869→                      </TableCell>
+   870→                      <TableCell className="font-medium text-[13px] max-w-48 truncate" style={{ fontWeight: 500 }}>
+   871→                        {entry.description}
+   872→                      </TableCell>
+   873→                      <TableCell className="text-[11px] text-muted-foreground">
+   874→                        {entry.reference || '—'}
+   875→                      </TableCell>
+   876→                      <TableCell className="text-right text-[13px] font-medium">
+   877→                        ${totalDebit.toLocaleString()}
+   878→                      </TableCell>
+   879→                      <TableCell className="text-right text-[13px] font-medium">
+   880→                        ${totalCredit.toLocaleString()}
+   881→                      </TableCell>
+   882→                      <TableCell>
+   883→                        <Badge
+   884→                          className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
+   885→                            entry.isPosted
+   886→                              ? 'bg-macos-green/10 text-macos-green'
+   887→                              : 'bg-macos-orange/10 text-macos-orange'
+   888→                          }`}
+   889→                        >
+   890→                          {entry.isPosted ? 'Posted' : 'Draft'}
+   891→                        </Badge>
+   892→                      </TableCell>
+   893→                      <TableCell>
+   894→                        <Eye className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+   895→                      </TableCell>
+   896→                    </TableRow>
+   897→                  )
+   898→                })}
+   899→              </TableBody>
+   900→            </Table>
+   901→          </ScrollArea>
+   902→        </div>
+   903→      )}
+   904→
+   905→      <CreateJournalEntryDialog
+   906→        open={showCreateDialog}
+   907→        onOpenChange={setShowCreateDialog}
+   908→        accounts={accounts}
+   909→        onSuccess={fetchEntries}
+   910→      />
+   911→
+   912→      <JournalEntryDetailDialog
+   913→        entry={selectedEntry}
+   914→        onOpenChange={(open) => !open && setSelectedEntry(null)}
+   915→      />
+   916→    </div>
+   917→  )
+   918→}
+   919→
+   920→// ==================== EXPENSES TAB ====================
+   921→
+   922→function ExpensesTab() {
+   923→  const { authUser } = useAppStore()
+   924→  const isViewOnly = authUser?.isViewOnly ?? false
+   925→  const [expenses, setExpenses] = React.useState<Expense[]>([])
+   926→  const [loading, setLoading] = React.useState(true)
+   927→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   928→
+   929→  const fetchExpenses = React.useCallback(async () => {
+   930→    setLoading(true)
+   931→    try {
+   932→      const res = await fetch('/api/finance?type=expenses&limit=50')
+   933→      const json = await res.json()
+   934→      if (json.data) setExpenses(json.data)
+   935→    } catch (err) {
+   936→      console.error('Failed to fetch expenses:', err)
+   937→    } finally {
+   938→      setLoading(false)
+   939→    }
+   940→  }, [])
+   941→
+   942→  React.useEffect(() => {
+   943→    fetchExpenses()
+   944→  }, [fetchExpenses])
+   945→
+   946→  const getStatusBadge = (status: string) => {
+   947→    switch (status) {
+   948→      case 'paid':
+   949→        return 'bg-macos-green/10 text-macos-green'
+   950→      case 'approved':
+   951→        return 'bg-macos-blue/10 text-macos-blue'
+   952→      case 'pending':
+   953→        return 'bg-macos-orange/10 text-macos-orange'
+   954→      default:
+   955→        return 'bg-secondary text-secondary-foreground'
+   956→    }
+   957→  }
+   958→
+   959→  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+   960→  const pendingAmount = expenses.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0)
+   961→  const paidAmount = expenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0)
+   962→
+   963→  return (
+   964→    <div className="space-y-5">
+   965→      {/* Summary */}
+   966→      <div className="grid grid-cols-3 gap-3">
+   967→        <div className="macos-stat macos-shadow-card">
+   968→          <div className="flex items-center gap-3">
+   969→            <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
+   970→              <Receipt className="size-4 text-macos-red" strokeWidth={1.5} />
+   971→            </div>
+   972→            <div>
+   973→              <p className="text-[24px] font-bold leading-tight" style={{ letterSpacing: '-0.03em' }}>${totalExpenses.toLocaleString()}</p>
+   974→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Expenses</p>
+   975→            </div>
+   976→          </div>
+   977→        </div>
+   978→        <div className="macos-stat macos-shadow-card">
+   979→          <div className="flex items-center gap-3">
+   980→            <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+   981→              <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
+   982→            </div>
+   983→            <div>
+   984→              <p className="text-[24px] font-bold leading-tight text-macos-orange" style={{ letterSpacing: '-0.03em' }}>${pendingAmount.toLocaleString()}</p>
+   985→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
+   986→            </div>
+   987→          </div>
+   988→        </div>
+   989→        <div className="macos-stat macos-shadow-card">
+   990→          <div className="flex items-center gap-3">
+   991→            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
+   992→              <CheckCircle2 className="size-4 text-macos-green" strokeWidth={1.5} />
+   993→            </div>
+   994→            <div>
+   995→              <p className="text-[24px] font-bold leading-tight text-macos-green" style={{ letterSpacing: '-0.03em' }}>${paidAmount.toLocaleString()}</p>
+   996→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid</p>
+   997→            </div>
+   998→          </div>
+   999→        </div>
+  1000→      </div>
+  1001→
+  1002→      <div className="flex items-center justify-between">
+  1003→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{expenses.length} expense records</p>
+  1004→        {!isViewOnly && (
+  1005→          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1006→            <Plus className="size-3.5" strokeWidth={2} /> Add Expense
+  1007→          </Button>
+  1008→        )}
+  1009→      </div>
+  1010→
+  1011→      {loading ? (
+  1012→        <div className="macos-card macos-shadow-card p-6">
+  1013→          <div className="space-y-3">
+  1014→            {[1, 2, 3, 4].map((i) => (
+  1015→              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+  1016→            ))}
+  1017→          </div>
+  1018→        </div>
+  1019→      ) : expenses.length === 0 ? (
+  1020→        <div className="macos-card macos-shadow-card macos-empty">
+  1021→          <Receipt className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
+  1022→          <p className="text-[13px] font-medium text-muted-foreground">No expenses found</p>
+  1023→          <p className="text-[11px] text-muted-foreground mt-1">Record your first expense</p>
+  1024→        </div>
+  1025→      ) : (
+  1026→        <div className="macos-card macos-shadow-card overflow-hidden">
+  1027→          <ScrollArea className="max-h-[400px]">
+  1028→            <Table>
+  1029→              <TableHeader>
+  1030→                <TableRow className="hover:bg-transparent border-border/50">
+  1031→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+  1032→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
+  1033→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Amount</TableHead>
+  1034→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
+  1035→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</TableHead>
+  1036→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+  1037→                </TableRow>
+  1038→              </TableHeader>
+  1039→              <TableBody>
+  1040→                {expenses.map((expense) => (
+  1041→                  <TableRow key={expense.id} className="macos-table-row">
+  1042→                    <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{expense.category}</TableCell>
+  1043→                    <TableCell className="text-[11px] text-muted-foreground max-w-32 truncate">
+  1044→                      {expense.description || '—'}
+  1045→                    </TableCell>
+  1046→                    <TableCell className="text-right font-semibold text-macos-red text-[13px]">
+  1047→                      ${expense.amount.toLocaleString()}
+  1048→                    </TableCell>
+  1049→                    <TableCell className="text-[11px] text-muted-foreground">
+  1050→                      {new Date(expense.date).toLocaleDateString()}
+  1051→                    </TableCell>
+  1052→                    <TableCell className="text-[11px] text-muted-foreground">
+  1053→                      {expense.paidBy || '—'}
+  1054→                    </TableCell>
+  1055→                    <TableCell>
+  1056→                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getStatusBadge(expense.status)}`}>
+  1057→                        {expense.status}
+  1058→                      </Badge>
+  1059→                    </TableCell>
+  1060→                  </TableRow>
+  1061→                ))}
+  1062→              </TableBody>
+  1063→            </Table>
+  1064→          </ScrollArea>
+  1065→        </div>
+  1066→      )}
+  1067→
+  1068→      <AddExpenseDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchExpenses} />
+  1069→    </div>
+  1070→  )
+  1071→}
+  1072→
+  1073→// ==================== CREATE ACCOUNT DIALOG ====================
+  1074→
+  1075→function CreateAccountDialog({
+  1076→  open,
+  1077→  onOpenChange,
+  1078→  onSuccess,
+  1079→}: {
+  1080→  open: boolean
+  1081→  onOpenChange: (open: boolean) => void
+  1082→  onSuccess: () => void
+  1083→}) {
+  1084→  const [saving, setSaving] = React.useState(false)
+  1085→  const [form, setForm] = React.useState({
+  1086→    code: '',
+  1087→    name: '',
+  1088→    type: 'asset',
+  1089→    parentCode: '',
+  1090→  })
+  1091→
+  1092→  const handleSubmit = async (e: React.FormEvent) => {
+  1093→    e.preventDefault()
+  1094→    if (!form.code.trim() || !form.name.trim()) return
+  1095→    setSaving(true)
+  1096→    try {
+  1097→      const res = await fetch('/api/finance?type=accounts', {
+  1098→        method: 'POST',
+  1099→        headers: { 'Content-Type': 'application/json' },
+  1100→        body: JSON.stringify({
+  1101→          ...form,
+  1102→          parentCode: form.parentCode || null,
+  1103→        }),
+  1104→      })
+  1105→      if (res.ok) {
+  1106→        setForm({ code: '', name: '', type: 'asset', parentCode: '' })
+  1107→        onOpenChange(false)
+  1108→        onSuccess()
+  1109→      } else {
+  1110→        const json = await res.json()
+  1111→        alert(json.error || 'Failed to create account')
+  1112→      }
+  1113→    } catch (err) {
+  1114→      console.error('Failed to create account:', err)
+  1115→      alert('Failed to create account')
+  1116→    } finally {
+  1117→      setSaving(false)
+  1118→    }
+  1119→  }
+  1120→
+  1121→  return (
+  1122→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1123→      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
+  1124→        <DialogHeader>
+  1125→          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Account</DialogTitle>
+  1126→          <DialogDescription className="text-[11px]">Add a new account to your chart of accounts</DialogDescription>
+  1127→        </DialogHeader>
+  1128→        <form onSubmit={handleSubmit} className="space-y-4">
+  1129→          <div className="grid grid-cols-2 gap-3">
+  1130→            <div className="space-y-2">
+  1131→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Code *</Label>
+  1132→              <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="1000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1133→            </div>
+  1134→            <div className="space-y-2">
+  1135→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Type *</Label>
+  1136→              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+  1137→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1138→                  <SelectValue />
+  1139→                </SelectTrigger>
+  1140→                <SelectContent>
+  1141→                  <SelectItem value="asset">Asset</SelectItem>
+  1142→                  <SelectItem value="liability">Liability</SelectItem>
+  1143→                  <SelectItem value="equity">Equity</SelectItem>
+  1144→                  <SelectItem value="revenue">Revenue</SelectItem>
+  1145→                  <SelectItem value="expense">Expense</SelectItem>
+  1146→                </SelectContent>
+  1147→              </Select>
+  1148→            </div>
+  1149→          </div>
+  1150→          <div className="space-y-2">
+  1151→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Name *</Label>
+  1152→            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cash on Hand" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1153→          </div>
+  1154→          <div className="space-y-2">
+  1155→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Parent Code</Label>
+  1156→            <Input value={form.parentCode} onChange={(e) => setForm({ ...form, parentCode: e.target.value })} placeholder="1000 (optional)" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1157→          </div>
+  1158→          <DialogFooter>
+  1159→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1160→            <Button type="submit" disabled={saving || !form.code.trim() || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1161→              {saving ? 'Creating...' : 'Create Account'}
+  1162→            </Button>
+  1163→          </DialogFooter>
+  1164→        </form>
+  1165→      </DialogContent>
+  1166→    </Dialog>
+  1167→  )
+  1168→}
+  1169→
+  1170→// ==================== CREATE JOURNAL ENTRY DIALOG ====================
+  1171→
+  1172→interface JournalLineForm {
+  1173→  key: string
+  1174→  accountId: string
+  1175→  debit: string
+  1176→  credit: string
+  1177→  description: string
+  1178→}
+  1179→
+  1180→function CreateJournalEntryDialog({
+  1181→  open,
+  1182→  onOpenChange,
+  1183→  accounts,
+  1184→  onSuccess,
+  1185→}: {
+  1186→  open: boolean
+  1187→  onOpenChange: (open: boolean) => void
+  1188→  accounts: Account[]
+  1189→  onSuccess: () => void
+  1190→}) {
+  1191→  const [saving, setSaving] = React.useState(false)
+  1192→  const [form, setForm] = React.useState({
+  1193→    date: new Date().toISOString().split('T')[0],
+  1194→    description: '',
+  1195→    reference: '',
+  1196→    isPosted: false,
+  1197→  })
+  1198→  const [lines, setLines] = React.useState<JournalLineForm[]>([
+  1199→    { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1200→    { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1201→  ])
+  1202→
+  1203→  const totalDebit = lines.reduce((sum, l) => sum + (parseFloat(l.debit) || 0), 0)
+  1204→  const totalCredit = lines.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0)
+  1205→  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0
+  1206→
+  1207→  const addLine = () => {
+  1208→    setLines([...lines, { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' }])
+  1209→  }
+  1210→
+  1211→  const removeLine = (key: string) => {
+  1212→    if (lines.length > 2) {
+  1213→      setLines(lines.filter((l) => l.key !== key))
+  1214→    }
+  1215→  }
+  1216→
+  1217→  const updateLine = (key: string, updates: Partial<JournalLineForm>) => {
+  1218→    setLines(lines.map((l) => (l.key === key ? { ...l, ...updates } : l)))
+  1219→  }
+  1220→
+  1221→  const handleSubmit = async (e: React.FormEvent) => {
+  1222→    e.preventDefault()
+  1223→    if (!form.description.trim() || !isBalanced) return
+  1224→    setSaving(true)
+  1225→    try {
+  1226→      const res = await fetch('/api/finance?type=entries', {
+  1227→        method: 'POST',
+  1228→        headers: { 'Content-Type': 'application/json' },
+  1229→        body: JSON.stringify({
+  1230→          ...form,
+  1231→          lines: lines
+  1232→            .filter((l) => l.accountId && (parseFloat(l.debit) > 0 || parseFloat(l.credit) > 0))
+  1233→            .map((l) => ({
+  1234→              accountId: l.accountId,
+  1235→              debit: parseFloat(l.debit) || 0,
+  1236→              credit: parseFloat(l.credit) || 0,
+  1237→              description: l.description || null,
+  1238→            })),
+  1239→        }),
+  1240→      })
+  1241→      if (res.ok) {
+  1242→        setForm({ date: new Date().toISOString().split('T')[0], description: '', reference: '', isPosted: false })
+  1243→        setLines([
+  1244→          { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1245→          { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1246→        ])
+  1247→        onOpenChange(false)
+  1248→        onSuccess()
+  1249→      } else {
+  1250→        const json = await res.json()
+  1251→        alert(json.error || 'Failed to create journal entry')
+  1252→      }
+  1253→    } catch (err) {
+  1254→      console.error('Failed to create journal entry:', err)
+  1255→      alert('Failed to create journal entry')
+  1256→    } finally {
+  1257→      setSaving(false)
+  1258→    }
+  1259→  }
+  1260→
+  1261→  return (
+  1262→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1263→      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-float">
+  1264→        <DialogHeader>
+  1265→          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Journal Entry</DialogTitle>
+  1266→          <DialogDescription className="text-[11px]">Record a double-entry journal transaction</DialogDescription>
+  1267→        </DialogHeader>
+  1268→        <form onSubmit={handleSubmit} className="space-y-4">
+  1269→          <div className="grid grid-cols-2 gap-3">
+  1270→            <div className="space-y-2">
+  1271→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date *</Label>
+  1272→              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1273→            </div>
+  1274→            <div className="space-y-2">
+  1275→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</Label>
+  1276→              <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="JE-001" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1277→            </div>
+  1278→          </div>
+  1279→          <div className="space-y-2">
+  1280→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description *</Label>
+  1281→            <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Monthly rent payment" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1282→          </div>
+  1283→
+  1284→          <Separator className="bg-border/50" />
+  1285→
+  1286→          <div className="space-y-3">
+  1287→            <div className="flex items-center justify-between">
+  1288→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Entry Lines</Label>
+  1289→              <Button type="button" variant="ghost" size="sm" onClick={addLine} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
+  1290→                <Plus className="size-3" strokeWidth={2} /> Add Line
+  1291→              </Button>
+  1292→            </div>
+  1293→            {lines.map((line) => (
+  1294→              <div key={line.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
+  1295→                <div className="flex-[2] space-y-1">
+  1296→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Account</Label>
+  1297→                  <Select value={line.accountId} onValueChange={(v) => updateLine(line.key, { accountId: v })}>
+  1298→                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
+  1299→                      <SelectValue placeholder="Select account..." />
+  1300→                    </SelectTrigger>
+  1301→                    <SelectContent>
+  1302→                      {accounts.map((a) => (
+  1303→                        <SelectItem key={a.id} value={a.id}>
+  1304→                          {a.code} - {a.name}
+  1305→                        </SelectItem>
+  1306→                      ))}
+  1307→                    </SelectContent>
+  1308→                  </Select>
+  1309→                </div>
+  1310→                <div className="w-24 space-y-1">
+  1311→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Debit</Label>
+  1312→                  <Input type="number" step="0.01" min="0" value={line.debit} onChange={(e) => updateLine(line.key, { debit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1313→                </div>
+  1314→                <div className="w-24 space-y-1">
+  1315→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Credit</Label>
+  1316→                  <Input type="number" step="0.01" min="0" value={line.credit} onChange={(e) => updateLine(line.key, { credit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1317→                </div>
+  1318→                <div className="flex-[1] space-y-1">
+  1319→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Note</Label>
+  1320→                  <Input value={line.description} onChange={(e) => updateLine(line.key, { description: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" placeholder="Optional" />
+  1321→                </div>
+  1322→                <Button
+  1323→                  type="button"
+  1324→                  variant="ghost"
+  1325→                  size="sm"
+  1326→                  className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+  1327→                  onClick={() => removeLine(line.key)}
+  1328→                  disabled={lines.length <= 2}
+  1329→                >
+  1330→                  <X className="size-3" />
+  1331→                </Button>
+  1332→              </div>
+  1333→            ))}
+  1334→          </div>
+  1335→
+  1336→          <div className={`flex items-center justify-between p-3 rounded-xl ${
+  1337→            isBalanced
+  1338→              ? 'bg-macos-green/10'
+  1339→              : 'bg-macos-orange/10'
+  1340→          }`}>
+  1341→            <div className="flex items-center gap-4 text-[13px]">
+  1342→              <span>
+  1343→                Debit: <strong>${totalDebit.toLocaleString()}</strong>
+  1344→              </span>
+  1345→              <span>
+  1346→                Credit: <strong>${totalCredit.toLocaleString()}</strong>
+  1347→              </span>
+  1348→            </div>
+  1349→            <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${isBalanced ? 'bg-macos-green/10 text-macos-green' : 'bg-macos-orange/10 text-macos-orange'}`}>
+  1350→              {isBalanced ? 'Balanced' : 'Unbalanced'}
+  1351→            </Badge>
+  1352→          </div>
+  1353→
+  1354→          <div className="flex items-center gap-2">
+  1355→            <Label htmlFor="post-entry" className="text-[13px]">Post immediately</Label>
+  1356→            <input
+  1357→              id="post-entry"
+  1358→              type="checkbox"
+  1359→              checked={form.isPosted}
+  1360→              onChange={(e) => setForm({ ...form, isPosted: e.target.checked })}
+  1361→              className="rounded"
+  1362→            />
+  1363→          </div>
+  1364→
+  1365→          <DialogFooter>
+  1366→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1367→            <Button type="submit" disabled={saving || !form.description.trim() || !isBalanced} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1368→              {saving ? 'Creating...' : 'Create Entry'}
+  1369→            </Button>
+  1370→          </DialogFooter>
+  1371→        </form>
+  1372→      </DialogContent>
+  1373→    </Dialog>
+  1374→  )
+  1375→}
+  1376→
+  1377→// ==================== JOURNAL ENTRY DETAIL DIALOG ====================
+  1378→
+  1379→function JournalEntryDetailDialog({
+  1380→  entry,
+  1381→  onOpenChange,
+  1382→}: {
+  1383→  entry: JournalEntry | null
+  1384→  onOpenChange: (open: boolean) => void
+  1385→}) {
+  1386→  if (!entry) return null
+  1387→
+  1388→  const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+  1389→  const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
+  1390→
+  1391→  return (
+  1392→    <Dialog open={!!entry} onOpenChange={onOpenChange}>
+  1393→      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
+  1394→        <DialogHeader>
+  1395→          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>
+  1396→            <div className="size-8 rounded-lg bg-macos-green/10 flex items-center justify-center">
+  1397→              <BookOpen className="size-4 text-macos-green" strokeWidth={1.5} />
+  1398→            </div>
+  1399→            Journal Entry
+  1400→          </DialogTitle>
+  1401→          <DialogDescription className="text-[11px]">{entry.description}</DialogDescription>
+  1402→        </DialogHeader>
+  1403→        <div className="space-y-4">
+  1404→          <div className="flex items-center gap-4">
+  1405→            <div className="grid grid-cols-2 gap-3 text-[13px] flex-1">
+  1406→              <div>
+  1407→                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Date: </span>
+  1408→                <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
+  1409→              </div>
+  1410→              <div>
+  1411→                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Reference: </span>
+  1412→                <span className="font-medium">{entry.reference || '—'}</span>
+  1413→              </div>
+  1414→            </div>
+  1415→            <Badge
+  1416→              className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
+  1417→                entry.isPosted
+  1418→                  ? 'bg-macos-green/10 text-macos-green'
+  1419→                  : 'bg-macos-orange/10 text-macos-orange'
+  1420→              }`}
+  1421→            >
+  1422→              {entry.isPosted ? 'Posted' : 'Draft'}
+  1423→            </Badge>
+  1424→          </div>
+  1425→
+  1426→          <Separator className="bg-border/50" />
+  1427→
+  1428→          <div className="space-y-2">
+  1429→            <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Entry Lines</h4>
+  1430→            {entry.lines.map((line) => (
+  1431→              <div key={line.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
+  1432→                <div>
+  1433→                  <p className="text-[13px] font-medium">
+  1434→                    {line.account?.name || 'Unknown'}
+  1435→                    <span className="text-[11px] text-muted-foreground ml-1.5">({line.account?.code})</span>
+  1436→                  </p>
+  1437→                  {line.description && (
+  1438→                    <p className="text-[11px] text-muted-foreground">{line.description}</p>
+  1439→                  )}
+  1440→                </div>
+  1441→                <div className="text-right text-[13px] font-medium">
+  1442→                  {line.debit > 0 && <span className="text-macos-blue">${line.debit.toLocaleString()}</span>}
+  1443→                  {line.credit > 0 && <span className="text-macos-green">${line.credit.toLocaleString()}</span>}
+  1444→                </div>
+  1445→              </div>
+  1446→            ))}
+  1447→          </div>
+  1448→
+  1449→          <Separator className="bg-border/50" />
+  1450→
+  1451→          <div className="grid grid-cols-2 gap-3">
+  1452→            <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+  1453→              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Debit</p>
+  1454→              <p className="text-[13px] font-bold text-macos-blue">${totalDebit.toLocaleString()}</p>
+  1455→            </div>
+  1456→            <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+  1457→              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Credit</p>
+  1458→              <p className="text-[13px] font-bold text-macos-green">${totalCredit.toLocaleString()}</p>
+  1459→            </div>
+  1460→          </div>
+  1461→        </div>
+  1462→      </DialogContent>
+  1463→    </Dialog>
+  1464→  )
+  1465→}
+  1466→
+  1467→// ==================== ADD EXPENSE DIALOG ====================
+  1468→
+  1469→function AddExpenseDialog({
+  1470→  open,
+  1471→  onOpenChange,
+  1472→  onSuccess,
+  1473→}: {
+  1474→  open: boolean
+  1475→  onOpenChange: (open: boolean) => void
+  1476→  onSuccess: () => void
+  1477→}) {
+  1478→  const [saving, setSaving] = React.useState(false)
+  1479→  const [form, setForm] = React.useState({
+  1480→    category: '',
+  1481→    amount: '',
+  1482→    date: new Date().toISOString().split('T')[0],
+  1483→    description: '',
+  1484→    paidBy: '',
+  1485→    status: 'pending',
+  1486→  })
+  1487→
+  1488→  const handleSubmit = async (e: React.FormEvent) => {
+  1489→    e.preventDefault()
+  1490→    if (!form.category.trim() || !form.amount || !form.date) return
+  1491→    setSaving(true)
+  1492→    try {
+  1493→      const res = await fetch('/api/finance?type=expenses', {
+  1494→        method: 'POST',
+  1495→        headers: { 'Content-Type': 'application/json' },
+  1496→        body: JSON.stringify({
+  1497→          category: form.category,
+  1498→          amount: parseFloat(form.amount),
+  1499→          date: form.date,
+  1500→          description: form.description || null,
+  1501→          paidBy: form.paidBy || null,
+  1502→          status: form.status,
+  1503→        }),
+  1504→      })
+  1505→      if (res.ok) {
+  1506→        setForm({ category: '', amount: '', date: new Date().toISOString().split('T')[0], description: '', paidBy: '', status: 'pending' })
+  1507→        onOpenChange(false)
+  1508→        onSuccess()
+  1509→      } else {
+  1510→        const json = await res.json()
+  1511→        alert(json.error || 'Failed to add expense')
+  1512→      }
+  1513→    } catch (err) {
+  1514→      console.error('Failed to add expense:', err)
+  1515→      alert('Failed to add expense')
+  1516→    } finally {
+  1517→      setSaving(false)
+  1518→    }
+  1519→  }
+  1520→
+  1521→  return (
+  1522→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1523→      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
+  1524→        <DialogHeader>
+  1525→          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Add Expense</DialogTitle>
+  1526→          <DialogDescription className="text-[11px]">Record a new expense</DialogDescription>
+  1527→        </DialogHeader>
+  1528→        <form onSubmit={handleSubmit} className="space-y-4">
+  1529→          <div className="grid grid-cols-2 gap-3">
+  1530→            <div className="space-y-2">
+  1531→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category *</Label>
+  1532→              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+  1533→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1534→                  <SelectValue placeholder="Select category" />
+  1535→                </SelectTrigger>
+  1536→                <SelectContent>
+  1537→                  <SelectItem value="Rent">Rent</SelectItem>
+  1538→                  <SelectItem value="Utilities">Utilities</SelectItem>
+  1539→                  <SelectItem value="Salaries">Salaries</SelectItem>
+  1540→                  <SelectItem value="Office Supplies">Office Supplies</SelectItem>
+  1541→                  <SelectItem value="Marketing">Marketing</SelectItem>
+  1542→                  <SelectItem value="Transport">Transport</SelectItem>
+  1543→                  <SelectItem value="Maintenance">Maintenance</SelectItem>
+  1544→                  <SelectItem value="Insurance">Insurance</SelectItem>
+  1545→                  <SelectItem value="Other">Other</SelectItem>
+  1546→                </SelectContent>
+  1547→              </Select>
+  1548→            </div>
+  1549→            <div className="space-y-2">
+  1550→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Amount ($) *</Label>
+  1551→              <Input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="500" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1552→            </div>
+  1553→          </div>
+  1554→          <div className="grid grid-cols-2 gap-3">
+  1555→            <div className="space-y-2">
+  1556→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date *</Label>
+  1557→              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1558→            </div>
+  1559→            <div className="space-y-2">
+  1560→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</Label>
+  1561→              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+  1562→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1563→                  <SelectValue />
+  1564→                </SelectTrigger>
+  1565→                <SelectContent>
+  1566→                  <SelectItem value="pending">Pending</SelectItem>
+  1567→                  <SelectItem value="approved">Approved</SelectItem>
+  1568→                  <SelectItem value="paid">Paid</SelectItem>
+  1569→                </SelectContent>
+  1570→              </Select>
+  1571→            </div>
+  1572→          </div>
+  1573→          <div className="space-y-2">
+  1574→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</Label>
+  1575→            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Expense details..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+  1576→          </div>
+  1577→          <div className="space-y-2">
+  1578→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</Label>
+  1579→            <Input value={form.paidBy} onChange={(e) => setForm({ ...form, paidBy: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1580→          </div>
+  1581→          <DialogFooter>
+  1582→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1583→            <Button type="submit" disabled={saving || !form.category || !form.amount || !form.date} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1584→              {saving ? 'Adding...' : 'Add Expense'}
+  1585→            </Button>
+  1586→          </DialogFooter>
+  1587→        </form>
+  1588→      </DialogContent>
+  1589→    </Dialog>
+  1590→  )
+  1591→}
+  1592→

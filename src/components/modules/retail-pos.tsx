@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 import {
-  Search,
   ShoppingCart,
   Plus,
   Minus,
@@ -30,14 +29,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -48,6 +39,16 @@ import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosSearch,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosDialog,
+  MacosEmptyState,
+  MacosFormField,
+} from '@/components/macos-ui'
 
 // ─── Types ────────────────────────────────────────────────────────
 type ProductType = 'book' | 'stationery'
@@ -353,34 +354,31 @@ export function RetailPOSModule() {
     { value: 'wallet', label: 'Wallet', icon: Smartphone, color: 'macos-orange' as const },
   ]
 
-  // Category filters
-  const categoryFilters = [
-    { value: 'all' as const, label: 'All', icon: Package },
-    { value: 'books' as const, label: 'Books', icon: BookOpen },
-    { value: 'stationery' as const, label: 'Stationery', icon: PencilRuler },
-    { value: 'school' as const, label: 'School', icon: GraduationCap },
+  // Category filters for MacosFilterBar
+  const categoryFilterItems = [
+    { id: 'all', label: 'All' },
+    { id: 'books', label: 'Books' },
+    { id: 'stationery', label: 'Stationery' },
+    { id: 'school', label: 'School' },
   ]
 
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* ─── Page Header ─── */}
-      <div className="macos-page-header flex-shrink-0">
-        <div>
-          <h1 className="macos-page-title flex items-center gap-2.5">
-            <div className="size-8 rounded-lg bg-gg-bridge/10 flex items-center justify-center">
-              <ShoppingCart className="size-4 text-gg-bridge" />
-            </div>
-            Point of Sale
-          </h1>
-          <p className="macos-page-subtitle">Process retail transactions — select products, add to cart, and complete sales</p>
-        </div>
+      <MacosPageHeader
+        title="Point of Sale"
+        subtitle="Process retail transactions — select products, add to cart, and complete sales"
+        icon={ShoppingCart}
+        iconColor="text-gg-bridge"
+        iconBg="bg-gg-bridge/10"
+      >
         {isViewOnly && (
-          <div className="flex items-center gap-1.5 rounded-lg bg-macos-orange/10 px-3 py-1.5 text-macos-orange">
-            <Eye className="size-3.5" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider">View Only</span>
-          </div>
+          <MacosBadge variant="warning" className="flex items-center gap-1.5">
+            <Eye className="size-3" />
+            View Only
+          </MacosBadge>
         )}
-      </div>
+      </MacosPageHeader>
 
       {/* ─── Error Alert ─── */}
       {error && (
@@ -399,81 +397,76 @@ export function RetailPOSModule() {
       )}
 
       {/* ─── Receipt Dialog ─── */}
-      <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
-        <DialogContent className="sm:max-w-[460px] rounded-xl macos-shadow-float border-0 bg-card p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
-              <div className="size-6 rounded-md bg-macos-green/10 flex items-center justify-center">
-                <Receipt className="size-3.5 text-macos-green" />
+      <MacosDialog
+        open={!!completedSale}
+        onOpenChange={(open) => !open && setCompletedSale(null)}
+        title="Sale Completed"
+        description="Transaction processed successfully"
+        className="glass-card"
+        footer={
+          <Button
+            onClick={() => setCompletedSale(null)}
+            className="w-full bg-macos-green text-white rounded-lg font-semibold text-[13px] h-10 hover:bg-macos-green/90"
+          >
+            <Check className="size-4 mr-1.5" />
+            Done
+          </Button>
+        }
+      >
+        {completedSale && (
+          <div className="space-y-4">
+            <div className="text-center space-y-1.5 py-3">
+              <div className="flex items-center justify-center gap-1.5">
+                <Sparkles className="size-3.5 text-gg-golden" />
+                <p className="text-[15px] font-bold tracking-tight">BookFlow OS</p>
+                <Sparkles className="size-3.5 text-gg-golden" />
               </div>
-              Sale Completed
-            </DialogTitle>
-            <DialogDescription className="text-[11px] text-muted-foreground">Transaction processed successfully</DialogDescription>
-          </DialogHeader>
-          {completedSale && (
-            <div className="p-6 pt-4 space-y-4">
-              <div className="text-center space-y-1.5 py-3">
-                <div className="flex items-center justify-center gap-1.5">
-                  <Sparkles className="size-3.5 text-gg-golden" />
-                  <p className="text-[15px] font-bold tracking-tight">BookFlow OS</p>
-                  <Sparkles className="size-3.5 text-gg-golden" />
+              <p className="text-[11px] text-muted-foreground font-medium">Invoice {completedSale.invoiceNumber}</p>
+              <p className="text-[10px] text-muted-foreground">{new Date().toLocaleString()}</p>
+            </div>
+
+            <div className="rounded-xl bg-secondary/50 p-3 space-y-2">
+              {completedSale.items.map((item, i) => (
+                <div key={i} className="flex justify-between text-[13px] tracking-tight">
+                  <span className="flex-1 truncate mr-3 font-medium">{item.name} <span className="text-muted-foreground">×{item.quantity}</span></span>
+                  <span className="font-semibold tabular-nums">${item.totalPrice.toFixed(2)}</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground font-medium">Invoice {completedSale.invoiceNumber}</p>
-                <p className="text-[10px] text-muted-foreground">{new Date().toLocaleString()}</p>
+              ))}
+            </div>
+
+            <Separator className="opacity-50" />
+
+            <div className="space-y-2 text-[13px] tracking-tight">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="tabular-nums">${completedSale.subtotal.toFixed(2)}</span>
               </div>
-
-              <div className="rounded-lg bg-secondary/50 p-3 space-y-2">
-                {completedSale.items.map((item, i) => (
-                  <div key={i} className="flex justify-between text-[13px] tracking-tight">
-                    <span className="flex-1 truncate mr-3 font-medium">{item.name} <span className="text-muted-foreground">×{item.quantity}</span></span>
-                    <span className="font-semibold tabular-nums">${item.totalPrice.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <Separator className="opacity-50" />
-
-              <div className="space-y-2 text-[13px] tracking-tight">
+              {completedSale.discount > 0 && (
+                <div className="flex justify-between text-macos-green">
+                  <span>Discount</span>
+                  <span className="tabular-nums">-${completedSale.discount.toFixed(2)}</span>
+                </div>
+              )}
+              {completedSale.tax > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="tabular-nums">${completedSale.subtotal.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Tax</span>
+                  <span className="tabular-nums">${completedSale.tax.toFixed(2)}</span>
                 </div>
-                {completedSale.discount > 0 && (
-                  <div className="flex justify-between text-macos-green">
-                    <span>Discount</span>
-                    <span className="tabular-nums">-${completedSale.discount.toFixed(2)}</span>
-                  </div>
-                )}
-                {completedSale.tax > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span className="tabular-nums">${completedSale.tax.toFixed(2)}</span>
-                  </div>
-                )}
-                <Separator className="opacity-50" />
-                <div className="flex justify-between font-bold text-[15px] tracking-tight">
-                  <span>Total</span>
-                  <span className="tabular-nums">${completedSale.total.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                <span>Paid: {completedSale.paymentMethod}</span>
-                {completedSale.customerName && <span>Customer: {completedSale.customerName}</span>}
+              )}
+              <Separator className="opacity-50" />
+              <div className="flex justify-between font-bold text-[15px] tracking-tight">
+                <span>Total</span>
+                <span className="tabular-nums">${completedSale.total.toFixed(2)}</span>
               </div>
             </div>
-          )}
-          <DialogFooter className="p-6 pt-0">
-            <Button
-              onClick={() => setCompletedSale(null)}
-              className="w-full bg-macos-green text-white rounded-lg font-semibold text-[13px] h-10 hover:bg-macos-green/90"
-            >
-              <Check className="size-4 mr-1.5" />
-              Done
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+            <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+              <span>Paid: {completedSale.paymentMethod}</span>
+              {completedSale.customerName && <span>Customer: {completedSale.customerName}</span>}
+            </div>
+          </div>
+        )}
+      </MacosDialog>
 
       {/* ─── Main POS Split Layout ─── */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-0 overflow-hidden">
@@ -481,37 +474,19 @@ export function RetailPOSModule() {
         <div className="lg:col-span-3 flex flex-col min-h-0 gap-4">
           {/* Search + Category Filter Bar */}
           <div className="macos-card macos-shadow-card p-4 flex-shrink-0">
-            <div className="macos-search flex items-center gap-2 px-3 h-9">
-              <Search className="size-3.5 text-muted-foreground flex-shrink-0" />
-              <input
-                type="text"
-                placeholder="Search by name, ISBN, or barcode…"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 bg-transparent text-[13px] font-medium placeholder:text-muted-foreground/60 outline-none"
-              />
-              {searchTerm && (
-                <button onClick={() => setSearchTerm('')} className="size-4 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-muted-foreground/30">
-                  <X className="size-2.5 text-background" />
-                </button>
-              )}
-            </div>
+            <MacosSearch
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Search by name, ISBN, or barcode…"
+              className="h-9"
+            />
 
-            <div className="macos-filter-bar mt-3">
-              {categoryFilters.map((cat) => {
-                const Icon = cat.icon
-                const isActive = categoryFilter === cat.value
-                return (
-                  <button
-                    key={cat.value}
-                    className={`macos-filter-item inline-flex items-center gap-1.5 ${isActive ? 'macos-filter-item-active' : ''}`}
-                    onClick={() => setCategoryFilter(cat.value)}
-                  >
-                    <Icon className="size-3" />
-                    {cat.label}
-                  </button>
-                )
-              })}
+            <div className="mt-3">
+              <MacosFilterBar
+                items={categoryFilterItems}
+                activeId={categoryFilter}
+                onChange={(id) => setCategoryFilter(id as 'all' | 'books' | 'stationery' | 'school')}
+              />
             </div>
           </div>
 
@@ -528,18 +503,16 @@ export function RetailPOSModule() {
                 ))}
               </div>
             ) : products.length === 0 ? (
-              <div className="macos-card macos-shadow-card macos-empty py-20">
-                <div className="size-14 rounded-2xl bg-gg-bay/10 flex items-center justify-center mb-4">
-                  <Package className="size-7 text-gg-bay" />
-                </div>
-                <p className="text-[13px] font-semibold text-foreground">No products found</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Try a different search or category</p>
-              </div>
+              <MacosEmptyState
+                icon={Package}
+                title="No products found"
+                description="Try a different search or category"
+                className="macos-card macos-shadow-card"
+              />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {products.map((product) => {
                   const inCart = cart.find((c) => c.product.id === product.id && c.product.type === product.type)
-                  const typeColor = product.type === 'book' ? 'gg-bridge' : 'gg-sunset'
                   return (
                     <button
                       key={`${product.type}-${product.id}`}
@@ -550,9 +523,9 @@ export function RetailPOSModule() {
                       <div className="space-y-2">
                         <div className="flex items-start justify-between gap-1.5">
                           <p className="text-[13px] font-semibold leading-snug line-clamp-2 tracking-tight group-hover:text-macos-blue transition-colors">{product.name}</p>
-                          <span className={`rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-${typeColor}/10 text-${typeColor} shrink-0 uppercase`}>
+                          <MacosBadge variant={product.type === 'book' ? 'danger' : 'warning'}>
                             {product.type === 'book' ? 'Book' : 'Item'}
-                          </span>
+                          </MacosBadge>
                         </div>
                         {product.author && (
                           <p className="text-[11px] text-muted-foreground truncate tracking-tight">by {product.author}</p>
@@ -561,9 +534,7 @@ export function RetailPOSModule() {
                           <p className="text-[11px] text-muted-foreground truncate tracking-tight">{product.brand}</p>
                         )}
                         {product.category && (
-                          <span className="inline-block rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-secondary text-muted-foreground">
-                            {product.category}
-                          </span>
+                          <MacosBadge>{product.category}</MacosBadge>
                         )}
                         <div className="flex items-center justify-between pt-1">
                           <div>
@@ -577,9 +548,7 @@ export function RetailPOSModule() {
                             )}
                           </div>
                           {inCart ? (
-                            <span className="rounded-md text-[10px] font-bold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
-                              ×{inCart.quantity}
-                            </span>
+                            <MacosBadge variant="success">×{inCart.quantity}</MacosBadge>
                           ) : !isViewOnly ? (
                             <div className="size-6 rounded-lg bg-macos-blue/10 flex items-center justify-center group-hover:bg-macos-blue/20 transition-colors">
                               <Plus className="size-3 text-macos-blue" />
@@ -595,30 +564,28 @@ export function RetailPOSModule() {
           </div>
         </div>
 
-        {/* ─── Right: Cart Panel ─── */}
+        {/* ─── Right: Cart Panel (Frosted Glass) ─── */}
         <div className="lg:col-span-2 flex flex-col min-h-0">
-          <div className="macos-card macos-shadow flex-1 flex flex-col min-h-0 sticky top-4 max-h-[calc(100vh-10rem)]">
+          <div className="macos-card glass-card macos-shadow-elevated flex-1 flex flex-col min-h-0 sticky top-4 max-h-[calc(100vh-10rem)]">
             {/* Cart Header */}
             <div className="p-4 pb-3 flex items-center justify-between border-b border-border/40 flex-shrink-0">
-              <h3 className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+              <h3 className="macos-section-title flex items-center gap-2">
                 <div className="size-5 rounded-md bg-gg-bridge/10 flex items-center justify-center">
                   <ShoppingCart className="size-3 text-gg-bridge" />
                 </div>
                 Cart
                 {cart.length > 0 && (
-                  <span className="rounded-md text-[10px] font-bold tracking-wide px-1.5 py-0.5 bg-gg-bridge/10 text-gg-bridge">
-                    {cart.length}
-                  </span>
+                  <MacosBadge variant="danger">{cart.length}</MacosBadge>
                 )}
               </h3>
               {cart.length > 0 && !isViewOnly && (
-                <button
-                  className="text-[11px] font-medium text-macos-red hover:text-macos-red/80 flex items-center gap-1 rounded-md px-2 py-1 hover:bg-macos-red/10 transition-colors"
+                <MacosButton
+                  variant="danger"
+                  icon={Trash2}
                   onClick={clearCart}
                 >
-                  <Trash2 className="size-3" />
                   Clear
-                </button>
+                </MacosButton>
               )}
             </div>
 
@@ -636,7 +603,7 @@ export function RetailPOSModule() {
                   </button>
                 </div>
                 {selectedCustomer ? (
-                  <div className="flex items-center justify-between rounded-lg bg-gg-bay/5 border border-gg-bay/10 p-2.5">
+                  <div className="flex items-center justify-between rounded-xl bg-gg-bay/5 border border-gg-bay/10 p-2.5">
                     <div>
                       <p className="text-[13px] font-semibold tracking-tight">{selectedCustomer.name}</p>
                       <p className="text-[10px] text-muted-foreground tracking-tight font-medium">{selectedCustomer.loyaltyPoints} loyalty pts</p>
@@ -660,18 +627,16 @@ export function RetailPOSModule() {
               {/* Cart Items */}
               <div className="space-y-0">
                 {cart.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="size-12 rounded-2xl bg-secondary/60 flex items-center justify-center mb-3">
-                      <ShoppingCart className="size-5 text-muted-foreground/40" />
-                    </div>
-                    <p className="text-[13px] font-medium text-muted-foreground tracking-tight">Cart is empty</p>
-                    <p className="text-[11px] text-muted-foreground/60 mt-1">Click products to add them</p>
-                  </div>
+                  <MacosEmptyState
+                    icon={ShoppingCart}
+                    title="Cart is empty"
+                    description="Click products to add them"
+                  />
                 ) : (
                   <ScrollArea className="max-h-52">
                     <div className="space-y-0.5 pr-1">
                       {cart.map((item, index) => (
-                        <div key={`${item.product.type}-${item.product.id}`} className="flex items-center gap-2.5 rounded-lg p-2.5 hover:bg-secondary/30 transition-colors group/item">
+                        <div key={`${item.product.type}-${item.product.id}`} className="flex items-center gap-2.5 rounded-xl p-2.5 hover:bg-secondary/30 transition-colors group/item">
                           {/* Type indicator */}
                           <div className={`size-2 rounded-full flex-shrink-0 ${item.product.type === 'book' ? 'bg-gg-bridge' : 'bg-gg-sunset'}`} />
 
@@ -680,9 +645,7 @@ export function RetailPOSModule() {
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <span className="text-[11px] text-muted-foreground tracking-tight tabular-nums">${item.unitPrice.toFixed(2)}</span>
                               {item.discount > 0 && (
-                                <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0 bg-macos-green/10 text-macos-green">
-                                  -{item.discount}%
-                                </span>
+                                <MacosBadge variant="success">-{item.discount}%</MacosBadge>
                               )}
                             </div>
                           </div>
@@ -690,7 +653,7 @@ export function RetailPOSModule() {
                           {/* Quantity controls */}
                           <div className="flex items-center gap-0.5">
                             <button
-                              className="size-6 rounded-md bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
+                              className="size-6 rounded-lg bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
                               onClick={() => updateQuantity(index, item.quantity - 1)}
                               disabled={isViewOnly}
                             >
@@ -698,7 +661,7 @@ export function RetailPOSModule() {
                             </button>
                             <span className="w-7 text-center text-[13px] font-semibold tabular-nums tracking-tight">{item.quantity}</span>
                             <button
-                              className="size-6 rounded-md bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
+                              className="size-6 rounded-lg bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
                               onClick={() => updateQuantity(index, item.quantity + 1)}
                               disabled={isViewOnly}
                             >
@@ -727,11 +690,7 @@ export function RetailPOSModule() {
               <Separator className="opacity-40" />
 
               {/* Discount */}
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1">
-                  <Tag className="size-2.5" />
-                  Cart Discount
-                </Label>
+              <MacosFormField label="Cart Discount">
                 <div className="flex gap-2">
                   <Select value={discountType} onValueChange={(v: 'percentage' | 'fixed') => setDiscountType(v)} disabled={isViewOnly}>
                     <SelectTrigger className="rounded-lg bg-secondary/60 border-0 text-[13px] h-7 w-[100px] font-medium focus:ring-0">
@@ -753,7 +712,7 @@ export function RetailPOSModule() {
                     className="w-20 rounded-lg bg-secondary/60 border-0 text-[13px] h-7 font-medium focus-visible:ring-1 focus-visible:ring-macos-blue/30"
                   />
                 </div>
-              </div>
+              </MacosFormField>
 
               {/* Tax */}
               <div className="flex items-center justify-between">
@@ -826,7 +785,7 @@ export function RetailPOSModule() {
 
               {/* Complete Sale */}
               <Button
-                className="w-full bg-gg-bridge hover:bg-gg-bridge/90 text-white rounded-lg font-semibold text-[13px] h-11 shadow-sm disabled:opacity-50"
+                className="w-full bg-gg-bridge hover:bg-gg-bridge/90 text-white rounded-xl font-semibold text-[13px] h-11 shadow-sm disabled:opacity-50"
                 onClick={handleCompleteSale}
                 disabled={cart.length === 0 || completing || isViewOnly}
               >
@@ -853,69 +812,61 @@ export function RetailPOSModule() {
       </div>
 
       {/* ─── Customer Lookup Dialog ─── */}
-      <Dialog open={customerLookupOpen} onOpenChange={setCustomerLookupOpen}>
-        <DialogContent className="sm:max-w-[420px] rounded-xl macos-shadow-float border-0 bg-card p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="text-[13px] font-semibold tracking-tight">Select Customer</DialogTitle>
-            <DialogDescription className="text-[11px] text-muted-foreground">Search for an existing customer</DialogDescription>
-          </DialogHeader>
-          <div className="p-6 pt-4 space-y-4">
-            <div className="macos-search flex items-center gap-2 px-3 h-9">
-              <Search className="size-3.5 text-muted-foreground flex-shrink-0" />
-              <input
-                type="text"
-                placeholder="Search by name, email, or phone…"
-                value={customerSearch}
-                onChange={(e) => setCustomerSearch(e.target.value)}
-                className="flex-1 bg-transparent text-[13px] font-medium placeholder:text-muted-foreground/60 outline-none"
+      <MacosDialog
+        open={customerLookupOpen}
+        onOpenChange={setCustomerLookupOpen}
+        title="Select Customer"
+        description="Search for an existing customer"
+        className="glass-card"
+        footer={
+          <Button
+            variant="ghost"
+            className="bg-secondary text-secondary-foreground rounded-xl text-[13px] h-9 font-medium hover:bg-secondary/80"
+            onClick={() => {
+              setCustomerLookupOpen(false)
+              setCustomerSearch('')
+              setSelectedCustomer(null)
+            }}
+          >
+            Walk-in Customer
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <MacosSearch
+            value={customerSearch}
+            onChange={setCustomerSearch}
+            placeholder="Search by name, email, or phone…"
+            className="h-9"
+          />
+          <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
+            {customers.length === 0 && customerSearch ? (
+              <MacosEmptyState
+                title="No customers found"
+                className="py-10"
               />
-              {customerSearch && (
-                <button onClick={() => setCustomerSearch('')} className="size-4 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-muted-foreground/30">
-                  <X className="size-2.5 text-background" />
+            ) : (
+              customers.map((c) => (
+                <button
+                  key={c.id}
+                  className="w-full flex items-center justify-between rounded-xl p-3 hover:bg-secondary/50 transition-colors text-left group"
+                  onClick={() => {
+                    setSelectedCustomer(c)
+                    setCustomerLookupOpen(false)
+                    setCustomerSearch('')
+                  }}
+                >
+                  <div>
+                    <p className="text-[13px] font-semibold tracking-tight">{c.name}</p>
+                    <p className="text-[11px] text-muted-foreground tracking-tight">{c.email || c.phone || 'No contact info'}</p>
+                  </div>
+                  <MacosBadge variant="warning">{c.loyaltyPoints} pts</MacosBadge>
                 </button>
-              )}
-            </div>
-            <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
-              {customers.length === 0 && customerSearch ? (
-                <div className="macos-empty py-10">
-                  <p className="text-[13px] text-muted-foreground font-medium tracking-tight">No customers found</p>
-                </div>
-              ) : (
-                customers.map((c) => (
-                  <button
-                    key={c.id}
-                    className="w-full flex items-center justify-between rounded-lg p-3 hover:bg-secondary/50 transition-colors text-left group"
-                    onClick={() => {
-                      setSelectedCustomer(c)
-                      setCustomerLookupOpen(false)
-                      setCustomerSearch('')
-                    }}
-                  >
-                    <div>
-                      <p className="text-[13px] font-semibold tracking-tight">{c.name}</p>
-                      <p className="text-[11px] text-muted-foreground tracking-tight">{c.email || c.phone || 'No contact info'}</p>
-                    </div>
-                    <span className="rounded-md text-[10px] font-bold tracking-wide px-2 py-0.5 bg-gg-golden/10 text-gg-golden">{c.loyaltyPoints} pts</span>
-                  </button>
-                ))
-              )}
-            </div>
+              ))
+            )}
           </div>
-          <DialogFooter className="p-6 pt-0">
-            <Button
-              variant="ghost"
-              className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-9 font-medium hover:bg-secondary/80"
-              onClick={() => {
-                setCustomerLookupOpen(false)
-                setCustomerSearch('')
-                setSelectedCustomer(null)
-              }}
-            >
-              Walk-in Customer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </MacosDialog>
     </div>
   )
 }

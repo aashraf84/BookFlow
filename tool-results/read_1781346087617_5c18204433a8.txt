@@ -1,0 +1,937 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import React, { useState, useEffect, useCallback } from 'react'
+     4→     4→import {
+     5→     5→  Search,
+     6→     6→  Plus,
+     7→     7→  Pencil,
+     8→     8→  Trash2,
+     9→     9→  ChevronLeft,
+    10→    10→  ChevronRight,
+    11→    11→  BookOpen,
+    12→    12→  RefreshCw,
+    13→    13→  X,
+    14→    14→  Filter,
+    15→    15→  Library,
+    16→    16→  Tag,
+    17→    17→  DollarSign,
+    18→    18→  BookMarked,
+    19→    19→  Hash,
+    20→    20→  Languages,
+    21→    21→  GraduationCap,
+    22→    22→  FileText,
+    23→    23→  Barcode,
+    24→    24→} from 'lucide-react'
+    25→    25→import { Button } from '@/components/ui/button'
+    26→    26→import { Input } from '@/components/ui/input'
+    27→    27→import { Label } from '@/components/ui/label'
+    28→    28→import { Textarea } from '@/components/ui/textarea'
+    29→    29→import { Badge } from '@/components/ui/badge'
+    30→    30→import { Skeleton } from '@/components/ui/skeleton'
+    31→    31→import { Separator } from '@/components/ui/separator'
+    32→    32→import {
+    33→    33→  Table,
+    34→    34→  TableBody,
+    35→    35→  TableCell,
+    36→    36→  TableHead,
+    37→    37→  TableHeader,
+    38→    38→  TableRow,
+    39→    39→} from '@/components/ui/table'
+    40→    40→import {
+    41→    41→  Dialog,
+    42→    42→  DialogContent,
+    43→    43→  DialogHeader,
+    44→    44→  DialogTitle,
+    45→    45→} from '@/components/ui/dialog'
+    46→    46→import {
+    47→    47→  Select,
+    48→    48→  SelectContent,
+    49→    49→  SelectItem,
+    50→    50→  SelectTrigger,
+    51→    51→  SelectValue,
+    52→    52→} from '@/components/ui/select'
+    53→    53→import { useAppStore } from '@/store/app-store'
+    54→    54→
+    55→    55→// ── Types ────────────────────────────────────────────────────────
+    56→    56→interface Author {
+    57→    57→  id: string
+    58→    58→  name: string
+    59→    59→}
+    60→    60→
+    61→    61→interface Publisher {
+    62→    62→  id: string
+    63→    63→  name: string
+    64→    64→}
+    65→    65→
+    66→    66→interface Category {
+    67→    67→  id: string
+    68→    68→  name: string
+    69→    69→  type: string | null
+    70→    70→  _count: { books: number }
+    71→    71→}
+    72→    72→
+    73→    73→interface Book {
+    74→    74→  id: string
+    75→    75→  isbn: string | null
+    76→    76→  title: string
+    77→    77→  subtitle: string | null
+    78→    78→  authorId: string | null
+    79→    79→  publisherId: string | null
+    80→    80→  categoryId: string | null
+    81→    81→  edition: string | null
+    82→    82→  language: string
+    83→    83→  pages: number | null
+    84→    84→  publishYear: number | null
+    85→    85→  description: string | null
+    86→    86→  price: number
+    87→    87→  costPrice: number
+    88→    88→  discount: number
+    89→    89→  academicLevel: string | null
+    90→    90→  subject: string | null
+    91→    91→  barcode: string | null
+    92→    92→  isActive: boolean
+    93→    93→  author: { id: string; name: string } | null
+    94→    94→  publisher: { id: string; name: string } | null
+    95→    95→  category: { id: string; name: string; type: string | null } | null
+    96→    96→}
+    97→    97→
+    98→    98→interface BookFormData {
+    99→    99→  title: string
+   100→   100→  subtitle: string
+   101→   101→  isbn: string
+   102→   102→  authorId: string
+   103→   103→  publisherId: string
+   104→   104→  categoryId: string
+   105→   105→  edition: string
+   106→   106→  language: string
+   107→   107→  pages: string
+   108→   108→  publishYear: string
+   109→   109→  description: string
+   110→   110→  price: string
+   111→   111→  costPrice: string
+   112→   112→  discount: string
+   113→   113→  academicLevel: string
+   114→   114→  subject: string
+   115→   115→  barcode: string
+   116→   116→}
+   117→   117→
+   118→   118→const emptyForm: BookFormData = {
+   119→   119→  title: '',
+   120→   120→  subtitle: '',
+   121→   121→  isbn: '',
+   122→   122→  authorId: '',
+   123→   123→  publisherId: '',
+   124→   124→  categoryId: '',
+   125→   125→  edition: '',
+   126→   126→  language: 'English',
+   127→   127→  pages: '',
+   128→   128→  publishYear: '',
+   129→   129→  description: '',
+   130→   130→  price: '',
+   131→   131→  costPrice: '',
+   132→   132→  discount: '',
+   133→   133→  academicLevel: '',
+   134→   134→  subject: '',
+   135→   135→  barcode: '',
+   136→   136→}
+   137→   137→
+   138→   138→// ── Cover color palette (macOS Retina + Golden Gate) ──────────
+   139→   139→const coverColors = [
+   140→   140→  { bg: 'bg-macos-blue/10', text: 'text-macos-blue', accent: 'bg-macos-blue' },
+   141→   141→  { bg: 'bg-macos-purple/10', text: 'text-macos-purple', accent: 'bg-macos-purple' },
+   142→   142→  { bg: 'bg-macos-orange/10', text: 'text-macos-orange', accent: 'bg-macos-orange' },
+   143→   143→  { bg: 'bg-macos-green/10', text: 'text-macos-green', accent: 'bg-macos-green' },
+   144→   144→  { bg: 'bg-macos-pink/10', text: 'text-macos-pink', accent: 'bg-macos-pink' },
+   145→   145→  { bg: 'bg-macos-teal/10', text: 'text-macos-teal', accent: 'bg-macos-teal' },
+   146→   146→  { bg: 'bg-gg-bay/10', text: 'text-gg-bay', accent: 'bg-gg-bay' },
+   147→   147→  { bg: 'bg-gg-sunset/10', text: 'text-gg-sunset', accent: 'bg-gg-sunset' },
+   148→   148→]
+   149→   149→
+   150→   150→const getCoverColor = (title: string) => {
+   151→   151→  let hash = 0
+   152→   152→  for (let i = 0; i < title.length; i++) {
+   153→   153→    hash = title.charCodeAt(i) + ((hash << 5) - hash)
+   154→   154→  }
+   155→   155→  return coverColors[Math.abs(hash) % coverColors.length]
+   156→   156→}
+   157→   157→
+   158→   158→// ── Category badge colors ──────────────────────────────────────
+   159→   159→const categoryColorMap: Record<string, { bg: string; text: string }> = {
+   160→   160→  'Fiction': { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
+   161→   161→  'Non-Fiction': { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
+   162→   162→  'Science': { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
+   163→   163→  'Technology': { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
+   164→   164→  'History': { bg: 'bg-gg-bridge/10', text: 'text-gg-bridge' },
+   165→   165→  'Art': { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
+   166→   166→  'Business': { bg: 'bg-macos-green/10', text: 'text-macos-green' },
+   167→   167→  'Education': { bg: 'bg-gg-bay/10', text: 'text-gg-bay' },
+   168→   168→  'Literature': { bg: 'bg-gg-golden/10', text: 'text-gg-golden' },
+   169→   169→  'Philosophy': { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
+   170→   170→}
+   171→   171→
+   172→   172→const getCategoryColor = (name: string) => {
+   173→   173→  return categoryColorMap[name] || { bg: 'bg-macos-purple/10', text: 'text-macos-purple' }
+   174→   174→}
+   175→   175→
+   176→   176→// ── Component ────────────────────────────────────────────────────
+   177→   177→export default function BookCatalogModule() {
+   178→   178→  const { authUser } = useAppStore()
+   179→   179→  const isViewOnly = authUser?.isViewOnly ?? false
+   180→   180→
+   181→   181→  const [books, setBooks] = useState<Book[]>([])
+   182→   182→  const [totalPages, setTotalPages] = useState(1)
+   183→   183→  const [total, setTotal] = useState(0)
+   184→   184→  const [page, setPage] = useState(1)
+   185→   185→  const [loading, setLoading] = useState(true)
+   186→   186→  const [search, setSearch] = useState('')
+   187→   187→  const [filterCategory, setFilterCategory] = useState('')
+   188→   188→  const [filterAuthor, setFilterAuthor] = useState('')
+   189→   189→  const [filterPublisher, setFilterPublisher] = useState('')
+   190→   190→  const [dialogOpen, setDialogOpen] = useState(false)
+   191→   191→  const [editing, setEditing] = useState<Book | null>(null)
+   192→   192→  const [form, setForm] = useState<BookFormData>(emptyForm)
+   193→   193→  const [saving, setSaving] = useState(false)
+   194→   194→  const [deleting, setDeleting] = useState<string | null>(null)
+   195→   195→
+   196→   196→  // Dropdown data
+   197→   197→  const [authors, setAuthors] = useState<Author[]>([])
+   198→   198→  const [publishers, setPublishers] = useState<Publisher[]>([])
+   199→   199→  const [categories, setCategories] = useState<Category[]>([])
+   200→   200→
+   201→   201→  const limit = 10
+   202→   202→
+   203→   203→  // ── Fetch dropdown data ────────────────────────────────────
+   204→   204→  useEffect(() => {
+   205→   205→    Promise.all([
+   206→   206→      fetch('/api/authors?limit=200').then((r) => r.json()),
+   207→   207→      fetch('/api/publishers?limit=200').then((r) => r.json()),
+   208→   208→      fetch('/api/categories').then((r) => r.json()),
+   209→   209→    ]).then(([authorsJson, publishersJson, categoriesJson]) => {
+   210→   210→      setAuthors(authorsJson.data || [])
+   211→   211→      setPublishers(publishersJson.data || [])
+   212→   212→      setCategories(categoriesJson.data || [])
+   213→   213→    })
+   214→   214→  }, [])
+   215→   215→
+   216→   216→  // ── Fetch books ────────────────────────────────────────────
+   217→   217→  const fetchBooks = useCallback(async () => {
+   218→   218→    setLoading(true)
+   219→   219→    try {
+   220→   220→      const params = new URLSearchParams({
+   221→   221→        page: String(page),
+   222→   222→        limit: String(limit),
+   223→   223→      })
+   224→   224→      if (search) params.set('search', search)
+   225→   225→      if (filterCategory && filterCategory !== 'all') params.set('categoryId', filterCategory)
+   226→   226→      if (filterAuthor && filterAuthor !== 'all') params.set('authorId', filterAuthor)
+   227→   227→      if (filterPublisher && filterPublisher !== 'all') params.set('publisherId', filterPublisher)
+   228→   228→
+   229→   229→      const res = await fetch(`/api/books?${params}`)
+   230→   230→      if (!res.ok) throw new Error('Failed to fetch books')
+   231→   231→      const json = await res.json()
+   232→   232→      setBooks(json.data || [])
+   233→   233→      setTotalPages(json.pagination?.totalPages || 1)
+   234→   234→      setTotal(json.pagination?.total || 0)
+   235→   235→    } catch {
+   236→   236→      setBooks([])
+   237→   237→    } finally {
+   238→   238→      setLoading(false)
+   239→   239→    }
+   240→   240→  }, [page, search, filterCategory, filterAuthor, filterPublisher])
+   241→   241→
+   242→   242→  useEffect(() => {
+   243→   243→    fetchBooks()
+   244→   244→  }, [fetchBooks])
+   245→   245→
+   246→   246→  // Reset to page 1 when filters change
+   247→   247→  useEffect(() => {
+   248→   248→    setPage(1)
+   249→   249→  }, [search, filterCategory, filterAuthor, filterPublisher])
+   250→   250→
+   251→   251→  // ── Save book (create or update) ───────────────────────────
+   252→   252→  const handleSave = async () => {
+   253→   253→    if (!form.title.trim()) return
+   254→   254→    setSaving(true)
+   255→   255→    try {
+   256→   256→      const payload: Record<string, unknown> = {
+   257→   257→        title: form.title.trim(),
+   258→   258→        subtitle: form.subtitle || null,
+   259→   259→        isbn: form.isbn || null,
+   260→   260→        authorId: form.authorId || null,
+   261→   261→        publisherId: form.publisherId || null,
+   262→   262→        categoryId: form.categoryId || null,
+   263→   263→        edition: form.edition || null,
+   264→   264→        language: form.language || 'English',
+   265→   265→        pages: form.pages ? parseInt(form.pages) : null,
+   266→   266→        publishYear: form.publishYear ? parseInt(form.publishYear) : null,
+   267→   267→        description: form.description || null,
+   268→   268→        price: form.price ? parseFloat(form.price) : 0,
+   269→   269→        costPrice: form.costPrice ? parseFloat(form.costPrice) : 0,
+   270→   270→        discount: form.discount ? parseFloat(form.discount) : 0,
+   271→   271→        academicLevel: form.academicLevel || null,
+   272→   272→        subject: form.subject || null,
+   273→   273→        barcode: form.barcode || null,
+   274→   274→      }
+   275→   275→
+   276→   276→      let res: Response
+   277→   277→      if (editing) {
+   278→   278→        payload.id = editing.id
+   279→   279→        res = await fetch('/api/books', {
+   280→   280→          method: 'PUT',
+   281→   281→          headers: { 'Content-Type': 'application/json' },
+   282→   282→          body: JSON.stringify(payload),
+   283→   283→        })
+   284→   284→      } else {
+   285→   285→        res = await fetch('/api/books', {
+   286→   286→          method: 'POST',
+   287→   287→          headers: { 'Content-Type': 'application/json' },
+   288→   288→          body: JSON.stringify(payload),
+   289→   289→        })
+   290→   290→      }
+   291→   291→
+   292→   292→      if (!res.ok) {
+   293→   293→        const err = await res.json()
+   294→   294→        throw new Error(err.error || 'Failed to save book')
+   295→   295→      }
+   296→   296→
+   297→   297→      setDialogOpen(false)
+   298→   298→      setEditing(null)
+   299→   299→      setForm(emptyForm)
+   300→   300→      fetchBooks()
+   301→   301→    } catch (err) {
+   302→   302→      alert(err instanceof Error ? err.message : 'Failed to save book')
+   303→   303→    } finally {
+   304→   304→      setSaving(false)
+   305→   305→    }
+   306→   306→  }
+   307→   307→
+   308→   308→  // ── Delete book ────────────────────────────────────────────
+   309→   309→  const handleDelete = async (id: string) => {
+   310→   310→    if (!confirm('Are you sure you want to delete this book?')) return
+   311→   311→    setDeleting(id)
+   312→   312→    try {
+   313→   313→      const res = await fetch(`/api/books?id=${id}`, { method: 'DELETE' })
+   314→   314→      if (!res.ok) {
+   315→   315→        const err = await res.json()
+   316→   316→        throw new Error(err.error || 'Failed to delete')
+   317→   317→      }
+   318→   318→      fetchBooks()
+   319→   319→    } catch (err) {
+   320→   320→      alert(err instanceof Error ? err.message : 'Failed to delete book')
+   321→   321→    } finally {
+   322→   322→      setDeleting(null)
+   323→   323→    }
+   324→   324→  }
+   325→   325→
+   326→   326→  // ── Open dialog for edit ───────────────────────────────────
+   327→   327→  const openEdit = (book: Book) => {
+   328→   328→    setEditing(book)
+   329→   329→    setForm({
+   330→   330→      title: book.title,
+   331→   331→      subtitle: book.subtitle || '',
+   332→   332→      isbn: book.isbn || '',
+   333→   333→      authorId: book.authorId || '',
+   334→   334→      publisherId: book.publisherId || '',
+   335→   335→      categoryId: book.categoryId || '',
+   336→   336→      edition: book.edition || '',
+   337→   337→      language: book.language || 'English',
+   338→   338→      pages: book.pages?.toString() || '',
+   339→   339→      publishYear: book.publishYear?.toString() || '',
+   340→   340→      description: book.description || '',
+   341→   341→      price: book.price?.toString() || '',
+   342→   342→      costPrice: book.costPrice?.toString() || '',
+   343→   343→      discount: book.discount?.toString() || '',
+   344→   344→      academicLevel: book.academicLevel || '',
+   345→   345→      subject: book.subject || '',
+   346→   346→      barcode: book.barcode || '',
+   347→   347→    })
+   348→   348→    setDialogOpen(true)
+   349→   349→  }
+   350→   350→
+   351→   351→  // ── Open dialog for add ────────────────────────────────────
+   352→   352→  const openAdd = () => {
+   353→   353→    setEditing(null)
+   354→   354→    setForm(emptyForm)
+   355→   355→    setDialogOpen(true)
+   356→   356→  }
+   357→   357→
+   358→   358→  const formatCurrency = (value: number) =>
+   359→   359→    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+   360→   360→
+   361→   361→  const hasActiveFilters = search || (filterCategory && filterCategory !== 'all') || (filterAuthor && filterAuthor !== 'all') || (filterPublisher && filterPublisher !== 'all')
+   362→   362→
+   363→   363→  return (
+   364→   364→    <div className="space-y-5">
+   365→   365→      {/* ── macOS Page Header ──────────────────────────────────── */}
+   366→   366→      <div className="macos-page-header flex-col gap-3 sm:flex-row">
+   367→   367→        <div className="flex items-center gap-3">
+   368→   368→          <div className="flex items-center justify-center size-9 rounded-xl bg-macos-blue/10">
+   369→   369→            <Library className="size-[18px] text-macos-blue" strokeWidth={1.5} />
+   370→   370→          </div>
+   371→   371→          <div>
+   372→   372→            <h1 className="macos-page-title">Book Catalog</h1>
+   373→   373→            <p className="macos-page-subtitle">
+   374→   374→              {total} {total === 1 ? 'book' : 'books'} in your library
+   375→   375→            </p>
+   376→   376→          </div>
+   377→   377→        </div>
+   378→   378→        {!isViewOnly && (
+   379→   379→          <Button
+   380→   380→            onClick={openAdd}
+   381→   381→            className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 gap-1.5"
+   382→   382→          >
+   383→   383→            <Plus className="size-4" strokeWidth={1.5} /> Add Book
+   384→   384→          </Button>
+   385→   385→        )}
+   386→   386→      </div>
+   387→   387→
+   388→   388→      {/* ── Search & Filters Card ──────────────────────────────── */}
+   389→   389→      <div className="macos-card macos-shadow-card p-4">
+   390→   390→        {/* Spotlight-style search */}
+   391→   391→        <div className="macos-search flex items-center gap-2 px-3 py-1.5 mb-3">
+   392→   392→          <Search className="size-[14px] text-muted-foreground shrink-0" strokeWidth={1.5} />
+   393→   393→          <input
+   394→   394→            type="text"
+   395→   395→            placeholder="Search by title, ISBN, author..."
+   396→   396→            value={search}
+   397→   397→            onChange={(e) => setSearch(e.target.value)}
+   398→   398→            className="flex-1 bg-transparent border-0 outline-none text-[13px] font-medium placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
+   399→   399→          />
+   400→   400→          {search && (
+   401→   401→            <button
+   402→   402→              onClick={() => setSearch('')}
+   403→   403→              className="size-4 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-muted-foreground/30 transition-colors"
+   404→   404→            >
+   405→   405→              <X className="size-2.5 text-background" strokeWidth={2} />
+   406→   406→            </button>
+   407→   407→          )}
+   408→   408→        </div>
+   409→   409→
+   410→   410→        {/* Filter bar */}
+   411→   411→        <div className="flex flex-wrap items-center gap-2">
+   412→   412→          <div className="macos-filter-bar">
+   413→   413→            <Select value={filterCategory} onValueChange={setFilterCategory}>
+   414→   414→              <SelectTrigger className="border-0 bg-transparent shadow-none text-[12px] font-medium h-6 w-auto min-w-[120px] p-0 pl-2 pr-6 focus:ring-0">
+   415→   415→                <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+   416→   416→                <SelectValue placeholder="Category" />
+   417→   417→              </SelectTrigger>
+   418→   418→              <SelectContent>
+   419→   419→                <SelectItem value="all">All Categories</SelectItem>
+   420→   420→                {categories.map((cat) => (
+   421→   421→                  <SelectItem key={cat.id} value={cat.id}>
+   422→   422→                    {cat.name}
+   423→   423→                  </SelectItem>
+   424→   424→                ))}
+   425→   425→              </SelectContent>
+   426→   426→            </Select>
+   427→   427→          </div>
+   428→   428→          <div className="macos-filter-bar">
+   429→   429→            <Select value={filterAuthor} onValueChange={setFilterAuthor}>
+   430→   430→              <SelectTrigger className="border-0 bg-transparent shadow-none text-[12px] font-medium h-6 w-auto min-w-[110px] p-0 pl-2 pr-6 focus:ring-0">
+   431→   431→                <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+   432→   432→                <SelectValue placeholder="Author" />
+   433→   433→              </SelectTrigger>
+   434→   434→              <SelectContent>
+   435→   435→                <SelectItem value="all">All Authors</SelectItem>
+   436→   436→                {authors.map((a) => (
+   437→   437→                  <SelectItem key={a.id} value={a.id}>
+   438→   438→                    {a.name}
+   439→   439→                  </SelectItem>
+   440→   440→                ))}
+   441→   441→              </SelectContent>
+   442→   442→            </Select>
+   443→   443→          </div>
+   444→   444→          <div className="macos-filter-bar">
+   445→   445→            <Select value={filterPublisher} onValueChange={setFilterPublisher}>
+   446→   446→              <SelectTrigger className="border-0 bg-transparent shadow-none text-[12px] font-medium h-6 w-auto min-w-[120px] p-0 pl-2 pr-6 focus:ring-0">
+   447→   447→                <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+   448→   448→                <SelectValue placeholder="Publisher" />
+   449→   449→              </SelectTrigger>
+   450→   450→              <SelectContent>
+   451→   451→                <SelectItem value="all">All Publishers</SelectItem>
+   452→   452→                {publishers.map((p) => (
+   453→   453→                  <SelectItem key={p.id} value={p.id}>
+   454→   454→                    {p.name}
+   455→   455→                  </SelectItem>
+   456→   456→                ))}
+   457→   457→              </SelectContent>
+   458→   458→            </Select>
+   459→   459→          </div>
+   460→   460→          {hasActiveFilters && (
+   461→   461→            <button
+   462→   462→              onClick={() => {
+   463→   463→                setSearch('')
+   464→   464→                setFilterCategory('')
+   465→   465→                setFilterAuthor('')
+   466→   466→                setFilterPublisher('')
+   467→   467→              }}
+   468→   468→              className="macos-filter-item macos-filter-item-active flex items-center gap-1 text-[11px] text-macos-red"
+   469→   469→            >
+   470→   470→              <X className="size-3" strokeWidth={1.5} /> Clear All
+   471→   471→            </button>
+   472→   472→          )}
+   473→   473→        </div>
+   474→   474→      </div>
+   475→   475→
+   476→   476→      {/* ── Books Table Card ────────────────────────────────────── */}
+   477→   477→      <div className="macos-card macos-shadow-card overflow-hidden">
+   478→   478→        {loading ? (
+   479→   479→          <div className="p-5 space-y-3">
+   480→   480→            {Array.from({ length: 5 }).map((_, i) => (
+   481→   481→              <div key={i} className="flex items-center gap-3">
+   482→   482→                <Skeleton className="size-9 rounded-lg" />
+   483→   483→                <div className="flex-1 space-y-1.5">
+   484→   484→                  <Skeleton className="h-4 w-3/5" />
+   485→   485→                  <Skeleton className="h-3 w-2/5" />
+   486→   486→                </div>
+   487→   487→              </div>
+   488→   488→            ))}
+   489→   489→          </div>
+   490→   490→        ) : books.length === 0 ? (
+   491→   491→          <div className="macos-empty py-16">
+   492→   492→            <div className="size-14 rounded-2xl bg-macos-orange/10 flex items-center justify-center mb-4">
+   493→   493→              <BookOpen className="size-7 text-macos-orange" strokeWidth={1.5} />
+   494→   494→            </div>
+   495→   495→            <p className="text-[13px] font-semibold text-foreground">No books found</p>
+   496→   496→            <p className="text-[11px] text-muted-foreground mt-1">
+   497→   497→              Try adjusting your search or filters
+   498→   498→            </p>
+   499→   499→          </div>
+   500→   500→        ) : (
+   501→   501→          <div className="overflow-x-auto">
+   502→   502→            <Table>
+   503→   503→              <TableHeader>
+   504→   504→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   505→   505→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground min-w-[220px]">Title</TableHead>
+   506→   506→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
+   507→   507→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
+   508→   508→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+   509→   509→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
+   510→   510→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Stock</TableHead>
+   511→   511→                  {!isViewOnly && (
+   512→   512→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   513→   513→                  )}
+   514→   514→                </TableRow>
+   515→   515→              </TableHeader>
+   516→   516→              <TableBody>
+   517→   517→                {books.map((book) => {
+   518→   518→                  const colorClass = getCoverColor(book.title)
+   519→   519→                  const catColor = book.category ? getCategoryColor(book.category.name) : null
+   520→   520→                  return (
+   521→   521→                    <TableRow key={book.id} className="macos-table-row border-b border-border/30">
+   522→   522→                      <TableCell>
+   523→   523→                        <div className="flex items-center gap-3">
+   524→   524→                          <div className={`size-9 rounded-lg ${colorClass.bg} flex items-center justify-center shrink-0`}>
+   525→   525→                            <span className={`text-[11px] font-bold ${colorClass.text}`}>
+   526→   526→                              {book.title.charAt(0).toUpperCase()}
+   527→   527→                            </span>
+   528→   528→                          </div>
+   529→   529→                          <div className="min-w-0">
+   530→   530→                            <p className="text-[13px] font-medium truncate max-w-[200px] leading-tight">{book.title}</p>
+   531→   531→                            {book.subtitle && (
+   532→   532→                              <p className="text-[11px] text-muted-foreground truncate max-w-[200px] mt-0.5">
+   533→   533→                                {book.subtitle}
+   534→   534→                              </p>
+   535→   535→                            )}
+   536→   536→                          </div>
+   537→   537→                        </div>
+   538→   538→                      </TableCell>
+   539→   539→                      <TableCell className="text-[13px] text-muted-foreground font-medium">
+   540→   540→                        {book.author?.name || <span className="text-muted-foreground/50">—</span>}
+   541→   541→                      </TableCell>
+   542→   542→                      <TableCell className="text-[13px] text-muted-foreground font-mono text-[11px]">
+   543→   543→                        {book.isbn || <span className="text-muted-foreground/50">—</span>}
+   544→   544→                      </TableCell>
+   545→   545→                      <TableCell>
+   546→   546→                        {book.category && catColor ? (
+   547→   547→                          <span className={`macos-badge ${catColor.bg} ${catColor.text}`}>
+   548→   548→                            {book.category.name}
+   549→   549→                          </span>
+   550→   550→                        ) : (
+   551→   551→                          <span className="text-[13px] text-muted-foreground/50">—</span>
+   552→   552→                        )}
+   553→   553→                      </TableCell>
+   554→   554→                      <TableCell className="text-[13px] text-right font-semibold tracking-tight text-foreground">
+   555→   555→                        {formatCurrency(book.price)}
+   556→   556→                      </TableCell>
+   557→   557→                      <TableCell>
+   558→   558→                        <div className="flex items-center gap-1.5">
+   559→   559→                          <div className={`size-[6px] rounded-full ${
+   560→   560→                            book.isActive ? 'bg-macos-green' : 'bg-macos-red'
+   561→   561→                          }`} />
+   562→   562→                          <span className="text-[11px] text-muted-foreground font-medium">
+   563→   563→                            {book.isActive ? 'In Stock' : 'Out'}
+   564→   564→                          </span>
+   565→   565→                        </div>
+   566→   566→                      </TableCell>
+   567→   567→                      {!isViewOnly && (
+   568→   568→                        <TableCell className="text-right">
+   569→   569→                          <div className="flex justify-end gap-0.5">
+   570→   570→                            <Button
+   571→   571→                              variant="ghost"
+   572→   572→                              size="icon"
+   573→   573→                              className="size-7 rounded-lg hover:bg-macos-blue/10 hover:text-macos-blue"
+   574→   574→                              onClick={() => openEdit(book)}
+   575→   575→                            >
+   576→   576→                              <Pencil className="size-3.5" strokeWidth={1.5} />
+   577→   577→                            </Button>
+   578→   578→                            <Button
+   579→   579→                              variant="ghost"
+   580→   580→                              size="icon"
+   581→   581→                              className="size-7 rounded-lg hover:bg-macos-red/10 hover:text-macos-red"
+   582→   582→                              onClick={() => handleDelete(book.id)}
+   583→   583→                              disabled={deleting === book.id}
+   584→   584→                            >
+   585→   585→                              {deleting === book.id ? (
+   586→   586→                                <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
+   587→   587→                              ) : (
+   588→   588→                                <Trash2 className="size-3.5" strokeWidth={1.5} />
+   589→   589→                              )}
+   590→   590→                            </Button>
+   591→   591→                          </div>
+   592→   592→                        </TableCell>
+   593→   593→                      )}
+   594→   594→                    </TableRow>
+   595→   595→                  )
+   596→   596→                })}
+   597→   597→              </TableBody>
+   598→   598→            </Table>
+   599→   599→          </div>
+   600→   600→        )}
+   601→   601→      </div>
+   602→   602→
+   603→   603→      {/* ── Pagination ──────────────────────────────────────────── */}
+   604→   604→      {totalPages > 1 && (
+   605→   605→        <div className="flex items-center justify-between px-1">
+   606→   606→          <p className="text-[11px] text-muted-foreground font-medium">
+   607→   607→            Page {page} of {totalPages} &middot; {total} results
+   608→   608→          </p>
+   609→   609→          <div className="flex gap-1">
+   610→   610→            <Button
+   611→   611→              variant="ghost"
+   612→   612→              size="sm"
+   613→   613→              className="rounded-lg h-7 text-[12px] font-medium gap-1 hover:bg-macos-blue/10 hover:text-macos-blue"
+   614→   614→              onClick={() => setPage((p) => Math.max(1, p - 1))}
+   615→   615→              disabled={page <= 1}
+   616→   616→            >
+   617→   617→              <ChevronLeft className="size-3.5" strokeWidth={1.5} /> Prev
+   618→   618→            </Button>
+   619→   619→            <Button
+   620→   620→              variant="ghost"
+   621→   621→              size="sm"
+   622→   622→              className="rounded-lg h-7 text-[12px] font-medium gap-1 hover:bg-macos-blue/10 hover:text-macos-blue"
+   623→   623→              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+   624→   624→              disabled={page >= totalPages}
+   625→   625→            >
+   626→   626→              Next <ChevronRight className="size-3.5" strokeWidth={1.5} />
+   627→   627→            </Button>
+   628→   628→          </div>
+   629→   629→        </div>
+   630→   630→      )}
+   631→   631→
+   632→   632→      {/* ── Add/Edit Dialog ─────────────────────────────────────── */}
+   633→   633→      <Dialog open={dialogOpen} onOpenChange={(open) => {
+   634→   634→        setDialogOpen(open)
+   635→   635→        if (!open) {
+   636→   636→          setEditing(null)
+   637→   637→          setForm(emptyForm)
+   638→   638→        }
+   639→   639→      }}>
+   640→   640→        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl macos-shadow-float border-border/50 p-0">
+   641→   641→          {/* macOS Dialog Header */}
+   642→   642→          <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-xl border-b border-border/50 px-6 py-4">
+   643→   643→            <div className="flex items-center justify-between">
+   644→   644→              <div className="flex items-center gap-3">
+   645→   645→                <div className="flex items-center justify-center size-8 rounded-lg bg-macos-blue/10">
+   646→   646→                  <BookMarked className="size-4 text-macos-blue" strokeWidth={1.5} />
+   647→   647→                </div>
+   648→   648→                <div>
+   649→   649→                  <DialogTitle className="text-[15px] font-semibold tracking-tight">
+   650→   650→                    {editing ? 'Edit Book' : 'Add New Book'}
+   651→   651→                  </DialogTitle>
+   652→   652→                  <p className="text-[11px] text-muted-foreground mt-0.5">
+   653→   653→                    {editing ? 'Update book information' : 'Fill in the book details'}
+   654→   654→                  </p>
+   655→   655→                </div>
+   656→   656→              </div>
+   657→   657→              <button
+   658→   658→                onClick={() => {
+   659→   659→                  setDialogOpen(false)
+   660→   660→                  setEditing(null)
+   661→   661→                  setForm(emptyForm)
+   662→   662→                }}
+   663→   663→                className="size-6 rounded-md hover:bg-secondary flex items-center justify-center transition-colors"
+   664→   664→              >
+   665→   665→                <X className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+   666→   666→              </button>
+   667→   667→            </div>
+   668→   668→          </div>
+   669→   669→
+   670→   670→          <div className="px-6 py-4">
+   671→   671→            {/* Section: Basic Info */}
+   672→   672→            <div className="mb-5">
+   673→   673→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-3">Basic Information</p>
+   674→   674→              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   675→   675→                <div className="sm:col-span-2">
+   676→   676→                  <Label htmlFor="title" className="text-[12px] font-medium text-muted-foreground">Title *</Label>
+   677→   677→                  <Input
+   678→   678→                    id="title"
+   679→   679→                    value={form.title}
+   680→   680→                    onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+   681→   681→                    placeholder="Book title"
+   682→   682→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   683→   683→                  />
+   684→   684→                </div>
+   685→   685→                <div className="sm:col-span-2">
+   686→   686→                  <Label htmlFor="subtitle" className="text-[12px] font-medium text-muted-foreground">Subtitle</Label>
+   687→   687→                  <Input
+   688→   688→                    id="subtitle"
+   689→   689→                    value={form.subtitle}
+   690→   690→                    onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
+   691→   691→                    placeholder="Subtitle (optional)"
+   692→   692→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   693→   693→                  />
+   694→   694→                </div>
+   695→   695→                <div>
+   696→   696→                  <Label htmlFor="isbn" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1"><Hash className="size-3" strokeWidth={1.5} /> ISBN</Label>
+   697→   697→                  <Input
+   698→   698→                    id="isbn"
+   699→   699→                    value={form.isbn}
+   700→   700→                    onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
+   701→   701→                    placeholder="978-..."
+   702→   702→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   703→   703→                  />
+   704→   704→                </div>
+   705→   705→                <div>
+   706→   706→                  <Label htmlFor="barcode" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1"><Barcode className="size-3" strokeWidth={1.5} /> Barcode</Label>
+   707→   707→                  <Input
+   708→   708→                    id="barcode"
+   709→   709→                    value={form.barcode}
+   710→   710→                    onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+   711→   711→                    placeholder="Barcode"
+   712→   712→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   713→   713→                  />
+   714→   714→                </div>
+   715→   715→              </div>
+   716→   716→            </div>
+   717→   717→
+   718→   718→            {/* Section: Classification */}
+   719→   719→            <div className="mb-5">
+   720→   720→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-3">Classification</p>
+   721→   721→              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   722→   722→                <div>
+   723→   723→                  <Label className="text-[12px] font-medium text-muted-foreground">Author</Label>
+   724→   724→                  <Select value={form.authorId} onValueChange={(v) => setForm((f) => ({ ...f, authorId: v === '__none__' ? '' : v }))}>
+   725→   725→                    <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20">
+   726→   726→                      <SelectValue placeholder="Select author" />
+   727→   727→                    </SelectTrigger>
+   728→   728→                    <SelectContent>
+   729→   729→                      <SelectItem value="__none__">None</SelectItem>
+   730→   730→                      {authors.map((a) => (
+   731→   731→                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+   732→   732→                      ))}
+   733→   733→                    </SelectContent>
+   734→   734→                  </Select>
+   735→   735→                </div>
+   736→   736→                <div>
+   737→   737→                  <Label className="text-[12px] font-medium text-muted-foreground">Publisher</Label>
+   738→   738→                  <Select value={form.publisherId} onValueChange={(v) => setForm((f) => ({ ...f, publisherId: v === '__none__' ? '' : v }))}>
+   739→   739→                    <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20">
+   740→   740→                      <SelectValue placeholder="Select publisher" />
+   741→   741→                    </SelectTrigger>
+   742→   742→                    <SelectContent>
+   743→   743→                      <SelectItem value="__none__">None</SelectItem>
+   744→   744→                      {publishers.map((p) => (
+   745→   745→                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+   746→   746→                      ))}
+   747→   747→                    </SelectContent>
+   748→   748→                  </Select>
+   749→   749→                </div>
+   750→   750→                <div>
+   751→   751→                  <Label className="text-[12px] font-medium text-muted-foreground flex items-center gap-1"><Tag className="size-3" strokeWidth={1.5} /> Category</Label>
+   752→   752→                  <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v === '__none__' ? '' : v }))}>
+   753→   753→                    <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20">
+   754→   754→                      <SelectValue placeholder="Select category" />
+   755→   755→                    </SelectTrigger>
+   756→   756→                    <SelectContent>
+   757→   757→                      <SelectItem value="__none__">None</SelectItem>
+   758→   758→                      {categories.map((c) => (
+   759→   759→                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+   760→   760→                      ))}
+   761→   761→                    </SelectContent>
+   762→   762→                  </Select>
+   763→   763→                </div>
+   764→   764→                <div>
+   765→   765→                  <Label htmlFor="edition" className="text-[12px] font-medium text-muted-foreground">Edition</Label>
+   766→   766→                  <Input
+   767→   767→                    id="edition"
+   768→   768→                    value={form.edition}
+   769→   769→                    onChange={(e) => setForm((f) => ({ ...f, edition: e.target.value }))}
+   770→   770→                    placeholder="e.g. 3rd"
+   771→   771→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   772→   772→                  />
+   773→   773→                </div>
+   774→   774→              </div>
+   775→   775→            </div>
+   776→   776→
+   777→   777→            {/* Section: Publication Details */}
+   778→   778→            <div className="mb-5">
+   779→   779→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-3">Publication Details</p>
+   780→   780→              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   781→   781→                <div>
+   782→   782→                  <Label htmlFor="language" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1"><Languages className="size-3" strokeWidth={1.5} /> Language</Label>
+   783→   783→                  <Input
+   784→   784→                    id="language"
+   785→   785→                    value={form.language}
+   786→   786→                    onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
+   787→   787→                    placeholder="English"
+   788→   788→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   789→   789→                  />
+   790→   790→                </div>
+   791→   791→                <div>
+   792→   792→                  <Label htmlFor="pages" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1"><FileText className="size-3" strokeWidth={1.5} /> Pages</Label>
+   793→   793→                  <Input
+   794→   794→                    id="pages"
+   795→   795→                    type="number"
+   796→   796→                    value={form.pages}
+   797→   797→                    onChange={(e) => setForm((f) => ({ ...f, pages: e.target.value }))}
+   798→   798→                    placeholder="0"
+   799→   799→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   800→   800→                  />
+   801→   801→                </div>
+   802→   802→                <div>
+   803→   803→                  <Label htmlFor="publishYear" className="text-[12px] font-medium text-muted-foreground">Publish Year</Label>
+   804→   804→                  <Input
+   805→   805→                    id="publishYear"
+   806→   806→                    type="number"
+   807→   807→                    value={form.publishYear}
+   808→   808→                    onChange={(e) => setForm((f) => ({ ...f, publishYear: e.target.value }))}
+   809→   809→                    placeholder="2024"
+   810→   810→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   811→   811→                  />
+   812→   812→                </div>
+   813→   813→              </div>
+   814→   814→            </div>
+   815→   815→
+   816→   816→            <Separator className="mb-5" />
+   817→   817→
+   818→   818→            {/* Section: Pricing */}
+   819→   819→            <div className="mb-5">
+   820→   820→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+   821→   821→                <DollarSign className="size-3" strokeWidth={1.5} /> Pricing
+   822→   822→              </p>
+   823→   823→              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+   824→   824→                <div>
+   825→   825→                  <Label htmlFor="price" className="text-[12px] font-medium text-muted-foreground">Price ($)</Label>
+   826→   826→                  <Input
+   827→   827→                    id="price"
+   828→   828→                    type="number"
+   829→   829→                    step="0.01"
+   830→   830→                    value={form.price}
+   831→   831→                    onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+   832→   832→                    placeholder="0.00"
+   833→   833→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   834→   834→                  />
+   835→   835→                </div>
+   836→   836→                <div>
+   837→   837→                  <Label htmlFor="costPrice" className="text-[12px] font-medium text-muted-foreground">Cost Price ($)</Label>
+   838→   838→                  <Input
+   839→   839→                    id="costPrice"
+   840→   840→                    type="number"
+   841→   841→                    step="0.01"
+   842→   842→                    value={form.costPrice}
+   843→   843→                    onChange={(e) => setForm((f) => ({ ...f, costPrice: e.target.value }))}
+   844→   844→                    placeholder="0.00"
+   845→   845→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   846→   846→                  />
+   847→   847→                </div>
+   848→   848→                <div>
+   849→   849→                  <Label htmlFor="discount" className="text-[12px] font-medium text-muted-foreground">Discount (%)</Label>
+   850→   850→                  <Input
+   851→   851→                    id="discount"
+   852→   852→                    type="number"
+   853→   853→                    step="0.1"
+   854→   854→                    value={form.discount}
+   855→   855→                    onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
+   856→   856→                    placeholder="0"
+   857→   857→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   858→   858→                  />
+   859→   859→                </div>
+   860→   860→              </div>
+   861→   861→            </div>
+   862→   862→
+   863→   863→            {/* Section: Academic */}
+   864→   864→            <div className="mb-5">
+   865→   865→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+   866→   866→                <GraduationCap className="size-3" strokeWidth={1.5} /> Academic
+   867→   867→              </p>
+   868→   868→              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+   869→   869→                <div>
+   870→   870→                  <Label htmlFor="academicLevel" className="text-[12px] font-medium text-muted-foreground">Academic Level</Label>
+   871→   871→                  <Input
+   872→   872→                    id="academicLevel"
+   873→   873→                    value={form.academicLevel}
+   874→   874→                    onChange={(e) => setForm((f) => ({ ...f, academicLevel: e.target.value }))}
+   875→   875→                    placeholder="e.g. University, High School"
+   876→   876→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   877→   877→                  />
+   878→   878→                </div>
+   879→   879→                <div>
+   880→   880→                  <Label htmlFor="subject" className="text-[12px] font-medium text-muted-foreground">Subject</Label>
+   881→   881→                  <Input
+   882→   882→                    id="subject"
+   883→   883→                    value={form.subject}
+   884→   884→                    onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+   885→   885→                    placeholder="e.g. Mathematics, History"
+   886→   886→                    className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   887→   887→                  />
+   888→   888→                </div>
+   889→   889→              </div>
+   890→   890→            </div>
+   891→   891→
+   892→   892→            {/* Section: Description */}
+   893→   893→            <div className="mb-5">
+   894→   894→              <Label htmlFor="description" className="text-[12px] font-medium text-muted-foreground">Description</Label>
+   895→   895→              <Textarea
+   896→   896→                id="description"
+   897→   897→                value={form.description}
+   898→   898→                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+   899→   899→                placeholder="Book description..."
+   900→   900→                rows={3}
+   901→   901→                className="rounded-lg border-border/50 text-[13px] mt-1 focus:ring-primary/20"
+   902→   902→              />
+   903→   903→            </div>
+   904→   904→          </div>
+   905→   905→
+   906→   906→          {/* Dialog Footer */}
+   907→   907→          <div className="sticky bottom-0 bg-card/95 backdrop-blur-xl border-t border-border/50 px-6 py-3 flex justify-end gap-2">
+   908→   908→            <Button
+   909→   909→              variant="ghost"
+   910→   910→              className="rounded-lg text-[13px] font-medium h-8"
+   911→   911→              onClick={() => {
+   912→   912→                setDialogOpen(false)
+   913→   913→                setEditing(null)
+   914→   914→                setForm(emptyForm)
+   915→   915→              }}
+   916→   916→            >
+   917→   917→              Cancel
+   918→   918→            </Button>
+   919→   919→            <Button
+   920→   920→              onClick={handleSave}
+   921→   921→              disabled={saving || !form.title.trim()}
+   922→   922→              className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8 gap-1.5"
+   923→   923→            >
+   924→   924→              {saving ? (
+   925→   925→                <RefreshCw className="size-4 animate-spin" strokeWidth={1.5} />
+   926→   926→              ) : (
+   927→   927→                <Plus className="size-4" strokeWidth={1.5} />
+   928→   928→              )}
+   929→   929→              {editing ? 'Update Book' : 'Create Book'}
+   930→   930→            </Button>
+   931→   931→          </div>
+   932→   932→        </DialogContent>
+   933→   933→      </Dialog>
+   934→   934→    </div>
+   935→   935→  )
+   936→   936→}
+   937→   937→

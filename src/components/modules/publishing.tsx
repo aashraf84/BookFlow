@@ -12,26 +12,14 @@ import {
   Clock,
   Package,
   DollarSign,
-  Search,
   Eye,
   Send,
   PenTool,
   Shield,
   Globe,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -49,6 +37,20 @@ import {
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosStatCard,
+  MacosStatGrid,
+  MacosCard,
+  MacosSearch,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosDialog,
+  MacosFormField,
+  MacosEmptyState,
+  MacosSection,
+} from '@/components/macos-ui'
 
 // Types
 interface Manuscript {
@@ -320,7 +322,7 @@ export function PublishingModule() {
 
   // Filter manuscripts
   const filteredManuscripts = manuscripts.filter((m) => {
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (m.author && m.author.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesStatus = statusFilter === 'all' || m.status === statusFilter
@@ -334,145 +336,92 @@ export function PublishingModule() {
 
   return (
     <div className="space-y-6">
-      {/* Page Title */}
-      <div>
-        <h1 className="macos-page-title">Publishing</h1>
-        <p className="macos-page-subtitle">Manage manuscripts, reviews, and print production</p>
-      </div>
+      {/* macOS Page Header */}
+      <MacosPageHeader
+        title="Publishing"
+        subtitle="Manage manuscripts, reviews, and print production"
+        icon={BookOpen}
+        iconColor="text-macos-teal"
+        iconBg="bg-macos-teal/10"
+      >
+        {isViewOnly && (
+          <MacosBadge variant="warning">
+            <Eye className="size-3 mr-1" />
+            DEMO MODE
+          </MacosBadge>
+        )}
+      </MacosPageHeader>
 
-      {/* Summary Metrics */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="macos-card macos-shadow-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Manuscripts</p>
-              <p className="text-2xl font-bold tracking-tight mt-0.5">{manuscripts.length}</p>
-            </div>
-            <div className="rounded-xl bg-macos-blue/10 p-2.5">
-              <FileText className="size-5 text-macos-blue" />
-            </div>
-          </div>
-        </div>
-        <div className="macos-card macos-shadow-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Submitted</p>
-              <p className="text-2xl font-bold tracking-tight mt-0.5">{msByStatus['submitted'] || 0}</p>
-            </div>
-            <div className="rounded-xl bg-macos-orange/10 p-2.5">
-              <Clock className="size-5 text-macos-orange" />
-            </div>
-          </div>
-        </div>
-        <div className="macos-card macos-shadow-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Published</p>
-              <p className="text-2xl font-bold tracking-tight mt-0.5">{msByStatus['published'] || 0}</p>
-            </div>
-            <div className="rounded-xl bg-macos-teal/10 p-2.5">
-              <Globe className="size-5 text-macos-teal" />
-            </div>
-          </div>
-        </div>
-        <div className="macos-card macos-shadow-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Print Orders</p>
-              <p className="text-2xl font-bold tracking-tight mt-0.5">{printOrders.length}</p>
-            </div>
-            <div className="rounded-xl bg-macos-purple/10 p-2.5">
-              <Printer className="size-5 text-macos-purple" />
-            </div>
-          </div>
-        </div>
-        <div className="macos-card macos-shadow-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Print Cost</p>
-              <p className="text-2xl font-bold tracking-tight mt-0.5">${totalPrintCost.toLocaleString()}</p>
-            </div>
-            <div className="rounded-xl bg-macos-green/10 p-2.5">
-              <DollarSign className="size-5 text-macos-green" />
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Summary Metrics - macOS Stat Cards */}
+      <MacosStatGrid className="lg:grid-cols-5">
+        <MacosStatCard label="Manuscripts" value={manuscripts.length} icon={FileText} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+        <MacosStatCard label="Submitted" value={msByStatus['submitted'] || 0} icon={Clock} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+        <MacosStatCard label="Published" value={msByStatus['published'] || 0} icon={Globe} iconColor="text-macos-teal" iconBg="bg-macos-teal/10" />
+        <MacosStatCard label="Print Orders" value={printOrders.length} icon={Printer} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+        <MacosStatCard label="Print Cost" value={`$${totalPrintCost.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+      </MacosStatGrid>
 
       {/* Manuscript Workflow Pipeline Visualization */}
-      <div className="macos-card macos-shadow p-6">
-        <div className="macos-section-header mb-4">
-          <div>
-            <p className="macos-section-title">Manuscript Workflow Pipeline</p>
-            <p className="macos-section-desc">Track manuscripts through the publishing lifecycle</p>
+      <MacosCard noPadding>
+        <div className="px-5 pt-5 pb-0">
+          <MacosSection
+            title="Manuscript Workflow Pipeline"
+            subtitle="Track manuscripts through the publishing lifecycle"
+          />
+        </div>
+        <div className="p-5 pt-2">
+          <div className="flex items-start justify-between gap-2">
+            {statusWorkflow.map((status, idx) => {
+              const config = manuscriptStatusConfig[status]
+              const count = msByStatus[status] || 0
+              const isLast = idx === statusWorkflow.length - 1
+              const isActive = count > 0
+              const laterCounts = statusWorkflow.slice(idx + 1).reduce((sum, s) => sum + (msByStatus[s] || 0), 0)
+              const isCompleted = count === 0 && laterCounts > 0
+              return (
+                <PipelineStep
+                  key={status}
+                  label={config.label}
+                  icon={config.icon}
+                  isActive={isActive}
+                  isCompleted={isCompleted}
+                  count={count}
+                  color={config.color}
+                  bgColor={config.bgColor}
+                  isLast={isLast}
+                />
+              )
+            })}
           </div>
-        </div>
-        <div className="flex items-start justify-between gap-2">
-          {statusWorkflow.map((status, idx) => {
-            const config = manuscriptStatusConfig[status]
-            const count = msByStatus[status] || 0
-            const isLast = idx === statusWorkflow.length - 1
-            // Determine if this step is "active" (has items) or "completed" (all items have passed this stage)
-            const isActive = count > 0
-            const laterCounts = statusWorkflow.slice(idx + 1).reduce((sum, s) => sum + (msByStatus[s] || 0), 0)
-            const isCompleted = count === 0 && laterCounts > 0
-            return (
-              <PipelineStep
-                key={status}
-                label={config.label}
-                icon={config.icon}
-                isActive={isActive}
-                isCompleted={isCompleted}
-                count={count}
-                color={config.color}
-                bgColor={config.bgColor}
-                isLast={isLast}
-              />
-            )
-          })}
-        </div>
-        {/* Rejected count if any */}
-        {(msByStatus['rejected'] || 0) > 0 && (
-          <div className="mt-4 flex items-center gap-2 pt-3 border-t border-border">
-            <XCircle className="size-3.5 text-macos-red" />
-            <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Rejected:</span>
-            <Badge className="rounded-md bg-macos-red/10 text-macos-red text-[10px] font-semibold px-2 py-0.5">
-              {msByStatus['rejected']}
-            </Badge>
-          </div>
-        )}
-      </div>
-
-      {/* Header + Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="macos-filter-bar">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`macos-filter-item ${activeTab === tab.id ? 'macos-filter-item-active' : ''}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Search */}
-          {activeTab === 'manuscripts' && (
-            <div className="macos-search flex items-center gap-2 px-3 h-8">
-              <Search className="size-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search manuscripts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="border-0 bg-transparent h-6 text-[13px] p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60"
-              />
+          {/* Rejected count if any */}
+          {(msByStatus['rejected'] || 0) > 0 && (
+            <div className="mt-4 flex items-center gap-2 pt-3 border-t border-border">
+              <XCircle className="size-3.5 text-macos-red" />
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Rejected:</span>
+              <MacosBadge variant="danger">{msByStatus['rejected']}</MacosBadge>
             </div>
           )}
-          {/* Status Filter */}
+        </div>
+      </MacosCard>
+
+      {/* Filter Bar + Actions */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <MacosFilterBar
+          items={tabs.map((tab) => ({ id: tab.id, label: tab.label }))}
+          activeId={activeTab}
+          onChange={setActiveTab}
+        />
+        <div className="flex items-center gap-2">
+          {activeTab === 'manuscripts' && (
+            <MacosSearch
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search manuscripts..."
+            />
+          )}
           {activeTab === 'manuscripts' && (
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-8 text-[13px] rounded-lg bg-secondary/80 border-0">
+              <SelectTrigger className="w-[140px] h-8 text-[12px] font-medium rounded-lg bg-secondary/80 border-0">
                 <SelectValue placeholder="Filter status" />
               </SelectTrigger>
               <SelectContent>
@@ -485,24 +434,22 @@ export function PublishingModule() {
               </SelectContent>
             </Select>
           )}
-          {/* CRUD Buttons - hidden for view-only */}
           {!isViewOnly && (
             <>
-              <Button
+              <MacosButton
+                variant="secondary"
+                icon={Plus}
                 onClick={() => setManuscriptDialogOpen(true)}
-                variant="outline"
-                className="rounded-lg font-medium text-[13px] h-8"
               >
-                <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
                 Submit Manuscript
-              </Button>
-              <Button
+              </MacosButton>
+              <MacosButton
+                variant="primary"
+                icon={Plus}
                 onClick={() => setPrintOrderDialogOpen(true)}
-                className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8"
               >
-                <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
                 Print Order
-              </Button>
+              </MacosButton>
             </>
           )}
         </div>
@@ -512,96 +459,104 @@ export function PublishingModule() {
       {activeTab === 'manuscripts' && (
         <div>
           {loading ? (
-            <div className="macos-card macos-shadow-card p-8 text-center text-muted-foreground animate-pulse text-[13px]">
-              Loading manuscripts...
-            </div>
+            <MacosCard>
+              <div className="p-8 text-center text-muted-foreground animate-pulse text-[13px]">
+                Loading manuscripts...
+              </div>
+            </MacosCard>
           ) : filteredManuscripts.length === 0 ? (
-            <div className="macos-card macos-shadow-card macos-empty">
-              <FileText className="size-12 text-muted-foreground/40 mb-4" />
-              <h3 className="text-[13px] font-semibold tracking-tight mb-1">No manuscripts found</h3>
-              <p className="text-[13px] text-muted-foreground">
-                {searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'Submit your first manuscript to get started'}
-              </p>
-            </div>
+            <MacosCard>
+              <MacosEmptyState
+                icon={FileText}
+                title="No manuscripts found"
+                description={searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'Submit your first manuscript to get started'}
+              />
+            </MacosCard>
           ) : (
-            <div className="macos-card macos-shadow overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-b border-border">
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Submitted</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredManuscripts.map((ms) => {
-                    const nextStatuses = getNextStatus(ms.status)
-                    const statusConf = manuscriptStatusConfig[ms.status] || manuscriptStatusConfig.submitted
-                    const StatusIcon = statusConf.icon
-                    return (
-                      <TableRow key={ms.id} className="macos-table-row">
-                        <TableCell className="text-[13px] font-medium max-w-[200px] truncate">
-                          <div className="flex items-center gap-2">
-                            <div className={`size-6 rounded-lg flex items-center justify-center ${statusConf.bgColor}`}>
-                              <StatusIcon className={`size-3 ${statusConf.color}`} />
+            <div className="macos-card macos-shadow-card overflow-hidden">
+              <div className="overflow-x-auto custom-scrollbar">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Title</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Author</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Submitted</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredManuscripts.map((ms) => {
+                      const nextStatuses = getNextStatus(ms.status)
+                      const statusConf = manuscriptStatusConfig[ms.status] || manuscriptStatusConfig.submitted
+                      const StatusIcon = statusConf.icon
+                      return (
+                        <TableRow key={ms.id} className="macos-table-row border-b border-border/30 last:border-0">
+                          <TableCell className="text-[13px] font-medium tracking-tight py-3 max-w-[200px]">
+                            <div className="flex items-center gap-2">
+                              <div className={`size-7 rounded-lg flex items-center justify-center ${statusConf.bgColor}`}>
+                                <StatusIcon className={`size-3.5 ${statusConf.color}`} />
+                              </div>
+                              <span className="truncate">{ms.title}</span>
                             </div>
-                            <span className="truncate">{ms.title}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-[13px] text-muted-foreground">{ms.author || '—'}</TableCell>
-                        <TableCell>
-                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${statusConf.bgColor} ${statusConf.color}`}>
-                            {statusConf.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-[13px] text-muted-foreground">
-                          {new Date(ms.submittedAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {nextStatuses.map((ns) => {
-                              const nsConf = manuscriptStatusConfig[ns]
-                              return (
-                                <Button
-                                  key={ns}
-                                  size="sm"
-                                  variant="outline"
-                                  className={`h-7 text-[10px] rounded-lg font-semibold px-2.5 ${nsConf?.color} border-current/20`}
-                                  onClick={() => handleManuscriptStatus(ms, ns)}
+                          </TableCell>
+                          <TableCell className="text-[13px] font-medium tracking-tight py-3 text-muted-foreground">{ms.author || '—'}</TableCell>
+                          <TableCell className="py-3">
+                            <MacosBadge
+                              variant={
+                                ms.status === 'published' ? 'success' :
+                                ms.status === 'rejected' ? 'danger' :
+                                ms.status === 'submitted' ? 'info' :
+                                ms.status === 'reviewed' ? 'purple' : 'default'
+                              }
+                            >
+                              {statusConf.label}
+                            </MacosBadge>
+                          </TableCell>
+                          <TableCell className="text-[13px] font-medium tracking-tight py-3 text-muted-foreground">
+                            {new Date(ms.submittedAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              {nextStatuses.map((ns) => {
+                                const nsConf = manuscriptStatusConfig[ns]
+                                return (
+                                  <MacosButton
+                                    key={ns}
+                                    variant="secondary"
+                                    icon={ArrowRight}
+                                    onClick={() => handleManuscriptStatus(ms, ns)}
+                                    disabled={isViewOnly}
+                                    className={nsConf?.color}
+                                  >
+                                    {ns.charAt(0).toUpperCase() + ns.slice(1)}
+                                  </MacosButton>
+                                )
+                              })}
+                              {!rejectionStates.includes(ms.status) && ms.status !== 'published' && !isViewOnly && (
+                                <MacosButton
+                                  variant="danger"
+                                  icon={XCircle}
+                                  onClick={() => handleManuscriptStatus(ms, 'rejected')}
                                   disabled={isViewOnly}
                                 >
-                                  <ArrowRight className="size-3 mr-1" />
-                                  {ns.charAt(0).toUpperCase() + ns.slice(1)}
-                                </Button>
-                              )
-                            })}
-                            {!rejectionStates.includes(ms.status) && ms.status !== 'published' && !isViewOnly && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5 text-macos-red border-macos-red/20 hover:bg-macos-red/10"
-                                onClick={() => handleManuscriptStatus(ms, 'rejected')}
-                                disabled={isViewOnly}
-                              >
-                                <XCircle className="size-3 mr-1" />
-                                Reject
-                              </Button>
-                            )}
-                            {ms.status === 'published' && (
-                              <CheckCircle2 className="size-4 text-macos-green" />
-                            )}
-                            {ms.status === 'rejected' && (
-                              <XCircle className="size-4 text-macos-red" />
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+                                  Reject
+                                </MacosButton>
+                              )}
+                              {ms.status === 'published' && (
+                                <CheckCircle2 className="size-4 text-macos-green" />
+                              )}
+                              {ms.status === 'rejected' && (
+                                <XCircle className="size-4 text-macos-red" />
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </div>
@@ -611,214 +566,214 @@ export function PublishingModule() {
       {activeTab === 'print-orders' && (
         <div>
           {loading ? (
-            <div className="macos-card macos-shadow-card p-8 text-center text-muted-foreground animate-pulse text-[13px]">
-              Loading print orders...
-            </div>
+            <MacosCard>
+              <div className="p-8 text-center text-muted-foreground animate-pulse text-[13px]">
+                Loading print orders...
+              </div>
+            </MacosCard>
           ) : printOrders.length === 0 ? (
-            <div className="macos-card macos-shadow-card macos-empty">
-              <Printer className="size-12 text-muted-foreground/40 mb-4" />
-              <h3 className="text-[13px] font-semibold tracking-tight mb-1">No print orders yet</h3>
-              <p className="text-[13px] text-muted-foreground">Create a print order for a published book</p>
-            </div>
+            <MacosCard>
+              <MacosEmptyState
+                icon={Printer}
+                title="No print orders yet"
+                description="Create a print order for a published book"
+              />
+            </MacosCard>
           ) : (
-            <div className="macos-card macos-shadow overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-b border-border">
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Book</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Quantity</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Cost/Unit</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Cost</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {printOrders.map((po) => {
-                    const poConf = printStatusConfig[po.status] || printStatusConfig.ordered
-                    const PoIcon = poConf.icon
-                    return (
-                      <TableRow key={po.id} className="macos-table-row">
-                        <TableCell className="text-[13px] font-medium">
-                          <div className="flex items-center gap-2">
-                            <div className={`size-6 rounded-lg flex items-center justify-center ${poConf.bgColor}`}>
-                              <PoIcon className={`size-3 ${poConf.color}`} />
+            <div className="macos-card macos-shadow-card overflow-hidden">
+              <div className="overflow-x-auto custom-scrollbar">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Book</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Quantity</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Cost/Unit</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Total Cost</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {printOrders.map((po) => {
+                      const poConf = printStatusConfig[po.status] || printStatusConfig.ordered
+                      const PoIcon = poConf.icon
+                      return (
+                        <TableRow key={po.id} className="macos-table-row border-b border-border/30 last:border-0">
+                          <TableCell className="text-[13px] font-medium tracking-tight py-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`size-7 rounded-lg flex items-center justify-center ${poConf.bgColor}`}>
+                                <PoIcon className={`size-3.5 ${poConf.color}`} />
+                              </div>
+                              {po.book?.title || 'Unknown Book'}
                             </div>
-                            {po.book?.title || 'Unknown Book'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-[13px]">{po.quantity.toLocaleString()}</TableCell>
-                        <TableCell className="text-[13px]">${po.costPerUnit.toFixed(2)}</TableCell>
-                        <TableCell className="text-[13px] font-medium">${po.totalCost.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${poConf.bgColor} ${poConf.color}`}>
-                            {poConf.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {po.status === 'ordered' && !isViewOnly && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5"
-                                onClick={() => handlePrintOrderStatus(po, 'printing')}
-                                disabled={isViewOnly}
-                              >
-                                <ArrowRight className="size-3 mr-1" />
-                                Start Printing
-                              </Button>
-                            )}
-                            {po.status === 'printing' && !isViewOnly && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5 text-macos-green border-macos-green/20 hover:bg-macos-green/10"
-                                onClick={() => handlePrintOrderStatus(po, 'completed')}
-                                disabled={isViewOnly}
-                              >
-                                <CheckCircle2 className="size-3 mr-1" />
-                                Complete
-                              </Button>
-                            )}
-                            {po.status === 'completed' && (
-                              <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
-                                <CheckCircle2 className="size-3 mr-1" />
-                                Done
-                              </Badge>
-                            )}
-                            {isViewOnly && po.status !== 'completed' && (
-                              <span className="text-[10px] text-muted-foreground">View only</span>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                          <TableCell className="text-[13px] font-medium tracking-tight py-3">{po.quantity.toLocaleString()}</TableCell>
+                          <TableCell className="text-[13px] font-medium tracking-tight py-3">${po.costPerUnit.toFixed(2)}</TableCell>
+                          <TableCell className="text-[13px] font-medium tracking-tight py-3 font-semibold">${po.totalCost.toLocaleString()}</TableCell>
+                          <TableCell className="py-3">
+                            <MacosBadge
+                              variant={po.status === 'completed' ? 'success' : po.status === 'printing' ? 'info' : 'warning'}
+                            >
+                              {poConf.label}
+                            </MacosBadge>
+                          </TableCell>
+                          <TableCell className="text-right py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              {po.status === 'ordered' && !isViewOnly && (
+                                <MacosButton
+                                  variant="secondary"
+                                  icon={ArrowRight}
+                                  onClick={() => handlePrintOrderStatus(po, 'printing')}
+                                  disabled={isViewOnly}
+                                >
+                                  Start Printing
+                                </MacosButton>
+                              )}
+                              {po.status === 'printing' && !isViewOnly && (
+                                <MacosButton
+                                  variant="primary"
+                                  icon={CheckCircle2}
+                                  onClick={() => handlePrintOrderStatus(po, 'completed')}
+                                  disabled={isViewOnly}
+                                  className="bg-macos-green text-white hover:bg-macos-green/90"
+                                >
+                                  Complete
+                                </MacosButton>
+                              )}
+                              {po.status === 'completed' && (
+                                <MacosBadge variant="success">
+                                  <CheckCircle2 className="size-3 mr-1" />
+                                  Done
+                                </MacosBadge>
+                              )}
+                              {isViewOnly && po.status !== 'completed' && (
+                                <span className="text-[10px] text-muted-foreground">View only</span>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Submit Manuscript Dialog */}
-      <Dialog open={manuscriptDialogOpen} onOpenChange={setManuscriptDialogOpen}>
-        <DialogContent className="sm:max-w-md macos-shadow-float rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-[13px] font-semibold tracking-tight">Submit Manuscript</DialogTitle>
-            <DialogDescription className="text-[13px]">Submit a new manuscript for review and publishing</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="ms-title" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Title *</Label>
-              <Input
-                id="ms-title"
-                placeholder="The Great Adventure"
-                value={msForm.title}
-                onChange={(e) => setMsForm((prev) => ({ ...prev, title: e.target.value }))}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ms-author" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Author</Label>
-              <Input
-                id="ms-author"
-                placeholder="Jane Doe"
-                value={msForm.author}
-                onChange={(e) => setMsForm((prev) => ({ ...prev, author: e.target.value }))}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ms-notes" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Notes</Label>
-              <Textarea
-                id="ms-notes"
-                placeholder="Additional notes about this manuscript..."
-                value={msForm.notes}
-                onChange={(e) => setMsForm((prev) => ({ ...prev, notes: e.target.value }))}
-                rows={3}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setManuscriptDialogOpen(false)} className="bg-secondary text-secondary-foreground rounded-lg font-medium text-[13px]">Cancel</Button>
-            <Button onClick={handleSubmitManuscript} disabled={submitting} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+      {/* Submit Manuscript Dialog - frosted glass */}
+      <MacosDialog
+        open={manuscriptDialogOpen}
+        onOpenChange={setManuscriptDialogOpen}
+        title="Submit Manuscript"
+        description="Submit a new manuscript for review and publishing"
+        footer={
+          <>
+            <MacosButton variant="secondary" onClick={() => setManuscriptDialogOpen(false)}>
+              Cancel
+            </MacosButton>
+            <MacosButton variant="primary" onClick={handleSubmitManuscript} disabled={submitting}>
               {submitting ? 'Submitting...' : 'Submit Manuscript'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </MacosButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <MacosFormField label="Title" description="Required">
+            <Input
+              placeholder="The Great Adventure"
+              value={msForm.title}
+              onChange={(e) => setMsForm((prev) => ({ ...prev, title: e.target.value }))}
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </MacosFormField>
+          <MacosFormField label="Author">
+            <Input
+              placeholder="Jane Doe"
+              value={msForm.author}
+              onChange={(e) => setMsForm((prev) => ({ ...prev, author: e.target.value }))}
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </MacosFormField>
+          <MacosFormField label="Notes">
+            <Textarea
+              placeholder="Additional notes about this manuscript..."
+              value={msForm.notes}
+              onChange={(e) => setMsForm((prev) => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </MacosFormField>
+        </div>
+      </MacosDialog>
 
-      {/* Create Print Order Dialog */}
-      <Dialog open={printOrderDialogOpen} onOpenChange={setPrintOrderDialogOpen}>
-        <DialogContent className="sm:max-w-md macos-shadow-float rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Print Order</DialogTitle>
-            <DialogDescription className="text-[13px]">Order a print run for a published book</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="po-book" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Book *</Label>
-              <Select
-                value={poForm.bookId}
-                onValueChange={(v) => setPoForm((prev) => ({ ...prev, bookId: v }))}
-              >
-                <SelectTrigger id="po-book" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                  <SelectValue placeholder="Select a book" />
-                </SelectTrigger>
-                <SelectContent>
-                  {books.map((book) => (
-                    <SelectItem key={book.id} value={book.id}>
-                      {book.title}{book.isbn ? ` (${book.isbn})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="po-qty" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Quantity *</Label>
-                <Input
-                  id="po-qty"
-                  type="number"
-                  placeholder="500"
-                  value={poForm.quantity}
-                  onChange={(e) => setPoForm((prev) => ({ ...prev, quantity: e.target.value }))}
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="po-cost" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Cost Per Unit</Label>
-                <Input
-                  id="po-cost"
-                  type="number"
-                  step="0.01"
-                  placeholder="2.50"
-                  value={poForm.costPerUnit}
-                  onChange={(e) => setPoForm((prev) => ({ ...prev, costPerUnit: e.target.value }))}
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-                />
-              </div>
-            </div>
-            {poForm.quantity && poForm.costPerUnit && (
-              <div className="macos-card p-3 text-[13px]">
-                <span className="text-muted-foreground">Total Cost: </span>
-                <span className="font-bold text-gg-golden">
-                  ${(parseInt(poForm.quantity) * parseFloat(poForm.costPerUnit)).toLocaleString()}
-                </span>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPrintOrderDialogOpen(false)} className="bg-secondary text-secondary-foreground rounded-lg font-medium text-[13px]">Cancel</Button>
-            <Button onClick={handleCreatePrintOrder} disabled={submitting} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+      {/* Create Print Order Dialog - frosted glass */}
+      <MacosDialog
+        open={printOrderDialogOpen}
+        onOpenChange={setPrintOrderDialogOpen}
+        title="Create Print Order"
+        description="Order a print run for a published book"
+        footer={
+          <>
+            <MacosButton variant="secondary" onClick={() => setPrintOrderDialogOpen(false)}>
+              Cancel
+            </MacosButton>
+            <MacosButton variant="primary" onClick={handleCreatePrintOrder} disabled={submitting}>
               {submitting ? 'Creating...' : 'Create Order'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </MacosButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <MacosFormField label="Book" description="Required">
+            <Select
+              value={poForm.bookId}
+              onValueChange={(v) => setPoForm((prev) => ({ ...prev, bookId: v }))}
+            >
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                <SelectValue placeholder="Select a book" />
+              </SelectTrigger>
+              <SelectContent>
+                {books.map((book) => (
+                  <SelectItem key={book.id} value={book.id}>
+                    {book.title}{book.isbn ? ` (${book.isbn})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+          <div className="grid grid-cols-2 gap-4">
+            <MacosFormField label="Quantity" description="Required">
+              <Input
+                type="number"
+                placeholder="500"
+                value={poForm.quantity}
+                onChange={(e) => setPoForm((prev) => ({ ...prev, quantity: e.target.value }))}
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </MacosFormField>
+            <MacosFormField label="Cost Per Unit">
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="2.50"
+                value={poForm.costPerUnit}
+                onChange={(e) => setPoForm((prev) => ({ ...prev, costPerUnit: e.target.value }))}
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </MacosFormField>
+          </div>
+          {poForm.quantity && poForm.costPerUnit && (
+            <div className="macos-card p-3 text-[13px]">
+              <span className="text-muted-foreground">Total Cost: </span>
+              <span className="font-bold text-gg-golden">
+                ${(parseInt(poForm.quantity) * parseFloat(poForm.costPerUnit)).toLocaleString()}
+              </span>
+            </div>
+          )}
+        </div>
+      </MacosDialog>
     </div>
   )
 }

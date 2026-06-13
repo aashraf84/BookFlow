@@ -19,8 +19,6 @@ import {
   Activity,
   Eye,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -34,8 +32,6 @@ import {
   Bar,
   AreaChart,
   Area,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -52,6 +48,16 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosStatCard,
+  MacosStatGrid,
+  MacosCard,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosSection,
+} from '@/components/macos-ui'
 
 // Report categories
 const reportCategories = [
@@ -210,23 +216,14 @@ function MetricCard({ title, value, change, up, icon: Icon, color }: {
   icon: React.ElementType; color: string
 }) {
   return (
-    <div className="macos-card macos-shadow-card p-4">
-      <div className="flex items-center justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{title}</p>
-          <p className="text-[22px] font-bold tracking-tight mt-0.5">{value}</p>
-          {change && (
-            <div className="flex items-center gap-1 text-[11px] mt-1">
-              {up ? <ArrowUpRight className="size-3 text-macos-green" /> : <ArrowDownRight className="size-3 text-macos-red" />}
-              <span className={up ? 'text-macos-green font-semibold' : 'text-macos-red font-semibold'}>{change}</span>
-            </div>
-          )}
-        </div>
-        <div className={`rounded-lg p-2.5 ${color}`}>
-          <Icon className="size-5" />
-        </div>
-      </div>
-    </div>
+    <MacosStatCard
+      label={title}
+      value={value}
+      icon={Icon}
+      iconColor={color.split(' ')[1] || 'text-primary'}
+      iconBg={color.split(' ')[0] || 'bg-primary/10'}
+      trend={change ? { value: parseFloat(change), label: change } : undefined}
+    />
   )
 }
 
@@ -235,123 +232,115 @@ function MetricCard({ title, value, change, up, icon: Icon, color }: {
 function SalesReport() {
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Total Revenue" value="$682,000" change="+12.5%" up icon={DollarSign} color="bg-macos-blue/10 text-macos-blue" />
-        <MetricCard title="Total Orders" value="5,045" change="+8.2%" up icon={ShoppingCart} color="bg-macos-green/10 text-macos-green" />
-        <MetricCard title="Avg Order Value" value="$135.18" change="+3.1%" up icon={TrendingUp} color="bg-macos-orange/10 text-macos-orange" />
-        <MetricCard title="Profit Margin" value="30.2%" change="-1.4%" up={false} icon={BarChart3} color="bg-macos-red/10 text-macos-red" />
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Total Revenue" value="$682,000" icon={DollarSign} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" trend={{ value: 12.5, label: '+12.5%' }} />
+        <MacosStatCard label="Total Orders" value="5,045" icon={ShoppingCart} iconColor="text-macos-green" iconBg="bg-macos-green/10" trend={{ value: 8.2, label: '+8.2%' }} />
+        <MacosStatCard label="Avg Order Value" value="$135.18" icon={TrendingUp} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" trend={{ value: 3.1, label: '+3.1%' }} />
+        <MacosStatCard label="Profit Margin" value="30.2%" icon={BarChart3} iconColor="text-macos-red" iconBg="bg-macos-red/10" trend={{ value: -1.4, label: '-1.4%' }} />
+      </MacosStatGrid>
 
       {/* Revenue & Profit Area Chart */}
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <div>
-            <h3 className="macos-section-title">Monthly Revenue & Profit</h3>
-            <p className="macos-section-desc">Revenue and profit trends over the past 12 months</p>
-          </div>
-          <Badge className="rounded-md bg-macos-blue/10 text-macos-blue text-[10px] font-semibold tracking-wider px-2 py-0.5">
-            <Activity className="size-3 mr-1" />
-            LIVE
-          </Badge>
+      <MacosCard noPadding>
+        <div className="px-5 pt-5 pb-0">
+          <MacosSection
+            title="Monthly Revenue & Profit"
+            subtitle="Revenue and profit trends over the past 12 months"
+            action={
+              <MacosBadge variant="info">
+                <Activity className="size-3 mr-1" />
+                LIVE
+              </MacosBadge>
+            }
+          />
         </div>
-        <ChartContainer config={revenueChartConfig} className="h-72 w-full">
-          <BarChart data={monthlyRevenue} barCategoryGap="20%">
-            <defs>
-              <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#007AFF" stopOpacity={0.6} />
-              </linearGradient>
-              <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#34C759" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#34C759" stopOpacity={0.6} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
-            <ChartTooltip
-              content={<ChartTooltipContent />}
-            />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Bar dataKey="revenue" fill="url(#revenueGrad)" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="profit" fill="url(#profitGrad)" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ChartContainer>
-      </div>
+        <div className="p-5 pt-2">
+          <ChartContainer config={revenueChartConfig} className="h-72 w-full">
+            <BarChart data={monthlyRevenue} barCategoryGap="20%">
+              <defs>
+                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#007AFF" stopOpacity={0.6} />
+                </linearGradient>
+                <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#34C759" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#34C759" stopOpacity={0.6} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="revenue" fill="url(#revenueGrad)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="profit" fill="url(#profitGrad)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+      </MacosCard>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Top Products Table */}
-        <div className="macos-card macos-shadow-card p-5">
-          <div className="macos-section-header">
-            <div>
-              <h3 className="macos-section-title">Top Products</h3>
-              <p className="macos-section-desc">Best selling products by revenue</p>
-            </div>
-          </div>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-border/50">
-                <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
-                <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
-                <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Sold</TableHead>
-                <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Revenue</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {topProducts.map((p) => (
-                <TableRow key={p.name} className="macos-table-row border-border/30">
-                  <TableCell className="text-[13px] font-medium">{p.name}</TableCell>
-                  <TableCell>
-                    <Badge className="rounded-md bg-secondary text-secondary-foreground text-[10px] font-semibold tracking-wider px-2 py-0.5">{p.category}</Badge>
-                  </TableCell>
-                  <TableCell className="text-[13px] text-right tabular-nums">{p.sold.toLocaleString()}</TableCell>
-                  <TableCell className="text-[13px] text-right font-medium tabular-nums">${p.revenue.toLocaleString()}</TableCell>
+        <MacosCard title="Top Products" subtitle="Best selling products by revenue" noPadding>
+          <div className="overflow-x-auto custom-scrollbar">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border/50 hover:bg-transparent">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Product</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Category</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Sold</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Revenue</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {topProducts.map((p) => (
+                  <TableRow key={p.name} className="macos-table-row border-b border-border/30 last:border-0">
+                    <TableCell className="text-[13px] font-medium tracking-tight py-3">{p.name}</TableCell>
+                    <TableCell className="py-3">
+                      <MacosBadge>{p.category}</MacosBadge>
+                    </TableCell>
+                    <TableCell className="text-[13px] text-right tabular-nums py-3">{p.sold.toLocaleString()}</TableCell>
+                    <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${p.revenue.toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </MacosCard>
 
         {/* Sales by Payment Pie */}
-        <div className="macos-card macos-shadow-card p-5">
-          <div className="macos-section-header">
-            <div>
-              <h3 className="macos-section-title">Sales by Payment Method</h3>
-              <p className="macos-section-desc">Distribution of sales across payment methods</p>
+        <MacosCard title="Sales by Payment Method" subtitle="Distribution of sales across payment methods" noPadding>
+          <div className="p-5">
+            <ChartContainer config={paymentChartConfig} className="h-56 w-full">
+              <PieChart>
+                <Pie
+                  data={salesByPayment}
+                  dataKey="value"
+                  nameKey="method"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={45}
+                  outerRadius={80}
+                  paddingAngle={3}
+                  strokeWidth={0}
+                >
+                  {salesByPayment.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <ChartTooltip content={<ChartTooltipContent />} />
+              </PieChart>
+            </ChartContainer>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {salesByPayment.map((s, i) => (
+                <div key={s.method} className="flex items-center gap-2 text-[13px]">
+                  <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i] }} />
+                  <span className="text-muted-foreground text-[12px]">{s.method}:</span>
+                  <span className="font-medium text-[13px] tabular-nums">${s.amount.toLocaleString()}</span>
+                </div>
+              ))}
             </div>
           </div>
-          <ChartContainer config={paymentChartConfig} className="h-56 w-full">
-            <PieChart>
-              <Pie
-                data={salesByPayment}
-                dataKey="value"
-                nameKey="method"
-                cx="50%"
-                cy="50%"
-                innerRadius={45}
-                outerRadius={80}
-                paddingAngle={3}
-                strokeWidth={0}
-              >
-                {salesByPayment.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                ))}
-              </Pie>
-              <ChartTooltip
-                content={<ChartTooltipContent />}
-              />
-            </PieChart>
-          </ChartContainer>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            {salesByPayment.map((s, i) => (
-              <div key={s.method} className="flex items-center gap-2 text-[13px]">
-                <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i] }} />
-                <span className="text-muted-foreground text-[12px]">{s.method}:</span>
-                <span className="font-medium text-[13px] tabular-nums">${s.amount.toLocaleString()}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        </MacosCard>
       </div>
     </div>
   )
@@ -362,92 +351,91 @@ function SalesReport() {
 function InventoryReport() {
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Total SKUs" value="4,238" change="+5.2%" up icon={Package} color="bg-macos-blue/10 text-macos-blue" />
-        <MetricCard title="Low Stock" value="120" change="+12" up={false} icon={BarChart3} color="bg-macos-orange/10 text-macos-orange" />
-        <MetricCard title="Out of Stock" value="45" change="-8" up icon={TrendingUp} color="bg-macos-red/10 text-macos-red" />
-        <MetricCard title="Dead Stock" value="23" change="+3" up={false} icon={FileText} color="bg-macos-purple/10 text-macos-purple" />
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Total SKUs" value="4,238" icon={Package} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" trend={{ value: 5.2, label: '+5.2%' }} />
+        <MacosStatCard label="Low Stock" value="120" icon={BarChart3} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" trend={{ value: -12, label: '+12' }} />
+        <MacosStatCard label="Out of Stock" value="45" icon={TrendingUp} iconColor="text-macos-red" iconBg="bg-macos-red/10" trend={{ value: 8, label: '-8' }} />
+        <MacosStatCard label="Dead Stock" value="23" icon={FileText} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" trend={{ value: -3, label: '+3' }} />
+      </MacosStatGrid>
 
       {/* Stock Levels Area Chart */}
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <div>
-            <h3 className="macos-section-title">Stock Levels by Category</h3>
-            <p className="macos-section-desc">Current inventory status across product categories</p>
-          </div>
-          <Badge className="rounded-md bg-macos-teal/10 text-macos-teal text-[10px] font-semibold tracking-wider px-2 py-0.5">
-            <Package className="size-3 mr-1" />
-            INVENTORY
-          </Badge>
+      <MacosCard noPadding>
+        <div className="px-5 pt-5 pb-0">
+          <MacosSection
+            title="Stock Levels by Category"
+            subtitle="Current inventory status across product categories"
+            action={
+              <MacosBadge variant="info">
+                <Package className="size-3 mr-1" />
+                INVENTORY
+              </MacosBadge>
+            }
+          />
         </div>
-        <ChartContainer config={stockChartConfig} className="h-72 w-full">
-          <BarChart data={stockLevels} barCategoryGap="20%">
-            <defs>
-              <linearGradient id="inStockGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#007AFF" stopOpacity={0.5} />
-              </linearGradient>
-              <linearGradient id="lowGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF9500" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#FF9500" stopOpacity={0.5} />
-              </linearGradient>
-              <linearGradient id="outGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF3B30" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#FF3B30" stopOpacity={0.5} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Bar dataKey="inStock" stackId="a" fill="url(#inStockGrad)" />
-            <Bar dataKey="low" stackId="a" fill="url(#lowGrad)" />
-            <Bar dataKey="out" stackId="a" fill="url(#outGrad)" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ChartContainer>
-      </div>
+        <div className="p-5 pt-2">
+          <ChartContainer config={stockChartConfig} className="h-72 w-full">
+            <BarChart data={stockLevels} barCategoryGap="20%">
+              <defs>
+                <linearGradient id="inStockGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#007AFF" stopOpacity={0.5} />
+                </linearGradient>
+                <linearGradient id="lowGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FF9500" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#FF9500" stopOpacity={0.5} />
+                </linearGradient>
+                <linearGradient id="outGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FF3B30" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#FF3B30" stopOpacity={0.5} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="inStock" stackId="a" fill="url(#inStockGrad)" />
+              <Bar dataKey="low" stackId="a" fill="url(#lowGrad)" />
+              <Bar dataKey="out" stackId="a" fill="url(#outGrad)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+      </MacosCard>
 
       {/* Moving Items Table */}
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <div>
-            <h3 className="macos-section-title">Fast / Slow / Dead Moving Items</h3>
-            <p className="macos-section-desc">Product movement analysis</p>
-          </div>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-border/50">
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Movement</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Units Sold</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Current Stock</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {movingItems.map((item) => (
-              <TableRow key={item.name} className="macos-table-row border-border/30">
-                <TableCell className="text-[13px] font-medium">{item.name}</TableCell>
-                <TableCell>
-                  <Badge
-                    className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 ${
-                      item.type === 'Fast' ? 'bg-macos-green/10 text-macos-green' :
-                      item.type === 'Slow' ? 'bg-macos-orange/10 text-macos-orange' :
-                      'bg-macos-red/10 text-macos-red'
-                    }`}
-                  >
-                    {item.type}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-[13px] text-right tabular-nums">{item.sold}</TableCell>
-                <TableCell className="text-[13px] text-right tabular-nums">{item.stock}</TableCell>
+      <MacosCard title="Fast / Slow / Dead Moving Items" subtitle="Product movement analysis" noPadding>
+        <div className="overflow-x-auto custom-scrollbar">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/50 hover:bg-transparent">
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Product</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Movement</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Units Sold</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Current Stock</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {movingItems.map((item) => (
+                <TableRow key={item.name} className="macos-table-row border-b border-border/30 last:border-0">
+                  <TableCell className="text-[13px] font-medium tracking-tight py-3">{item.name}</TableCell>
+                  <TableCell className="py-3">
+                    <MacosBadge
+                      variant={
+                        item.type === 'Fast' ? 'success' :
+                        item.type === 'Slow' ? 'warning' : 'danger'
+                      }
+                    >
+                      {item.type}
+                    </MacosBadge>
+                  </TableCell>
+                  <TableCell className="text-[13px] text-right tabular-nums py-3">{item.sold}</TableCell>
+                  <TableCell className="text-[13px] text-right tabular-nums py-3">{item.stock}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </MacosCard>
     </div>
   )
 }
@@ -457,66 +445,69 @@ function InventoryReport() {
 function PublisherReport() {
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Publishers" value="24" change="+3" up icon={BookOpen} color="bg-macos-blue/10 text-macos-blue" />
-        <MetricCard title="Total Titles" value="145" change="+12" up icon={FileText} color="bg-macos-green/10 text-macos-green" />
-        <MetricCard title="Publisher Revenue" value="$287,000" change="+9.3%" up icon={DollarSign} color="bg-macos-orange/10 text-macos-orange" />
-        <MetricCard title="Avg Orders/Pub" value="210" change="+5.1%" up icon={ShoppingCart} color="bg-macos-purple/10 text-macos-purple" />
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Publishers" value="24" icon={BookOpen} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" trend={{ value: 3, label: '+3' }} />
+        <MacosStatCard label="Total Titles" value="145" icon={FileText} iconColor="text-macos-green" iconBg="bg-macos-green/10" trend={{ value: 12, label: '+12' }} />
+        <MacosStatCard label="Publisher Revenue" value="$287,000" icon={DollarSign} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" trend={{ value: 9.3, label: '+9.3%' }} />
+        <MacosStatCard label="Avg Orders/Pub" value="210" icon={ShoppingCart} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" trend={{ value: 5.1, label: '+5.1%' }} />
+      </MacosStatGrid>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <div>
-            <h3 className="macos-section-title">Publisher Performance</h3>
-            <p className="macos-section-desc">Revenue and order distribution by publisher</p>
-          </div>
-          <Badge className="rounded-md bg-gg-bridge/10 text-gg-bridge text-[10px] font-semibold tracking-wider px-2 py-0.5">
-            <BookOpen className="size-3 mr-1" />
-            PUBLISHERS
-          </Badge>
+      <MacosCard noPadding>
+        <div className="px-5 pt-5 pb-0">
+          <MacosSection
+            title="Publisher Performance"
+            subtitle="Revenue and order distribution by publisher"
+            action={
+              <MacosBadge variant="danger" className="bg-gg-bridge/10 text-gg-bridge">
+                <BookOpen className="size-3 mr-1" />
+                PUBLISHERS
+              </MacosBadge>
+            }
+          />
         </div>
-        <ChartContainer config={publisherChartConfig} className="h-72 w-full">
-          <BarChart data={publisherData} layout="vertical" barCategoryGap="25%">
-            <defs>
-              <linearGradient id="pubGrad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#5AC8FA" stopOpacity={0.6} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-            <XAxis type="number" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
-            <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="revenue" fill="url(#pubGrad)" radius={[0, 6, 6, 0]} />
-          </BarChart>
-        </ChartContainer>
-      </div>
+        <div className="p-5 pt-2">
+          <ChartContainer config={publisherChartConfig} className="h-72 w-full">
+            <BarChart data={publisherData} layout="vertical" barCategoryGap="25%">
+              <defs>
+                <linearGradient id="pubGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#5AC8FA" stopOpacity={0.6} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+              <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="revenue" fill="url(#pubGrad)" radius={[0, 6, 6, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+      </MacosCard>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <h3 className="macos-section-title">Publisher Details</h3>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-border/50">
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Publisher</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Titles</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Revenue</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Orders</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {publisherData.map((p) => (
-              <TableRow key={p.name} className="macos-table-row border-border/30">
-                <TableCell className="text-[13px] font-medium">{p.name}</TableCell>
-                <TableCell className="text-[13px] text-right tabular-nums">{p.titles}</TableCell>
-                <TableCell className="text-[13px] text-right font-medium tabular-nums">${p.revenue.toLocaleString()}</TableCell>
-                <TableCell className="text-[13px] text-right tabular-nums">{p.orders}</TableCell>
+      <MacosCard title="Publisher Details" noPadding>
+        <div className="overflow-x-auto custom-scrollbar">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/50 hover:bg-transparent">
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Publisher</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Titles</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Revenue</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Orders</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {publisherData.map((p) => (
+                <TableRow key={p.name} className="macos-table-row border-b border-border/30 last:border-0">
+                  <TableCell className="text-[13px] font-medium tracking-tight py-3">{p.name}</TableCell>
+                  <TableCell className="text-[13px] text-right tabular-nums py-3">{p.titles}</TableCell>
+                  <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${p.revenue.toLocaleString()}</TableCell>
+                  <TableCell className="text-[13px] text-right tabular-nums py-3">{p.orders}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </MacosCard>
     </div>
   )
 }
@@ -526,69 +517,75 @@ function PublisherReport() {
 function AuthorReport() {
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Total Authors" value="56" change="+8" up icon={Users} color="bg-macos-blue/10 text-macos-blue" />
-        <MetricCard title="Books Published" value="89" change="+6" up icon={BookOpen} color="bg-macos-green/10 text-macos-green" />
-        <MetricCard title="Total Royalties" value="$58,500" change="+4.2%" up icon={DollarSign} color="bg-macos-orange/10 text-macos-orange" />
-        <MetricCard title="Avg Books/Author" value="1.6" change="+0.3" up icon={BarChart3} color="bg-macos-purple/10 text-macos-purple" />
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Total Authors" value="56" icon={Users} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" trend={{ value: 8, label: '+8' }} />
+        <MacosStatCard label="Books Published" value="89" icon={BookOpen} iconColor="text-macos-green" iconBg="bg-macos-green/10" trend={{ value: 6, label: '+6' }} />
+        <MacosStatCard label="Total Royalties" value="$58,500" icon={DollarSign} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" trend={{ value: 4.2, label: '+4.2%' }} />
+        <MacosStatCard label="Avg Books/Author" value="1.6" icon={BarChart3} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" trend={{ value: 0.3, label: '+0.3' }} />
+      </MacosStatGrid>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <div>
-            <h3 className="macos-section-title">Top Authors by Sales</h3>
-            <p className="macos-section-desc">Author performance and royalty overview</p>
-          </div>
-          <Badge className="rounded-md bg-macos-purple/10 text-macos-purple text-[10px] font-semibold tracking-wider px-2 py-0.5">
-            <Users className="size-3 mr-1" />
-            AUTHORS
-          </Badge>
+      <MacosCard noPadding>
+        <div className="px-5 pt-5 pb-0">
+          <MacosSection
+            title="Top Authors by Sales"
+            subtitle="Author performance and royalty overview"
+            action={
+              <MacosBadge variant="purple">
+                <Users className="size-3 mr-1" />
+                AUTHORS
+              </MacosBadge>
+            }
+          />
         </div>
-        <ChartContainer config={authorChartConfig} className="h-72 w-full">
-          <BarChart data={authorData} barCategoryGap="20%">
-            <defs>
-              <linearGradient id="soldGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#007AFF" stopOpacity={0.5} />
-              </linearGradient>
-              <linearGradient id="royGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#34C759" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#34C759" stopOpacity={0.5} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Bar dataKey="sold" fill="url(#soldGrad)" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="royalties" fill="url(#royGrad)" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ChartContainer>
-      </div>
+        <div className="p-5 pt-2">
+          <ChartContainer config={authorChartConfig} className="h-72 w-full">
+            <BarChart data={authorData} barCategoryGap="20%">
+              <defs>
+                <linearGradient id="soldGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#007AFF" stopOpacity={0.5} />
+                </linearGradient>
+                <linearGradient id="royGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#34C759" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#34C759" stopOpacity={0.5} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="sold" fill="url(#soldGrad)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="royalties" fill="url(#royGrad)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+      </MacosCard>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-border/50">
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Books</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Sold</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Royalties</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {authorData.map((a) => (
-              <TableRow key={a.name} className="macos-table-row border-border/30">
-                <TableCell className="text-[13px] font-medium">{a.name}</TableCell>
-                <TableCell className="text-[13px] text-right tabular-nums">{a.books}</TableCell>
-                <TableCell className="text-[13px] text-right tabular-nums">{a.sold.toLocaleString()}</TableCell>
-                <TableCell className="text-[13px] text-right font-medium tabular-nums">${a.royalties.toLocaleString()}</TableCell>
+      <MacosCard title="Author Details" noPadding>
+        <div className="overflow-x-auto custom-scrollbar">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/50 hover:bg-transparent">
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Author</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Books</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Sold</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Royalties</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {authorData.map((a) => (
+                <TableRow key={a.name} className="macos-table-row border-b border-border/30 last:border-0">
+                  <TableCell className="text-[13px] font-medium tracking-tight py-3">{a.name}</TableCell>
+                  <TableCell className="text-[13px] text-right tabular-nums py-3">{a.books}</TableCell>
+                  <TableCell className="text-[13px] text-right tabular-nums py-3">{a.sold.toLocaleString()}</TableCell>
+                  <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${a.royalties.toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </MacosCard>
     </div>
   )
 }
@@ -598,74 +595,78 @@ function AuthorReport() {
 function WholesaleReport() {
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Distributors" value="12" change="+2" up icon={Truck} color="bg-macos-blue/10 text-macos-blue" />
-        <MetricCard title="Wholesale Orders" value="62" change="+8" up icon={ShoppingCart} color="bg-macos-green/10 text-macos-green" />
-        <MetricCard title="Wholesale Revenue" value="$124,000" change="+15.2%" up icon={DollarSign} color="bg-macos-orange/10 text-macos-orange" />
-        <MetricCard title="Avg Order Value" value="$2,000" change="+3.8%" up icon={TrendingUp} color="bg-macos-purple/10 text-macos-purple" />
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Distributors" value="12" icon={Truck} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" trend={{ value: 2, label: '+2' }} />
+        <MacosStatCard label="Wholesale Orders" value="62" icon={ShoppingCart} iconColor="text-macos-green" iconBg="bg-macos-green/10" trend={{ value: 8, label: '+8' }} />
+        <MacosStatCard label="Wholesale Revenue" value="$124,000" icon={DollarSign} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" trend={{ value: 15.2, label: '+15.2%' }} />
+        <MacosStatCard label="Avg Order Value" value="$2,000" icon={TrendingUp} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" trend={{ value: 3.8, label: '+3.8%' }} />
+      </MacosStatGrid>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <div>
-            <h3 className="macos-section-title">Distributor Performance</h3>
-            <p className="macos-section-desc">Orders and revenue by wholesale partner</p>
-          </div>
-          <Badge className="rounded-md bg-macos-teal/10 text-macos-teal text-[10px] font-semibold tracking-wider px-2 py-0.5">
-            <Truck className="size-3 mr-1" />
-            WHOLESALE
-          </Badge>
+      <MacosCard noPadding>
+        <div className="px-5 pt-5 pb-0">
+          <MacosSection
+            title="Distributor Performance"
+            subtitle="Orders and revenue by wholesale partner"
+            action={
+              <MacosBadge variant="info">
+                <Truck className="size-3 mr-1" />
+                WHOLESALE
+              </MacosBadge>
+            }
+          />
         </div>
-        <ChartContainer config={paymentChartConfig} className="h-64 w-full">
-          <PieChart>
-            <Pie
-              data={wholesaleData}
-              dataKey="total"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={90}
-              paddingAngle={3}
-              strokeWidth={0}
-            >
-              {wholesaleData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-              ))}
-            </Pie>
-            <ChartTooltip content={<ChartTooltipContent />} />
-          </PieChart>
-        </ChartContainer>
-      </div>
+        <div className="p-5 pt-2">
+          <ChartContainer config={paymentChartConfig} className="h-64 w-full">
+            <PieChart>
+              <Pie
+                data={wholesaleData}
+                dataKey="total"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={90}
+                paddingAngle={3}
+                strokeWidth={0}
+              >
+                {wholesaleData.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                ))}
+              </Pie>
+              <ChartTooltip content={<ChartTooltipContent />} />
+            </PieChart>
+          </ChartContainer>
+        </div>
+      </MacosCard>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-border/50">
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Distributor</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Orders</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Value</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {wholesaleData.map((w) => (
-              <TableRow key={w.name} className="macos-table-row border-border/30">
-                <TableCell className="text-[13px] font-medium">{w.name}</TableCell>
-                <TableCell className="text-[13px] text-right tabular-nums">{w.orders}</TableCell>
-                <TableCell className="text-[13px] text-right font-medium tabular-nums">${w.total.toLocaleString()}</TableCell>
-                <TableCell>
-                  <Badge className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 ${
-                    w.status === 'Active' ? 'bg-macos-green/10 text-macos-green' : 'bg-macos-orange/10 text-macos-orange'
-                  }`}>
-                    {w.status}
-                  </Badge>
-                </TableCell>
+      <MacosCard title="Distributor Details" noPadding>
+        <div className="overflow-x-auto custom-scrollbar">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/50 hover:bg-transparent">
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Distributor</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Orders</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Total Value</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {wholesaleData.map((w) => (
+                <TableRow key={w.name} className="macos-table-row border-b border-border/30 last:border-0">
+                  <TableCell className="text-[13px] font-medium tracking-tight py-3">{w.name}</TableCell>
+                  <TableCell className="text-[13px] text-right tabular-nums py-3">{w.orders}</TableCell>
+                  <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${w.total.toLocaleString()}</TableCell>
+                  <TableCell className="py-3">
+                    <MacosBadge variant={w.status === 'Active' ? 'success' : 'warning'}>
+                      {w.status}
+                    </MacosBadge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </MacosCard>
     </div>
   )
 }
@@ -675,69 +676,73 @@ function WholesaleReport() {
 function SchoolContractReport() {
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Schools" value="18" change="+4" up icon={GraduationCap} color="bg-macos-blue/10 text-macos-blue" />
-        <MetricCard title="Active Contracts" value="14" change="+2" up icon={FileText} color="bg-macos-green/10 text-macos-green" />
-        <MetricCard title="Contract Value" value="$70,000" change="+18.5%" up icon={DollarSign} color="bg-macos-orange/10 text-macos-orange" />
-        <MetricCard title="Items Supplied" value="1,260" change="+9.2%" up icon={Package} color="bg-macos-purple/10 text-macos-purple" />
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Schools" value="18" icon={GraduationCap} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" trend={{ value: 4, label: '+4' }} />
+        <MacosStatCard label="Active Contracts" value="14" icon={FileText} iconColor="text-macos-green" iconBg="bg-macos-green/10" trend={{ value: 2, label: '+2' }} />
+        <MacosStatCard label="Contract Value" value="$70,000" icon={DollarSign} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" trend={{ value: 18.5, label: '+18.5%' }} />
+        <MacosStatCard label="Items Supplied" value="1,260" icon={Package} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" trend={{ value: 9.2, label: '+9.2%' }} />
+      </MacosStatGrid>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <div>
-            <h3 className="macos-section-title">Contract Value by School</h3>
-            <p className="macos-section-desc">Revenue distribution across school partnerships</p>
-          </div>
-          <Badge className="rounded-md bg-gg-sunset/10 text-gg-sunset text-[10px] font-semibold tracking-wider px-2 py-0.5">
-            <GraduationCap className="size-3 mr-1" />
-            SCHOOLS
-          </Badge>
+      <MacosCard noPadding>
+        <div className="px-5 pt-5 pb-0">
+          <MacosSection
+            title="Contract Value by School"
+            subtitle="Revenue distribution across school partnerships"
+            action={
+              <MacosBadge variant="warning" className="bg-gg-sunset/10 text-gg-sunset">
+                <GraduationCap className="size-3 mr-1" />
+                SCHOOLS
+              </MacosBadge>
+            }
+          />
         </div>
-        <ChartContainer config={schoolChartConfig} className="h-64 w-full">
-          <BarChart data={schoolContractData} barCategoryGap="25%">
-            <defs>
-              <linearGradient id="schoolGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#AF52DE" stopOpacity={0.9} />
-                <stop offset="95%" stopColor="#AF52DE" stopOpacity={0.5} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="value" fill="url(#schoolGrad)" radius={[6, 6, 0, 0]} />
-          </BarChart>
-        </ChartContainer>
-      </div>
+        <div className="p-5 pt-2">
+          <ChartContainer config={schoolChartConfig} className="h-64 w-full">
+            <BarChart data={schoolContractData} barCategoryGap="25%">
+              <defs>
+                <linearGradient id="schoolGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#AF52DE" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#AF52DE" stopOpacity={0.5} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="value" fill="url(#schoolGrad)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        </div>
+      </MacosCard>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-border/50">
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">School</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Contract Value</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Items</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {schoolContractData.map((s) => (
-              <TableRow key={s.name} className="macos-table-row border-border/30">
-                <TableCell className="text-[13px] font-medium">{s.name}</TableCell>
-                <TableCell className="text-[13px] text-right font-medium tabular-nums">${s.value.toLocaleString()}</TableCell>
-                <TableCell className="text-[13px] text-right tabular-nums">{s.items}</TableCell>
-                <TableCell>
-                  <Badge className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 ${
-                    s.status === 'Active' ? 'bg-macos-green/10 text-macos-green' : 'bg-macos-orange/10 text-macos-orange'
-                  }`}>
-                    {s.status}
-                  </Badge>
-                </TableCell>
+      <MacosCard title="School Contract Details" noPadding>
+        <div className="overflow-x-auto custom-scrollbar">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/50 hover:bg-transparent">
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">School</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Contract Value</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Items</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {schoolContractData.map((s) => (
+                <TableRow key={s.name} className="macos-table-row border-b border-border/30 last:border-0">
+                  <TableCell className="text-[13px] font-medium tracking-tight py-3">{s.name}</TableCell>
+                  <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${s.value.toLocaleString()}</TableCell>
+                  <TableCell className="text-[13px] text-right tabular-nums py-3">{s.items}</TableCell>
+                  <TableCell className="py-3">
+                    <MacosBadge variant={s.status === 'Active' ? 'success' : 'warning'}>
+                      {s.status}
+                    </MacosBadge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </MacosCard>
     </div>
   )
 }
@@ -747,77 +752,80 @@ function SchoolContractReport() {
 function FinancialReport() {
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard title="Total Income" value="$296,000" change="+10.5%" up icon={TrendingUp} color="bg-macos-blue/10 text-macos-blue" />
-        <MetricCard title="Total Expenses" value="$207,200" change="+8.3%" up icon={DollarSign} color="bg-macos-red/10 text-macos-red" />
-        <MetricCard title="Net Profit" value="$88,800" change="+15.8%" up icon={BarChart3} color="bg-macos-green/10 text-macos-green" />
-        <MetricCard title="Profit Margin" value="30.0%" change="+2.1%" up icon={FileText} color="bg-macos-orange/10 text-macos-orange" />
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Total Income" value="$296,000" icon={TrendingUp} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" trend={{ value: 10.5, label: '+10.5%' }} />
+        <MacosStatCard label="Total Expenses" value="$207,200" icon={DollarSign} iconColor="text-macos-red" iconBg="bg-macos-red/10" trend={{ value: 8.3, label: '+8.3%' }} />
+        <MacosStatCard label="Net Profit" value="$88,800" icon={BarChart3} iconColor="text-macos-green" iconBg="bg-macos-green/10" trend={{ value: 15.8, label: '+15.8%' }} />
+        <MacosStatCard label="Profit Margin" value="30.0%" icon={FileText} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" trend={{ value: 2.1, label: '+2.1%' }} />
+      </MacosStatGrid>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <div>
-            <h3 className="macos-section-title">Income vs Expenses</h3>
-            <p className="macos-section-desc">Monthly financial trends</p>
-          </div>
-          <Badge className="rounded-md bg-gg-golden/10 text-gg-golden text-[10px] font-semibold tracking-wider px-2 py-0.5">
-            <TrendingUp className="size-3 mr-1" />
-            FINANCIAL
-          </Badge>
+      <MacosCard noPadding>
+        <div className="px-5 pt-5 pb-0">
+          <MacosSection
+            title="Income vs Expenses"
+            subtitle="Monthly financial trends"
+            action={
+              <MacosBadge variant="warning" className="bg-gg-golden/10 text-gg-golden">
+                <TrendingUp className="size-3 mr-1" />
+                FINANCIAL
+              </MacosBadge>
+            }
+          />
         </div>
-        <ChartContainer config={financialChartConfig} className="h-72 w-full">
-          <AreaChart data={financialSummary}>
-            <defs>
-              <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#007AFF" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#007AFF" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF3B30" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#FF3B30" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#34C759" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#34C759" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-            <XAxis dataKey="month" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Area type="monotone" dataKey="income" stroke="#007AFF" strokeWidth={2} fill="url(#incomeGrad)" />
-            <Area type="monotone" dataKey="expense" stroke="#FF3B30" strokeWidth={2} fill="url(#expenseGrad)" />
-            <Area type="monotone" dataKey="net" stroke="#34C759" strokeWidth={2} fill="url(#netGrad)" />
-          </AreaChart>
-        </ChartContainer>
-      </div>
+        <div className="p-5 pt-2">
+          <ChartContainer config={financialChartConfig} className="h-72 w-full">
+            <AreaChart data={financialSummary}>
+              <defs>
+                <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#007AFF" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#007AFF" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FF3B30" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#FF3B30" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#34C759" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#34C759" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Area type="monotone" dataKey="income" stroke="#007AFF" strokeWidth={2} fill="url(#incomeGrad)" />
+              <Area type="monotone" dataKey="expense" stroke="#FF3B30" strokeWidth={2} fill="url(#expenseGrad)" />
+              <Area type="monotone" dataKey="net" stroke="#34C759" strokeWidth={2} fill="url(#netGrad)" />
+            </AreaChart>
+          </ChartContainer>
+        </div>
+      </MacosCard>
 
-      <div className="macos-card macos-shadow-card p-5">
-        <div className="macos-section-header">
-          <h3 className="macos-section-title">Financial Breakdown</h3>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent border-border/50">
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Month</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Income</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Expenses</TableHead>
-              <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Net Profit</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {financialSummary.map((f) => (
-              <TableRow key={f.month} className="macos-table-row border-border/30">
-                <TableCell className="text-[13px] font-medium">{f.month}</TableCell>
-                <TableCell className="text-[13px] text-right text-macos-blue tabular-nums">${f.income.toLocaleString()}</TableCell>
-                <TableCell className="text-[13px] text-right text-macos-red tabular-nums">${f.expense.toLocaleString()}</TableCell>
-                <TableCell className="text-[13px] text-right font-medium text-macos-green tabular-nums">${f.net.toLocaleString()}</TableCell>
+      <MacosCard title="Financial Breakdown" noPadding>
+        <div className="overflow-x-auto custom-scrollbar">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border/50 hover:bg-transparent">
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Month</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Income</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Expenses</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Net Profit</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {financialSummary.map((f) => (
+                <TableRow key={f.month} className="macos-table-row border-b border-border/30 last:border-0">
+                  <TableCell className="text-[13px] font-medium tracking-tight py-3">{f.month}</TableCell>
+                  <TableCell className="text-[13px] text-right text-macos-blue tabular-nums py-3">${f.income.toLocaleString()}</TableCell>
+                  <TableCell className="text-[13px] text-right text-macos-red tabular-nums py-3">${f.expense.toLocaleString()}</TableCell>
+                  <TableCell className="text-[13px] text-right font-medium text-macos-green tabular-nums py-3">${f.net.toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </MacosCard>
     </div>
   )
 }
@@ -845,39 +853,33 @@ export function ReportsModule() {
 
   return (
     <div className="space-y-5">
-      {/* macOS Activity Monitor-style Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="macos-page-title">Reports & Analytics</h2>
-          <p className="macos-page-subtitle">Comprehensive business intelligence and reporting</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {isViewOnly && (
-            <Badge className="rounded-md bg-macos-orange/10 text-macos-orange text-[10px] font-semibold tracking-wider px-2 py-0.5">
-              <Eye className="size-3 mr-1" />
-              VIEW ONLY
-            </Badge>
-          )}
-          <div className="macos-filter-bar">
-            <Calendar className="size-3.5 text-muted-foreground ml-2" />
-            {dateRanges.map((dr) => (
-              <button
-                key={dr.value}
-                onClick={() => setDateRange(dr.value)}
-                className={`text-[11px] font-medium ${
-                  dateRange === dr.value ? 'macos-filter-item macos-filter-item-active' : 'macos-filter-item'
-                }`}
-              >
-                {dr.label}
-              </button>
-            ))}
-          </div>
-          <Button className="bg-secondary text-secondary-foreground rounded-lg font-medium text-[13px] h-8" disabled={isViewOnly}>
-            <Download className="size-3.5 mr-1.5" strokeWidth={2} />
-            Export
-          </Button>
-        </div>
-      </div>
+      {/* macOS Page Header */}
+      <MacosPageHeader
+        title="Reports & Analytics"
+        subtitle="Comprehensive business intelligence and reporting"
+        icon={BarChart3}
+        iconColor="text-macos-purple"
+        iconBg="bg-macos-purple/10"
+      >
+        {isViewOnly && (
+          <MacosBadge variant="warning">
+            <Eye className="size-3 mr-1" />
+            VIEW ONLY
+          </MacosBadge>
+        )}
+        <MacosFilterBar
+          items={dateRanges.map((dr) => ({ id: dr.value, label: dr.label }))}
+          activeId={dateRange}
+          onChange={setDateRange}
+        />
+        <MacosButton
+          variant="secondary"
+          icon={Download}
+          disabled={isViewOnly}
+        >
+          Export
+        </MacosButton>
+      </MacosPageHeader>
 
       {/* Category Filter Bar (macOS Activity Monitor style tabs) */}
       <div className="macos-filter-bar">

@@ -1,0 +1,691 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Search,
+     6→  Plus,
+     7→  Pencil,
+     8→  Trash2,
+     9→  Package,
+    10→  Loader2,
+    11→  AlertCircle,
+    12→  Filter,
+    13→  Tag,
+    14→  DollarSign,
+    15→  Archive,
+    16→  CheckCircle2,
+    17→} from 'lucide-react'
+    18→
+    19→import { Button } from '@/components/ui/button'
+    20→import { Input } from '@/components/ui/input'
+    21→import { Label } from '@/components/ui/label'
+    22→import {
+    23→  Dialog,
+    24→  DialogContent,
+    25→  DialogDescription,
+    26→  DialogFooter,
+    27→  DialogHeader,
+    28→  DialogTitle,
+    29→} from '@/components/ui/dialog'
+    30→import {
+    31→  Select,
+    32→  SelectContent,
+    33→  SelectItem,
+    34→  SelectTrigger,
+    35→  SelectValue,
+    36→} from '@/components/ui/select'
+    37→import {
+    38→  Table,
+    39→  TableBody,
+    40→  TableCell,
+    41→  TableHead,
+    42→  TableHeader,
+    43→  TableRow,
+    44→} from '@/components/ui/table'
+    45→import { Badge } from '@/components/ui/badge'
+    46→import { Textarea } from '@/components/ui/textarea'
+    47→import { Skeleton } from '@/components/ui/skeleton'
+    48→import { useAppStore } from '@/store/app-store'
+    49→
+    50→// ─── Types ────────────────────────────────────────────────────────
+    51→interface StationeryCategory {
+    52→  id: string
+    53→  name: string
+    54→  type?: string | null
+    55→}
+    56→
+    57→interface StationeryProduct {
+    58→  id: string
+    59→  name: string
+    60→  sku: string | null
+    61→  categoryId: string | null
+    62→  category: StationeryCategory | null
+    63→  brand: string | null
+    64→  description: string | null
+    65→  price: number
+    66→  costPrice: number
+    67→  discount: number
+    68→  barcode: string | null
+    69→  unit: string
+    70→  minOrderQty: number
+    71→  isActive: boolean
+    72→  createdAt: string
+    73→  updatedAt: string
+    74→  inventory?: Array<{ quantity: number; reorderLevel: number }>
+    75→}
+    76→
+    77→interface ProductFormData {
+    78→  name: string
+    79→  sku: string
+    80→  categoryId: string
+    81→  brand: string
+    82→  description: string
+    83→  price: string
+    84→  costPrice: string
+    85→  discount: string
+    86→  barcode: string
+    87→  unit: string
+    88→  minOrderQty: string
+    89→}
+    90→
+    91→const emptyForm: ProductFormData = {
+    92→  name: '',
+    93→  sku: '',
+    94→  categoryId: '',
+    95→  brand: '',
+    96→  description: '',
+    97→  price: '',
+    98→  costPrice: '',
+    99→  discount: '',
+   100→  barcode: '',
+   101→  unit: 'piece',
+   102→  minOrderQty: '1',
+   103→}
+   104→
+   105→// ─── Stat Card Colors ─────────────────────────────────────────
+   106→const statColors = [
+   107→  { icon: Package, bg: 'bg-macos-blue/10', text: 'text-macos-blue', label: 'Total Products' },
+   108→  { icon: Archive, bg: 'bg-macos-green/10', text: 'text-macos-green', label: 'In Stock' },
+   109→  { icon: AlertCircle, bg: 'bg-macos-orange/10', text: 'text-macos-orange', label: 'Low Stock' },
+   110→  { icon: Tag, bg: 'bg-gg-sunset/10', text: 'text-gg-sunset', label: 'Categories' },
+   111→]
+   112→
+   113→// ─── Component ────────────────────────────────────────────────────
+   114→export function StationeryModule() {
+   115→  const authUser = useAppStore((s) => s.authUser)
+   116→  const isViewOnly = authUser?.isViewOnly ?? false
+   117→
+   118→  const [products, setProducts] = React.useState<StationeryProduct[]>([])
+   119→  const [categories, setCategories] = React.useState<StationeryCategory[]>([])
+   120→  const [loading, setLoading] = React.useState(true)
+   121→  const [error, setError] = React.useState<string | null>(null)
+   122→  const [search, setSearch] = React.useState('')
+   123→  const [categoryFilter, setCategoryFilter] = React.useState('all')
+   124→  const [dialogOpen, setDialogOpen] = React.useState(false)
+   125→  const [editingProduct, setEditingProduct] = React.useState<StationeryProduct | null>(null)
+   126→  const [form, setForm] = React.useState<ProductFormData>(emptyForm)
+   127→  const [saving, setSaving] = React.useState(false)
+   128→  const [deleting, setDeleting] = React.useState<string | null>(null)
+   129→
+   130→  // Fetch products
+   131→  const fetchProducts = React.useCallback(async () => {
+   132→    setLoading(true)
+   133→    setError(null)
+   134→    try {
+   135→      const params = new URLSearchParams()
+   136→      if (search) params.set('search', search)
+   137→      if (categoryFilter && categoryFilter !== 'all') params.set('category', categoryFilter)
+   138→      params.set('limit', '50')
+   139→      const res = await fetch(`/api/stationery?${params.toString()}`)
+   140→      if (!res.ok) throw new Error('Failed to fetch products')
+   141→      const json = await res.json()
+   142→      setProducts(json.data || [])
+   143→    } catch (err) {
+   144→      setError(err instanceof Error ? err.message : 'Unknown error')
+   145→    } finally {
+   146→      setLoading(false)
+   147→    }
+   148→  }, [search, categoryFilter])
+   149→
+   150→  // Fetch categories
+   151→  const fetchCategories = React.useCallback(async () => {
+   152→    try {
+   153→      const res = await fetch('/api/stationery?categories=true&limit=100')
+   154→      if (!res.ok) throw new Error('Failed to fetch categories')
+   155→      const json = await res.json()
+   156→      setCategories(json.categories || [])
+   157→    } catch {
+   158→      // Silent fail for categories
+   159→    }
+   160→  }, [])
+   161→
+   162→  React.useEffect(() => {
+   163→    fetchProducts()
+   164→  }, [fetchProducts])
+   165→
+   166→  React.useEffect(() => {
+   167→    fetchCategories()
+   168→  }, [fetchCategories])
+   169→
+   170→  // Stock status helper
+   171→  const getStockStatus = (product: StationeryProduct): { label: string; dotClass: string; textClass: string; badgeClass: string } => {
+   172→    const inv = product.inventory
+   173→    if (!inv || inv.length === 0) {
+   174→      return { label: 'No Stock', dotClass: 'bg-macos-red', textClass: 'text-macos-red', badgeClass: 'bg-macos-red/10 text-macos-red' }
+   175→    }
+   176→    const totalQty = inv.reduce((s, i) => s + i.quantity, 0)
+   177→    const reorder = inv[0]?.reorderLevel || 10
+   178→    if (totalQty === 0) return { label: 'Out of Stock', dotClass: 'bg-macos-red', textClass: 'text-macos-red', badgeClass: 'bg-macos-red/10 text-macos-red' }
+   179→    if (totalQty <= reorder) return { label: 'Low Stock', dotClass: 'bg-macos-orange', textClass: 'text-macos-orange', badgeClass: 'bg-macos-orange/10 text-macos-orange' }
+   180→    return { label: 'In Stock', dotClass: 'bg-macos-green', textClass: 'text-macos-green', badgeClass: 'bg-macos-green/10 text-macos-green' }
+   181→  }
+   182→
+   183→  // Computed stats
+   184→  const inStockCount = products.filter((p) => {
+   185→    const inv = p.inventory
+   186→    if (!inv || inv.length === 0) return false
+   187→    const qty = inv.reduce((s, i) => s + i.quantity, 0)
+   188→    const reorder = inv[0]?.reorderLevel || 10
+   189→    return qty > reorder
+   190→  }).length
+   191→
+   192→  const lowStockCount = products.filter((p) => {
+   193→    const inv = p.inventory
+   194→    if (!inv || inv.length === 0) return false
+   195→    const qty = inv.reduce((s, i) => s + i.quantity, 0)
+   196→    const reorder = inv[0]?.reorderLevel || 10
+   197→    return qty > 0 && qty <= reorder
+   198→  }).length
+   199→
+   200→  const statValues = [products.length, inStockCount, lowStockCount, categories.length]
+   201→
+   202→  // Open add dialog
+   203→  const handleAdd = () => {
+   204→    setEditingProduct(null)
+   205→    setForm(emptyForm)
+   206→    setDialogOpen(true)
+   207→  }
+   208→
+   209→  // Open edit dialog
+   210→  const handleEdit = (product: StationeryProduct) => {
+   211→    setEditingProduct(product)
+   212→    setForm({
+   213→      name: product.name,
+   214→      sku: product.sku || '',
+   215→      categoryId: product.categoryId || '',
+   216→      brand: product.brand || '',
+   217→      description: product.description || '',
+   218→      price: product.price.toString(),
+   219→      costPrice: product.costPrice.toString(),
+   220→      discount: product.discount.toString(),
+   221→      barcode: product.barcode || '',
+   222→      unit: product.unit,
+   223→      minOrderQty: product.minOrderQty.toString(),
+   224→    })
+   225→    setDialogOpen(true)
+   226→  }
+   227→
+   228→  // Save product (create or update)
+   229→  const handleSave = async () => {
+   230→    if (!form.name.trim()) return
+   231→    setSaving(true)
+   232→    try {
+   233→      const payload = {
+   234→        ...(editingProduct ? { id: editingProduct.id } : {}),
+   235→        name: form.name.trim(),
+   236→        sku: form.sku.trim() || null,
+   237→        categoryId: form.categoryId || null,
+   238→        brand: form.brand.trim() || null,
+   239→        description: form.description.trim() || null,
+   240→        price: parseFloat(form.price) || 0,
+   241→        costPrice: parseFloat(form.costPrice) || 0,
+   242→        discount: parseFloat(form.discount) || 0,
+   243→        barcode: form.barcode.trim() || null,
+   244→        unit: form.unit || 'piece',
+   245→        minOrderQty: parseInt(form.minOrderQty) || 1,
+   246→      }
+   247→
+   248→      const res = await fetch('/api/stationery', {
+   249→        method: editingProduct ? 'PUT' : 'POST',
+   250→        headers: { 'Content-Type': 'application/json' },
+   251→        body: JSON.stringify(payload),
+   252→      })
+   253→
+   254→      if (!res.ok) {
+   255→        const errData = await res.json()
+   256→        throw new Error(errData.error || 'Failed to save product')
+   257→      }
+   258→
+   259→      setDialogOpen(false)
+   260→      fetchProducts()
+   261→    } catch (err) {
+   262→      setError(err instanceof Error ? err.message : 'Failed to save product')
+   263→    } finally {
+   264→      setSaving(false)
+   265→    }
+   266→  }
+   267→
+   268→  // Delete product
+   269→  const handleDelete = async (id: string) => {
+   270→    if (!confirm('Are you sure you want to delete this product?')) return
+   271→    setDeleting(id)
+   272→    try {
+   273→      const res = await fetch(`/api/stationery?id=${id}`, { method: 'DELETE' })
+   274→      if (!res.ok) throw new Error('Failed to delete product')
+   275→      fetchProducts()
+   276→    } catch (err) {
+   277→      setError(err instanceof Error ? err.message : 'Failed to delete product')
+   278→    } finally {
+   279→      setDeleting(null)
+   280→    }
+   281→  }
+   282→
+   283→  // Update form field
+   284→  const updateField = (field: keyof ProductFormData, value: string) => {
+   285→    setForm((prev) => ({ ...prev, [field]: value }))
+   286→  }
+   287→
+   288→  // Category tabs for filter bar
+   289→  const categoryTabs = [
+   290→    { id: 'all', label: 'All' },
+   291→    ...categories.map((c) => ({ id: c.name, label: c.name })),
+   292→  ]
+   293→
+   294→  return (
+   295→    <div className="space-y-5">
+   296→      {/* Header */}
+   297→      <div className="macos-page-header flex-col gap-3 sm:flex-row">
+   298→        <div>
+   299→          <h2 className="macos-page-title">Stationery</h2>
+   300→          <p className="macos-page-subtitle">{products.length} products in catalog</p>
+   301→        </div>
+   302→        {!isViewOnly && (
+   303→          <Button
+   304→            onClick={handleAdd}
+   305→            className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0"
+   306→          >
+   307→            <Plus className="size-3.5 mr-1.5" strokeWidth={1.5} />
+   308→            Add Product
+   309→          </Button>
+   310→        )}
+   311→      </div>
+   312→
+   313→      {/* Stat Cards */}
+   314→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+   315→        {statColors.map((stat, i) => {
+   316→          const Icon = stat.icon
+   317→          return (
+   318→            <div key={stat.label} className="macos-card macos-shadow-card p-4 flex items-center gap-3">
+   319→              <div className={`size-9 rounded-xl ${stat.bg} flex items-center justify-center shrink-0`}>
+   320→                <Icon className={`size-4 ${stat.text}`} strokeWidth={1.5} />
+   321→              </div>
+   322→              <div className="min-w-0">
+   323→                <p className="text-[22px] font-bold tracking-[-0.03em] leading-tight">{statValues[i]}</p>
+   324→                <p className="text-[11px] text-muted-foreground font-medium truncate">{stat.label}</p>
+   325→              </div>
+   326→            </div>
+   327→          )
+   328→        })}
+   329→      </div>
+   330→
+   331→      {/* Search + Filter Bar */}
+   332→      <div className="macos-card macos-shadow-card p-4 space-y-3">
+   333→        <div className="macos-search flex items-center px-3 h-9">
+   334→          <Search className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+   335→          <input
+   336→            placeholder="Search by name, SKU, brand, or barcode..."
+   337→            value={search}
+   338→            onChange={(e) => setSearch(e.target.value)}
+   339→            className="flex-1 bg-transparent border-0 text-[13px] font-medium placeholder:text-muted-foreground/60 focus:outline-none ml-2"
+   340→          />
+   341→        </div>
+   342→        <div className="flex items-center gap-3">
+   343→          <Filter className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+   344→          <div className="macos-filter-bar overflow-x-auto">
+   345→            {categoryTabs.slice(0, 7).map((tab) => (
+   346→              <button
+   347→                key={tab.id}
+   348→                className={`macos-filter-item whitespace-nowrap ${categoryFilter === tab.id ? 'macos-filter-item-active' : ''}`}
+   349→                onClick={() => setCategoryFilter(tab.id)}
+   350→              >
+   351→                {tab.label}
+   352→              </button>
+   353→            ))}
+   354→            {categoryTabs.length > 7 && (
+   355→              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+   356→                <SelectTrigger className="h-6 w-auto border-0 bg-transparent text-[12px] font-medium text-muted-foreground hover:text-foreground p-0 pl-2">
+   357→                  <SelectValue placeholder="More..." />
+   358→                </SelectTrigger>
+   359→                <SelectContent>
+   360→                  {categoryTabs.slice(7).map((tab) => (
+   361→                    <SelectItem key={tab.id} value={tab.id}>{tab.label}</SelectItem>
+   362→                  ))}
+   363→                </SelectContent>
+   364→              </Select>
+   365→            )}
+   366→          </div>
+   367→        </div>
+   368→      </div>
+   369→
+   370→      {/* Error Alert */}
+   371→      {error && (
+   372→        <div className="flex items-center gap-2.5 macos-card macos-shadow-card p-4 bg-macos-red/5 border-macos-red/20">
+   373→          <div className="size-7 rounded-lg bg-macos-red/10 flex items-center justify-center shrink-0">
+   374→            <AlertCircle className="size-3.5 text-macos-red" />
+   375→          </div>
+   376→          <span className="text-[13px] font-medium text-macos-red flex-1">{error}</span>
+   377→          <Button
+   378→            variant="ghost"
+   379→            size="sm"
+   380→            className="h-7 text-[11px] text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+   381→            onClick={() => setError(null)}
+   382→          >
+   383→            Dismiss
+   384→          </Button>
+   385→        </div>
+   386→      )}
+   387→
+   388→      {/* Products Table */}
+   389→      <div className="macos-card macos-shadow-card overflow-hidden">
+   390→        {loading ? (
+   391→          <div className="p-5 space-y-3">
+   392→            {Array.from({ length: 5 }).map((_, i) => (
+   393→              <div key={i} className="flex items-center gap-3">
+   394→                <Skeleton className="size-8 rounded-xl shrink-0" />
+   395→                <Skeleton className="h-4 flex-1 rounded-lg" />
+   396→              </div>
+   397→            ))}
+   398→          </div>
+   399→        ) : products.length === 0 ? (
+   400→          <div className="macos-empty py-16">
+   401→            <Package className="size-12 text-muted-foreground/25 mb-3" strokeWidth={1.5} />
+   402→            <p className="text-[13px] font-semibold text-muted-foreground">No stationery products found</p>
+   403→            <p className="text-[11px] text-muted-foreground mt-1">Add your first product to get started</p>
+   404→          </div>
+   405→        ) : (
+   406→          <div className="overflow-x-auto">
+   407→            <Table>
+   408→              <TableHeader>
+   409→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   410→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
+   411→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">SKU</TableHead>
+   412→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Category</TableHead>
+   413→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell">Brand</TableHead>
+   414→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
+   415→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Stock</TableHead>
+   416→                  {!isViewOnly && (
+   417→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   418→                  )}
+   419→                </TableRow>
+   420→              </TableHeader>
+   421→              <TableBody>
+   422→                {products.map((product) => {
+   423→                  const stock = getStockStatus(product)
+   424→                  return (
+   425→                    <TableRow key={product.id} className="macos-table-row border-b border-border/30">
+   426→                      <TableCell>
+   427→                        <div className="flex items-center gap-2.5">
+   428→                          <div className="size-8 rounded-xl bg-macos-teal/10 flex items-center justify-center shrink-0">
+   429→                            <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+   430→                          </div>
+   431→                          <div className="min-w-0">
+   432→                            <p className="text-[13px] font-medium truncate max-w-[180px]">{product.name}</p>
+   433→                            {product.brand && (
+   434→                              <p className="text-[11px] text-muted-foreground truncate">{product.brand}</p>
+   435→                            )}
+   436→                          </div>
+   437→                        </div>
+   438→                      </TableCell>
+   439→                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] font-mono">
+   440→                        {product.sku || '\u2014'}
+   441→                      </TableCell>
+   442→                      <TableCell className="hidden sm:table-cell">
+   443→                        {product.category ? (
+   444→                          <span className="rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 bg-macos-purple/10 text-macos-purple uppercase">
+   445→                            {product.category.name}
+   446→                          </span>
+   447→                        ) : (
+   448→                          <span className="text-[13px] text-muted-foreground">{'\u2014'}</span>
+   449→                        )}
+   450→                      </TableCell>
+   451→                      <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">
+   452→                        {product.brand || '\u2014'}
+   453→                      </TableCell>
+   454→                      <TableCell className="text-right">
+   455→                        <div className="flex flex-col items-end">
+   456→                          <span className="text-[13px] font-semibold tracking-[-0.01em]">
+   457→                            ${product.price.toFixed(2)}
+   458→                          </span>
+   459→                          {product.discount > 0 && (
+   460→                            <span className="text-[10px] font-semibold text-macos-green tracking-wide">
+   461→                              -{product.discount}%
+   462→                            </span>
+   463→                          )}
+   464→                        </div>
+   465→                      </TableCell>
+   466→                      <TableCell className="hidden sm:table-cell">
+   467→                        <span className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 uppercase ${stock.badgeClass}`}>
+   468→                          {stock.label}
+   469→                        </span>
+   470→                      </TableCell>
+   471→                      {!isViewOnly && (
+   472→                        <TableCell className="text-right">
+   473→                          <div className="flex items-center justify-end gap-0.5">
+   474→                            <Button
+   475→                              variant="ghost"
+   476→                              size="icon"
+   477→                              className="size-7 rounded-lg hover:bg-secondary"
+   478→                              onClick={() => handleEdit(product)}
+   479→                              aria-label={`Edit ${product.name}`}
+   480→                            >
+   481→                              <Pencil className="size-3" strokeWidth={1.5} />
+   482→                            </Button>
+   483→                            <Button
+   484→                              variant="ghost"
+   485→                              size="icon"
+   486→                              className="size-7 rounded-lg text-macos-red hover:bg-macos-red/10 hover:text-macos-red"
+   487→                              onClick={() => handleDelete(product.id)}
+   488→                              disabled={deleting === product.id}
+   489→                              aria-label={`Delete ${product.name}`}
+   490→                            >
+   491→                              {deleting === product.id ? (
+   492→                                <Loader2 className="size-3 animate-spin" />
+   493→                              ) : (
+   494→                                <Trash2 className="size-3" strokeWidth={1.5} />
+   495→                              )}
+   496→                            </Button>
+   497→                          </div>
+   498→                        </TableCell>
+   499→                      )}
+   500→                    </TableRow>
+   501→                  )
+   502→                })}
+   503→              </TableBody>
+   504→            </Table>
+   505→          </div>
+   506→        )}
+   507→      </div>
+   508→
+   509→      {/* Add/Edit Dialog */}
+   510→      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+   511→        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto macos-shadow-float rounded-2xl">
+   512→          <DialogHeader>
+   513→            <DialogTitle className="text-[13px] font-semibold tracking-[-0.01em]">
+   514→              {editingProduct ? 'Edit Product' : 'Add New Product'}
+   515→            </DialogTitle>
+   516→            <DialogDescription className="text-[11px] text-muted-foreground">
+   517→              {editingProduct ? 'Update stationery product details.' : 'Add a new stationery product to your catalog.'}
+   518→            </DialogDescription>
+   519→          </DialogHeader>
+   520→          <div className="grid gap-4 py-2">
+   521→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   522→              <div className="space-y-1.5 sm:col-span-2">
+   523→                <Label htmlFor="name" className="text-[12px] font-medium text-muted-foreground">Product Name *</Label>
+   524→                <Input
+   525→                  id="name"
+   526→                  value={form.name}
+   527→                  onChange={(e) => updateField('name', e.target.value)}
+   528→                  placeholder="e.g., Premium Notebook A5"
+   529→                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   530→                />
+   531→              </div>
+   532→              <div className="space-y-1.5">
+   533→                <Label htmlFor="sku" className="text-[12px] font-medium text-muted-foreground">SKU</Label>
+   534→                <Input
+   535→                  id="sku"
+   536→                  value={form.sku}
+   537→                  onChange={(e) => updateField('sku', e.target.value)}
+   538→                  placeholder="e.g., STA-NB-001"
+   539→                  className="rounded-lg border-border/50 text-[13px] h-8 font-mono focus-visible:ring-1 focus-visible:ring-primary/30"
+   540→                />
+   541→              </div>
+   542→              <div className="space-y-1.5">
+   543→                <Label htmlFor="category" className="text-[12px] font-medium text-muted-foreground">Category</Label>
+   544→                <Select value={form.categoryId} onValueChange={(v) => updateField('categoryId', v)}>
+   545→                  <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8">
+   546→                    <SelectValue placeholder="Select category" />
+   547→                  </SelectTrigger>
+   548→                  <SelectContent>
+   549→                    {categories.map((cat) => (
+   550→                      <SelectItem key={cat.id} value={cat.id}>
+   551→                        {cat.name}
+   552→                      </SelectItem>
+   553→                    ))}
+   554→                  </SelectContent>
+   555→                </Select>
+   556→              </div>
+   557→              <div className="space-y-1.5">
+   558→                <Label htmlFor="brand" className="text-[12px] font-medium text-muted-foreground">Brand</Label>
+   559→                <Input
+   560→                  id="brand"
+   561→                  value={form.brand}
+   562→                  onChange={(e) => updateField('brand', e.target.value)}
+   563→                  placeholder="e.g., Moleskine"
+   564→                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   565→                />
+   566→              </div>
+   567→              <div className="space-y-1.5">
+   568→                <Label htmlFor="barcode" className="text-[12px] font-medium text-muted-foreground">Barcode</Label>
+   569→                <Input
+   570→                  id="barcode"
+   571→                  value={form.barcode}
+   572→                  onChange={(e) => updateField('barcode', e.target.value)}
+   573→                  placeholder="e.g., 8901234567890"
+   574→                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   575→                />
+   576→              </div>
+   577→              <div className="space-y-1.5 sm:col-span-2">
+   578→                <Label htmlFor="description" className="text-[12px] font-medium text-muted-foreground">Description</Label>
+   579→                <Textarea
+   580→                  id="description"
+   581→                  value={form.description}
+   582→                  onChange={(e) => updateField('description', e.target.value)}
+   583→                  placeholder="Product description..."
+   584→                  rows={3}
+   585→                  className="rounded-lg border-border/50 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+   586→                />
+   587→              </div>
+   588→              <div className="space-y-1.5">
+   589→                <Label htmlFor="price" className="text-[12px] font-medium text-muted-foreground">Selling Price ($)</Label>
+   590→                <Input
+   591→                  id="price"
+   592→                  type="number"
+   593→                  step="0.01"
+   594→                  min="0"
+   595→                  value={form.price}
+   596→                  onChange={(e) => updateField('price', e.target.value)}
+   597→                  placeholder="0.00"
+   598→                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   599→                />
+   600→              </div>
+   601→              <div className="space-y-1.5">
+   602→                <Label htmlFor="costPrice" className="text-[12px] font-medium text-muted-foreground">Cost Price ($)</Label>
+   603→                <Input
+   604→                  id="costPrice"
+   605→                  type="number"
+   606→                  step="0.01"
+   607→                  min="0"
+   608→                  value={form.costPrice}
+   609→                  onChange={(e) => updateField('costPrice', e.target.value)}
+   610→                  placeholder="0.00"
+   611→                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   612→                />
+   613→              </div>
+   614→              <div className="space-y-1.5">
+   615→                <Label htmlFor="discount" className="text-[12px] font-medium text-muted-foreground">Discount (%)</Label>
+   616→                <Input
+   617→                  id="discount"
+   618→                  type="number"
+   619→                  step="0.1"
+   620→                  min="0"
+   621→                  max="100"
+   622→                  value={form.discount}
+   623→                  onChange={(e) => updateField('discount', e.target.value)}
+   624→                  placeholder="0"
+   625→                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   626→                />
+   627→              </div>
+   628→              <div className="space-y-1.5">
+   629→                <Label htmlFor="unit" className="text-[12px] font-medium text-muted-foreground">Unit</Label>
+   630→                <Select value={form.unit} onValueChange={(v) => updateField('unit', v)}>
+   631→                  <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8">
+   632→                    <SelectValue />
+   633→                  </SelectTrigger>
+   634→                  <SelectContent>
+   635→                    <SelectItem value="piece">Piece</SelectItem>
+   636→                    <SelectItem value="pack">Pack</SelectItem>
+   637→                    <SelectItem value="box">Box</SelectItem>
+   638→                    <SelectItem value="set">Set</SelectItem>
+   639→                    <SelectItem value="dozen">Dozen</SelectItem>
+   640→                  </SelectContent>
+   641→                </Select>
+   642→              </div>
+   643→              <div className="space-y-1.5">
+   644→                <Label htmlFor="minOrderQty" className="text-[12px] font-medium text-muted-foreground">Min Order Qty</Label>
+   645→                <Input
+   646→                  id="minOrderQty"
+   647→                  type="number"
+   648→                  min="1"
+   649→                  value={form.minOrderQty}
+   650→                  onChange={(e) => updateField('minOrderQty', e.target.value)}
+   651→                  placeholder="1"
+   652→                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   653→                />
+   654→              </div>
+   655→            </div>
+   656→          </div>
+   657→          <DialogFooter className="gap-2">
+   658→            <Button
+   659→              variant="secondary"
+   660→              onClick={() => setDialogOpen(false)}
+   661→              disabled={saving}
+   662→              className="rounded-lg text-[13px] font-medium h-8"
+   663→            >
+   664→              Cancel
+   665→            </Button>
+   666→            <Button
+   667→              onClick={handleSave}
+   668→              disabled={saving || !form.name.trim()}
+   669→              className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8"
+   670→            >
+   671→              {saving ? (
+   672→                <>
+   673→                  <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+   674→                  Saving...
+   675→                </>
+   676→              ) : editingProduct ? (
+   677→                'Update Product'
+   678→              ) : (
+   679→                <>
+   680→                  <Plus className="size-3.5 mr-1.5" strokeWidth={1.5} />
+   681→                  Create Product
+   682→                </>
+   683→              )}
+   684→            </Button>
+   685→          </DialogFooter>
+   686→        </DialogContent>
+   687→      </Dialog>
+   688→    </div>
+   689→  )
+   690→}
+   691→

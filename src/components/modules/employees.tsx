@@ -3,7 +3,6 @@
 import * as React from 'react'
 import {
   UserCog,
-  Search,
   Plus,
   Mail,
   Phone,
@@ -14,26 +13,13 @@ import {
   Trash2,
   Pencil,
   Users,
-  MapPin,
   UserCheck,
   UserX,
   Clock,
   ChevronRight,
   Contact,
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -41,18 +27,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosStatCard,
+  MacosStatGrid,
+  MacosCard,
+  MacosSearch,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosDialog,
+  MacosEmptyState,
+  MacosFormField,
+} from '@/components/macos-ui'
 
 // ==================== TYPES ====================
 
@@ -91,10 +80,18 @@ const departmentColors: Record<string, { bg: string; text: string; icon: string 
   Operations: { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo', icon: 'bg-macos-indigo/10' },
 }
 
-function getDeptBadge(dept: string) {
-  const colors = departmentColors[dept]
-  if (colors) return `${colors.bg} ${colors.text}`
-  return 'bg-secondary text-secondary-foreground'
+function getDeptBadgeVariant(dept: string): 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple' {
+  const map: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple'> = {
+    Management: 'purple',
+    Sales: 'info',
+    Finance: 'success',
+    Warehouse: 'warning',
+    Marketing: 'danger',
+    IT: 'info',
+    HR: 'warning',
+    Operations: 'purple',
+  }
+  return map[dept] || 'default'
 }
 
 function getDeptInitialsColor(dept: string) {
@@ -169,8 +166,6 @@ export function EmployeesModule() {
   const inactiveEmployees = employees.filter((e) => !e.isActive).length
   const totalPayroll = employees.filter((e) => e.isActive).reduce((sum, e) => sum + e.salary, 0)
 
-  const departmentList = [...new Set(employees.map((e) => e.department).filter(Boolean))] as string[]
-
   const departmentStats = employees.reduce(
     (acc, emp) => {
       const dept = emp.department || 'Unassigned'
@@ -190,89 +185,76 @@ export function EmployeesModule() {
     return true
   })
 
+  const statusFilterItems = [
+    { id: 'all', label: 'All', count: totalEmployees },
+    { id: 'active', label: 'Active', count: activeEmployees },
+    { id: 'inactive', label: 'Inactive', count: inactiveEmployees },
+  ]
+
   return (
     <div className="space-y-5">
-      {/* Page Header - macOS 27 style */}
-      <div className="macos-page-header">
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-xl bg-gg-bridge/10 flex items-center justify-center">
-            <Contact className="size-[18px] text-gg-bridge" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h1 className="macos-page-title">Employees</h1>
-            <p className="macos-page-subtitle">Manage your team, departments &amp; payroll</p>
-          </div>
-        </div>
+      {/* Page Header */}
+      <MacosPageHeader
+        title="Employees"
+        subtitle="Manage your team, departments & payroll"
+        icon={Contact}
+        iconColor="text-gg-bridge"
+        iconBg="bg-gg-bridge/10"
+      >
         {!isViewOnly && (
-          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-            <Plus className="size-3.5" strokeWidth={2} /> Add Employee
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowAddDialog(true)}>
+            Add Employee
+          </MacosButton>
         )}
-      </div>
+      </MacosPageHeader>
 
-      {/* Stats Row - macOS Contact-style compact stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
-              <Users className="size-4 text-macos-blue" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[22px] font-bold tracking-[-0.03em]">{totalEmployees}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
-              <UserCheck className="size-4 text-macos-green" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-green">{activeEmployees}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded-xl bg-macos-red/10 flex items-center justify-center">
-              <UserX className="size-4 text-macos-red" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-red">{inactiveEmployees}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Inactive</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-8 rounded-xl bg-gg-golden/10 flex items-center justify-center">
-              <DollarSign className="size-4 text-gg-golden" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[22px] font-bold tracking-[-0.03em] text-gg-golden">${totalPayroll.toLocaleString()}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Payroll</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Stats Row */}
+      <MacosStatGrid>
+        <MacosStatCard
+          label="Total"
+          value={totalEmployees}
+          icon={Users}
+          iconColor="text-macos-blue"
+          iconBg="bg-macos-blue/10"
+        />
+        <MacosStatCard
+          label="Active"
+          value={activeEmployees}
+          icon={UserCheck}
+          iconColor="text-macos-green"
+          iconBg="bg-macos-green/10"
+        />
+        <MacosStatCard
+          label="Inactive"
+          value={inactiveEmployees}
+          icon={UserX}
+          iconColor="text-macos-red"
+          iconBg="bg-macos-red/10"
+        />
+        <MacosStatCard
+          label="Monthly Payroll"
+          value={`$${totalPayroll.toLocaleString()}`}
+          icon={DollarSign}
+          iconColor="text-gg-golden"
+          iconBg="bg-gg-golden/10"
+        />
+      </MacosStatGrid>
 
       {/* macOS Contacts-style layout: Sidebar departments + Contact list */}
       <div className="flex gap-4 min-h-[480px]">
-        {/* Left: Department Groups (like macOS Contacts sidebar) */}
+        {/* Left: Department Groups */}
         <div className="w-56 shrink-0 hidden md:block">
-          <div className="macos-card macos-shadow-card p-3 h-full">
-            <div className="macos-section-header mb-2">
+          <MacosCard noPadding>
+            <div className="macos-section-header px-3 pt-3 pb-1">
               <h3 className="macos-section-title">Groups</h3>
             </div>
-            <ScrollArea className="h-[400px]">
+            <div className="max-h-[400px] overflow-y-auto custom-scrollbar px-1.5 pb-2">
               <div className="space-y-0.5">
                 <button
-                  className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] font-medium cursor-pointer transition-colors ${
+                  className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] font-medium cursor-pointer ${
                     departmentFilter === 'all'
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-foreground hover:bg-secondary/50'
+                      ? 'macos-filter-item-active'
+                      : 'text-foreground/70 hover:bg-secondary/50'
                   }`}
                   onClick={() => setDepartmentFilter('all')}
                 >
@@ -287,10 +269,10 @@ export function EmployeesModule() {
                   return (
                     <button
                       key={dept}
-                      className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] font-medium cursor-pointer transition-colors ${
+                      className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] font-medium cursor-pointer ${
                         departmentFilter === dept
                           ? `${colors.bg} ${colors.text}`
-                          : 'text-foreground hover:bg-secondary/50'
+                          : 'text-foreground/70 hover:bg-secondary/50'
                       }`}
                       onClick={() => setDepartmentFilter(dept === departmentFilter ? 'all' : dept)}
                     >
@@ -303,53 +285,35 @@ export function EmployeesModule() {
                   )
                 })}
               </div>
-            </ScrollArea>
-          </div>
+            </div>
+          </MacosCard>
         </div>
 
-        {/* Right: Contact List (like macOS Contacts main view) */}
+        {/* Right: Contact List */}
         <div className="flex-1 min-w-0">
-          <div className="macos-card macos-shadow-card">
+          <MacosCard noPadding>
             {/* Search + Filter Bar */}
             <div className="p-3 border-b border-border/50">
               <div className="flex items-center gap-3">
-                <div className="macos-search flex items-center gap-2 px-3 py-1.5 flex-1">
-                  <Search className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
-                  <input
-                    placeholder="Search employees..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="bg-transparent border-0 outline-none text-[13px] w-full placeholder:text-muted-foreground"
-                  />
-                </div>
-                <div className="macos-filter-bar">
-                  <button
-                    className={`macos-filter-item ${statusFilter === 'all' ? 'macos-filter-item-active' : ''}`}
-                    onClick={() => setStatusFilter('all')}
-                  >
-                    All
-                  </button>
-                  <button
-                    className={`macos-filter-item ${statusFilter === 'active' ? 'macos-filter-item-active' : ''}`}
-                    onClick={() => setStatusFilter('active')}
-                  >
-                    Active
-                  </button>
-                  <button
-                    className={`macos-filter-item ${statusFilter === 'inactive' ? 'macos-filter-item-active' : ''}`}
-                    onClick={() => setStatusFilter('inactive')}
-                  >
-                    Inactive
-                  </button>
-                </div>
+                <MacosSearch
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Search employees..."
+                  className="flex-1"
+                />
+                <MacosFilterBar
+                  items={statusFilterItems}
+                  activeId={statusFilter}
+                  onChange={(id) => setStatusFilter(id as 'all' | 'active' | 'inactive')}
+                />
               </div>
-              {/* Mobile department pills (shown only on small screens) */}
+              {/* Mobile department pills */}
               <div className="flex flex-wrap gap-1.5 mt-2 md:hidden">
                 <button
-                  className={`rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase cursor-pointer transition-colors ${
+                  className={`rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase cursor-pointer ${
                     departmentFilter === 'all'
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                      ? 'macos-badge bg-macos-blue/10 text-macos-blue'
+                      : 'macos-badge bg-secondary/50 text-muted-foreground hover:text-foreground'
                   }`}
                   onClick={() => setDepartmentFilter('all')}
                 >
@@ -358,8 +322,10 @@ export function EmployeesModule() {
                 {Object.entries(departmentStats).map(([dept, stats]) => (
                   <button
                     key={dept}
-                    className={`rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase cursor-pointer transition-colors ${
-                      departmentFilter === dept ? getDeptBadge(dept) : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                    className={`rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase cursor-pointer ${
+                      departmentFilter === dept
+                        ? `macos-badge ${getDeptInitialsColor(dept).bg} ${getDeptInitialsColor(dept).text}`
+                        : 'macos-badge bg-secondary/50 text-muted-foreground hover:text-foreground'
                     }`}
                     onClick={() => setDepartmentFilter(dept === departmentFilter ? 'all' : dept)}
                   >
@@ -377,13 +343,13 @@ export function EmployeesModule() {
                 ))}
               </div>
             ) : filteredEmployees.length === 0 ? (
-              <div className="macos-empty py-16">
-                <Contact className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
-                <p className="text-[13px] font-medium text-foreground">No contacts found</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Try adjusting your search or filters</p>
-              </div>
+              <MacosEmptyState
+                icon={Contact}
+                title="No contacts found"
+                description="Try adjusting your search or filters"
+              />
             ) : (
-              <ScrollArea className="max-h-[400px]">
+              <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                 <div className="divide-y divide-border/30">
                   {filteredEmployees.map((employee) => {
                     const deptColors = getDeptInitialsColor(employee.department || '')
@@ -393,7 +359,7 @@ export function EmployeesModule() {
                         className="flex items-center gap-3 px-4 py-2.5 cursor-pointer macos-table-row group"
                         onClick={() => setSelectedEmployee(employee)}
                       >
-                        {/* Avatar - macOS Contacts style */}
+                        {/* Avatar */}
                         <Avatar className="size-9 ring-1 ring-border/30">
                           <AvatarFallback className={`${deptColors.bg} ${deptColors.text} text-[11px] font-semibold`}>
                             {employee.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -410,44 +376,40 @@ export function EmployeesModule() {
                         </div>
 
                         {/* Department Badge */}
-                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 shrink-0 ${getDeptBadge(employee.department || '')}`}>
+                        <MacosBadge variant={getDeptBadgeVariant(employee.department || '')}>
                           {employee.department || '—'}
-                        </Badge>
+                        </MacosBadge>
 
                         {/* Position */}
                         <span className="text-[13px] text-muted-foreground truncate max-w-[120px] hidden lg:block">
                           {employee.position || '—'}
                         </span>
 
-                        {/* Chevron - macOS style */}
-                        <ChevronRight className="size-3.5 text-muted-foreground/50 shrink-0 group-hover:text-muted-foreground transition-colors" strokeWidth={1.5} />
+                        {/* Chevron */}
+                        <ChevronRight className="size-3.5 text-muted-foreground/50 shrink-0 group-hover:text-muted-foreground" strokeWidth={1.5} />
 
                         {/* Actions (shown on hover, hidden for view-only) */}
                         {!isViewOnly && (
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                            <Button
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                            <MacosButton
                               variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10 rounded-lg"
+                              icon={Pencil}
                               onClick={() => setEditEmployee(employee)}
-                            >
-                              <Pencil className="size-3" strokeWidth={1.5} />
-                            </Button>
-                            <Button
+                              className="h-7 w-7 p-0 text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10 rounded-lg"
+                            />
+                            <MacosButton
                               variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+                              icon={Trash2}
                               onClick={() => handleDelete(employee.id)}
-                            >
-                              <Trash2 className="size-3" strokeWidth={1.5} />
-                            </Button>
+                              className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+                            />
                           </div>
                         )}
                       </div>
                     )
                   })}
                 </div>
-              </ScrollArea>
+              </div>
             )}
 
             {/* Footer count */}
@@ -457,7 +419,7 @@ export function EmployeesModule() {
                 {departmentFilter !== 'all' ? ` in ${departmentFilter}` : ''}
               </p>
             </div>
-          </div>
+          </MacosCard>
         </div>
       </div>
 
@@ -538,85 +500,120 @@ function AddEmployeeDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-[-0.01em]">Add Employee</DialogTitle>
-          <DialogDescription className="text-[11px]">Register a new team member</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Full Name *</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="macos-search rounded-lg text-[13px] h-8 border-0" required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email *</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@bookflow.com" className="macos-search rounded-lg text-[13px] h-8 border-0" required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1-555-0100" className="macos-search rounded-lg text-[13px] h-8 border-0" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Department</Label>
-              <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
-                <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Sales">Sales</SelectItem>
-                  <SelectItem value="Management">Management</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                  <SelectItem value="Warehouse">Warehouse</SelectItem>
-                  <SelectItem value="IT">IT</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem>
-                  <SelectItem value="Operations">Operations</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Position</Label>
-              <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="Sales Manager" className="macos-search rounded-lg text-[13px] h-8 border-0" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Salary ($)</Label>
-              <Input type="number" step="0.01" min="0" value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} placeholder="5000" className="macos-search rounded-lg text-[13px] h-8 border-0" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Hire Date</Label>
-              <Input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Branch</Label>
-            <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add Employee"
+      description="Register a new team member"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </MacosButton>
+          <MacosButton
+            variant="primary"
+            onClick={handleSubmit as any}
+            disabled={saving || !form.name.trim() || !form.email.trim()}
+          >
+            {saving ? 'Saving...' : 'Add Employee'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <MacosFormField label="Full Name *">
+          <Input
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="John Smith"
+            className="macos-search rounded-lg text-[13px] h-8 border-0"
+            required
+          />
+        </MacosFormField>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Email *">
+            <Input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="john@bookflow.com"
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+              required
+            />
+          </MacosFormField>
+          <MacosFormField label="Phone">
+            <Input
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="+1-555-0100"
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+            />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Department">
+            <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
               <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
-                <SelectValue placeholder="Select branch..." />
+                <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent>
-                {branches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.name} ({b.code})
-                  </SelectItem>
-                ))}
+                <SelectItem value="Sales">Sales</SelectItem>
+                <SelectItem value="Management">Management</SelectItem>
+                <SelectItem value="Finance">Finance</SelectItem>
+                <SelectItem value="Warehouse">Warehouse</SelectItem>
+                <SelectItem value="IT">IT</SelectItem>
+                <SelectItem value="Marketing">Marketing</SelectItem>
+                <SelectItem value="HR">HR</SelectItem>
+                <SelectItem value="Operations">Operations</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving || !form.name.trim() || !form.email.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Saving...' : 'Add Employee'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </MacosFormField>
+          <MacosFormField label="Position">
+            <Input
+              value={form.position}
+              onChange={(e) => setForm({ ...form, position: e.target.value })}
+              placeholder="Sales Manager"
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+            />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Monthly Salary ($)">
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.salary}
+              onChange={(e) => setForm({ ...form, salary: e.target.value })}
+              placeholder="5000"
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+            />
+          </MacosFormField>
+          <MacosFormField label="Hire Date">
+            <Input
+              type="date"
+              value={form.hireDate}
+              onChange={(e) => setForm({ ...form, hireDate: e.target.value })}
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+            />
+          </MacosFormField>
+        </div>
+        <MacosFormField label="Branch">
+          <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+            <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+              <SelectValue placeholder="Select branch..." />
+            </SelectTrigger>
+            <SelectContent>
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  {b.name} ({b.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </MacosFormField>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -701,99 +698,124 @@ function EditEmployeeDialog({
   if (!employee) return null
 
   return (
-    <Dialog open={!!employee} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-[-0.01em]">Edit Employee</DialogTitle>
-          <DialogDescription className="text-[11px]">Update employee information</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Full Name *</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email *</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Department</Label>
-              <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
-                <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Sales">Sales</SelectItem>
-                  <SelectItem value="Management">Management</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                  <SelectItem value="Warehouse">Warehouse</SelectItem>
-                  <SelectItem value="IT">IT</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="HR">HR</SelectItem>
-                  <SelectItem value="Operations">Operations</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Position</Label>
-              <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Salary ($)</Label>
-              <Input type="number" step="0.01" min="0" value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Hire Date</Label>
-              <Input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Branch</Label>
-              <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
-                <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
-                  <SelectValue placeholder="Select branch..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name} ({b.code})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</Label>
-              <Select value={form.isActive ? 'active' : 'inactive'} onValueChange={(v) => setForm({ ...form, isActive: v === 'active' })}>
-                <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Saving...' : 'Update Employee'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <MacosDialog
+      open={!!employee}
+      onOpenChange={onOpenChange}
+      title="Edit Employee"
+      description="Update employee information"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>
+            Cancel
+          </MacosButton>
+          <MacosButton variant="primary" onClick={handleSubmit as any} disabled={saving}>
+            {saving ? 'Saving...' : 'Update Employee'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <MacosFormField label="Full Name *">
+          <Input
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="macos-search rounded-lg text-[13px] h-8 border-0"
+            required
+          />
+        </MacosFormField>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Email *">
+            <Input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+              required
+            />
+          </MacosFormField>
+          <MacosFormField label="Phone">
+            <Input
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+            />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Department">
+            <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+              <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Sales">Sales</SelectItem>
+                <SelectItem value="Management">Management</SelectItem>
+                <SelectItem value="Finance">Finance</SelectItem>
+                <SelectItem value="Warehouse">Warehouse</SelectItem>
+                <SelectItem value="IT">IT</SelectItem>
+                <SelectItem value="Marketing">Marketing</SelectItem>
+                <SelectItem value="HR">HR</SelectItem>
+                <SelectItem value="Operations">Operations</SelectItem>
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+          <MacosFormField label="Position">
+            <Input
+              value={form.position}
+              onChange={(e) => setForm({ ...form, position: e.target.value })}
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+            />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Monthly Salary ($)">
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.salary}
+              onChange={(e) => setForm({ ...form, salary: e.target.value })}
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+            />
+          </MacosFormField>
+          <MacosFormField label="Hire Date">
+            <Input
+              type="date"
+              value={form.hireDate}
+              onChange={(e) => setForm({ ...form, hireDate: e.target.value })}
+              className="macos-search rounded-lg text-[13px] h-8 border-0"
+            />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Branch">
+            <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+              <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+                <SelectValue placeholder="Select branch..." />
+              </SelectTrigger>
+              <SelectContent>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name} ({b.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+          <MacosFormField label="Status">
+            <Select value={form.isActive ? 'active' : 'inactive'} onValueChange={(v) => setForm({ ...form, isActive: v === 'active' })}>
+              <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+        </div>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -818,113 +840,115 @@ function EmployeeDetailDialog({
   const deptColors = getDeptInitialsColor(employee.department || '')
 
   return (
-    <Dialog open={!!employee} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-4">
-            <Avatar className="size-12 ring-1 ring-border/30">
-              <AvatarFallback className={`${deptColors.bg} ${deptColors.text} font-semibold text-sm`}>
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-[15px] font-semibold tracking-[-0.02em]">{employee.name}</p>
-              <p className="text-[12px] font-normal text-muted-foreground">{employee.position || 'No position assigned'}</p>
+    <MacosDialog
+      open={!!employee}
+      onOpenChange={onOpenChange}
+      title=""
+    >
+      {/* Custom header with avatar */}
+      <div className="flex items-center gap-4 -mt-2 mb-2">
+        <Avatar className="size-12 ring-1 ring-border/30">
+          <AvatarFallback className={`${deptColors.bg} ${deptColors.text} font-semibold text-sm`}>
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="text-[15px] font-semibold tracking-[-0.02em]">{employee.name}</p>
+          <p className="text-[12px] font-normal text-muted-foreground">{employee.position || 'No position assigned'}</p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {/* Contact Info */}
+        <div className="macos-card p-4 space-y-3">
+          <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Contact Information</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-center gap-2.5 text-[13px]">
+              <div className="size-7 rounded-lg bg-macos-blue/10 flex items-center justify-center shrink-0">
+                <Mail className="size-3.5 text-macos-blue" strokeWidth={1.5} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email</p>
+                <p className="truncate">{employee.email}</p>
+              </div>
             </div>
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-5">
-          {/* Contact Info - macOS Contacts card style */}
-          <div className="macos-card p-4 space-y-3">
-            <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Contact Information</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {employee.phone && (
               <div className="flex items-center gap-2.5 text-[13px]">
-                <div className="size-7 rounded-lg bg-macos-blue/10 flex items-center justify-center shrink-0">
-                  <Mail className="size-3.5 text-macos-blue" strokeWidth={1.5} />
+                <div className="size-7 rounded-lg bg-macos-green/10 flex items-center justify-center shrink-0">
+                  <Phone className="size-3.5 text-macos-green" strokeWidth={1.5} />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email</p>
-                  <p className="truncate">{employee.email}</p>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</p>
+                  <p>{employee.phone}</p>
                 </div>
               </div>
-              {employee.phone && (
-                <div className="flex items-center gap-2.5 text-[13px]">
-                  <div className="size-7 rounded-lg bg-macos-green/10 flex items-center justify-center shrink-0">
-                    <Phone className="size-3.5 text-macos-green" strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</p>
-                    <p>{employee.phone}</p>
-                  </div>
+            )}
+            {employee.department && (
+              <div className="flex items-center gap-2.5 text-[13px]">
+                <div className="size-7 rounded-lg bg-macos-purple/10 flex items-center justify-center shrink-0">
+                  <Briefcase className="size-3.5 text-macos-purple" strokeWidth={1.5} />
                 </div>
-              )}
-              {employee.department && (
-                <div className="flex items-center gap-2.5 text-[13px]">
-                  <div className="size-7 rounded-lg bg-macos-purple/10 flex items-center justify-center shrink-0">
-                    <Briefcase className="size-3.5 text-macos-purple" strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Department</p>
-                    <Badge className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 ${getDeptBadge(employee.department)}`}>
-                      {employee.department}
-                    </Badge>
-                  </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Department</p>
+                  <MacosBadge variant={getDeptBadgeVariant(employee.department)}>
+                    {employee.department}
+                  </MacosBadge>
                 </div>
-              )}
-              {employee.branch && (
-                <div className="flex items-center gap-2.5 text-[13px]">
-                  <div className="size-7 rounded-lg bg-gg-bay/10 flex items-center justify-center shrink-0">
-                    <Building2 className="size-3.5 text-gg-bay" strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Branch</p>
-                    <p>{employee.branch.name}</p>
-                  </div>
+              </div>
+            )}
+            {employee.branch && (
+              <div className="flex items-center gap-2.5 text-[13px]">
+                <div className="size-7 rounded-lg bg-gg-bay/10 flex items-center justify-center shrink-0">
+                  <Building2 className="size-3.5 text-gg-bay" strokeWidth={1.5} />
                 </div>
-              )}
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Branch</p>
+                  <p>{employee.branch.name}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Employment Details */}
+        <div className="macos-card p-4 space-y-3">
+          <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Employment</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-xl bg-gg-golden/10">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Salary</p>
+              <p className="text-[22px] font-bold tracking-[-0.03em] text-gg-golden">${employee.salary.toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-macos-blue/10">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Sales Recorded</p>
+              <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-blue">{employee._count?.sales || 0}</p>
             </div>
           </div>
-
-          {/* Employment Details */}
-          <div className="macos-card p-4 space-y-3">
-            <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Employment</h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl bg-gg-golden/10">
-                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Salary</p>
-                <p className="text-[22px] font-bold tracking-[-0.03em] text-gg-golden">${employee.salary.toLocaleString()}</p>
+          <div className="flex items-center gap-4">
+            {employee.hireDate && (
+              <div className="flex items-center gap-1.5 text-[13px]">
+                <Clock className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+                <span className="text-muted-foreground">Hired {new Date(employee.hireDate).toLocaleDateString()}</span>
               </div>
-              <div className="p-3 rounded-xl bg-macos-blue/10">
-                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Sales Recorded</p>
-                <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-blue">{employee._count?.sales || 0}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              {employee.hireDate && (
-                <div className="flex items-center gap-1.5 text-[13px]">
-                  <Clock className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
-                  <span className="text-muted-foreground">Hired {new Date(employee.hireDate).toLocaleDateString()}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5">
-                <div className={`size-2 rounded-full ${employee.isActive ? 'bg-macos-green' : 'bg-macos-red'}`} />
-                <span className="text-[13px] font-medium">{employee.isActive ? 'Active' : 'Inactive'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Activity */}
-          <div className="flex gap-2">
-            <div className="flex items-center gap-1.5 p-2.5 rounded-xl bg-secondary/50 text-[11px]">
-              <Calendar className="size-3 text-muted-foreground" strokeWidth={1.5} />
-              Attendance: {employee._count?.attendance || 0}
-            </div>
-            <div className="flex items-center gap-1.5 p-2.5 rounded-xl bg-secondary/50 text-[11px]">
-              <DollarSign className="size-3 text-muted-foreground" strokeWidth={1.5} />
-              Sales: {employee._count?.sales || 0}
+            )}
+            <div className="flex items-center gap-1.5">
+              <div className={`size-2 rounded-full ${employee.isActive ? 'bg-macos-green' : 'bg-macos-red'}`} />
+              <span className="text-[13px] font-medium">{employee.isActive ? 'Active' : 'Inactive'}</span>
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {/* Activity */}
+        <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 p-2.5 rounded-xl bg-secondary/50 text-[11px]">
+            <Calendar className="size-3 text-muted-foreground" strokeWidth={1.5} />
+            Attendance: {employee._count?.attendance || 0}
+          </div>
+          <div className="flex items-center gap-1.5 p-2.5 rounded-xl bg-secondary/50 text-[11px]">
+            <DollarSign className="size-3 text-muted-foreground" strokeWidth={1.5} />
+            Sales: {employee._count?.sales || 0}
+          </div>
+        </div>
+      </div>
+    </MacosDialog>
   )
 }

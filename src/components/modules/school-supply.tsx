@@ -26,14 +26,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -52,6 +44,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosStatCard,
+  MacosSearch,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosEmptyState,
+  MacosDialog,
+  MacosFormField,
+  MacosStatGrid,
+} from '@/components/macos-ui'
 
 // ==================== TYPES ====================
 
@@ -128,40 +132,28 @@ export function SchoolSupplyModule() {
 
   const [activeTab, setActiveTab] = React.useState('schools')
   const tabs = [
-    { value: 'schools', label: 'Schools', icon: GraduationCap },
-    { value: 'contracts', label: 'Contracts', icon: FileText },
-    { value: 'packages', label: 'Packages', icon: Package },
+    { id: 'schools', label: 'Schools', count: undefined },
+    { id: 'contracts', label: 'Contracts', count: undefined },
+    { id: 'packages', label: 'Packages', count: undefined },
   ]
 
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <div className="macos-page-header">
-        <div>
-          <h2 className="macos-page-title">School Supply</h2>
-          <p className="macos-page-subtitle">Manage schools, contracts & academic packages</p>
-        </div>
-      </div>
+      <MacosPageHeader
+        title="School Supply"
+        subtitle="Manage schools, contracts & academic packages"
+        icon={GraduationCap}
+        iconColor="text-macos-blue"
+        iconBg="bg-macos-blue/10"
+      />
 
-      {/* Filter Bar Tabs */}
-      <div className="macos-filter-bar">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.value
-          return (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`macos-filter-item flex items-center gap-1.5 ${isActive ? 'macos-filter-item-active' : ''}`}
-            >
-              <Icon className="size-3.5" strokeWidth={1.5} />
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+      <MacosFilterBar
+        items={tabs}
+        activeId={activeTab}
+        onChange={setActiveTab}
+      />
 
-      <div className="mt-4">
+      <div>
         {activeTab === 'schools' && <SchoolsTab isViewOnly={isViewOnly} />}
         {activeTab === 'contracts' && <ContractsTab isViewOnly={isViewOnly} />}
         {activeTab === 'packages' && <PackagesTab isViewOnly={isViewOnly} />}
@@ -213,68 +205,20 @@ function SchoolsTab({ isViewOnly }: { isViewOnly: boolean }) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
-              <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Schools</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight">{schools.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
-              <SchoolIcon className="size-4 text-macos-green" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-green">{activeSchools}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-purple/10 flex items-center justify-center">
-              <FileText className="size-4 text-macos-purple" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Contracts</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight">{totalContracts}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
-              <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Packages</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight">{totalPackages}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Total Schools" value={schools.length} icon={GraduationCap} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+        <MacosStatCard label="Active" value={activeSchools} icon={SchoolIcon} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+        <MacosStatCard label="Contracts" value={totalContracts} icon={FileText} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+        <MacosStatCard label="Packages" value={totalPackages} icon={Package} iconColor="text-macos-teal" iconBg="bg-macos-teal/10" />
+      </MacosStatGrid>
 
       {/* Search & Add */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="macos-search flex items-center flex-1 w-full sm:max-w-sm">
-          <Search className="size-3.5 text-muted-foreground ml-2.5 shrink-0" />
-          <Input
-            placeholder="Search schools..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="border-0 bg-transparent text-[13px] h-8 pl-2 focus-visible:ring-0 focus-visible:ring-offset-0"
-          />
-        </div>
+        <MacosSearch value={search} onChange={setSearch} placeholder="Search schools..." className="w-full sm:w-64" />
         {!isViewOnly && (
-          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0">
-            <Plus className="size-3.5" strokeWidth={2} /> Add School
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowAddDialog(true)}>
+            Add School
+          </MacosButton>
         )}
       </div>
 
@@ -289,13 +233,11 @@ function SchoolsTab({ isViewOnly }: { isViewOnly: boolean }) {
           ))}
         </div>
       ) : schools.length === 0 ? (
-        <div className="macos-card macos-shadow-card">
-          <div className="macos-empty">
-            <GraduationCap className="size-12 text-muted-foreground/30 mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] font-medium text-muted-foreground">No schools found</p>
-            <p className="text-[11px] text-muted-foreground mt-1">Add your first school to get started</p>
-          </div>
-        </div>
+        <MacosEmptyState
+          icon={GraduationCap}
+          title="No schools found"
+          description="Add your first school to get started"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {schools.map((school) => (
@@ -308,43 +250,35 @@ function SchoolsTab({ isViewOnly }: { isViewOnly: boolean }) {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
-                      <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
+                      <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.8} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-[13px] leading-tight tracking-tight">{school.name}</h3>
                       {school.academicSession && (
-                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple inline-block mt-0.5">
-                          {school.academicSession}
-                        </span>
+                        <MacosBadge variant="purple" className="mt-0.5">{school.academicSession}</MacosBadge>
                       )}
                     </div>
                   </div>
-                  <span
-                    className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
-                      school.isActive
-                        ? 'bg-macos-green/10 text-macos-green'
-                        : 'bg-macos-red/10 text-macos-red'
-                    }`}
-                  >
+                  <MacosBadge variant={school.isActive ? 'success' : 'danger'}>
                     {school.isActive ? 'Active' : 'Inactive'}
-                  </span>
+                  </MacosBadge>
                 </div>
                 <div className="space-y-1.5 text-[11px] text-muted-foreground">
                   {school.address && (
                     <div className="flex items-center gap-1.5">
-                      <MapPin className="size-3 shrink-0" strokeWidth={1.5} />
+                      <MapPin className="size-3 shrink-0" strokeWidth={1.8} />
                       <span className="truncate">{school.address}</span>
                     </div>
                   )}
                   {school.phone && (
                     <div className="flex items-center gap-1.5">
-                      <Phone className="size-3 shrink-0" strokeWidth={1.5} />
+                      <Phone className="size-3 shrink-0" strokeWidth={1.8} />
                       {school.phone}
                     </div>
                   )}
                   {school.contactPerson && (
                     <div className="flex items-center gap-1.5">
-                      <User className="size-3 shrink-0" strokeWidth={1.5} />
+                      <User className="size-3 shrink-0" strokeWidth={1.8} />
                       {school.contactPerson}
                     </div>
                   )}
@@ -358,17 +292,16 @@ function SchoolsTab({ isViewOnly }: { isViewOnly: boolean }) {
                     {school._count?.packages || 0} packages
                   </span>
                   {!isViewOnly && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-[11px] opacity-0 group-hover:opacity-100 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+                    <MacosButton
+                      variant="danger"
+                      className="opacity-0 group-hover:opacity-100 h-6 text-[10px]"
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDelete(school.id)
                       }}
                     >
-                      <Trash2 className="size-3" strokeWidth={1.5} />
-                    </Button>
+                      <Trash2 className="size-3" strokeWidth={1.8} />
+                    </MacosButton>
                   )}
                 </div>
               </div>
@@ -435,18 +368,12 @@ function ContractsTab({ isViewOnly }: { isViewOnly: boolean }) {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-macos-green/10 text-macos-green'
-      case 'expired':
-        return 'bg-macos-orange/10 text-macos-orange'
-      case 'cancelled':
-        return 'bg-macos-red/10 text-macos-red'
-      case 'pending':
-        return 'bg-macos-orange/10 text-macos-orange'
-      case 'confirmed':
-        return 'bg-macos-blue/10 text-macos-blue'
-      default:
-        return 'bg-secondary text-secondary-foreground'
+      case 'active': return 'success' as const
+      case 'expired': return 'warning' as const
+      case 'cancelled': return 'danger' as const
+      case 'pending': return 'warning' as const
+      case 'confirmed': return 'info' as const
+      default: return 'default' as const
     }
   }
 
@@ -456,48 +383,18 @@ function ContractsTab({ isViewOnly }: { isViewOnly: boolean }) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-purple/10 flex items-center justify-center">
-              <FileText className="size-4 text-macos-purple" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Contracts</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight">{contracts.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
-              <Calendar className="size-4 text-macos-green" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-green">{activeContracts}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-gg-golden/10 flex items-center justify-center">
-              <DollarSign className="size-4 text-gg-golden" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Value</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight">${totalValue.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MacosStatGrid className="grid-cols-2 lg:grid-cols-3">
+        <MacosStatCard label="Total Contracts" value={contracts.length} icon={FileText} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+        <MacosStatCard label="Active" value={activeContracts} icon={Calendar} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+        <MacosStatCard label="Total Value" value={`$${totalValue.toLocaleString()}`} icon={DollarSign} iconColor="text-gg-golden" iconBg="bg-gg-golden/10" />
+      </MacosStatGrid>
 
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{contracts.length} contracts</p>
         {!isViewOnly && (
-          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
-            <Plus className="size-3.5" strokeWidth={2} /> Create Contract
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+            Create Contract
+          </MacosButton>
         )}
       </div>
 
@@ -510,38 +407,36 @@ function ContractsTab({ isViewOnly }: { isViewOnly: boolean }) {
           </div>
         </div>
       ) : contracts.length === 0 ? (
-        <div className="macos-card macos-shadow-card">
-          <div className="macos-empty">
-            <FileText className="size-12 text-muted-foreground/30 mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] font-medium text-muted-foreground">No contracts found</p>
-            <p className="text-[11px] text-muted-foreground mt-1">Create your first school contract</p>
-          </div>
-        </div>
+        <MacosEmptyState
+          icon={FileText}
+          title="No contracts found"
+          description="Create your first school contract"
+        />
       ) : (
         <div className="macos-card macos-shadow-card overflow-hidden">
           <ScrollArea className="max-h-[500px]">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">School</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Session</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Value</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Period</TableHead>
+                <TableRow className="border-b border-border/50 hover:bg-transparent">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Title</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">School</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Session</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Value</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Period</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {contracts.map((contract) => (
-                  <TableRow key={contract.id} className="macos-table-row">
-                    <TableCell className="font-medium text-[13px]">{contract.title}</TableCell>
+                  <TableRow key={contract.id} className="macos-table-row border-b border-border/30 last:border-0">
+                    <TableCell className="font-medium text-[13px] tracking-tight">{contract.title}</TableCell>
                     <TableCell className="text-[13px]">{contract.school?.name || '—'}</TableCell>
                     <TableCell className="text-[13px]">{contract.academicSession || '—'}</TableCell>
                     <TableCell className="text-[13px] font-medium">${contract.totalValue.toLocaleString()}</TableCell>
                     <TableCell>
-                      <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getStatusBadge(contract.status)}`}>
+                      <MacosBadge variant={getStatusBadge(contract.status)}>
                         {contract.status}
-                      </span>
+                      </MacosBadge>
                     </TableCell>
                     <TableCell className="text-[11px] text-muted-foreground">
                       {contract.startDate
@@ -634,48 +529,18 @@ function PackagesTab({ isViewOnly }: { isViewOnly: boolean }) {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
-              <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Packages</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight">{packages.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
-              <BookOpen className="size-4 text-macos-green" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-green">{packages.filter((p) => p.isActive).length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-gg-golden/10 flex items-center justify-center">
-              <DollarSign className="size-4 text-gg-golden" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Value</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight">${totalPackageValue.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MacosStatGrid className="grid-cols-2 lg:grid-cols-3">
+        <MacosStatCard label="Packages" value={packages.length} icon={Package} iconColor="text-macos-teal" iconBg="bg-macos-teal/10" />
+        <MacosStatCard label="Active" value={packages.filter((p) => p.isActive).length} icon={BookOpen} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+        <MacosStatCard label="Total Value" value={`$${totalPackageValue.toLocaleString()}`} icon={DollarSign} iconColor="text-gg-golden" iconBg="bg-gg-golden/10" />
+      </MacosStatGrid>
 
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{packages.length} academic packages</p>
         {!isViewOnly && (
-          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
-            <Plus className="size-3.5" strokeWidth={2} /> Create Package
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+            Create Package
+          </MacosButton>
         )}
       </div>
 
@@ -690,13 +555,11 @@ function PackagesTab({ isViewOnly }: { isViewOnly: boolean }) {
           ))}
         </div>
       ) : packages.length === 0 ? (
-        <div className="macos-card macos-shadow-card">
-          <div className="macos-empty">
-            <Package className="size-12 text-muted-foreground/30 mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] font-medium text-muted-foreground">No packages found</p>
-            <p className="text-[11px] text-muted-foreground mt-1">Create your first academic package</p>
-          </div>
-        </div>
+        <MacosEmptyState
+          icon={Package}
+          title="No packages found"
+          description="Create your first academic package"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {packages.map((pkg) => (
@@ -709,14 +572,12 @@ function PackagesTab({ isViewOnly }: { isViewOnly: boolean }) {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
-                      <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+                      <Package className="size-4 text-macos-teal" strokeWidth={1.8} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-[13px] tracking-tight">{pkg.name}</h3>
                       {pkg.grade && (
-                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-blue/10 text-macos-blue inline-block mt-0.5">
-                          Grade {pkg.grade}
-                        </span>
+                        <MacosBadge variant="info" className="mt-0.5">Grade {pkg.grade}</MacosBadge>
                       )}
                     </div>
                   </div>
@@ -729,7 +590,7 @@ function PackagesTab({ isViewOnly }: { isViewOnly: boolean }) {
                 </div>
                 {pkg.school && (
                   <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1">
-                    <GraduationCap className="size-3" strokeWidth={1.5} />
+                    <GraduationCap className="size-3" strokeWidth={1.8} />
                     {pkg.school.name}
                   </p>
                 )}
@@ -739,9 +600,9 @@ function PackagesTab({ isViewOnly }: { isViewOnly: boolean }) {
                       <div key={item.id} className="flex items-center justify-between text-[11px]">
                         <span className="flex items-center gap-1.5 text-muted-foreground">
                           {item.bookId ? (
-                            <BookOpen className="size-3 text-macos-teal" strokeWidth={1.5} />
+                            <BookOpen className="size-3 text-macos-teal" strokeWidth={1.8} />
                           ) : (
-                            <PencilRuler className="size-3 text-macos-orange" strokeWidth={1.5} />
+                            <PencilRuler className="size-3 text-macos-orange" strokeWidth={1.8} />
                           )}
                           {item.book?.title || item.stationery?.name || 'Item'}
                         </span>
@@ -758,9 +619,9 @@ function PackagesTab({ isViewOnly }: { isViewOnly: boolean }) {
                   <span className="text-[11px] text-muted-foreground">
                     {pkg.items?.length || 0} items
                   </span>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10 rounded-lg">
-                    <Eye className="size-3 mr-1" strokeWidth={1.5} /> View
-                  </Button>
+                  <MacosButton variant="ghost" className="h-6 text-[10px]">
+                    <Eye className="size-3" strokeWidth={1.8} /> View
+                  </MacosButton>
                 </div>
               </div>
             </div>
@@ -833,84 +694,77 @@ function AddSchoolDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="macos-section-title">Add School</DialogTitle>
-          <DialogDescription className="text-[12px]">Register a new school for supply programs</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-[12px] font-medium text-muted-foreground">Name *</Label>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add School"
+      description="Register a new school for supply programs"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.name.trim()}>
+            {saving ? 'Saving...' : 'Add School'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <MacosFormField label="Name *">
+          <Input
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="Springfield Academy"
+            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+            required
+          />
+        </MacosFormField>
+        <MacosFormField label="Address">
+          <Input
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            placeholder="123 Education Street"
+            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+          />
+        </MacosFormField>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Phone">
             <Input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Springfield Academy"
-              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              required
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              placeholder="+1-555-0100"
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[12px] font-medium text-muted-foreground">Address</Label>
+          </MacosFormField>
+          <MacosFormField label="Email">
             <Input
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              placeholder="123 Education Street"
-              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="school@example.com"
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
             />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Phone</Label>
-              <Input
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+1-555-0100"
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Email</Label>
-              <Input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="school@example.com"
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Contact Person</Label>
-              <Input
-                value={form.contactPerson}
-                onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
-                placeholder="John Smith"
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Academic Session</Label>
-              <Input
-                value={form.academicSession}
-                onChange={(e) => setForm({ ...form, academicSession: e.target.value })}
-                placeholder="2025-2026"
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Saving...' : 'Add School'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Contact Person">
+            <Input
+              value={form.contactPerson}
+              onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
+              placeholder="John Smith"
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+            />
+          </MacosFormField>
+          <MacosFormField label="Academic Session">
+            <Input
+              value={form.academicSession}
+              onChange={(e) => setForm({ ...form, academicSession: e.target.value })}
+              placeholder="2025-2026"
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+            />
+          </MacosFormField>
+        </div>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -978,65 +832,58 @@ function SchoolDetailDialog({
   if (!school) return null
 
   return (
-    <Dialog open={!!school} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="macos-section-title">Edit School</DialogTitle>
-          <DialogDescription className="text-[12px]">Update school information</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-[12px] font-medium text-muted-foreground">Name *</Label>
-            <Input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              required
-              disabled={isViewOnly}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[12px] font-medium text-muted-foreground">Address</Label>
-            <Input
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
-              disabled={isViewOnly}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" disabled={isViewOnly} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Email</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" disabled={isViewOnly} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Contact Person</Label>
-              <Input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" disabled={isViewOnly} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Academic Session</Label>
-              <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" disabled={isViewOnly} />
-            </div>
-          </div>
-          {!isViewOnly && (
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-                {saving ? 'Saving...' : 'Update School'}
-              </Button>
-            </DialogFooter>
-          )}
-        </form>
-      </DialogContent>
-    </Dialog>
+    <MacosDialog
+      open={!!school}
+      onOpenChange={onOpenChange}
+      title="Edit School"
+      description="Update school information"
+      footer={
+        !isViewOnly ? (
+          <>
+            <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+            <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving}>
+              {saving ? 'Saving...' : 'Update School'}
+            </MacosButton>
+          </>
+        ) : undefined
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <MacosFormField label="Name *">
+          <Input
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+            required
+            disabled={isViewOnly}
+          />
+        </MacosFormField>
+        <MacosFormField label="Address">
+          <Input
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+            disabled={isViewOnly}
+          />
+        </MacosFormField>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Phone">
+            <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" disabled={isViewOnly} />
+          </MacosFormField>
+          <MacosFormField label="Email">
+            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" disabled={isViewOnly} />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Contact Person">
+            <Input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" disabled={isViewOnly} />
+          </MacosFormField>
+          <MacosFormField label="Academic Session">
+            <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" disabled={isViewOnly} />
+          </MacosFormField>
+        </div>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -1099,63 +946,57 @@ function CreateContractDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="macos-section-title">Create Contract</DialogTitle>
-          <DialogDescription className="text-[12px]">Create a new school supply contract</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label className="text-[12px] font-medium text-muted-foreground">School *</Label>
-            <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
-              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                <SelectValue placeholder="Select school" />
-              </SelectTrigger>
-              <SelectContent>
-                {schools.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[12px] font-medium text-muted-foreground">Contract Title *</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Annual Supply Agreement" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Academic Session</Label>
-              <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} placeholder="2025-2026" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Total Value ($)</Label>
-              <Input type="number" step="0.01" value={form.totalValue} onChange={(e) => setForm({ ...form, totalValue: e.target.value })} placeholder="50000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Start Date</Label>
-              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">End Date</Label>
-              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[12px] font-medium text-muted-foreground">Notes</Label>
-            <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional contract details..." rows={3} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving || !form.schoolId || !form.title.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Creating...' : 'Create Contract'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create Contract"
+      description="Create a new school supply contract"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.schoolId || !form.title.trim()}>
+            {saving ? 'Creating...' : 'Create Contract'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <MacosFormField label="School *">
+          <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
+            <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+              <SelectValue placeholder="Select school" />
+            </SelectTrigger>
+            <SelectContent>
+              {schools.map((s) => (
+                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </MacosFormField>
+        <MacosFormField label="Contract Title *">
+          <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Annual Supply Agreement" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+        </MacosFormField>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Academic Session">
+            <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} placeholder="2025-2026" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+          <MacosFormField label="Total Value ($)">
+            <Input type="number" step="0.01" value={form.totalValue} onChange={(e) => setForm({ ...form, totalValue: e.target.value })} placeholder="50000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Start Date">
+            <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+          <MacosFormField label="End Date">
+            <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+        </div>
+        <MacosFormField label="Notes">
+          <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional contract details..." rows={3} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+        </MacosFormField>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -1282,60 +1123,64 @@ function CreatePackageDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="macos-section-title">Create Academic Package</DialogTitle>
-          <DialogDescription className="text-[12px]">Build a grade-wise package with books and stationery</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">School</Label>
-              <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
-                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                  <SelectValue placeholder="Select school" />
-                </SelectTrigger>
-                <SelectContent>
-                  {schools.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Package Name *</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Grade 1 Package" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Grade</Label>
-              <Input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="1" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Academic Level</Label>
-              <Input value={form.academicLevel} onChange={(e) => setForm({ ...form, academicLevel: e.target.value })} placeholder="Primary" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Discount (%)</Label>
-              <Input type="number" min="0" max="100" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} placeholder="10" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[12px] font-medium text-muted-foreground">Description</Label>
-            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Package description..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
-          </div>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create Academic Package"
+      description="Build a grade-wise package with books and stationery"
+      className="max-w-2xl"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.name.trim()}>
+            {saving ? 'Creating...' : 'Create Package'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="School">
+            <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                <SelectValue placeholder="Select school" />
+              </SelectTrigger>
+              <SelectContent>
+                {schools.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+          <MacosFormField label="Package Name *">
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Grade 1 Package" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <MacosFormField label="Grade">
+            <Input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="1" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+          <MacosFormField label="Academic Level">
+            <Input value={form.academicLevel} onChange={(e) => setForm({ ...form, academicLevel: e.target.value })} placeholder="Primary" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+          <MacosFormField label="Discount (%)">
+            <Input type="number" min="0" max="100" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} placeholder="10" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+        </div>
+        <MacosFormField label="Description">
+          <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Package description..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+        </MacosFormField>
 
-          <Separator className="bg-border/50" />
+        <Separator className="bg-border/50" />
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Package Items</Label>
-              <Button type="button" variant="ghost" size="sm" onClick={addItem} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
-                <Plus className="size-3" strokeWidth={2} /> Add Item
-              </Button>
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Package Items</Label>
+            <MacosButton variant="ghost" className="text-[11px]" onClick={addItem}>
+              <Plus className="size-3" strokeWidth={2} /> Add Item
+            </MacosButton>
+          </div>
+          <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
             {items.map((item) => (
               <div key={item.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
                 <div className="flex-1 space-y-1">
@@ -1391,21 +1236,14 @@ function CreatePackageDialog({
               </div>
             ))}
           </div>
+        </div>
 
-          <div className="flex items-center justify-between p-3 rounded-xl bg-macos-green/10">
-            <span className="text-[13px] font-medium">Total Package Price</span>
-            <span className="text-[13px] font-bold tracking-tight text-macos-green">${totalPrice.toLocaleString()}</span>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Creating...' : 'Create Package'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <div className="flex items-center justify-between p-3 rounded-xl bg-macos-green/10">
+          <span className="text-[13px] font-medium">Total Package Price</span>
+          <span className="text-[13px] font-bold tracking-tight text-macos-green">${totalPrice.toLocaleString()}</span>
+        </div>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -1421,78 +1259,68 @@ function PackageDetailDialog({
   if (!pkg) return null
 
   return (
-    <Dialog open={!!pkg} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 macos-section-title">
-            <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
-              <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
-            </div>
-            {pkg.name}
-          </DialogTitle>
-          <DialogDescription className="text-[12px]">
-            {pkg.grade && `Grade ${pkg.grade}`}
-            {pkg.academicLevel && ` · ${pkg.academicLevel}`}
-            {pkg.school && ` · ${pkg.school.name}`}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {pkg.description && (
-            <p className="text-[13px] text-muted-foreground">{pkg.description}</p>
-          )}
+    <MacosDialog
+      open={!!pkg}
+      onOpenChange={onOpenChange}
+      title={pkg.name}
+      description={`${pkg.grade ? `Grade ${pkg.grade}` : ''}${pkg.academicLevel ? ` · ${pkg.academicLevel}` : ''}${pkg.school ? ` · ${pkg.school.name}` : ''}`}
+    >
+      <div className="space-y-4">
+        {pkg.description && (
+          <p className="text-[13px] text-muted-foreground">{pkg.description}</p>
+        )}
 
-          <div className="space-y-2">
-            <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Package Items</h4>
-            <div className="space-y-2">
-              {pkg.items && pkg.items.length > 0 ? (
-                pkg.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/50"
-                  >
-                    <div className="flex items-center gap-3">
-                      {item.bookId ? (
-                        <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
-                          <BookOpen className="size-4 text-macos-teal" strokeWidth={1.5} />
-                        </div>
-                      ) : (
-                        <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
-                          <PencilRuler className="size-4 text-macos-orange" strokeWidth={1.5} />
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-[13px] font-medium">
-                          {item.book?.title || item.stationery?.name || 'Unknown Item'}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {item.bookId ? 'Book' : 'Stationery'} · Qty: {item.quantity} × ${item.unitPrice}
-                        </p>
+        <div className="space-y-2">
+          <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Package Items</h4>
+          <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+            {pkg.items && pkg.items.length > 0 ? (
+              pkg.items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-secondary/50"
+                >
+                  <div className="flex items-center gap-3">
+                    {item.bookId ? (
+                      <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+                        <BookOpen className="size-4 text-macos-teal" strokeWidth={1.8} />
                       </div>
+                    ) : (
+                      <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+                        <PencilRuler className="size-4 text-macos-orange" strokeWidth={1.8} />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[13px] font-medium">
+                        {item.book?.title || item.stationery?.name || 'Unknown Item'}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {item.bookId ? 'Book' : 'Stationery'} · Qty: {item.quantity} × ${item.unitPrice}
+                      </p>
                     </div>
-                    <p className="font-semibold text-[13px]">
-                      ${(item.quantity * item.unitPrice).toLocaleString()}
-                    </p>
                   </div>
-                ))
-              ) : (
-                <p className="text-[13px] text-muted-foreground text-center py-4">No items in this package</p>
-              )}
-            </div>
-          </div>
-
-          <Separator className="bg-border/50" />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] text-muted-foreground">Total Price</p>
-              {pkg.discount > 0 && (
-                <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% discount applied</p>
-              )}
-            </div>
-            <p className="text-[24px] font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
+                  <p className="font-semibold text-[13px]">
+                    ${(item.quantity * item.unitPrice).toLocaleString()}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <p className="text-[13px] text-muted-foreground text-center py-4">No items in this package</p>
+            )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <Separator className="bg-border/50" />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground">Total Price</p>
+            {pkg.discount > 0 && (
+              <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% discount applied</p>
+            )}
+          </div>
+          <p className="text-[24px] font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
+        </div>
+      </div>
+    </MacosDialog>
   )
 }

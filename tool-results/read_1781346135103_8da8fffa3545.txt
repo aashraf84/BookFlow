@@ -1,0 +1,575 @@
+   527→                            {tier.minPoints.toLocaleString()} – {tier.maxPoints ? tier.maxPoints.toLocaleString() : '∞'}
+   528→                          </span>
+   529→                        </div>
+   530→                        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+   531→                          <div
+   532→                            className={`h-full rounded-full ${colors.barColor} transition-all duration-500`}
+   533→                            style={{ width: `${progress}%` }}
+   534→                          />
+   535→                        </div>
+   536→                        {tier.benefits && (
+   537→                          <p className="text-[11px] text-muted-foreground leading-relaxed">{tier.benefits}</p>
+   538→                        )}
+   539→                      </div>
+   540→                    </div>
+   541→                  </div>
+   542→                )
+   543→              })}
+   544→            </div>
+   545→          </div>
+   546→
+   547→          <Separator className="bg-border/50" />
+   548→
+   549→          {/* Points Rules */}
+   550→          <div>
+   551→            <div className="macos-section-header">
+   552→              <div>
+   553→                <h3 className="macos-section-title">Points Rules</h3>
+   554→                <p className="macos-section-desc">How customers earn loyalty points</p>
+   555→              </div>
+   556→            </div>
+   557→            <div className="macos-card macos-shadow-card overflow-hidden">
+   558→              <Table>
+   559→                <TableHeader>
+   560→                  <TableRow className="hover:bg-transparent border-border/50">
+   561→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Action</TableHead>
+   562→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Points Earned</TableHead>
+   563→                  </TableRow>
+   564→                </TableHeader>
+   565→                <TableBody>
+   566→                  {pointsRules.map((rule) => {
+   567→                    const Icon = rule.icon
+   568→                    return (
+   569→                      <TableRow key={rule.action} className="macos-table-row">
+   570→                        <TableCell className="flex items-center gap-2.5 text-[13px]">
+   571→                          <div className={`size-7 rounded-lg ${rule.color} flex items-center justify-center`}>
+   572→                            <Icon className="size-3" strokeWidth={1.5} />
+   573→                          </div>
+   574→                          <span style={{ fontWeight: 500 }}>{rule.action}</span>
+   575→                        </TableCell>
+   576→                        <TableCell className="font-medium text-gg-bridge text-[13px]">{rule.points}</TableCell>
+   577→                      </TableRow>
+   578→                    )
+   579→                  })}
+   580→                </TableBody>
+   581→              </Table>
+   582→            </div>
+   583→          </div>
+   584→        </>
+   585→      )}
+   586→    </div>
+   587→  )
+   588→}
+   589→
+   590→// ==================== CAMPAIGNS TAB ====================
+   591→
+   592→function CampaignsTab() {
+   593→  const { authUser } = useAppStore()
+   594→  const isViewOnly = authUser?.isViewOnly ?? false
+   595→  const [campaigns, setCampaigns] = React.useState<Campaign[]>([])
+   596→  const [loading, setLoading] = React.useState(true)
+   597→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   598→
+   599→  const fetchCampaigns = React.useCallback(async () => {
+   600→    setLoading(true)
+   601→    try {
+   602→      const res = await fetch('/api/crm/campaigns')
+   603→      if (res.ok) {
+   604→        const json = await res.json()
+   605→        if (json.data) setCampaigns(json.data)
+   606→      }
+   607→    } catch (err) {
+   608→      console.error('Failed to fetch campaigns:', err)
+   609→    } finally {
+   610→      setLoading(false)
+   611→    }
+   612→  }, [])
+   613→
+   614→  React.useEffect(() => {
+   615→    fetchCampaigns()
+   616→  }, [fetchCampaigns])
+   617→
+   618→  const getStatusBadge = (status: string) => {
+   619→    switch (status) {
+   620→      case 'draft':
+   621→        return 'bg-secondary text-secondary-foreground'
+   622→      case 'scheduled':
+   623→        return 'bg-macos-orange/10 text-macos-orange'
+   624→      case 'sent':
+   625→        return 'bg-macos-teal/10 text-macos-teal'
+   626→      case 'completed':
+   627→        return 'bg-macos-green/10 text-macos-green'
+   628→      default:
+   629→        return 'bg-secondary text-secondary-foreground'
+   630→    }
+   631→  }
+   632→
+   633→  const getTypeBadge = (type: string) => {
+   634→    switch (type) {
+   635→      case 'sms':
+   636→        return 'bg-macos-green/10 text-macos-green'
+   637→      case 'whatsapp':
+   638→        return 'bg-macos-teal/10 text-macos-teal'
+   639→      case 'email':
+   640→        return 'bg-macos-blue/10 text-macos-blue'
+   641→      case 'social':
+   642→        return 'bg-gg-bridge/10 text-gg-bridge'
+   643→      default:
+   644→        return 'bg-secondary text-secondary-foreground'
+   645→    }
+   646→  }
+   647→
+   648→  return (
+   649→    <div className="space-y-5">
+   650→      <div className="flex items-center justify-between">
+   651→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{campaigns.length} campaigns</p>
+   652→        {!isViewOnly && (
+   653→          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   654→            <Plus className="size-3.5" strokeWidth={2} /> Create Campaign
+   655→          </Button>
+   656→        )}
+   657→      </div>
+   658→
+   659→      {loading ? (
+   660→        <div className="macos-card macos-shadow-card p-6">
+   661→          <div className="space-y-3">
+   662→            {[1, 2, 3].map((i) => (
+   663→              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+   664→            ))}
+   665→          </div>
+   666→        </div>
+   667→      ) : campaigns.length === 0 ? (
+   668→        <div className="macos-card macos-shadow-card macos-empty">
+   669→          <Megaphone className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
+   670→          <p className="text-[13px] font-medium text-muted-foreground">No campaigns found</p>
+   671→          <p className="text-[11px] text-muted-foreground mt-1">Create your first marketing campaign</p>
+   672→        </div>
+   673→      ) : (
+   674→        <div className="macos-card macos-shadow-card overflow-hidden">
+   675→          <ScrollArea className="max-h-[500px]">
+   676→            <Table>
+   677→              <TableHeader>
+   678→                <TableRow className="hover:bg-transparent border-border/50">
+   679→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+   680→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
+   681→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+   682→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Sent</TableHead>
+   683→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Responses</TableHead>
+   684→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Schedule</TableHead>
+   685→                </TableRow>
+   686→              </TableHeader>
+   687→              <TableBody>
+   688→                {campaigns.map((campaign) => (
+   689→                  <TableRow key={campaign.id} className="macos-table-row">
+   690→                    <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{campaign.name}</TableCell>
+   691→                    <TableCell>
+   692→                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getTypeBadge(campaign.type)}`}>
+   693→                        {campaign.type}
+   694→                      </Badge>
+   695→                    </TableCell>
+   696→                    <TableCell>
+   697→                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getStatusBadge(campaign.status)}`}>
+   698→                        {campaign.status}
+   699→                      </Badge>
+   700→                    </TableCell>
+   701→                    <TableCell className="text-right text-[13px]">
+   702→                      <span className="flex items-center justify-end gap-1 text-muted-foreground">
+   703→                        <Send className="size-3" strokeWidth={1.5} /> {campaign.sentCount}
+   704→                      </span>
+   705→                    </TableCell>
+   706→                    <TableCell className="text-right">
+   707→                      <span className="text-macos-green font-medium text-[13px] flex items-center justify-end gap-1">
+   708→                        <TrendingUp className="size-3" strokeWidth={1.5} /> {campaign.responseCount}
+   709→                      </span>
+   710→                    </TableCell>
+   711→                    <TableCell className="text-[11px] text-muted-foreground">
+   712→                      {campaign.scheduledAt ? (
+   713→                        <span className="flex items-center gap-1">
+   714→                          <Calendar className="size-3" strokeWidth={1.5} />
+   715→                          {new Date(campaign.scheduledAt).toLocaleDateString()}
+   716→                        </span>
+   717→                      ) : '—'}
+   718→                    </TableCell>
+   719→                  </TableRow>
+   720→                ))}
+   721→              </TableBody>
+   722→            </Table>
+   723→          </ScrollArea>
+   724→        </div>
+   725→      )}
+   726→
+   727→      <CreateCampaignDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSuccess={fetchCampaigns} />
+   728→    </div>
+   729→  )
+   730→}
+   731→
+   732→// ==================== ADD CUSTOMER DIALOG ====================
+   733→
+   734→function AddCustomerDialog({
+   735→  open,
+   736→  onOpenChange,
+   737→  onSuccess,
+   738→}: {
+   739→  open: boolean
+   740→  onOpenChange: (open: boolean) => void
+   741→  onSuccess: () => void
+   742→}) {
+   743→  const [saving, setSaving] = React.useState(false)
+   744→  const [form, setForm] = React.useState({
+   745→    name: '',
+   746→    email: '',
+   747→    phone: '',
+   748→    address: '',
+   749→    type: 'retail',
+   750→    creditLimit: '',
+   751→  })
+   752→
+   753→  const handleSubmit = async (e: React.FormEvent) => {
+   754→    e.preventDefault()
+   755→    if (!form.name.trim()) return
+   756→    setSaving(true)
+   757→    try {
+   758→      const res = await fetch('/api/customers', {
+   759→        method: 'POST',
+   760→        headers: { 'Content-Type': 'application/json' },
+   761→        body: JSON.stringify({
+   762→          ...form,
+   763→          creditLimit: parseFloat(form.creditLimit) || 0,
+   764→        }),
+   765→      })
+   766→      if (res.ok) {
+   767→        setForm({ name: '', email: '', phone: '', address: '', type: 'retail', creditLimit: '' })
+   768→        onOpenChange(false)
+   769→        onSuccess()
+   770→      } else {
+   771→        const json = await res.json()
+   772→        alert(json.error || 'Failed to create customer')
+   773→      }
+   774→    } catch (err) {
+   775→      console.error('Failed to create customer:', err)
+   776→      alert('Failed to create customer')
+   777→    } finally {
+   778→      setSaving(false)
+   779→    }
+   780→  }
+   781→
+   782→  return (
+   783→    <Dialog open={open} onOpenChange={onOpenChange}>
+   784→      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
+   785→        <DialogHeader>
+   786→          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Add Customer</DialogTitle>
+   787→          <DialogDescription className="text-[11px]">Register a new customer</DialogDescription>
+   788→        </DialogHeader>
+   789→        <form onSubmit={handleSubmit} className="space-y-4">
+   790→          <div className="space-y-2">
+   791→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name *</Label>
+   792→            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+   793→          </div>
+   794→          <div className="grid grid-cols-2 gap-3">
+   795→            <div className="space-y-2">
+   796→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email</Label>
+   797→              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   798→            </div>
+   799→            <div className="space-y-2">
+   800→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</Label>
+   801→              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1-555-0100" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   802→            </div>
+   803→          </div>
+   804→          <div className="space-y-2">
+   805→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Address</Label>
+   806→            <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main Street" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   807→          </div>
+   808→          <div className="grid grid-cols-2 gap-3">
+   809→            <div className="space-y-2">
+   810→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Customer Type</Label>
+   811→              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+   812→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   813→                  <SelectValue />
+   814→                </SelectTrigger>
+   815→                <SelectContent>
+   816→                  <SelectItem value="retail">Retail</SelectItem>
+   817→                  <SelectItem value="wholesale">Wholesale</SelectItem>
+   818→                  <SelectItem value="school">School</SelectItem>
+   819→                  <SelectItem value="dealer">Dealer</SelectItem>
+   820→                  <SelectItem value="distributor">Distributor</SelectItem>
+   821→                </SelectContent>
+   822→              </Select>
+   823→            </div>
+   824→            <div className="space-y-2">
+   825→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Credit Limit ($)</Label>
+   826→              <Input type="number" step="0.01" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} placeholder="5000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   827→            </div>
+   828→          </div>
+   829→          <DialogFooter>
+   830→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+   831→            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   832→              {saving ? 'Saving...' : 'Add Customer'}
+   833→            </Button>
+   834→          </DialogFooter>
+   835→        </form>
+   836→      </DialogContent>
+   837→    </Dialog>
+   838→  )
+   839→}
+   840→
+   841→// ==================== CUSTOMER DETAIL DIALOG ====================
+   842→
+   843→function CustomerDetailDialog({
+   844→  customer,
+   845→  onOpenChange,
+   846→}: {
+   847→  customer: Customer | null
+   848→  onOpenChange: (open: boolean) => void
+   849→}) {
+   850→  if (!customer) return null
+   851→
+   852→  const getTypeBadge = (type: string) => {
+   853→    const styles: Record<string, string> = {
+   854→      retail: 'bg-macos-green/10 text-macos-green',
+   855→      wholesale: 'bg-macos-teal/10 text-macos-teal',
+   856→      school: 'bg-macos-orange/10 text-macos-orange',
+   857→      dealer: 'bg-macos-purple/10 text-macos-purple',
+   858→      distributor: 'bg-macos-red/10 text-macos-red',
+   859→    }
+   860→    return styles[type] || 'bg-secondary text-secondary-foreground'
+   861→  }
+   862→
+   863→  const getLoyaltyTier = (points: number) => {
+   864→    if (points >= 5000) return { name: 'Platinum', color: 'bg-gg-bridge/10 text-gg-bridge', icon: Crown }
+   865→    if (points >= 2000) return { name: 'Gold', color: 'bg-gg-golden/10 text-gg-golden', icon: Award }
+   866→    if (points >= 500) return { name: 'Silver', color: 'text-muted-foreground bg-secondary', icon: Star }
+   867→    return { name: 'Bronze', color: 'bg-macos-orange/10 text-macos-orange', icon: Gift }
+   868→  }
+   869→
+   870→  const tier = getLoyaltyTier(customer.loyaltyPoints)
+   871→  const TierIcon = tier.icon
+   872→
+   873→  return (
+   874→    <Dialog open={!!customer} onOpenChange={onOpenChange}>
+   875→      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
+   876→        <DialogHeader>
+   877→          <DialogTitle className="flex items-center gap-3 text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>
+   878→            <div className="size-9 rounded-full bg-gg-bridge/10 flex items-center justify-center macos-shadow-card">
+   879→              <span className="text-sm font-bold text-gg-bridge">{customer.name.charAt(0).toUpperCase()}</span>
+   880→            </div>
+   881→            <div>
+   882→              <span>{customer.name}</span>
+   883→              <div className="flex items-center gap-1.5 mt-0.5">
+   884→                <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getTypeBadge(customer.type)}`}>{customer.type}</Badge>
+   885→                <div className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${tier.color}`}>
+   886→                  <TierIcon className="size-3" strokeWidth={1.5} />
+   887→                  {tier.name}
+   888→                </div>
+   889→              </div>
+   890→            </div>
+   891→          </DialogTitle>
+   892→          <DialogDescription className="text-[11px]">Customer details and purchase history</DialogDescription>
+   893→        </DialogHeader>
+   894→        <div className="space-y-4">
+   895→          <div className="grid grid-cols-2 gap-4">
+   896→            <div className="space-y-3">
+   897→              {customer.email && (
+   898→                <div className="flex items-center gap-2 text-[13px]">
+   899→                  <div className="size-6 rounded-lg bg-macos-blue/10 flex items-center justify-center">
+   900→                    <Mail className="size-3 text-macos-blue" strokeWidth={1.5} />
+   901→                  </div>
+   902→                  <span style={{ fontWeight: 500 }}>{customer.email}</span>
+   903→                </div>
+   904→              )}
+   905→              {customer.phone && (
+   906→                <div className="flex items-center gap-2 text-[13px]">
+   907→                  <div className="size-6 rounded-lg bg-macos-green/10 flex items-center justify-center">
+   908→                    <Phone className="size-3 text-macos-green" strokeWidth={1.5} />
+   909→                  </div>
+   910→                  <span style={{ fontWeight: 500 }}>{customer.phone}</span>
+   911→                </div>
+   912→              )}
+   913→              {customer.address && (
+   914→                <div className="flex items-center gap-2 text-[13px]">
+   915→                  <div className="size-6 rounded-lg bg-macos-orange/10 flex items-center justify-center">
+   916→                    <MapPin className="size-3 text-macos-orange" strokeWidth={1.5} />
+   917→                  </div>
+   918→                  <span style={{ fontWeight: 500 }}>{customer.address}</span>
+   919→                </div>
+   920→              )}
+   921→            </div>
+   922→            <div className="space-y-3">
+   923→              <div className="macos-stat macos-shadow-card" style={{ padding: '12px' }}>
+   924→                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Spent</p>
+   925→                <p className="text-[24px] font-bold text-macos-green" style={{ letterSpacing: '-0.03em' }}>${customer.totalSpent.toLocaleString()}</p>
+   926→              </div>
+   927→              <div className="grid grid-cols-2 gap-2">
+   928→                <div className="macos-stat macos-shadow-card" style={{ padding: '8px 12px' }}>
+   929→                  <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Points</p>
+   930→                  <p className="font-bold text-gg-bridge text-[13px]">{customer.loyaltyPoints}</p>
+   931→                </div>
+   932→                <div className="macos-stat macos-shadow-card" style={{ padding: '8px 12px' }}>
+   933→                  <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Outstanding</p>
+   934→                  <p className="font-bold text-macos-orange text-[13px]">${customer.outstanding.toLocaleString()}</p>
+   935→                </div>
+   936→              </div>
+   937→            </div>
+   938→          </div>
+   939→
+   940→          <Separator className="bg-border/50" />
+   941→
+   942→          <div>
+   943→            <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-3">Purchase History</h4>
+   944→            {(customer._count?.sales || 0) > 0 || (customer._count?.wholesaleOrders || 0) > 0 ? (
+   945→              <div className="space-y-2">
+   946→                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+   947→                  <span className="flex items-center gap-2">
+   948→                    <div className="size-6 rounded-lg bg-macos-green/10 flex items-center justify-center">
+   949→                      <ShoppingBag className="size-3 text-macos-green" strokeWidth={1.5} />
+   950→                    </div>
+   951→                    Retail Sales
+   952→                  </span>
+   953→                  <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0">{customer._count?.sales || 0}</Badge>
+   954→                </div>
+   955→                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+   956→                  <span className="flex items-center gap-2">
+   957→                    <div className="size-6 rounded-lg bg-macos-teal/10 flex items-center justify-center">
+   958→                      <DollarSign className="size-3 text-macos-teal" strokeWidth={1.5} />
+   959→                    </div>
+   960→                    Wholesale Orders
+   961→                  </span>
+   962→                  <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0">{customer._count?.wholesaleOrders || 0}</Badge>
+   963→                </div>
+   964→              </div>
+   965→            ) : (
+   966→              <p className="text-[13px] text-muted-foreground text-center py-4">No purchase history yet</p>
+   967→            )}
+   968→          </div>
+   969→
+   970→          {customer.school && (
+   971→            <>
+   972→              <Separator className="bg-border/50" />
+   973→              <div>
+   974→                <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-2">Linked School</h4>
+   975→                <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50 text-[13px]">
+   976→                  <div className="size-6 rounded-lg bg-macos-orange/10 flex items-center justify-center">
+   977→                    <Award className="size-3 text-macos-orange" strokeWidth={1.5} />
+   978→                  </div>
+   979→                  <span style={{ fontWeight: 500 }}>{customer.school.name}</span>
+   980→                </div>
+   981→              </div>
+   982→            </>
+   983→          )}
+   984→        </div>
+   985→      </DialogContent>
+   986→    </Dialog>
+   987→  )
+   988→}
+   989→
+   990→// ==================== CREATE CAMPAIGN DIALOG ====================
+   991→
+   992→function CreateCampaignDialog({
+   993→  open,
+   994→  onOpenChange,
+   995→  onSuccess,
+   996→}: {
+   997→  open: boolean
+   998→  onOpenChange: (open: boolean) => void
+   999→  onSuccess: () => void
+  1000→}) {
+  1001→  const [saving, setSaving] = React.useState(false)
+  1002→  const [form, setForm] = React.useState({
+  1003→    name: '',
+  1004→    type: 'email',
+  1005→    target: 'all',
+  1006→    message: '',
+  1007→    scheduledAt: '',
+  1008→  })
+  1009→
+  1010→  const handleSubmit = async (e: React.FormEvent) => {
+  1011→    e.preventDefault()
+  1012→    if (!form.name.trim() || !form.message.trim()) return
+  1013→    setSaving(true)
+  1014→    try {
+  1015→      const res = await fetch('/api/crm/campaigns', {
+  1016→        method: 'POST',
+  1017→        headers: { 'Content-Type': 'application/json' },
+  1018→        body: JSON.stringify({
+  1019→          ...form,
+  1020→          scheduledAt: form.scheduledAt || null,
+  1021→        }),
+  1022→      })
+  1023→      if (res.ok) {
+  1024→        setForm({ name: '', type: 'email', target: 'all', message: '', scheduledAt: '' })
+  1025→        onOpenChange(false)
+  1026→        onSuccess()
+  1027→      } else {
+  1028→        const json = await res.json()
+  1029→        alert(json.error || 'Failed to create campaign')
+  1030→      }
+  1031→    } catch (err) {
+  1032→      console.error('Failed to create campaign:', err)
+  1033→      alert('Failed to create campaign')
+  1034→    } finally {
+  1035→      setSaving(false)
+  1036→    }
+  1037→  }
+  1038→
+  1039→  return (
+  1040→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1041→      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
+  1042→        <DialogHeader>
+  1043→          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Campaign</DialogTitle>
+  1044→          <DialogDescription className="text-[11px]">Launch a new marketing campaign</DialogDescription>
+  1045→        </DialogHeader>
+  1046→        <form onSubmit={handleSubmit} className="space-y-4">
+  1047→          <div className="space-y-2">
+  1048→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Campaign Name *</Label>
+  1049→            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Summer Reading Sale" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1050→          </div>
+  1051→          <div className="grid grid-cols-2 gap-3">
+  1052→            <div className="space-y-2">
+  1053→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Campaign Type</Label>
+  1054→              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+  1055→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1056→                  <SelectValue />
+  1057→                </SelectTrigger>
+  1058→                <SelectContent>
+  1059→                  <SelectItem value="email">Email</SelectItem>
+  1060→                  <SelectItem value="sms">SMS</SelectItem>
+  1061→                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+  1062→                  <SelectItem value="social">Social Media</SelectItem>
+  1063→                </SelectContent>
+  1064→              </Select>
+  1065→            </div>
+  1066→            <div className="space-y-2">
+  1067→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Target Audience</Label>
+  1068→              <Select value={form.target} onValueChange={(v) => setForm({ ...form, target: v })}>
+  1069→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1070→                  <SelectValue />
+  1071→                </SelectTrigger>
+  1072→                <SelectContent>
+  1073→                  <SelectItem value="all">All Customers</SelectItem>
+  1074→                  <SelectItem value="retail">Retail</SelectItem>
+  1075→                  <SelectItem value="wholesale">Wholesale</SelectItem>
+  1076→                  <SelectItem value="school">Schools</SelectItem>
+  1077→                  <SelectItem value="dealer">Dealers</SelectItem>
+  1078→                </SelectContent>
+  1079→              </Select>
+  1080→            </div>
+  1081→          </div>
+  1082→          <div className="space-y-2">
+  1083→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Message *</Label>
+  1084→            <Textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Write your campaign message..." rows={4} className="rounded-lg bg-secondary/80 border-0 text-[13px]" required />
+  1085→          </div>
+  1086→          <div className="space-y-2">
+  1087→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Schedule (optional)</Label>
+  1088→            <Input type="datetime-local" value={form.scheduledAt} onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1089→          </div>
+  1090→          <DialogFooter>
+  1091→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1092→            <Button type="submit" disabled={saving || !form.name.trim() || !form.message.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1093→              {saving ? 'Creating...' : 'Create Campaign'}
+  1094→            </Button>
+  1095→          </DialogFooter>
+  1096→        </form>
+  1097→      </DialogContent>
+  1098→    </Dialog>
+  1099→  )
+  1100→}
+  1101→

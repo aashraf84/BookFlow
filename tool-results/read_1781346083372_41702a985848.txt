@@ -1,0 +1,800 @@
+     1→'use client'
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react'
+     4→import {
+     5→  Search,
+     6→  Plus,
+     7→  Pencil,
+     8→  Trash2,
+     9→  ArrowLeft,
+    10→  BookOpen,
+    11→  RefreshCw,
+    12→  Globe,
+    13→  Mail,
+    14→  Phone,
+    15→  PenTool,
+    16→  Users,
+    17→  X,
+    18→  ExternalLink,
+    19→  MapPin,
+    20→} from 'lucide-react'
+    21→import { Button } from '@/components/ui/button'
+    22→import { Input } from '@/components/ui/input'
+    23→import { Label } from '@/components/ui/label'
+    24→import { Textarea } from '@/components/ui/textarea'
+    25→import { Badge } from '@/components/ui/badge'
+    26→import { Skeleton } from '@/components/ui/skeleton'
+    27→import {
+    28→  Table,
+    29→  TableBody,
+    30→  TableCell,
+    31→  TableHead,
+    32→  TableHeader,
+    33→  TableRow,
+    34→} from '@/components/ui/table'
+    35→import {
+    36→  Dialog,
+    37→  DialogContent,
+    38→  DialogHeader,
+    39→  DialogTitle,
+    40→} from '@/components/ui/dialog'
+    41→import { useAppStore } from '@/store/app-store'
+    42→
+    43→// ── Types ────────────────────────────────────────────────────────
+    44→interface AuthorData {
+    45→  id: string
+    46→  name: string
+    47→  bio: string | null
+    48→  nationality: string | null
+    49→  website: string | null
+    50→  email: string | null
+    51→  phone: string | null
+    52→  createdAt: string
+    53→  _count: { books: number }
+    54→}
+    55→
+    56→interface BookData {
+    57→  id: string
+    58→  title: string
+    59→  isbn: string | null
+    60→  price: number
+    61→  category: { id: string; name: string; type: string | null } | null
+    62→  publisher: { id: string; name: string } | null
+    63→}
+    64→
+    65→interface AuthorFormData {
+    66→  name: string
+    67→  bio: string
+    68→  nationality: string
+    69→  website: string
+    70→  email: string
+    71→  phone: string
+    72→}
+    73→
+    74→const emptyForm: AuthorFormData = {
+    75→  name: '',
+    76→  bio: '',
+    77→  nationality: '',
+    78→  website: '',
+    79→  email: '',
+    80→  phone: '',
+    81→}
+    82→
+    83→// ── Avatar color palette (macOS Retina + Golden Gate) ──────────
+    84→const avatarColors = [
+    85→  { bg: 'bg-macos-blue/10', text: 'text-macos-blue', ring: 'ring-macos-blue/20' },
+    86→  { bg: 'bg-macos-green/10', text: 'text-macos-green', ring: 'ring-macos-green/20' },
+    87→  { bg: 'bg-macos-purple/10', text: 'text-macos-purple', ring: 'ring-macos-purple/20' },
+    88→  { bg: 'bg-macos-orange/10', text: 'text-macos-orange', ring: 'ring-macos-orange/20' },
+    89→  { bg: 'bg-macos-pink/10', text: 'text-macos-pink', ring: 'ring-macos-pink/20' },
+    90→  { bg: 'bg-macos-teal/10', text: 'text-macos-teal', ring: 'ring-macos-teal/20' },
+    91→  { bg: 'bg-gg-bay/10', text: 'text-gg-bay', ring: 'ring-gg-bay/20' },
+    92→  { bg: 'bg-gg-sunset/10', text: 'text-gg-sunset', ring: 'ring-gg-sunset/20' },
+    93→  { bg: 'bg-macos-red/10', text: 'text-macos-red', ring: 'ring-macos-red/20' },
+    94→  { bg: 'bg-gg-golden/10', text: 'text-gg-golden', ring: 'ring-gg-golden/20' },
+    95→]
+    96→
+    97→const getAvatarColor = (name: string) => {
+    98→  let hash = 0
+    99→  for (let i = 0; i < name.length; i++) {
+   100→    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+   101→  }
+   102→  return avatarColors[Math.abs(hash) % avatarColors.length]
+   103→}
+   104→
+   105→// ── Nationality flag emoji ────────────────────────────────────
+   106→const nationalityFlags: Record<string, string> = {
+   107→  'American': '🇺🇸', 'British': '🇬🇧', 'French': '🇫🇷', 'German': '🇩🇪',
+   108→  'Japanese': '🇯🇵', 'Chinese': '🇨🇳', 'Indian': '🇮🇳', 'Spanish': '🇪🇸',
+   109→  'Italian': '🇮🇹', 'Russian': '🇷🇺', 'Brazilian': '🇧🇷', 'Canadian': '🇨🇦',
+   110→  'Australian': '🇦🇺', 'Mexican': '🇲🇽', 'Korean': '🇰🇷', 'Arab': '🌍',
+   111→  'Egyptian': '🇪🇬', 'Turkish': '🇹🇷', 'Iranian': '🇮🇷', 'Pakistani': '🇵🇰',
+   112→  'Nigerian': '🇳🇬', 'South African': '🇿🇦', 'Swedish': '🇸🇪', 'Norwegian': '🇳🇴',
+   113→  'Danish': '🇩🇰', 'Dutch': '🇳🇱', 'Portuguese': '🇵🇹', 'Greek': '🇬🇷',
+   114→  'Polish': '🇵🇱', 'Czech': '🇨🇿', 'Argentine': '🇦🇷', 'Colombian': '🇨🇴',
+   115→  'Thai': '🇹🇭', 'Vietnamese': '🇻🇳', 'Indonesian': '🇮🇩', 'Filipino': '🇵🇭',
+   116→  'Malaysian': '🇲🇾', 'Singaporean': '🇸🇬', 'Lebanese': '🇱🇧', 'Moroccan': '🇲🇦',
+   117→}
+   118→
+   119→const getFlag = (nationality: string | null) => {
+   120→  if (!nationality) return ''
+   121→  return nationalityFlags[nationality] || '🌍'
+   122→}
+   123→
+   124→// ── Category badge color for book detail table ────────────────
+   125→const categoryColorMap: Record<string, { bg: string; text: string }> = {
+   126→  'Fiction': { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
+   127→  'Non-Fiction': { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
+   128→  'Science': { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
+   129→  'Technology': { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
+   130→  'History': { bg: 'bg-gg-bridge/10', text: 'text-gg-bridge' },
+   131→  'Art': { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
+   132→  'Business': { bg: 'bg-macos-green/10', text: 'text-macos-green' },
+   133→  'Education': { bg: 'bg-gg-bay/10', text: 'text-gg-bay' },
+   134→  'Literature': { bg: 'bg-gg-golden/10', text: 'text-gg-golden' },
+   135→  'Philosophy': { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
+   136→}
+   137→
+   138→const getCategoryColor = (name: string) => {
+   139→  return categoryColorMap[name] || { bg: 'bg-macos-purple/10', text: 'text-macos-purple' }
+   140→}
+   141→
+   142→// ── Component ────────────────────────────────────────────────────
+   143→export function AuthorsModule() {
+   144→  const { authUser } = useAppStore()
+   145→  const isViewOnly = authUser?.isViewOnly ?? false
+   146→
+   147→  const [authors, setAuthors] = useState<AuthorData[]>([])
+   148→  const [total, setTotal] = useState(0)
+   149→  const [page, setPage] = useState(1)
+   150→  const [loading, setLoading] = useState(true)
+   151→  const [search, setSearch] = useState('')
+   152→  const [dialogOpen, setDialogOpen] = useState(false)
+   153→  const [editing, setEditing] = useState<AuthorData | null>(null)
+   154→  const [form, setForm] = useState<AuthorFormData>(emptyForm)
+   155→  const [saving, setSaving] = useState(false)
+   156→  const [deleting, setDeleting] = useState<string | null>(null)
+   157→
+   158→  // Detail view state
+   159→  const [selectedAuthor, setSelectedAuthor] = useState<AuthorData | null>(null)
+   160→  const [authorBooks, setAuthorBooks] = useState<BookData[]>([])
+   161→  const [loadingBooks, setLoadingBooks] = useState(false)
+   162→
+   163→  const limit = 12
+   164→
+   165→  // ── Fetch authors ──────────────────────────────────────────
+   166→  const fetchAuthors = useCallback(async () => {
+   167→    setLoading(true)
+   168→    try {
+   169→      const params = new URLSearchParams({
+   170→        page: String(page),
+   171→        limit: String(limit),
+   172→      })
+   173→      if (search) params.set('search', search)
+   174→
+   175→      const res = await fetch(`/api/authors?${params}`)
+   176→      if (!res.ok) throw new Error('Failed to fetch authors')
+   177→      const json = await res.json()
+   178→      setAuthors(json.data || [])
+   179→      setTotal(json.pagination?.total || 0)
+   180→    } catch {
+   181→      setAuthors([])
+   182→    } finally {
+   183→      setLoading(false)
+   184→    }
+   185→  }, [page, search])
+   186→
+   187→  useEffect(() => {
+   188→    fetchAuthors()
+   189→  }, [fetchAuthors])
+   190→
+   191→  useEffect(() => {
+   192→    setPage(1)
+   193→  }, [search])
+   194→
+   195→  // ── Fetch author books ─────────────────────────────────────
+   196→  const fetchAuthorBooks = async (authorId: string) => {
+   197→    setLoadingBooks(true)
+   198→    try {
+   199→      const res = await fetch(`/api/books?authorId=${authorId}&limit=50`)
+   200→      if (!res.ok) throw new Error('Failed to fetch books')
+   201→      const json = await res.json()
+   202→      setAuthorBooks(json.data || [])
+   203→    } catch {
+   204→      setAuthorBooks([])
+   205→    } finally {
+   206→      setLoadingBooks(false)
+   207→    }
+   208→  }
+   209→
+   210→  // ── Open detail view ───────────────────────────────────────
+   211→  const openDetail = (author: AuthorData) => {
+   212→    setSelectedAuthor(author)
+   213→    fetchAuthorBooks(author.id)
+   214→  }
+   215→
+   216→  // ── Save author ────────────────────────────────────────────
+   217→  const handleSave = async () => {
+   218→    if (!form.name.trim()) return
+   219→    setSaving(true)
+   220→    try {
+   221→      const payload = {
+   222→        name: form.name.trim(),
+   223→        bio: form.bio || null,
+   224→        nationality: form.nationality || null,
+   225→        website: form.website || null,
+   226→        email: form.email || null,
+   227→        phone: form.phone || null,
+   228→      }
+   229→
+   230→      let res: Response
+   231→      if (editing) {
+   232→        res = await fetch('/api/authors', {
+   233→          method: 'PUT',
+   234→          headers: { 'Content-Type': 'application/json' },
+   235→          body: JSON.stringify({ id: editing.id, ...payload }),
+   236→        })
+   237→      } else {
+   238→        res = await fetch('/api/authors', {
+   239→          method: 'POST',
+   240→          headers: { 'Content-Type': 'application/json' },
+   241→          body: JSON.stringify(payload),
+   242→        })
+   243→      }
+   244→
+   245→      if (!res.ok) {
+   246→        const err = await res.json()
+   247→        throw new Error(err.error || 'Failed to save author')
+   248→      }
+   249→
+   250→      setDialogOpen(false)
+   251→      setEditing(null)
+   252→      setForm(emptyForm)
+   253→      fetchAuthors()
+   254→    } catch (err) {
+   255→      alert(err instanceof Error ? err.message : 'Failed to save author')
+   256→    } finally {
+   257→      setSaving(false)
+   258→    }
+   259→  }
+   260→
+   261→  // ── Delete author ──────────────────────────────────────────
+   262→  const handleDelete = async (id: string) => {
+   263→    if (!confirm('Are you sure you want to delete this author?')) return
+   264→    setDeleting(id)
+   265→    try {
+   266→      const res = await fetch(`/api/authors?id=${id}`, { method: 'DELETE' })
+   267→      if (!res.ok) {
+   268→        const err = await res.json()
+   269→        throw new Error(err.error || 'Failed to delete')
+   270→      }
+   271→      fetchAuthors()
+   272→    } catch (err) {
+   273→      alert(err instanceof Error ? err.message : 'Failed to delete author')
+   274→    } finally {
+   275→      setDeleting(null)
+   276→    }
+   277→  }
+   278→
+   279→  // ── Open dialog for edit ───────────────────────────────────
+   280→  const openEdit = (author: AuthorData) => {
+   281→    setEditing(author)
+   282→    setForm({
+   283→      name: author.name,
+   284→      bio: author.bio || '',
+   285→      nationality: author.nationality || '',
+   286→      website: author.website || '',
+   287→      email: author.email || '',
+   288→      phone: author.phone || '',
+   289→    })
+   290→    setDialogOpen(true)
+   291→  }
+   292→
+   293→  // ── Open dialog for add ────────────────────────────────────
+   294→  const openAdd = () => {
+   295→    setEditing(null)
+   296→    setForm(emptyForm)
+   297→    setDialogOpen(true)
+   298→  }
+   299→
+   300→  const getInitials = (name: string) =>
+   301→    name
+   302→      .split(' ')
+   303→      .map((w) => w[0])
+   304→      .join('')
+   305→      .toUpperCase()
+   306→      .slice(0, 2)
+   307→
+   308→  const totalPages = Math.ceil(total / limit)
+   309→
+   310→  // ── Detail View ────────────────────────────────────────────
+   311→  if (selectedAuthor) {
+   312→    const avatarColor = getAvatarColor(selectedAuthor.name)
+   313→    return (
+   314→      <div className="space-y-5">
+   315→        {/* Back button */}
+   316→        <button
+   317→          onClick={() => setSelectedAuthor(null)}
+   318→          className="flex items-center gap-1.5 text-[13px] font-medium text-macos-blue hover:text-macos-blue/80 transition-colors"
+   319→        >
+   320→          <ArrowLeft className="size-4" strokeWidth={1.5} /> Back to Authors
+   321→        </button>
+   322→
+   323→        {/* Author Profile Card */}
+   324→        <div className="macos-card macos-shadow-card p-6">
+   325→          <div className="flex flex-col sm:flex-row gap-5">
+   326→            <div className={`size-16 rounded-2xl ${avatarColor.bg} flex items-center justify-center shrink-0 ring-2 ${avatarColor.ring} ring-offset-2 ring-offset-card`}>
+   327→              <span className={`text-xl font-bold ${avatarColor.text}`}>
+   328→                {getInitials(selectedAuthor.name)}
+   329→              </span>
+   330→            </div>
+   331→            <div className="flex-1 min-w-0">
+   332→              <h1 className="macos-page-title text-[20px]">{selectedAuthor.name}</h1>
+   333→              <div className="flex flex-wrap items-center gap-3 mt-2">
+   334→                {selectedAuthor.nationality && (
+   335→                  <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-medium">
+   336→                    <MapPin className="size-3" strokeWidth={1.5} />
+   337→                    {getFlag(selectedAuthor.nationality)} {selectedAuthor.nationality}
+   338→                  </span>
+   339→                )}
+   340→                <span className={`macos-badge bg-macos-green/10 text-macos-green`}>
+   341→                  {selectedAuthor._count.books} {selectedAuthor._count.books === 1 ? 'book' : 'books'}
+   342→                </span>
+   343→              </div>
+   344→              <div className="flex flex-wrap gap-4 mt-3">
+   345→                {selectedAuthor.email && (
+   346→                  <a
+   347→                    href={`mailto:${selectedAuthor.email}`}
+   348→                    className="flex items-center gap-1.5 text-[12px] font-medium text-macos-blue hover:text-macos-blue/80 transition-colors"
+   349→                  >
+   350→                    <Mail className="size-3" strokeWidth={1.5} /> {selectedAuthor.email}
+   351→                  </a>
+   352→                )}
+   353→                {selectedAuthor.phone && (
+   354→                  <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-medium">
+   355→                    <Phone className="size-3" strokeWidth={1.5} /> {selectedAuthor.phone}
+   356→                  </span>
+   357→                )}
+   358→                {selectedAuthor.website && (
+   359→                  <a
+   360→                    href={selectedAuthor.website}
+   361→                    target="_blank"
+   362→                    rel="noopener noreferrer"
+   363→                    className="flex items-center gap-1.5 text-[12px] font-medium text-macos-blue hover:text-macos-blue/80 transition-colors"
+   364→                  >
+   365→                    <ExternalLink className="size-3" strokeWidth={1.5} /> Website
+   366→                  </a>
+   367→                )}
+   368→              </div>
+   369→              {selectedAuthor.bio && (
+   370→                <p className="text-[13px] text-muted-foreground mt-3 leading-relaxed max-w-2xl">
+   371→                  {selectedAuthor.bio}
+   372→                </p>
+   373→              )}
+   374→            </div>
+   375→          </div>
+   376→        </div>
+   377→
+   378→        {/* Books by Author Card */}
+   379→        <div className="macos-card macos-shadow-card overflow-hidden">
+   380→          <div className="px-5 py-4 border-b border-border/30">
+   381→            <div className="flex items-center gap-2">
+   382→              <BookOpen className="size-4 text-macos-purple" strokeWidth={1.5} />
+   383→              <h3 className="macos-section-title">
+   384→                Books by {selectedAuthor.name}
+   385→              </h3>
+   386→              <span className="macos-badge bg-macos-purple/10 text-macos-purple ml-1">
+   387→                {authorBooks.length}
+   388→              </span>
+   389→            </div>
+   390→          </div>
+   391→          {loadingBooks ? (
+   392→            <div className="p-5 space-y-3">
+   393→              {Array.from({ length: 3 }).map((_, i) => (
+   394→                <div key={i} className="flex items-center gap-3">
+   395→                  <Skeleton className="size-8 rounded-lg" />
+   396→                  <div className="flex-1 space-y-1.5">
+   397→                    <Skeleton className="h-4 w-2/3" />
+   398→                    <Skeleton className="h-3 w-1/3" />
+   399→                  </div>
+   400→                </div>
+   401→              ))}
+   402→            </div>
+   403→          ) : authorBooks.length === 0 ? (
+   404→            <div className="macos-empty py-12">
+   405→              <div className="size-12 rounded-2xl bg-macos-orange/10 flex items-center justify-center mb-3">
+   406→                <BookOpen className="size-6 text-macos-orange" strokeWidth={1.5} />
+   407→              </div>
+   408→              <p className="text-[13px] font-semibold text-foreground">No books yet</p>
+   409→              <p className="text-[11px] text-muted-foreground mt-1">
+   410→                This author hasn&apos;t been linked to any books
+   411→              </p>
+   412→            </div>
+   413→          ) : (
+   414→            <div className="overflow-x-auto">
+   415→              <Table>
+   416→                <TableHeader>
+   417→                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+   418→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+   419→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
+   420→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+   421→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Publisher</TableHead>
+   422→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
+   423→                  </TableRow>
+   424→                </TableHeader>
+   425→                <TableBody>
+   426→                  {authorBooks.map((book) => {
+   427→                    const catColor = book.category ? getCategoryColor(book.category.name) : null
+   428→                    return (
+   429→                      <TableRow key={book.id} className="macos-table-row border-b border-border/30">
+   430→                        <TableCell className="text-[13px] font-medium">{book.title}</TableCell>
+   431→                        <TableCell className="text-[11px] text-muted-foreground font-mono">
+   432→                          {book.isbn || <span className="text-muted-foreground/50">—</span>}
+   433→                        </TableCell>
+   434→                        <TableCell>
+   435→                          {book.category && catColor ? (
+   436→                            <span className={`macos-badge ${catColor.bg} ${catColor.text}`}>
+   437→                              {book.category.name}
+   438→                            </span>
+   439→                          ) : (
+   440→                            <span className="text-[13px] text-muted-foreground/50">—</span>
+   441→                          )}
+   442→                        </TableCell>
+   443→                        <TableCell className="text-[13px] text-muted-foreground font-medium">
+   444→                          {book.publisher?.name || <span className="text-muted-foreground/50">—</span>}
+   445→                        </TableCell>
+   446→                        <TableCell className="text-[13px] text-right font-semibold tracking-tight">
+   447→                          ${book.price.toFixed(2)}
+   448→                        </TableCell>
+   449→                      </TableRow>
+   450→                    )
+   451→                  })}
+   452→                </TableBody>
+   453→              </Table>
+   454→            </div>
+   455→          )}
+   456→        </div>
+   457→      </div>
+   458→    )
+   459→  }
+   460→
+   461→  // ── Main List View ─────────────────────────────────────────
+   462→  return (
+   463→    <div className="space-y-5">
+   464→      {/* macOS Page Header */}
+   465→      <div className="macos-page-header flex-col gap-3 sm:flex-row">
+   466→        <div className="flex items-center gap-3">
+   467→          <div className="flex items-center justify-center size-9 rounded-xl bg-gg-sunset/10">
+   468→            <Users className="size-[18px] text-gg-sunset" strokeWidth={1.5} />
+   469→          </div>
+   470→          <div>
+   471→            <h1 className="macos-page-title">Authors</h1>
+   472→            <p className="macos-page-subtitle">
+   473→              {total} {total === 1 ? 'author' : 'authors'} in your catalog
+   474→            </p>
+   475→          </div>
+   476→        </div>
+   477→        {!isViewOnly && (
+   478→          <Button
+   479→            onClick={openAdd}
+   480→            className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 gap-1.5"
+   481→          >
+   482→            <Plus className="size-4" strokeWidth={1.5} /> Add Author
+   483→          </Button>
+   484→        )}
+   485→      </div>
+   486→
+   487→      {/* Spotlight Search */}
+   488→      <div className="macos-card macos-shadow-card p-4">
+   489→        <div className="macos-search flex items-center gap-2 px-3 py-1.5">
+   490→          <Search className="size-[14px] text-muted-foreground shrink-0" strokeWidth={1.5} />
+   491→          <input
+   492→            type="text"
+   493→            placeholder="Search by name, nationality, email..."
+   494→            value={search}
+   495→            onChange={(e) => setSearch(e.target.value)}
+   496→            className="flex-1 bg-transparent border-0 outline-none text-[13px] font-medium placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
+   497→          />
+   498→          {search && (
+   499→            <button
+   500→              onClick={() => setSearch('')}
+   501→              className="size-4 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-muted-foreground/30 transition-colors"
+   502→            >
+   503→              <X className="size-2.5 text-background" strokeWidth={2} />
+   504→            </button>
+   505→          )}
+   506→        </div>
+   507→      </div>
+   508→
+   509→      {/* Authors Grid */}
+   510→      {loading ? (
+   511→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   512→          {Array.from({ length: 6 }).map((_, i) => (
+   513→            <div key={i} className="macos-card macos-shadow-card p-4 space-y-3">
+   514→              <div className="flex items-center gap-3">
+   515→                <Skeleton className="size-10 rounded-xl" />
+   516→                <div className="space-y-1.5 flex-1">
+   517→                  <Skeleton className="h-4 w-28" />
+   518→                  <Skeleton className="h-3 w-16" />
+   519→                </div>
+   520→              </div>
+   521→              <Skeleton className="h-3 w-full" />
+   522→              <Skeleton className="h-3 w-2/3" />
+   523→            </div>
+   524→          ))}
+   525→        </div>
+   526→      ) : authors.length === 0 ? (
+   527→        <div className="macos-card macos-shadow-card">
+   528→          <div className="macos-empty py-16">
+   529→            <div className="size-14 rounded-2xl bg-gg-golden/10 flex items-center justify-center mb-4">
+   530→              <PenTool className="size-7 text-gg-golden" strokeWidth={1.5} />
+   531→            </div>
+   532→            <p className="text-[13px] font-semibold text-foreground">No authors found</p>
+   533→            <p className="text-[11px] text-muted-foreground mt-1">
+   534→              Try adjusting your search or add a new author
+   535→            </p>
+   536→          </div>
+   537→        </div>
+   538→      ) : (
+   539→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   540→          {authors.map((author) => {
+   541→            const avatarColor = getAvatarColor(author.name)
+   542→            return (
+   543→              <div
+   544→                key={author.id}
+   545→                className="macos-card macos-shadow-card macos-card-hover p-4 cursor-pointer group"
+   546→                onClick={() => openDetail(author)}
+   547→              >
+   548→                <div className="flex items-start gap-3">
+   549→                  <div className={`size-10 rounded-xl ${avatarColor.bg} flex items-center justify-center shrink-0`}>
+   550→                    <span className={`text-sm font-bold ${avatarColor.text}`}>
+   551→                      {getInitials(author.name)}
+   552→                    </span>
+   553→                  </div>
+   554→                  <div className="flex-1 min-w-0">
+   555→                    <h3 className="text-[13px] font-semibold truncate group-hover:text-macos-blue transition-colors">{author.name}</h3>
+   556→                    {author.nationality && (
+   557→                      <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5 font-medium">
+   558→                        <Globe className="size-3" strokeWidth={1.5} />
+   559→                        {getFlag(author.nationality)} {author.nationality}
+   560→                      </p>
+   561→                    )}
+   562→                    <span className="macos-badge bg-macos-green/10 text-macos-green mt-2 inline-block">
+   563→                      {author._count.books} {author._count.books === 1 ? 'book' : 'books'}
+   564→                    </span>
+   565→                  </div>
+   566→                </div>
+   567→                {author.bio && (
+   568→                  <p className="text-[13px] text-muted-foreground mt-3 line-clamp-2 leading-relaxed font-medium">
+   569→                    {author.bio}
+   570→                  </p>
+   571→                )}
+   572→                {/* Contact info row */}
+   573→                {(author.email || author.website) && (
+   574→                  <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/30">
+   575→                    {author.email && (
+   576→                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium truncate">
+   577→                        <Mail className="size-3 shrink-0" strokeWidth={1.5} />
+   578→                        <span className="truncate">{author.email}</span>
+   579→                      </span>
+   580→                    )}
+   581→                  </div>
+   582→                )}
+   583→                {/* Actions */}
+   584→                {!isViewOnly && (
+   585→                  <div className="mt-3 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+   586→                    <Button
+   587→                      variant="ghost"
+   588→                      size="sm"
+   589→                      className="size-7 rounded-lg hover:bg-macos-blue/10 hover:text-macos-blue"
+   590→                      onClick={() => openEdit(author)}
+   591→                    >
+   592→                      <Pencil className="size-3.5" strokeWidth={1.5} />
+   593→                    </Button>
+   594→                    <Button
+   595→                      variant="ghost"
+   596→                      size="sm"
+   597→                      className="size-7 rounded-lg hover:bg-macos-red/10 hover:text-macos-red"
+   598→                      onClick={() => handleDelete(author.id)}
+   599→                      disabled={deleting === author.id}
+   600→                    >
+   601→                      {deleting === author.id ? (
+   602→                        <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
+   603→                      ) : (
+   604→                        <Trash2 className="size-3.5" strokeWidth={1.5} />
+   605→                      )}
+   606→                    </Button>
+   607→                  </div>
+   608→                )}
+   609→              </div>
+   610→            )
+   611→          })}
+   612→        </div>
+   613→      )}
+   614→
+   615→      {/* Pagination */}
+   616→      {totalPages > 1 && (
+   617→        <div className="flex items-center justify-between px-1">
+   618→          <p className="text-[11px] text-muted-foreground font-medium">
+   619→            Page {page} of {totalPages} &middot; {total} results
+   620→          </p>
+   621→          <div className="flex gap-1">
+   622→            <Button
+   623→              variant="ghost"
+   624→              size="sm"
+   625→              className="rounded-lg h-7 text-[12px] font-medium gap-1 hover:bg-macos-blue/10 hover:text-macos-blue"
+   626→              onClick={() => setPage((p) => Math.max(1, p - 1))}
+   627→              disabled={page <= 1}
+   628→            >
+   629→              <ArrowLeft className="size-3.5" strokeWidth={1.5} /> Prev
+   630→            </Button>
+   631→            <Button
+   632→              variant="ghost"
+   633→              size="sm"
+   634→              className="rounded-lg h-7 text-[12px] font-medium gap-1 hover:bg-macos-blue/10 hover:text-macos-blue"
+   635→              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+   636→              disabled={page >= totalPages}
+   637→            >
+   638→              Next <ArrowLeft className="size-3.5 rotate-180" strokeWidth={1.5} />
+   639→            </Button>
+   640→          </div>
+   641→        </div>
+   642→      )}
+   643→
+   644→      {/* Add/Edit Dialog */}
+   645→      <Dialog
+   646→        open={dialogOpen}
+   647→        onOpenChange={(open) => {
+   648→          setDialogOpen(open)
+   649→          if (!open) {
+   650→            setEditing(null)
+   651→            setForm(emptyForm)
+   652→          }
+   653→        }}
+   654→      >
+   655→        <DialogContent className="max-w-lg rounded-2xl macos-shadow-float border-border/50 p-0 overflow-hidden">
+   656→          {/* macOS Dialog Header */}
+   657→          <div className="bg-card/95 backdrop-blur-xl border-b border-border/50 px-6 py-4">
+   658→            <div className="flex items-center justify-between">
+   659→              <div className="flex items-center gap-3">
+   660→                <div className="flex items-center justify-center size-8 rounded-lg bg-gg-sunset/10">
+   661→                  <PenTool className="size-4 text-gg-sunset" strokeWidth={1.5} />
+   662→                </div>
+   663→                <div>
+   664→                  <DialogTitle className="text-[15px] font-semibold tracking-tight">
+   665→                    {editing ? 'Edit Author' : 'Add New Author'}
+   666→                  </DialogTitle>
+   667→                  <p className="text-[11px] text-muted-foreground mt-0.5">
+   668→                    {editing ? 'Update author information' : 'Fill in the author details'}
+   669→                  </p>
+   670→                </div>
+   671→              </div>
+   672→              <button
+   673→                onClick={() => {
+   674→                  setDialogOpen(false)
+   675→                  setEditing(null)
+   676→                  setForm(emptyForm)
+   677→                }}
+   678→                className="size-6 rounded-md hover:bg-secondary flex items-center justify-center transition-colors"
+   679→              >
+   680→                <X className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+   681→              </button>
+   682→            </div>
+   683→          </div>
+   684→
+   685→          <div className="px-6 py-4 space-y-4">
+   686→            {/* Name */}
+   687→            <div>
+   688→              <Label htmlFor="author-name" className="text-[12px] font-medium text-muted-foreground">Name *</Label>
+   689→              <Input
+   690→                id="author-name"
+   691→                value={form.name}
+   692→                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+   693→                placeholder="Author name"
+   694→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   695→              />
+   696→            </div>
+   697→
+   698→            {/* Bio */}
+   699→            <div>
+   700→              <Label htmlFor="author-bio" className="text-[12px] font-medium text-muted-foreground">Bio</Label>
+   701→              <Textarea
+   702→                id="author-bio"
+   703→                value={form.bio}
+   704→                onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+   705→                placeholder="Author biography..."
+   706→                rows={3}
+   707→                className="rounded-lg border-border/50 text-[13px] mt-1 focus:ring-primary/20"
+   708→              />
+   709→            </div>
+   710→
+   711→            {/* Nationality + Website */}
+   712→            <div className="grid grid-cols-2 gap-3">
+   713→              <div>
+   714→                <Label htmlFor="author-nationality" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1">
+   715→                  <Globe className="size-3" strokeWidth={1.5} /> Nationality
+   716→                </Label>
+   717→                <Input
+   718→                  id="author-nationality"
+   719→                  value={form.nationality}
+   720→                  onChange={(e) => setForm((f) => ({ ...f, nationality: e.target.value }))}
+   721→                  placeholder="e.g. American"
+   722→                  className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   723→                />
+   724→              </div>
+   725→              <div>
+   726→                <Label htmlFor="author-website" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1">
+   727→                  <ExternalLink className="size-3" strokeWidth={1.5} /> Website
+   728→                </Label>
+   729→                <Input
+   730→                  id="author-website"
+   731→                  value={form.website}
+   732→                  onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+   733→                  placeholder="https://..."
+   734→                  className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   735→                />
+   736→              </div>
+   737→            </div>
+   738→
+   739→            {/* Email + Phone */}
+   740→            <div className="grid grid-cols-2 gap-3">
+   741→              <div>
+   742→                <Label htmlFor="author-email" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1">
+   743→                  <Mail className="size-3" strokeWidth={1.5} /> Email
+   744→                </Label>
+   745→                <Input
+   746→                  id="author-email"
+   747→                  type="email"
+   748→                  value={form.email}
+   749→                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+   750→                  placeholder="author@example.com"
+   751→                  className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   752→                />
+   753→              </div>
+   754→              <div>
+   755→                <Label htmlFor="author-phone" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1">
+   756→                  <Phone className="size-3" strokeWidth={1.5} /> Phone
+   757→                </Label>
+   758→                <Input
+   759→                  id="author-phone"
+   760→                  value={form.phone}
+   761→                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+   762→                  placeholder="+1-..."
+   763→                  className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   764→                />
+   765→              </div>
+   766→            </div>
+   767→          </div>
+   768→
+   769→          {/* Dialog Footer */}
+   770→          <div className="border-t border-border/50 px-6 py-3 flex justify-end gap-2">
+   771→            <Button
+   772→              variant="ghost"
+   773→              className="rounded-lg text-[13px] font-medium h-8"
+   774→              onClick={() => {
+   775→                setDialogOpen(false)
+   776→                setEditing(null)
+   777→                setForm(emptyForm)
+   778→              }}
+   779→            >
+   780→              Cancel
+   781→            </Button>
+   782→            <Button
+   783→              onClick={handleSave}
+   784→              disabled={saving || !form.name.trim()}
+   785→              className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8 gap-1.5"
+   786→            >
+   787→              {saving ? (
+   788→                <RefreshCw className="size-4 animate-spin" strokeWidth={1.5} />
+   789→              ) : (
+   790→                <Plus className="size-4" strokeWidth={1.5} />
+   791→              )}
+   792→              {editing ? 'Update Author' : 'Create Author'}
+   793→            </Button>
+   794→          </div>
+   795→        </DialogContent>
+   796→      </Dialog>
+   797→    </div>
+   798→  )
+   799→}
+   800→

@@ -1,0 +1,931 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import * as React from 'react'
+     4→     4→import {
+     5→     5→  UserCog,
+     6→     6→  Search,
+     7→     7→  Plus,
+     8→     8→  Mail,
+     9→     9→  Phone,
+    10→    10→  Building2,
+    11→    11→  Briefcase,
+    12→    12→  Calendar,
+    13→    13→  DollarSign,
+    14→    14→  Trash2,
+    15→    15→  Pencil,
+    16→    16→  Users,
+    17→    17→  MapPin,
+    18→    18→  UserCheck,
+    19→    19→  UserX,
+    20→    20→  Clock,
+    21→    21→  ChevronRight,
+    22→    22→  Contact,
+    23→    23→} from 'lucide-react'
+    24→    24→import { Card, CardContent } from '@/components/ui/card'
+    25→    25→import { Button } from '@/components/ui/button'
+    26→    26→import { Input } from '@/components/ui/input'
+    27→    27→import { Label } from '@/components/ui/label'
+    28→    28→import { Badge } from '@/components/ui/badge'
+    29→    29→import {
+    30→    30→  Dialog,
+    31→    31→  DialogContent,
+    32→    32→  DialogDescription,
+    33→    33→  DialogFooter,
+    34→    34→  DialogHeader,
+    35→    35→  DialogTitle,
+    36→    36→} from '@/components/ui/dialog'
+    37→    37→import {
+    38→    38→  Select,
+    39→    39→  SelectContent,
+    40→    40→  SelectItem,
+    41→    41→  SelectTrigger,
+    42→    42→  SelectValue,
+    43→    43→} from '@/components/ui/select'
+    44→    44→import { Separator } from '@/components/ui/separator'
+    45→    45→import { ScrollArea } from '@/components/ui/scroll-area'
+    46→    46→import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+    47→    47→import {
+    48→    48→  Table,
+    49→    49→  TableBody,
+    50→    50→  TableCell,
+    51→    51→  TableHead,
+    52→    52→  TableHeader,
+    53→    53→  TableRow,
+    54→    54→} from '@/components/ui/table'
+    55→    55→import { useAppStore } from '@/store/app-store'
+    56→    56→
+    57→    57→// ==================== TYPES ====================
+    58→    58→
+    59→    59→interface Branch {
+    60→    60→  id: string
+    61→    61→  name: string
+    62→    62→  code: string
+    63→    63→}
+    64→    64→
+    65→    65→interface Employee {
+    66→    66→  id: string
+    67→    67→  name: string
+    68→    68→  email: string
+    69→    69→  phone?: string | null
+    70→    70→  department?: string | null
+    71→    71→  position?: string | null
+    72→    72→  salary: number
+    73→    73→  hireDate?: string | null
+    74→    74→  isActive: boolean
+    75→    75→  branchId?: string | null
+    76→    76→  branch?: Branch | null
+    77→    77→  createdAt: string
+    78→    78→  _count?: { sales: number; attendance: number }
+    79→    79→}
+    80→    80→
+    81→    81→// ==================== DEPARTMENT COLORS ====================
+    82→    82→
+    83→    83→const departmentColors: Record<string, { bg: string; text: string; icon: string }> = {
+    84→    84→  Management: { bg: 'bg-macos-purple/10', text: 'text-macos-purple', icon: 'bg-macos-purple/10' },
+    85→    85→  Sales: { bg: 'bg-macos-blue/10', text: 'text-macos-blue', icon: 'bg-macos-blue/10' },
+    86→    86→  Finance: { bg: 'bg-macos-green/10', text: 'text-macos-green', icon: 'bg-macos-green/10' },
+    87→    87→  Warehouse: { bg: 'bg-macos-orange/10', text: 'text-macos-orange', icon: 'bg-macos-orange/10' },
+    88→    88→  Marketing: { bg: 'bg-macos-pink/10', text: 'text-macos-pink', icon: 'bg-macos-pink/10' },
+    89→    89→  IT: { bg: 'bg-macos-teal/10', text: 'text-macos-teal', icon: 'bg-macos-teal/10' },
+    90→    90→  HR: { bg: 'bg-macos-yellow/10', text: 'text-macos-yellow', icon: 'bg-macos-yellow/10' },
+    91→    91→  Operations: { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo', icon: 'bg-macos-indigo/10' },
+    92→    92→}
+    93→    93→
+    94→    94→function getDeptBadge(dept: string) {
+    95→    95→  const colors = departmentColors[dept]
+    96→    96→  if (colors) return `${colors.bg} ${colors.text}`
+    97→    97→  return 'bg-secondary text-secondary-foreground'
+    98→    98→}
+    99→    99→
+   100→   100→function getDeptInitialsColor(dept: string) {
+   101→   101→  const colors = departmentColors[dept]
+   102→   102→  if (colors) return colors
+   103→   103→  return { bg: 'bg-secondary', text: 'text-muted-foreground', icon: 'bg-secondary' }
+   104→   104→}
+   105→   105→
+   106→   106→// ==================== EMPLOYEES MODULE ====================
+   107→   107→
+   108→   108→export function EmployeesModule() {
+   109→   109→  const authUser = useAppStore((s) => s.authUser)
+   110→   110→  const isViewOnly = authUser?.isViewOnly ?? false
+   111→   111→
+   112→   112→  const [employees, setEmployees] = React.useState<Employee[]>([])
+   113→   113→  const [branches, setBranches] = React.useState<Branch[]>([])
+   114→   114→  const [loading, setLoading] = React.useState(true)
+   115→   115→  const [search, setSearch] = React.useState('')
+   116→   116→  const [departmentFilter, setDepartmentFilter] = React.useState('all')
+   117→   117→  const [statusFilter, setStatusFilter] = React.useState<'all' | 'active' | 'inactive'>('all')
+   118→   118→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   119→   119→  const [editEmployee, setEditEmployee] = React.useState<Employee | null>(null)
+   120→   120→  const [selectedEmployee, setSelectedEmployee] = React.useState<Employee | null>(null)
+   121→   121→
+   122→   122→  const fetchEmployees = React.useCallback(async () => {
+   123→   123→    setLoading(true)
+   124→   124→    try {
+   125→   125→      const params = new URLSearchParams()
+   126→   126→      if (search) params.set('search', search)
+   127→   127→      if (departmentFilter && departmentFilter !== 'all') params.set('department', departmentFilter)
+   128→   128→      params.set('limit', '50')
+   129→   129→      const res = await fetch(`/api/employees?${params}`)
+   130→   130→      const json = await res.json()
+   131→   131→      if (json.data) setEmployees(json.data)
+   132→   132→    } catch (err) {
+   133→   133→      console.error('Failed to fetch employees:', err)
+   134→   134→    } finally {
+   135→   135→      setLoading(false)
+   136→   136→    }
+   137→   137→  }, [search, departmentFilter])
+   138→   138→
+   139→   139→  const fetchBranches = React.useCallback(async () => {
+   140→   140→    try {
+   141→   141→      const res = await fetch('/api/branches')
+   142→   142→      const json = await res.json()
+   143→   143→      if (json.data) setBranches(json.data)
+   144→   144→    } catch (err) {
+   145→   145→      console.error('Failed to fetch branches:', err)
+   146→   146→    }
+   147→   147→  }, [])
+   148→   148→
+   149→   149→  React.useEffect(() => {
+   150→   150→    fetchEmployees()
+   151→   151→  }, [fetchEmployees])
+   152→   152→
+   153→   153→  React.useEffect(() => {
+   154→   154→    fetchBranches()
+   155→   155→  }, [fetchBranches])
+   156→   156→
+   157→   157→  const handleDelete = async (id: string) => {
+   158→   158→    if (!confirm('Are you sure you want to deactivate this employee?')) return
+   159→   159→    try {
+   160→   160→      await fetch(`/api/employees?id=${id}`, { method: 'DELETE' })
+   161→   161→      fetchEmployees()
+   162→   162→    } catch (err) {
+   163→   163→      console.error('Failed to deactivate employee:', err)
+   164→   164→    }
+   165→   165→  }
+   166→   166→
+   167→   167→  const totalEmployees = employees.length
+   168→   168→  const activeEmployees = employees.filter((e) => e.isActive).length
+   169→   169→  const inactiveEmployees = employees.filter((e) => !e.isActive).length
+   170→   170→  const totalPayroll = employees.filter((e) => e.isActive).reduce((sum, e) => sum + e.salary, 0)
+   171→   171→
+   172→   172→  const departmentList = [...new Set(employees.map((e) => e.department).filter(Boolean))] as string[]
+   173→   173→
+   174→   174→  const departmentStats = employees.reduce(
+   175→   175→    (acc, emp) => {
+   176→   176→      const dept = emp.department || 'Unassigned'
+   177→   177→      if (!acc[dept]) acc[dept] = { total: 0, active: 0, inactive: 0 }
+   178→   178→      acc[dept].total++
+   179→   179→      if (emp.isActive) acc[dept].active++
+   180→   180→      else acc[dept].inactive++
+   181→   181→      return acc
+   182→   182→    },
+   183→   183→    {} as Record<string, { total: number; active: number; inactive: number }>
+   184→   184→  )
+   185→   185→
+   186→   186→  // Apply status filter on client side
+   187→   187→  const filteredEmployees = employees.filter((e) => {
+   188→   188→    if (statusFilter === 'active') return e.isActive
+   189→   189→    if (statusFilter === 'inactive') return !e.isActive
+   190→   190→    return true
+   191→   191→  })
+   192→   192→
+   193→   193→  return (
+   194→   194→    <div className="space-y-5">
+   195→   195→      {/* Page Header - macOS 27 style */}
+   196→   196→      <div className="macos-page-header">
+   197→   197→        <div className="flex items-center gap-3">
+   198→   198→          <div className="size-9 rounded-xl bg-gg-bridge/10 flex items-center justify-center">
+   199→   199→            <Contact className="size-[18px] text-gg-bridge" strokeWidth={1.5} />
+   200→   200→          </div>
+   201→   201→          <div>
+   202→   202→            <h1 className="macos-page-title">Employees</h1>
+   203→   203→            <p className="macos-page-subtitle">Manage your team, departments &amp; payroll</p>
+   204→   204→          </div>
+   205→   205→        </div>
+   206→   206→        {!isViewOnly && (
+   207→   207→          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   208→   208→            <Plus className="size-3.5" strokeWidth={2} /> Add Employee
+   209→   209→          </Button>
+   210→   210→        )}
+   211→   211→      </div>
+   212→   212→
+   213→   213→      {/* Stats Row - macOS Contact-style compact stats */}
+   214→   214→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+   215→   215→        <div className="macos-stat macos-shadow-card">
+   216→   216→          <div className="flex items-center gap-3">
+   217→   217→            <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+   218→   218→              <Users className="size-4 text-macos-blue" strokeWidth={1.5} />
+   219→   219→            </div>
+   220→   220→            <div>
+   221→   221→              <p className="text-[22px] font-bold tracking-[-0.03em]">{totalEmployees}</p>
+   222→   222→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total</p>
+   223→   223→            </div>
+   224→   224→          </div>
+   225→   225→        </div>
+   226→   226→        <div className="macos-stat macos-shadow-card">
+   227→   227→          <div className="flex items-center gap-3">
+   228→   228→            <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
+   229→   229→              <UserCheck className="size-4 text-macos-green" strokeWidth={1.5} />
+   230→   230→            </div>
+   231→   231→            <div>
+   232→   232→              <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-green">{activeEmployees}</p>
+   233→   233→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active</p>
+   234→   234→            </div>
+   235→   235→          </div>
+   236→   236→        </div>
+   237→   237→        <div className="macos-stat macos-shadow-card">
+   238→   238→          <div className="flex items-center gap-3">
+   239→   239→            <div className="size-8 rounded-xl bg-macos-red/10 flex items-center justify-center">
+   240→   240→              <UserX className="size-4 text-macos-red" strokeWidth={1.5} />
+   241→   241→            </div>
+   242→   242→            <div>
+   243→   243→              <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-red">{inactiveEmployees}</p>
+   244→   244→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Inactive</p>
+   245→   245→            </div>
+   246→   246→          </div>
+   247→   247→        </div>
+   248→   248→        <div className="macos-stat macos-shadow-card">
+   249→   249→          <div className="flex items-center gap-3">
+   250→   250→            <div className="size-8 rounded-xl bg-gg-golden/10 flex items-center justify-center">
+   251→   251→              <DollarSign className="size-4 text-gg-golden" strokeWidth={1.5} />
+   252→   252→            </div>
+   253→   253→            <div>
+   254→   254→              <p className="text-[22px] font-bold tracking-[-0.03em] text-gg-golden">${totalPayroll.toLocaleString()}</p>
+   255→   255→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Payroll</p>
+   256→   256→            </div>
+   257→   257→          </div>
+   258→   258→        </div>
+   259→   259→      </div>
+   260→   260→
+   261→   261→      {/* macOS Contacts-style layout: Sidebar departments + Contact list */}
+   262→   262→      <div className="flex gap-4 min-h-[480px]">
+   263→   263→        {/* Left: Department Groups (like macOS Contacts sidebar) */}
+   264→   264→        <div className="w-56 shrink-0 hidden md:block">
+   265→   265→          <div className="macos-card macos-shadow-card p-3 h-full">
+   266→   266→            <div className="macos-section-header mb-2">
+   267→   267→              <h3 className="macos-section-title">Groups</h3>
+   268→   268→            </div>
+   269→   269→            <ScrollArea className="h-[400px]">
+   270→   270→              <div className="space-y-0.5">
+   271→   271→                <button
+   272→   272→                  className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] font-medium cursor-pointer transition-colors ${
+   273→   273→                    departmentFilter === 'all'
+   274→   274→                      ? 'bg-primary/10 text-primary'
+   275→   275→                      : 'text-foreground hover:bg-secondary/50'
+   276→   276→                  }`}
+   277→   277→                  onClick={() => setDepartmentFilter('all')}
+   278→   278→                >
+   279→   279→                  <span className="flex items-center gap-2">
+   280→   280→                    <Users className="size-3.5" strokeWidth={1.5} />
+   281→   281→                    All Contacts
+   282→   282→                  </span>
+   283→   283→                  <span className="text-[10px] font-semibold text-muted-foreground">{totalEmployees}</span>
+   284→   284→                </button>
+   285→   285→                {Object.entries(departmentStats).map(([dept, stats]) => {
+   286→   286→                  const colors = getDeptInitialsColor(dept)
+   287→   287→                  return (
+   288→   288→                    <button
+   289→   289→                      key={dept}
+   290→   290→                      className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[13px] font-medium cursor-pointer transition-colors ${
+   291→   291→                        departmentFilter === dept
+   292→   292→                          ? `${colors.bg} ${colors.text}`
+   293→   293→                          : 'text-foreground hover:bg-secondary/50'
+   294→   294→                      }`}
+   295→   295→                      onClick={() => setDepartmentFilter(dept === departmentFilter ? 'all' : dept)}
+   296→   296→                    >
+   297→   297→                      <span className="flex items-center gap-2">
+   298→   298→                        <Briefcase className="size-3.5" strokeWidth={1.5} />
+   299→   299→                        {dept}
+   300→   300→                      </span>
+   301→   301→                      <span className="text-[10px] font-semibold text-muted-foreground">{stats.active}</span>
+   302→   302→                    </button>
+   303→   303→                  )
+   304→   304→                })}
+   305→   305→              </div>
+   306→   306→            </ScrollArea>
+   307→   307→          </div>
+   308→   308→        </div>
+   309→   309→
+   310→   310→        {/* Right: Contact List (like macOS Contacts main view) */}
+   311→   311→        <div className="flex-1 min-w-0">
+   312→   312→          <div className="macos-card macos-shadow-card">
+   313→   313→            {/* Search + Filter Bar */}
+   314→   314→            <div className="p-3 border-b border-border/50">
+   315→   315→              <div className="flex items-center gap-3">
+   316→   316→                <div className="macos-search flex items-center gap-2 px-3 py-1.5 flex-1">
+   317→   317→                  <Search className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+   318→   318→                  <input
+   319→   319→                    placeholder="Search employees..."
+   320→   320→                    value={search}
+   321→   321→                    onChange={(e) => setSearch(e.target.value)}
+   322→   322→                    className="bg-transparent border-0 outline-none text-[13px] w-full placeholder:text-muted-foreground"
+   323→   323→                  />
+   324→   324→                </div>
+   325→   325→                <div className="macos-filter-bar">
+   326→   326→                  <button
+   327→   327→                    className={`macos-filter-item ${statusFilter === 'all' ? 'macos-filter-item-active' : ''}`}
+   328→   328→                    onClick={() => setStatusFilter('all')}
+   329→   329→                  >
+   330→   330→                    All
+   331→   331→                  </button>
+   332→   332→                  <button
+   333→   333→                    className={`macos-filter-item ${statusFilter === 'active' ? 'macos-filter-item-active' : ''}`}
+   334→   334→                    onClick={() => setStatusFilter('active')}
+   335→   335→                  >
+   336→   336→                    Active
+   337→   337→                  </button>
+   338→   338→                  <button
+   339→   339→                    className={`macos-filter-item ${statusFilter === 'inactive' ? 'macos-filter-item-active' : ''}`}
+   340→   340→                    onClick={() => setStatusFilter('inactive')}
+   341→   341→                  >
+   342→   342→                    Inactive
+   343→   343→                  </button>
+   344→   344→                </div>
+   345→   345→              </div>
+   346→   346→              {/* Mobile department pills (shown only on small screens) */}
+   347→   347→              <div className="flex flex-wrap gap-1.5 mt-2 md:hidden">
+   348→   348→                <button
+   349→   349→                  className={`rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase cursor-pointer transition-colors ${
+   350→   350→                    departmentFilter === 'all'
+   351→   351→                      ? 'bg-primary/10 text-primary'
+   352→   352→                      : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+   353→   353→                  }`}
+   354→   354→                  onClick={() => setDepartmentFilter('all')}
+   355→   355→                >
+   356→   356→                  All
+   357→   357→                </button>
+   358→   358→                {Object.entries(departmentStats).map(([dept, stats]) => (
+   359→   359→                  <button
+   360→   360→                    key={dept}
+   361→   361→                    className={`rounded-md px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase cursor-pointer transition-colors ${
+   362→   362→                      departmentFilter === dept ? getDeptBadge(dept) : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+   363→   363→                    }`}
+   364→   364→                    onClick={() => setDepartmentFilter(dept === departmentFilter ? 'all' : dept)}
+   365→   365→                  >
+   366→   366→                    {dept} ({stats.active})
+   367→   367→                  </button>
+   368→   368→                ))}
+   369→   369→              </div>
+   370→   370→            </div>
+   371→   371→
+   372→   372→            {/* Contact Cards List */}
+   373→   373→            {loading ? (
+   374→   374→              <div className="p-6 space-y-3">
+   375→   375→                {[1, 2, 3, 4, 5].map((i) => (
+   376→   376→                  <div key={i} className="h-14 bg-muted rounded-xl animate-pulse" />
+   377→   377→                ))}
+   378→   378→              </div>
+   379→   379→            ) : filteredEmployees.length === 0 ? (
+   380→   380→              <div className="macos-empty py-16">
+   381→   381→                <Contact className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+   382→   382→                <p className="text-[13px] font-medium text-foreground">No contacts found</p>
+   383→   383→                <p className="text-[11px] text-muted-foreground mt-1">Try adjusting your search or filters</p>
+   384→   384→              </div>
+   385→   385→            ) : (
+   386→   386→              <ScrollArea className="max-h-[400px]">
+   387→   387→                <div className="divide-y divide-border/30">
+   388→   388→                  {filteredEmployees.map((employee) => {
+   389→   389→                    const deptColors = getDeptInitialsColor(employee.department || '')
+   390→   390→                    return (
+   391→   391→                      <div
+   392→   392→                        key={employee.id}
+   393→   393→                        className="flex items-center gap-3 px-4 py-2.5 cursor-pointer macos-table-row group"
+   394→   394→                        onClick={() => setSelectedEmployee(employee)}
+   395→   395→                      >
+   396→   396→                        {/* Avatar - macOS Contacts style */}
+   397→   397→                        <Avatar className="size-9 ring-1 ring-border/30">
+   398→   398→                          <AvatarFallback className={`${deptColors.bg} ${deptColors.text} text-[11px] font-semibold`}>
+   399→   399→                            {employee.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+   400→   400→                          </AvatarFallback>
+   401→   401→                        </Avatar>
+   402→   402→
+   403→   403→                        {/* Name & Email */}
+   404→   404→                        <div className="flex-1 min-w-0">
+   405→   405→                          <div className="flex items-center gap-2">
+   406→   406→                            <p className="text-[13px] font-medium truncate">{employee.name}</p>
+   407→   407→                            <div className={`size-1.5 rounded-full shrink-0 ${employee.isActive ? 'bg-macos-green' : 'bg-macos-red'}`} />
+   408→   408→                          </div>
+   409→   409→                          <p className="text-[11px] text-muted-foreground truncate">{employee.email}</p>
+   410→   410→                        </div>
+   411→   411→
+   412→   412→                        {/* Department Badge */}
+   413→   413→                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 shrink-0 ${getDeptBadge(employee.department || '')}`}>
+   414→   414→                          {employee.department || '—'}
+   415→   415→                        </Badge>
+   416→   416→
+   417→   417→                        {/* Position */}
+   418→   418→                        <span className="text-[13px] text-muted-foreground truncate max-w-[120px] hidden lg:block">
+   419→   419→                          {employee.position || '—'}
+   420→   420→                        </span>
+   421→   421→
+   422→   422→                        {/* Chevron - macOS style */}
+   423→   423→                        <ChevronRight className="size-3.5 text-muted-foreground/50 shrink-0 group-hover:text-muted-foreground transition-colors" strokeWidth={1.5} />
+   424→   424→
+   425→   425→                        {/* Actions (shown on hover, hidden for view-only) */}
+   426→   426→                        {!isViewOnly && (
+   427→   427→                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+   428→   428→                            <Button
+   429→   429→                              variant="ghost"
+   430→   430→                              size="sm"
+   431→   431→                              className="h-7 w-7 p-0 text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10 rounded-lg"
+   432→   432→                              onClick={() => setEditEmployee(employee)}
+   433→   433→                            >
+   434→   434→                              <Pencil className="size-3" strokeWidth={1.5} />
+   435→   435→                            </Button>
+   436→   436→                            <Button
+   437→   437→                              variant="ghost"
+   438→   438→                              size="sm"
+   439→   439→                              className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+   440→   440→                              onClick={() => handleDelete(employee.id)}
+   441→   441→                            >
+   442→   442→                              <Trash2 className="size-3" strokeWidth={1.5} />
+   443→   443→                            </Button>
+   444→   444→                          </div>
+   445→   445→                        )}
+   446→   446→                      </div>
+   447→   447→                    )
+   448→   448→                  })}
+   449→   449→                </div>
+   450→   450→              </ScrollArea>
+   451→   451→            )}
+   452→   452→
+   453→   453→            {/* Footer count */}
+   454→   454→            <div className="px-4 py-2 border-t border-border/30">
+   455→   455→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+   456→   456→                {filteredEmployees.length} contact{filteredEmployees.length !== 1 ? 's' : ''}
+   457→   457→                {departmentFilter !== 'all' ? ` in ${departmentFilter}` : ''}
+   458→   458→              </p>
+   459→   459→            </div>
+   460→   460→          </div>
+   461→   461→        </div>
+   462→   462→      </div>
+   463→   463→
+   464→   464→      <AddEmployeeDialog
+   465→   465→        open={showAddDialog}
+   466→   466→        onOpenChange={setShowAddDialog}
+   467→   467→        branches={branches}
+   468→   468→        onSuccess={fetchEmployees}
+   469→   469→      />
+   470→   470→      <EditEmployeeDialog
+   471→   471→        employee={editEmployee}
+   472→   472→        onOpenChange={(open) => !open && setEditEmployee(null)}
+   473→   473→        branches={branches}
+   474→   474→        onSuccess={fetchEmployees}
+   475→   475→      />
+   476→   476→      <EmployeeDetailDialog
+   477→   477→        employee={selectedEmployee}
+   478→   478→        onOpenChange={(open) => !open && setSelectedEmployee(null)}
+   479→   479→      />
+   480→   480→    </div>
+   481→   481→  )
+   482→   482→}
+   483→   483→
+   484→   484→// ==================== ADD EMPLOYEE DIALOG ====================
+   485→   485→
+   486→   486→function AddEmployeeDialog({
+   487→   487→  open,
+   488→   488→  onOpenChange,
+   489→   489→  branches,
+   490→   490→  onSuccess,
+   491→   491→}: {
+   492→   492→  open: boolean
+   493→   493→  onOpenChange: (open: boolean) => void
+   494→   494→  branches: Branch[]
+   495→   495→  onSuccess: () => void
+   496→   496→}) {
+   497→   497→  const [saving, setSaving] = React.useState(false)
+   498→   498→  const [form, setForm] = React.useState({
+   499→   499→    name: '',
+   500→   500→    email: '',
+   501→   501→    phone: '',
+   502→   502→    department: '',
+   503→   503→    position: '',
+   504→   504→    salary: '',
+   505→   505→    hireDate: '',
+   506→   506→    branchId: '',
+   507→   507→  })
+   508→   508→
+   509→   509→  const handleSubmit = async (e: React.FormEvent) => {
+   510→   510→    e.preventDefault()
+   511→   511→    if (!form.name.trim() || !form.email.trim()) return
+   512→   512→    setSaving(true)
+   513→   513→    try {
+   514→   514→      const res = await fetch('/api/employees', {
+   515→   515→        method: 'POST',
+   516→   516→        headers: { 'Content-Type': 'application/json' },
+   517→   517→        body: JSON.stringify({
+   518→   518→          ...form,
+   519→   519→          salary: parseFloat(form.salary) || 0,
+   520→   520→          hireDate: form.hireDate || null,
+   521→   521→          branchId: form.branchId || null,
+   522→   522→        }),
+   523→   523→      })
+   524→   524→      if (res.ok) {
+   525→   525→        setForm({ name: '', email: '', phone: '', department: '', position: '', salary: '', hireDate: '', branchId: '' })
+   526→   526→        onOpenChange(false)
+   527→   527→        onSuccess()
+   528→   528→      } else {
+   529→   529→        const json = await res.json()
+   530→   530→        alert(json.error || 'Failed to create employee')
+   531→   531→      }
+   532→   532→    } catch (err) {
+   533→   533→      console.error('Failed to create employee:', err)
+   534→   534→      alert('Failed to create employee')
+   535→   535→    } finally {
+   536→   536→      setSaving(false)
+   537→   537→    }
+   538→   538→  }
+   539→   539→
+   540→   540→  return (
+   541→   541→    <Dialog open={open} onOpenChange={onOpenChange}>
+   542→   542→      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
+   543→   543→        <DialogHeader>
+   544→   544→          <DialogTitle className="text-[13px] font-semibold tracking-[-0.01em]">Add Employee</DialogTitle>
+   545→   545→          <DialogDescription className="text-[11px]">Register a new team member</DialogDescription>
+   546→   546→        </DialogHeader>
+   547→   547→        <form onSubmit={handleSubmit} className="space-y-4">
+   548→   548→          <div className="space-y-2">
+   549→   549→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Full Name *</Label>
+   550→   550→            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="macos-search rounded-lg text-[13px] h-8 border-0" required />
+   551→   551→          </div>
+   552→   552→          <div className="grid grid-cols-2 gap-3">
+   553→   553→            <div className="space-y-2">
+   554→   554→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email *</Label>
+   555→   555→              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@bookflow.com" className="macos-search rounded-lg text-[13px] h-8 border-0" required />
+   556→   556→            </div>
+   557→   557→            <div className="space-y-2">
+   558→   558→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</Label>
+   559→   559→              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1-555-0100" className="macos-search rounded-lg text-[13px] h-8 border-0" />
+   560→   560→            </div>
+   561→   561→          </div>
+   562→   562→          <div className="grid grid-cols-2 gap-3">
+   563→   563→            <div className="space-y-2">
+   564→   564→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Department</Label>
+   565→   565→              <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+   566→   566→                <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+   567→   567→                  <SelectValue placeholder="Select..." />
+   568→   568→                </SelectTrigger>
+   569→   569→                <SelectContent>
+   570→   570→                  <SelectItem value="Sales">Sales</SelectItem>
+   571→   571→                  <SelectItem value="Management">Management</SelectItem>
+   572→   572→                  <SelectItem value="Finance">Finance</SelectItem>
+   573→   573→                  <SelectItem value="Warehouse">Warehouse</SelectItem>
+   574→   574→                  <SelectItem value="IT">IT</SelectItem>
+   575→   575→                  <SelectItem value="Marketing">Marketing</SelectItem>
+   576→   576→                  <SelectItem value="HR">HR</SelectItem>
+   577→   577→                  <SelectItem value="Operations">Operations</SelectItem>
+   578→   578→                </SelectContent>
+   579→   579→              </Select>
+   580→   580→            </div>
+   581→   581→            <div className="space-y-2">
+   582→   582→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Position</Label>
+   583→   583→              <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="Sales Manager" className="macos-search rounded-lg text-[13px] h-8 border-0" />
+   584→   584→            </div>
+   585→   585→          </div>
+   586→   586→          <div className="grid grid-cols-2 gap-3">
+   587→   587→            <div className="space-y-2">
+   588→   588→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Salary ($)</Label>
+   589→   589→              <Input type="number" step="0.01" min="0" value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} placeholder="5000" className="macos-search rounded-lg text-[13px] h-8 border-0" />
+   590→   590→            </div>
+   591→   591→            <div className="space-y-2">
+   592→   592→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Hire Date</Label>
+   593→   593→              <Input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
+   594→   594→            </div>
+   595→   595→          </div>
+   596→   596→          <div className="space-y-2">
+   597→   597→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Branch</Label>
+   598→   598→            <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+   599→   599→              <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+   600→   600→                <SelectValue placeholder="Select branch..." />
+   601→   601→              </SelectTrigger>
+   602→   602→              <SelectContent>
+   603→   603→                {branches.map((b) => (
+   604→   604→                  <SelectItem key={b.id} value={b.id}>
+   605→   605→                    {b.name} ({b.code})
+   606→   606→                  </SelectItem>
+   607→   607→                ))}
+   608→   608→              </SelectContent>
+   609→   609→            </Select>
+   610→   610→          </div>
+   611→   611→          <DialogFooter>
+   612→   612→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+   613→   613→            <Button type="submit" disabled={saving || !form.name.trim() || !form.email.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   614→   614→              {saving ? 'Saving...' : 'Add Employee'}
+   615→   615→            </Button>
+   616→   616→          </DialogFooter>
+   617→   617→        </form>
+   618→   618→      </DialogContent>
+   619→   619→    </Dialog>
+   620→   620→  )
+   621→   621→}
+   622→   622→
+   623→   623→// ==================== EDIT EMPLOYEE DIALOG ====================
+   624→   624→
+   625→   625→function EditEmployeeDialog({
+   626→   626→  employee,
+   627→   627→  onOpenChange,
+   628→   628→  branches,
+   629→   629→  onSuccess,
+   630→   630→}: {
+   631→   631→  employee: Employee | null
+   632→   632→  onOpenChange: (open: boolean) => void
+   633→   633→  branches: Branch[]
+   634→   634→  onSuccess: () => void
+   635→   635→}) {
+   636→   636→  const [saving, setSaving] = React.useState(false)
+   637→   637→  const [form, setForm] = React.useState({
+   638→   638→    name: '',
+   639→   639→    email: '',
+   640→   640→    phone: '',
+   641→   641→    department: '',
+   642→   642→    position: '',
+   643→   643→    salary: '',
+   644→   644→    hireDate: '',
+   645→   645→    branchId: '',
+   646→   646→    isActive: true,
+   647→   647→  })
+   648→   648→
+   649→   649→  React.useEffect(() => {
+   650→   650→    if (employee) {
+   651→   651→      setForm({
+   652→   652→        name: employee.name || '',
+   653→   653→        email: employee.email || '',
+   654→   654→        phone: employee.phone || '',
+   655→   655→        department: employee.department || '',
+   656→   656→        position: employee.position || '',
+   657→   657→        salary: employee.salary?.toString() || '',
+   658→   658→        hireDate: employee.hireDate ? new Date(employee.hireDate).toISOString().split('T')[0] : '',
+   659→   659→        branchId: employee.branchId || '',
+   660→   660→        isActive: employee.isActive,
+   661→   661→      })
+   662→   662→    }
+   663→   663→  }, [employee])
+   664→   664→
+   665→   665→  const handleSubmit = async (e: React.FormEvent) => {
+   666→   666→    e.preventDefault()
+   667→   667→    if (!employee) return
+   668→   668→    setSaving(true)
+   669→   669→    try {
+   670→   670→      const res = await fetch('/api/employees', {
+   671→   671→        method: 'PUT',
+   672→   672→        headers: { 'Content-Type': 'application/json' },
+   673→   673→        body: JSON.stringify({
+   674→   674→          id: employee.id,
+   675→   675→          name: form.name,
+   676→   676→          email: form.email,
+   677→   677→          phone: form.phone,
+   678→   678→          department: form.department,
+   679→   679→          position: form.position,
+   680→   680→          salary: parseFloat(form.salary) || 0,
+   681→   681→          hireDate: form.hireDate || null,
+   682→   682→          branchId: form.branchId || null,
+   683→   683→          isActive: form.isActive,
+   684→   684→        }),
+   685→   685→      })
+   686→   686→      if (res.ok) {
+   687→   687→        onOpenChange(false)
+   688→   688→        onSuccess()
+   689→   689→      } else {
+   690→   690→        const json = await res.json()
+   691→   691→        alert(json.error || 'Failed to update employee')
+   692→   692→      }
+   693→   693→    } catch (err) {
+   694→   694→      console.error('Failed to update employee:', err)
+   695→   695→      alert('Failed to update employee')
+   696→   696→    } finally {
+   697→   697→      setSaving(false)
+   698→   698→    }
+   699→   699→  }
+   700→   700→
+   701→   701→  if (!employee) return null
+   702→   702→
+   703→   703→  return (
+   704→   704→    <Dialog open={!!employee} onOpenChange={onOpenChange}>
+   705→   705→      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
+   706→   706→        <DialogHeader>
+   707→   707→          <DialogTitle className="text-[13px] font-semibold tracking-[-0.01em]">Edit Employee</DialogTitle>
+   708→   708→          <DialogDescription className="text-[11px]">Update employee information</DialogDescription>
+   709→   709→        </DialogHeader>
+   710→   710→        <form onSubmit={handleSubmit} className="space-y-4">
+   711→   711→          <div className="space-y-2">
+   712→   712→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Full Name *</Label>
+   713→   713→            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" required />
+   714→   714→          </div>
+   715→   715→          <div className="grid grid-cols-2 gap-3">
+   716→   716→            <div className="space-y-2">
+   717→   717→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email *</Label>
+   718→   718→              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" required />
+   719→   719→            </div>
+   720→   720→            <div className="space-y-2">
+   721→   721→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</Label>
+   722→   722→              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
+   723→   723→            </div>
+   724→   724→          </div>
+   725→   725→          <div className="grid grid-cols-2 gap-3">
+   726→   726→            <div className="space-y-2">
+   727→   727→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Department</Label>
+   728→   728→              <Select value={form.department} onValueChange={(v) => setForm({ ...form, department: v })}>
+   729→   729→                <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+   730→   730→                  <SelectValue placeholder="Select..." />
+   731→   731→                </SelectTrigger>
+   732→   732→                <SelectContent>
+   733→   733→                  <SelectItem value="Sales">Sales</SelectItem>
+   734→   734→                  <SelectItem value="Management">Management</SelectItem>
+   735→   735→                  <SelectItem value="Finance">Finance</SelectItem>
+   736→   736→                  <SelectItem value="Warehouse">Warehouse</SelectItem>
+   737→   737→                  <SelectItem value="IT">IT</SelectItem>
+   738→   738→                  <SelectItem value="Marketing">Marketing</SelectItem>
+   739→   739→                  <SelectItem value="HR">HR</SelectItem>
+   740→   740→                  <SelectItem value="Operations">Operations</SelectItem>
+   741→   741→                </SelectContent>
+   742→   742→              </Select>
+   743→   743→            </div>
+   744→   744→            <div className="space-y-2">
+   745→   745→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Position</Label>
+   746→   746→              <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
+   747→   747→            </div>
+   748→   748→          </div>
+   749→   749→          <div className="grid grid-cols-2 gap-3">
+   750→   750→            <div className="space-y-2">
+   751→   751→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Salary ($)</Label>
+   752→   752→              <Input type="number" step="0.01" min="0" value={form.salary} onChange={(e) => setForm({ ...form, salary: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
+   753→   753→            </div>
+   754→   754→            <div className="space-y-2">
+   755→   755→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Hire Date</Label>
+   756→   756→              <Input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} className="macos-search rounded-lg text-[13px] h-8 border-0" />
+   757→   757→            </div>
+   758→   758→          </div>
+   759→   759→          <div className="grid grid-cols-2 gap-3">
+   760→   760→            <div className="space-y-2">
+   761→   761→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Branch</Label>
+   762→   762→              <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+   763→   763→                <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+   764→   764→                  <SelectValue placeholder="Select branch..." />
+   765→   765→                </SelectTrigger>
+   766→   766→                <SelectContent>
+   767→   767→                  {branches.map((b) => (
+   768→   768→                    <SelectItem key={b.id} value={b.id}>
+   769→   769→                      {b.name} ({b.code})
+   770→   770→                    </SelectItem>
+   771→   771→                  ))}
+   772→   772→                </SelectContent>
+   773→   773→              </Select>
+   774→   774→            </div>
+   775→   775→            <div className="space-y-2">
+   776→   776→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</Label>
+   777→   777→              <Select value={form.isActive ? 'active' : 'inactive'} onValueChange={(v) => setForm({ ...form, isActive: v === 'active' })}>
+   778→   778→                <SelectTrigger className="macos-search rounded-lg text-[13px] h-8 border-0">
+   779→   779→                  <SelectValue />
+   780→   780→                </SelectTrigger>
+   781→   781→                <SelectContent>
+   782→   782→                  <SelectItem value="active">Active</SelectItem>
+   783→   783→                  <SelectItem value="inactive">Inactive</SelectItem>
+   784→   784→                </SelectContent>
+   785→   785→              </Select>
+   786→   786→            </div>
+   787→   787→          </div>
+   788→   788→          <DialogFooter>
+   789→   789→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+   790→   790→            <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   791→   791→              {saving ? 'Saving...' : 'Update Employee'}
+   792→   792→            </Button>
+   793→   793→          </DialogFooter>
+   794→   794→        </form>
+   795→   795→      </DialogContent>
+   796→   796→    </Dialog>
+   797→   797→  )
+   798→   798→}
+   799→   799→
+   800→   800→// ==================== EMPLOYEE DETAIL DIALOG (macOS Contacts Card) ====================
+   801→   801→
+   802→   802→function EmployeeDetailDialog({
+   803→   803→  employee,
+   804→   804→  onOpenChange,
+   805→   805→}: {
+   806→   806→  employee: Employee | null
+   807→   807→  onOpenChange: (open: boolean) => void
+   808→   808→}) {
+   809→   809→  if (!employee) return null
+   810→   810→
+   811→   811→  const initials = employee.name
+   812→   812→    .split(' ')
+   813→   813→    .map((n) => n[0])
+   814→   814→    .join('')
+   815→   815→    .slice(0, 2)
+   816→   816→    .toUpperCase()
+   817→   817→
+   818→   818→  const deptColors = getDeptInitialsColor(employee.department || '')
+   819→   819→
+   820→   820→  return (
+   821→   821→    <Dialog open={!!employee} onOpenChange={onOpenChange}>
+   822→   822→      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
+   823→   823→        <DialogHeader>
+   824→   824→          <DialogTitle className="flex items-center gap-4">
+   825→   825→            <Avatar className="size-12 ring-1 ring-border/30">
+   826→   826→              <AvatarFallback className={`${deptColors.bg} ${deptColors.text} font-semibold text-sm`}>
+   827→   827→                {initials}
+   828→   828→              </AvatarFallback>
+   829→   829→            </Avatar>
+   830→   830→            <div>
+   831→   831→              <p className="text-[15px] font-semibold tracking-[-0.02em]">{employee.name}</p>
+   832→   832→              <p className="text-[12px] font-normal text-muted-foreground">{employee.position || 'No position assigned'}</p>
+   833→   833→            </div>
+   834→   834→          </DialogTitle>
+   835→   835→        </DialogHeader>
+   836→   836→        <div className="space-y-5">
+   837→   837→          {/* Contact Info - macOS Contacts card style */}
+   838→   838→          <div className="macos-card p-4 space-y-3">
+   839→   839→            <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Contact Information</h4>
+   840→   840→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   841→   841→              <div className="flex items-center gap-2.5 text-[13px]">
+   842→   842→                <div className="size-7 rounded-lg bg-macos-blue/10 flex items-center justify-center shrink-0">
+   843→   843→                  <Mail className="size-3.5 text-macos-blue" strokeWidth={1.5} />
+   844→   844→                </div>
+   845→   845→                <div className="min-w-0">
+   846→   846→                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email</p>
+   847→   847→                  <p className="truncate">{employee.email}</p>
+   848→   848→                </div>
+   849→   849→              </div>
+   850→   850→              {employee.phone && (
+   851→   851→                <div className="flex items-center gap-2.5 text-[13px]">
+   852→   852→                  <div className="size-7 rounded-lg bg-macos-green/10 flex items-center justify-center shrink-0">
+   853→   853→                    <Phone className="size-3.5 text-macos-green" strokeWidth={1.5} />
+   854→   854→                  </div>
+   855→   855→                  <div>
+   856→   856→                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</p>
+   857→   857→                    <p>{employee.phone}</p>
+   858→   858→                  </div>
+   859→   859→                </div>
+   860→   860→              )}
+   861→   861→              {employee.department && (
+   862→   862→                <div className="flex items-center gap-2.5 text-[13px]">
+   863→   863→                  <div className="size-7 rounded-lg bg-macos-purple/10 flex items-center justify-center shrink-0">
+   864→   864→                    <Briefcase className="size-3.5 text-macos-purple" strokeWidth={1.5} />
+   865→   865→                  </div>
+   866→   866→                  <div>
+   867→   867→                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Department</p>
+   868→   868→                    <Badge className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 ${getDeptBadge(employee.department)}`}>
+   869→   869→                      {employee.department}
+   870→   870→                    </Badge>
+   871→   871→                  </div>
+   872→   872→                </div>
+   873→   873→              )}
+   874→   874→              {employee.branch && (
+   875→   875→                <div className="flex items-center gap-2.5 text-[13px]">
+   876→   876→                  <div className="size-7 rounded-lg bg-gg-bay/10 flex items-center justify-center shrink-0">
+   877→   877→                    <Building2 className="size-3.5 text-gg-bay" strokeWidth={1.5} />
+   878→   878→                  </div>
+   879→   879→                  <div>
+   880→   880→                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Branch</p>
+   881→   881→                    <p>{employee.branch.name}</p>
+   882→   882→                  </div>
+   883→   883→                </div>
+   884→   884→              )}
+   885→   885→            </div>
+   886→   886→          </div>
+   887→   887→
+   888→   888→          {/* Employment Details */}
+   889→   889→          <div className="macos-card p-4 space-y-3">
+   890→   890→            <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Employment</h4>
+   891→   891→            <div className="grid grid-cols-2 gap-3">
+   892→   892→              <div className="p-3 rounded-xl bg-gg-golden/10">
+   893→   893→                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Monthly Salary</p>
+   894→   894→                <p className="text-[22px] font-bold tracking-[-0.03em] text-gg-golden">${employee.salary.toLocaleString()}</p>
+   895→   895→              </div>
+   896→   896→              <div className="p-3 rounded-xl bg-macos-blue/10">
+   897→   897→                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Sales Recorded</p>
+   898→   898→                <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-blue">{employee._count?.sales || 0}</p>
+   899→   899→              </div>
+   900→   900→            </div>
+   901→   901→            <div className="flex items-center gap-4">
+   902→   902→              {employee.hireDate && (
+   903→   903→                <div className="flex items-center gap-1.5 text-[13px]">
+   904→   904→                  <Clock className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+   905→   905→                  <span className="text-muted-foreground">Hired {new Date(employee.hireDate).toLocaleDateString()}</span>
+   906→   906→                </div>
+   907→   907→              )}
+   908→   908→              <div className="flex items-center gap-1.5">
+   909→   909→                <div className={`size-2 rounded-full ${employee.isActive ? 'bg-macos-green' : 'bg-macos-red'}`} />
+   910→   910→                <span className="text-[13px] font-medium">{employee.isActive ? 'Active' : 'Inactive'}</span>
+   911→   911→              </div>
+   912→   912→            </div>
+   913→   913→          </div>
+   914→   914→
+   915→   915→          {/* Activity */}
+   916→   916→          <div className="flex gap-2">
+   917→   917→            <div className="flex items-center gap-1.5 p-2.5 rounded-xl bg-secondary/50 text-[11px]">
+   918→   918→              <Calendar className="size-3 text-muted-foreground" strokeWidth={1.5} />
+   919→   919→              Attendance: {employee._count?.attendance || 0}
+   920→   920→            </div>
+   921→   921→            <div className="flex items-center gap-1.5 p-2.5 rounded-xl bg-secondary/50 text-[11px]">
+   922→   922→              <DollarSign className="size-3 text-muted-foreground" strokeWidth={1.5} />
+   923→   923→              Sales: {employee._count?.sales || 0}
+   924→   924→            </div>
+   925→   925→          </div>
+   926→   926→        </div>
+   927→   927→      </DialogContent>
+   928→   928→    </Dialog>
+   929→   929→  )
+   930→   930→}
+   931→   931→

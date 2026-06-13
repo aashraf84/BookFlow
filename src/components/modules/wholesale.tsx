@@ -2,7 +2,6 @@
 
 import * as React from 'react'
 import {
-  Search,
   Plus,
   Truck,
   Package,
@@ -24,14 +23,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -50,6 +41,20 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosStatCard,
+  MacosCard,
+  MacosSearch,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosDialog,
+  MacosEmptyState,
+  MacosFormField,
+  MacosStatGrid,
+  MacosSection,
+} from '@/components/macos-ui'
 
 // ─── Types ────────────────────────────────────────────────────────
 interface Dealer {
@@ -275,27 +280,27 @@ export function WholesaleModule() {
     )
   }
 
-  // Status badges — pending=orange, confirmed=blue, shipped=purple, delivered=green, cancelled=red
+  // Status badges using MacosBadge
   const getStatusBadge = (status: string) => {
-    const map: Record<string, { className: string; label: string }> = {
-      pending: { className: 'bg-macos-orange/10 text-macos-orange', label: 'Pending' },
-      confirmed: { className: 'bg-macos-blue/10 text-macos-blue', label: 'Confirmed' },
-      shipped: { className: 'bg-macos-purple/10 text-macos-purple', label: 'Shipped' },
-      delivered: { className: 'bg-macos-green/10 text-macos-green', label: 'Delivered' },
-      cancelled: { className: 'bg-macos-red/10 text-macos-red', label: 'Cancelled' },
+    const map: Record<string, { variant: 'warning' | 'info' | 'purple' | 'success' | 'danger'; label: string }> = {
+      pending: { variant: 'warning', label: 'Pending' },
+      confirmed: { variant: 'info', label: 'Confirmed' },
+      shipped: { variant: 'purple', label: 'Shipped' },
+      delivered: { variant: 'success', label: 'Delivered' },
+      cancelled: { variant: 'danger', label: 'Cancelled' },
     }
-    const s = map[status] || { className: 'bg-secondary text-secondary-foreground', label: status }
-    return <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${s.className}`}>{s.label}</span>
+    const s = map[status] || { variant: 'default' as const, label: status }
+    return <MacosBadge variant={s.variant}>{s.label}</MacosBadge>
   }
 
   const getPaymentBadge = (status: string) => {
-    const map: Record<string, { className: string; label: string }> = {
-      unpaid: { className: 'bg-macos-red/10 text-macos-red', label: 'Unpaid' },
-      partial: { className: 'bg-macos-orange/10 text-macos-orange', label: 'Partial' },
-      paid: { className: 'bg-macos-green/10 text-macos-green', label: 'Paid' },
+    const map: Record<string, { variant: 'danger' | 'warning' | 'success'; label: string }> = {
+      unpaid: { variant: 'danger', label: 'Unpaid' },
+      partial: { variant: 'warning', label: 'Partial' },
+      paid: { variant: 'success', label: 'Paid' },
     }
-    const s = map[status] || { className: 'bg-secondary text-secondary-foreground', label: status }
-    return <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${s.className}`}>{s.label}</span>
+    const s = map[status] || { variant: 'default' as const, label: status }
+    return <MacosBadge variant={s.variant}>{s.label}</MacosBadge>
   }
 
   // Compute order total
@@ -419,106 +424,83 @@ export function WholesaleModule() {
   return (
     <div className="space-y-5">
       {/* Page Header */}
-      <div className="macos-page-header">
-        <div>
-          <h2 className="macos-page-title">Wholesale</h2>
-          <p className="macos-page-subtitle">Manage bulk orders, dealers & distributor relationships</p>
-        </div>
+      <MacosPageHeader
+        title="Wholesale"
+        subtitle="Manage bulk orders, dealers & distributor relationships"
+        icon={Truck}
+        iconColor="text-gg-bay"
+        iconBg="bg-gg-bay/10"
+      >
         {!isViewOnly && (
-          <Button onClick={() => setOrderDialogOpen(true)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0">
-            <Plus className="size-3.5 mr-1.5" />
+          <MacosButton
+            variant="primary"
+            icon={Plus}
+            onClick={() => setOrderDialogOpen(true)}
+          >
             New Order
-          </Button>
+          </MacosButton>
         )}
-      </div>
+      </MacosPageHeader>
 
       {/* Error Alert */}
       {error && (
         <div className="flex items-center gap-2 macos-card macos-shadow-card p-3 text-[13px] text-macos-red bg-macos-red/5">
           <AlertCircle className="size-3.5 shrink-0" />
           {error}
-          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[10px] text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
+          <MacosButton variant="ghost" className="ml-auto text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
             Dismiss
-          </Button>
+          </MacosButton>
         </div>
       )}
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-gg-bay/10 flex items-center justify-center">
-              <Package className="size-4 text-gg-bay" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Orders</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight">{orders.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
-              <DollarSign className="size-4 text-macos-orange" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-orange">{pendingOrders}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-purple/10 flex items-center justify-center">
-              <Truck className="size-4 text-macos-purple" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Shipped</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-purple">{shippedOrders}</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
-              <TrendingUp className="size-4 text-macos-red" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Outstanding</p>
-              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-red">${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard
+          label="Total Orders"
+          value={orders.length}
+          icon={Package}
+          iconColor="text-gg-bay"
+          iconBg="bg-gg-bay/10"
+        />
+        <MacosStatCard
+          label="Pending"
+          value={pendingOrders}
+          icon={DollarSign}
+          iconColor="text-macos-orange"
+          iconBg="bg-macos-orange/10"
+        />
+        <MacosStatCard
+          label="Shipped"
+          value={shippedOrders}
+          icon={Truck}
+          iconColor="text-macos-purple"
+          iconBg="bg-macos-purple/10"
+        />
+        <MacosStatCard
+          label="Outstanding"
+          value={`$${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          icon={TrendingUp}
+          iconColor="text-macos-red"
+          iconBg="bg-macos-red/10"
+        />
+      </MacosStatGrid>
 
       {/* Filter Bar — Main Tabs */}
-      <div className="macos-filter-bar">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`macos-filter-item ${activeTab === tab.id ? 'macos-filter-item-active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <MacosFilterBar
+        items={tabs}
+        activeId={activeTab}
+        onChange={setActiveTab}
+      />
 
       {/* Orders Tab */}
       {activeTab === 'orders' && (
         <div className="space-y-4">
           {/* Status Filter */}
-          <div className="macos-filter-bar">
-            {statusTabs.map((tab) => (
-              <button
-                key={tab.id}
-                className={`macos-filter-item ${statusFilter === tab.id ? 'macos-filter-item-active' : ''}`}
-                onClick={() => setStatusFilter(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <MacosFilterBar
+            items={statusTabs}
+            activeId={statusFilter}
+            onChange={setStatusFilter}
+          />
 
           {/* Orders Table */}
           <div className="macos-card macos-shadow-card overflow-hidden">
@@ -529,79 +511,76 @@ export function WholesaleModule() {
                 ))}
               </div>
             ) : orders.length === 0 ? (
-              <div className="macos-empty">
-                <Package className="size-12 text-muted-foreground/30 mb-3" />
-                <p className="text-[13px] font-medium text-muted-foreground">No wholesale orders found</p>
-                <p className="text-[11px] text-muted-foreground mt-1">Create your first wholesale order</p>
-              </div>
+              <MacosEmptyState
+                icon={Package}
+                title="No wholesale orders found"
+                description="Create your first wholesale order"
+              />
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto custom-scrollbar">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-border/50 hover:bg-transparent">
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Order #</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Payment</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Date</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Order #</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Dealer</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Total</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Payment</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 hidden sm:table-cell">Date</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {orders.map((order) => (
-                      <TableRow key={order.id} className="macos-table-row border-b border-border/30">
-                        <TableCell className="font-mono text-[13px] font-medium tracking-tight">{order.orderNumber}</TableCell>
-                        <TableCell className="text-[13px] tracking-tight">
+                      <TableRow key={order.id} className="macos-table-row cursor-default border-b border-border/30 last:border-0">
+                        <TableCell className="font-mono text-[13px] font-medium tracking-tight py-3">{order.orderNumber}</TableCell>
+                        <TableCell className="text-[13px] font-medium tracking-tight py-3">
                           {order.customer?.name || order.dealerName || '—'}
                         </TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="text-right text-[13px] font-medium tracking-tight">${order.total.toFixed(2)}</TableCell>
-                        <TableCell>{getPaymentBadge(order.paymentStatus)}</TableCell>
-                        <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight">
+                        <TableCell className="py-3">{getStatusBadge(order.status)}</TableCell>
+                        <TableCell className="text-right text-[13px] font-medium tracking-tight py-3">${order.total.toFixed(2)}</TableCell>
+                        <TableCell className="py-3">{getPaymentBadge(order.paymentStatus)}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight py-3">
                           {new Date(order.createdAt).toLocaleDateString()}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right py-3">
                           <div className="flex items-center justify-end gap-0.5">
-                            <Button variant="ghost" size="sm" onClick={() => handleViewOrder(order)} className="h-7 text-[13px] rounded-lg hover:bg-secondary">
-                              <Eye className="size-3 mr-1" />
+                            <MacosButton variant="ghost" onClick={() => handleViewOrder(order)} className="h-7">
+                              <Eye className="size-3" />
                               View
-                            </Button>
+                            </MacosButton>
                             {!isViewOnly && order.status === 'pending' && (
-                              <Button
+                              <MacosButton
                                 variant="ghost"
-                                size="sm"
-                                className="h-7 text-[13px] text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10 rounded-lg"
+                                className="h-7 text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10"
                                 onClick={() => handleStatusUpdate(order.id, 'confirmed')}
                                 disabled={updatingStatus === order.id}
                               >
-                                <CheckCircle2 className="size-3 mr-1" />
+                                <CheckCircle2 className="size-3" />
                                 Confirm
-                              </Button>
+                              </MacosButton>
                             )}
                             {!isViewOnly && order.status === 'confirmed' && (
-                              <Button
+                              <MacosButton
                                 variant="ghost"
-                                size="sm"
-                                className="h-7 text-[13px] text-macos-purple hover:text-macos-purple hover:bg-macos-purple/10 rounded-lg"
+                                className="h-7 text-macos-purple hover:text-macos-purple hover:bg-macos-purple/10"
                                 onClick={() => handleStatusUpdate(order.id, 'shipped')}
                                 disabled={updatingStatus === order.id}
                               >
-                                <Ship className="size-3 mr-1" />
+                                <Ship className="size-3" />
                                 Ship
-                              </Button>
+                              </MacosButton>
                             )}
                             {!isViewOnly && order.status === 'shipped' && (
-                              <Button
+                              <MacosButton
                                 variant="ghost"
-                                size="sm"
-                                className="h-7 text-[13px] text-macos-green hover:text-macos-green hover:bg-macos-green/10 rounded-lg"
+                                className="h-7 text-macos-green hover:text-macos-green hover:bg-macos-green/10"
                                 onClick={() => handleStatusUpdate(order.id, 'delivered')}
                                 disabled={updatingStatus === order.id}
                               >
-                                <PackageCheck className="size-3 mr-1" />
+                                <PackageCheck className="size-3" />
                                 Deliver
-                              </Button>
+                              </MacosButton>
                             )}
                           </div>
                         </TableCell>
@@ -617,51 +596,50 @@ export function WholesaleModule() {
 
       {/* Dealers Tab */}
       {activeTab === 'dealers' && (
-        <div className="macos-card macos-shadow-card overflow-hidden">
-          <div className="p-4 border-b border-border/30">
-            <h3 className="macos-section-title flex items-center gap-2">
-              <Users className="size-3.5" />
-              Wholesale Dealers & Distributors ({dealers.length})
-            </h3>
+        <div className="macos-card macos-shadow-card overflow-hidden glass-card">
+          <div className="macos-section-header px-5 pt-4 pb-3">
+            <MacosSection
+              title={`Wholesale Dealers & Distributors (${dealers.length})`}
+            />
           </div>
           {dealers.length === 0 ? (
-            <div className="macos-empty">
-              <Users className="size-12 text-muted-foreground/30 mb-3" />
-              <p className="text-[13px] font-medium text-muted-foreground">No dealers found</p>
-              <p className="text-[11px] text-muted-foreground mt-1">Add wholesale customers from the CRM module</p>
-            </div>
+            <MacosEmptyState
+              icon={Users}
+              title="No dealers found"
+              description="Add wholesale customers from the CRM module"
+            />
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border/50 hover:bg-transparent">
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Type</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Contact</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Spent</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Outstanding</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell text-right">Orders</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Name</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 hidden sm:table-cell">Type</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 hidden md:table-cell">Contact</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Total Spent</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Outstanding</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 hidden sm:table-cell text-right">Orders</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dealers.map((dealer) => (
-                    <TableRow key={dealer.id} className="macos-table-row border-b border-border/30">
-                      <TableCell className="text-[13px] font-medium tracking-tight">{dealer.name}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple capitalize">{dealer.type}</span>
+                    <TableRow key={dealer.id} className="macos-table-row cursor-default border-b border-border/30 last:border-0">
+                      <TableCell className="text-[13px] font-medium tracking-tight py-3">{dealer.name}</TableCell>
+                      <TableCell className="hidden sm:table-cell py-3">
+                        <MacosBadge variant="purple" className="capitalize">{dealer.type}</MacosBadge>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] tracking-tight">
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] tracking-tight py-3">
                         {dealer.email || dealer.phone || '—'}
                       </TableCell>
-                      <TableCell className="text-right text-[13px] font-medium tracking-tight">${dealer.totalSpent.toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-[13px] tracking-tight">
+                      <TableCell className="text-right text-[13px] font-medium tracking-tight py-3">${dealer.totalSpent.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-[13px] tracking-tight py-3">
                         {dealer.outstanding > 0 ? (
                           <span className="text-macos-red font-medium">${dealer.outstanding.toFixed(2)}</span>
                         ) : (
                           <span className="text-muted-foreground">$0.00</span>
                         )}
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-[13px] tracking-tight">
+                      <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-[13px] tracking-tight py-3">
                         {dealer._count?.wholesaleOrders || 0}
                       </TableCell>
                     </TableRow>
@@ -677,83 +655,69 @@ export function WholesaleModule() {
       {activeTab === 'analytics' && (
         <div className="space-y-4">
           {/* Metrics Cards */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="macos-stat macos-shadow-card">
-              <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
-                  <DollarSign className="size-4 text-macos-green" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue (Delivered)</p>
-                  <p className="text-[24px] font-bold tracking-tight leading-tight">${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-              </div>
-            </div>
-            <div className="macos-stat macos-shadow-card">
-              <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
-                  <BarChart3 className="size-4 text-macos-orange" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Amount</p>
-                  <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-orange">${pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-              </div>
-            </div>
-            <div className="macos-stat macos-shadow-card">
-              <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
-                  <Users className="size-4 text-macos-blue" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active Dealers</p>
-                  <p className="text-[24px] font-bold tracking-tight leading-tight">{dealers.filter((d) => d.isActive).length}</p>
-                </div>
-              </div>
-            </div>
-            <div className="macos-stat macos-shadow-card">
-              <div className="flex items-center gap-3">
-                <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
-                  <TrendingUp className="size-4 text-macos-red" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Outstanding</p>
-                  <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-red">${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MacosStatGrid>
+            <MacosStatCard
+              label="Revenue (Delivered)"
+              value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              icon={DollarSign}
+              iconColor="text-macos-green"
+              iconBg="bg-macos-green/10"
+            />
+            <MacosStatCard
+              label="Pending Amount"
+              value={`$${pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              icon={BarChart3}
+              iconColor="text-macos-orange"
+              iconBg="bg-macos-orange/10"
+            />
+            <MacosStatCard
+              label="Active Dealers"
+              value={dealers.filter((d) => d.isActive).length}
+              icon={Users}
+              iconColor="text-macos-blue"
+              iconBg="bg-macos-blue/10"
+            />
+            <MacosStatCard
+              label="Outstanding"
+              value={`$${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              icon={TrendingUp}
+              iconColor="text-macos-red"
+              iconBg="bg-macos-red/10"
+            />
+          </MacosStatGrid>
 
           {/* Top Dealers */}
-          <div className="macos-card macos-shadow-card overflow-hidden">
-            <div className="p-4 border-b border-border/30">
-              <h3 className="macos-section-title">Top Dealers by Revenue</h3>
-              <p className="macos-section-desc">Highest grossing wholesale partners</p>
-            </div>
+          <MacosCard
+            title="Top Dealers by Revenue"
+            subtitle="Highest grossing wholesale partners"
+            noPadding
+          >
             {topDealers.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground text-[13px] tracking-tight">No dealer data available</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto custom-scrollbar">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-border/50 hover:bg-transparent">
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Rank</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Spent</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Outstanding</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Rank</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Dealer</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Total Spent</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Outstanding</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {topDealers.map((dealer, i) => (
-                      <TableRow key={dealer.id} className="macos-table-row border-b border-border/30">
-                        <TableCell>
-                          <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${i === 0 ? 'bg-gg-golden/10 text-gg-golden' : 'bg-secondary text-secondary-foreground'}`}>
-                            #{i + 1}
-                          </span>
+                      <TableRow key={dealer.id} className="macos-table-row cursor-default border-b border-border/30 last:border-0">
+                        <TableCell className="py-3">
+                          {i === 0 ? (
+                            <MacosBadge variant="warning">#{i + 1}</MacosBadge>
+                          ) : (
+                            <MacosBadge>#{i + 1}</MacosBadge>
+                          )}
                         </TableCell>
-                        <TableCell className="text-[13px] font-medium tracking-tight">{dealer.name}</TableCell>
-                        <TableCell className="text-right text-[13px] font-medium tracking-tight">${dealer.totalSpent.toFixed(2)}</TableCell>
-                        <TableCell className="text-right text-[13px] tracking-tight">
+                        <TableCell className="text-[13px] font-medium tracking-tight py-3">{dealer.name}</TableCell>
+                        <TableCell className="text-right text-[13px] font-medium tracking-tight py-3">${dealer.totalSpent.toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-[13px] tracking-tight py-3">
                           {dealer.outstanding > 0 ? (
                             <span className="text-macos-red">${dealer.outstanding.toFixed(2)}</span>
                           ) : (
@@ -766,378 +730,387 @@ export function WholesaleModule() {
                 </Table>
               </div>
             )}
-          </div>
+          </MacosCard>
 
           {/* Order Status Breakdown */}
-          <div className="macos-card macos-shadow-card overflow-hidden">
-            <div className="p-4 border-b border-border/30">
-              <h3 className="macos-section-title">Order Status Breakdown</h3>
-            </div>
-            <div className="p-4">
+          <MacosCard
+            title="Order Status Breakdown"
+            noPadding
+          >
+            <div className="p-5">
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 {['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => {
                   const count = orders.filter((o) => o.status === status).length
                   const total = orders.filter((o) => o.status === status).reduce((s, o) => s + o.total, 0)
-                  const colorMap: Record<string, string> = {
-                    pending: 'bg-macos-orange/10 text-macos-orange',
-                    confirmed: 'bg-macos-blue/10 text-macos-blue',
-                    shipped: 'bg-macos-purple/10 text-macos-purple',
-                    delivered: 'bg-macos-green/10 text-macos-green',
-                    cancelled: 'bg-macos-red/10 text-macos-red',
+                  const statusVariantMap: Record<string, 'warning' | 'info' | 'purple' | 'success' | 'danger'> = {
+                    pending: 'warning',
+                    confirmed: 'info',
+                    shipped: 'purple',
+                    delivered: 'success',
+                    cancelled: 'danger',
                   }
+                  const iconMap: Record<string, React.ElementType> = {
+                    pending: DollarSign,
+                    confirmed: CheckCircle2,
+                    shipped: Truck,
+                    delivered: PackageCheck,
+                    cancelled: X,
+                  }
+                  const colorMap: Record<string, { iconColor: string; iconBg: string }> = {
+                    pending: { iconColor: 'text-macos-orange', iconBg: 'bg-macos-orange/10' },
+                    confirmed: { iconColor: 'text-macos-blue', iconBg: 'bg-macos-blue/10' },
+                    shipped: { iconColor: 'text-macos-purple', iconBg: 'bg-macos-purple/10' },
+                    delivered: { iconColor: 'text-macos-green', iconBg: 'bg-macos-green/10' },
+                    cancelled: { iconColor: 'text-macos-red', iconBg: 'bg-macos-red/10' },
+                  }
+                  const StatusIcon = iconMap[status]
+                  const colors = colorMap[status]
                   return (
-                    <div key={status} className="macos-stat macos-shadow-card text-center">
-                      <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{status}</p>
-                      <p className="text-[24px] font-bold tracking-tight leading-tight">{count}</p>
-                      <p className="text-[11px] text-muted-foreground tracking-tight mt-1">${total.toFixed(2)}</p>
-                    </div>
+                    <MacosStatCard
+                      key={status}
+                      label={status}
+                      value={count}
+                      icon={StatusIcon}
+                      iconColor={colors.iconColor}
+                      iconBg={colors.iconBg}
+                    />
                   )
                 })}
               </div>
             </div>
-          </div>
+          </MacosCard>
         </div>
       )}
 
       {/* New Order Dialog */}
-      <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
-        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-float">
-          <DialogHeader>
-            <DialogTitle className="macos-section-title flex items-center gap-2">
-              <ShoppingCart className="size-4" />
-              New Wholesale Order
-            </DialogTitle>
-            <DialogDescription className="text-[12px]">Create a new bulk order for a dealer or distributor</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Dealer Selection */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[12px] font-medium text-muted-foreground">Dealer / Customer</Label>
-                <Select value={selectedDealerId} onValueChange={(v) => {
-                  setSelectedDealerId(v)
-                  const dealer = dealers.find((d) => d.id === v)
-                  if (dealer) setDealerName(dealer.name)
-                }}>
-                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                    <SelectValue placeholder="Select dealer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dealers.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name} ({d.type})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="dealer-name" className="text-[12px] font-medium text-muted-foreground">Or Dealer Name</Label>
-                <Input
-                  id="dealer-name"
-                  value={dealerName}
-                  onChange={(e) => setDealerName(e.target.value)}
-                  placeholder="Enter dealer name"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="delivery-addr" className="text-[12px] font-medium text-muted-foreground">Delivery Address</Label>
-              <Input
-                id="delivery-addr"
-                value={deliveryAddress}
-                onChange={(e) => setDeliveryAddress(e.target.value)}
-                placeholder="Delivery address"
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-              />
-            </div>
-
-            {/* Add Products */}
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-medium text-muted-foreground">Add Products</Label>
-              <div className="macos-search flex items-center">
-                <Search className="size-3.5 text-muted-foreground ml-2.5 shrink-0" />
-                <Input
-                  placeholder="Search books or stationery..."
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  className="border-0 bg-transparent text-[13px] h-8 pl-2 focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-              </div>
-              {searchLoading && (
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground px-2">
-                  <Loader2 className="size-3 animate-spin" /> Searching...
-                </div>
-              )}
-              {searchResults.length > 0 && (
-                <div className="macos-card macos-shadow overflow-hidden max-h-40 overflow-y-auto custom-scrollbar">
-                  {searchResults.map((product) => (
-                    <button
-                      key={`${product.type}-${product.id}`}
-                      className="w-full flex items-center justify-between p-2.5 hover:bg-secondary/80 text-left text-[13px] tracking-tight transition-colors"
-                      onClick={() => addItemToOrder(product)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple">{product.type}</span>
-                        <span>{product.name}</span>
-                      </div>
-                      <span className="text-muted-foreground">${product.price.toFixed(2)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Order Items */}
-            {orderItems.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-[12px] font-medium text-muted-foreground">Order Items</Label>
-                <div className="macos-card overflow-hidden divide-y divide-border/30">
-                  {orderItems.map((item, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2.5">
-                      <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple shrink-0">{item.productType}</span>
-                      <span className="text-[13px] flex-1 truncate tracking-tight">{item.productName}</span>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                        className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
-                      />
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={item.unitPrice}
-                        onChange={(e) => updateOrderItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        className="w-20 text-right text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
-                      />
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={item.discount}
-                        onChange={(e) => updateOrderItem(index, 'discount', parseFloat(e.target.value) || 0)}
-                        className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
-                        placeholder="%"
-                      />
-                      <Button variant="ghost" size="icon" className="size-6 rounded-lg text-macos-red hover:text-macos-red hover:bg-macos-red/10" onClick={() => removeOrderItem(index)}>
-                        <X className="size-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Discount / Tax */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="order-discount" className="text-[12px] font-medium text-muted-foreground">Discount ($)</Label>
-                <Input
-                  id="order-discount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={orderDiscount}
-                  onChange={(e) => setOrderDiscount(e.target.value)}
-                  placeholder="0.00"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="order-tax" className="text-[12px] font-medium text-muted-foreground">Tax (%)</Label>
-                <Input
-                  id="order-tax"
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={orderTax}
-                  onChange={(e) => setOrderTax(e.target.value)}
-                  placeholder="0"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-            </div>
-
-            {/* Order Total Preview */}
-            {orderItems.length > 0 && (
-              <div className="macos-card p-3 space-y-1 text-[13px] tracking-tight bg-secondary/50">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>${orderSubtotal.toFixed(2)}</span>
-                </div>
-                {orderDiscountAmt > 0 && (
-                  <div className="flex justify-between text-macos-green">
-                    <span>Discount</span>
-                    <span>-${orderDiscountAmt.toFixed(2)}</span>
-                  </div>
-                )}
-                {orderTaxAmt > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span>${orderTaxAmt.toFixed(2)}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-bold text-base tracking-tight">
-                  <span>Total</span>
-                  <span>${orderTotal.toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="order-notes" className="text-[12px] font-medium text-muted-foreground">Notes</Label>
-              <Textarea
-                id="order-notes"
-                value={orderNotes}
-                onChange={(e) => setOrderNotes(e.target.value)}
-                placeholder="Order notes..."
-                rows={2}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setOrderDialogOpen(false)} disabled={saving} className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8">
+      <MacosDialog
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+        title="New Wholesale Order"
+        description="Create a new bulk order for a dealer or distributor"
+        className="glass-card sm:max-w-[650px]"
+        footer={
+          <>
+            <MacosButton variant="secondary" onClick={() => setOrderDialogOpen(false)} disabled={saving}>
               Cancel
-            </Button>
-            <Button onClick={handleCreateOrder} disabled={saving || orderItems.length === 0} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+            </MacosButton>
+            <MacosButton variant="primary" onClick={handleCreateOrder} disabled={saving || orderItems.length === 0}>
               {saving ? (
                 <>
-                  <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                  <Loader2 className="size-3.5 animate-spin" />
                   Creating...
                 </>
               ) : (
                 'Create Order'
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Order Detail Dialog */}
-      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-float">
-          <DialogHeader>
-            <DialogTitle className="macos-section-title flex items-center gap-2">
-              <Eye className="size-4" />
-              Order Details
-            </DialogTitle>
-            <DialogDescription className="text-[12px]">
-              {detailOrder?.orderNumber || ''}
-            </DialogDescription>
-          </DialogHeader>
-          {detailOrder && (
-            <div className="space-y-4 py-4">
-              {/* Order Info */}
-              <div className="grid grid-cols-2 gap-3 text-[13px] tracking-tight">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</p>
-                  <p className="font-medium">{detailOrder.customer?.name || detailOrder.dealerName || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</p>
-                  <div className="mt-1">{getStatusBadge(detailOrder.status)}</div>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Payment</p>
-                  <div className="mt-1">{getPaymentBadge(detailOrder.paymentStatus)}</div>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</p>
-                  <p className="font-medium">{new Date(detailOrder.createdAt).toLocaleDateString()}</p>
-                </div>
-              </div>
-
-              {detailOrder.deliveryAddress && (
-                <div className="text-[13px] tracking-tight">
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery Address</p>
-                  <p className="font-medium">{detailOrder.deliveryAddress}</p>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Items */}
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Items ({detailOrder.items.length})</Label>
-                <div className="macos-card overflow-hidden divide-y divide-border/30">
-                  {detailOrder.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-2.5 text-[13px] tracking-tight">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{getItemName(item)}</p>
-                        <p className="text-[11px] text-muted-foreground tracking-tight">
-                          ${item.unitPrice.toFixed(2)} × {item.quantity}
-                          {item.discount > 0 && <span className="text-macos-green ml-1">-{item.discount}%</span>}
-                        </p>
-                      </div>
-                      <span className="font-medium ml-2">${item.totalPrice.toFixed(2)}</span>
-                    </div>
+            </MacosButton>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {/* Dealer Selection */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <MacosFormField label="Dealer / Customer">
+              <Select value={selectedDealerId} onValueChange={(v) => {
+                setSelectedDealerId(v)
+                const dealer = dealers.find((d) => d.id === v)
+                if (dealer) setDealerName(dealer.name)
+              }}>
+                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                  <SelectValue placeholder="Select dealer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dealers.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name} ({d.type})</SelectItem>
                   ))}
-                </div>
+                </SelectContent>
+              </Select>
+            </MacosFormField>
+            <MacosFormField label="Or Dealer Name">
+              <Input
+                value={dealerName}
+                onChange={(e) => setDealerName(e.target.value)}
+                placeholder="Enter dealer name"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+          </div>
+
+          <MacosFormField label="Delivery Address">
+            <Input
+              value={deliveryAddress}
+              onChange={(e) => setDeliveryAddress(e.target.value)}
+              placeholder="Delivery address"
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+            />
+          </MacosFormField>
+
+          {/* Add Products */}
+          <MacosFormField label="Add Products">
+            <MacosSearch
+              value={productSearch}
+              onChange={setProductSearch}
+              placeholder="Search books or stationery..."
+            />
+            {searchLoading && (
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground px-2 mt-1.5">
+                <Loader2 className="size-3 animate-spin" /> Searching...
               </div>
-
-              <Separator />
-
-              {/* Totals */}
-              <div className="space-y-1.5 text-[13px] tracking-tight">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>${detailOrder.subtotal.toFixed(2)}</span>
-                </div>
-                {detailOrder.discount > 0 && (
-                  <div className="flex justify-between text-macos-green">
-                    <span>Discount</span>
-                    <span>-${detailOrder.discount.toFixed(2)}</span>
-                  </div>
-                )}
-                {detailOrder.tax > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span>${detailOrder.tax.toFixed(2)}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-bold text-base tracking-tight">
-                  <span>Total</span>
-                  <span>${detailOrder.total.toFixed(2)}</span>
-                </div>
+            )}
+            {searchResults.length > 0 && (
+              <div className="macos-card macos-shadow overflow-hidden max-h-40 overflow-y-auto custom-scrollbar mt-1.5">
+                {searchResults.map((product) => (
+                  <button
+                    key={`${product.type}-${product.id}`}
+                    className="w-full flex items-center justify-between p-2.5 hover:bg-secondary/80 text-left text-[13px] tracking-tight transition-colors border-b border-border/20 last:border-0"
+                    onClick={() => addItemToOrder(product)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <MacosBadge variant="purple">{product.type}</MacosBadge>
+                      <span>{product.name}</span>
+                    </div>
+                    <span className="text-muted-foreground">${product.price.toFixed(2)}</span>
+                  </button>
+                ))}
               </div>
+            )}
+          </MacosFormField>
 
-              {/* Status Actions */}
-              {!isViewOnly && (
-                <div className="flex gap-2 pt-2">
-                  {detailOrder.status === 'pending' && (
-                    <Button onClick={() => handleStatusUpdate(detailOrder.id, 'confirmed')} disabled={updatingStatus === detailOrder.id} className="bg-macos-blue text-white rounded-lg font-medium text-[13px] h-8">
-                      <CheckCircle2 className="size-3.5 mr-1.5" />
-                      Confirm Order
+          {/* Order Items */}
+          {orderItems.length > 0 && (
+            <MacosFormField label="Order Items">
+              <div className="macos-card overflow-hidden divide-y divide-border/30">
+                {orderItems.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2.5">
+                    <MacosBadge variant="purple" className="shrink-0">{item.productType}</MacosBadge>
+                    <span className="text-[13px] flex-1 truncate tracking-tight">{item.productName}</span>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                      className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={item.unitPrice}
+                      onChange={(e) => updateOrderItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                      className="w-20 text-right text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={item.discount}
+                      onChange={(e) => updateOrderItem(index, 'discount', parseFloat(e.target.value) || 0)}
+                      className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+                      placeholder="%"
+                    />
+                    <Button variant="ghost" size="icon" className="size-6 rounded-lg text-macos-red hover:text-macos-red hover:bg-macos-red/10" onClick={() => removeOrderItem(index)}>
+                      <X className="size-3" />
                     </Button>
-                  )}
-                  {detailOrder.status === 'confirmed' && (
-                    <Button onClick={() => handleStatusUpdate(detailOrder.id, 'shipped')} disabled={updatingStatus === detailOrder.id} className="bg-macos-purple text-white rounded-lg font-medium text-[13px] h-8">
-                      <Ship className="size-3.5 mr-1.5" />
-                      Mark as Shipped
-                    </Button>
-                  )}
-                  {detailOrder.status === 'shipped' && (
-                    <Button onClick={() => handleStatusUpdate(detailOrder.id, 'delivered')} disabled={updatingStatus === detailOrder.id} className="bg-macos-green text-white rounded-lg font-medium text-[13px] h-8">
-                      <PackageCheck className="size-3.5 mr-1.5" />
-                      Mark as Delivered
-                    </Button>
-                  )}
-                  {(detailOrder.status === 'pending' || detailOrder.status === 'confirmed') && (
-                    <Button variant="ghost" className="text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg text-[13px] h-8" onClick={() => handleStatusUpdate(detailOrder.id, 'cancelled')} disabled={updatingStatus === detailOrder.id}>
-                      Cancel Order
-                    </Button>
-                  )}
+                  </div>
+                ))}
+              </div>
+            </MacosFormField>
+          )}
+
+          {/* Discount / Tax */}
+          <div className="grid grid-cols-2 gap-4">
+            <MacosFormField label="Discount ($)">
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={orderDiscount}
+                onChange={(e) => setOrderDiscount(e.target.value)}
+                placeholder="0.00"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+            <MacosFormField label="Tax (%)">
+              <Input
+                type="number"
+                step="0.5"
+                min="0"
+                value={orderTax}
+                onChange={(e) => setOrderTax(e.target.value)}
+                placeholder="0"
+                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+          </div>
+
+          {/* Order Total Preview */}
+          {orderItems.length > 0 && (
+            <div className="macos-card p-3 space-y-1 text-[13px] tracking-tight bg-secondary/50">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>${orderSubtotal.toFixed(2)}</span>
+              </div>
+              {orderDiscountAmt > 0 && (
+                <div className="flex justify-between text-macos-green">
+                  <span>Discount</span>
+                  <span>-${orderDiscountAmt.toFixed(2)}</span>
                 </div>
               )}
+              {orderTaxAmt > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tax</span>
+                  <span>${orderTaxAmt.toFixed(2)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between font-bold text-base tracking-tight">
+                <span>Total</span>
+                <span>${orderTotal.toFixed(2)}</span>
+              </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+
+          <MacosFormField label="Notes">
+            <Textarea
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+              placeholder="Order notes..."
+              rows={2}
+              className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+            />
+          </MacosFormField>
+        </div>
+      </MacosDialog>
+
+      {/* Order Detail Dialog */}
+      <MacosDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        title="Order Details"
+        description={detailOrder?.orderNumber || ''}
+        className="glass-card sm:max-w-[550px]"
+      >
+        {detailOrder && (
+          <div className="space-y-4">
+            {/* Order Info */}
+            <div className="grid grid-cols-2 gap-3 text-[13px] tracking-tight">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</p>
+                <p className="font-medium">{detailOrder.customer?.name || detailOrder.dealerName || '—'}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</p>
+                <div className="mt-1">{getStatusBadge(detailOrder.status)}</div>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Payment</p>
+                <div className="mt-1">{getPaymentBadge(detailOrder.paymentStatus)}</div>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</p>
+                <p className="font-medium">{new Date(detailOrder.createdAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+
+            {detailOrder.deliveryAddress && (
+              <div className="text-[13px] tracking-tight">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery Address</p>
+                <p className="font-medium">{detailOrder.deliveryAddress}</p>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Items */}
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Items ({detailOrder.items.length})</Label>
+              <div className="macos-card overflow-hidden divide-y divide-border/30">
+                {detailOrder.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-2.5 text-[13px] tracking-tight">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{getItemName(item)}</p>
+                      <p className="text-[11px] text-muted-foreground tracking-tight">
+                        ${item.unitPrice.toFixed(2)} × {item.quantity}
+                        {item.discount > 0 && <span className="text-macos-green ml-1">-{item.discount}%</span>}
+                      </p>
+                    </div>
+                    <span className="font-medium ml-2">${item.totalPrice.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Totals */}
+            <div className="space-y-1.5 text-[13px] tracking-tight">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span>${detailOrder.subtotal.toFixed(2)}</span>
+              </div>
+              {detailOrder.discount > 0 && (
+                <div className="flex justify-between text-macos-green">
+                  <span>Discount</span>
+                  <span>-${detailOrder.discount.toFixed(2)}</span>
+                </div>
+              )}
+              {detailOrder.tax > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tax</span>
+                  <span>${detailOrder.tax.toFixed(2)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between font-bold text-base tracking-tight">
+                <span>Total</span>
+                <span>${detailOrder.total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Status Actions */}
+            {!isViewOnly && (
+              <div className="flex gap-2 pt-2">
+                {detailOrder.status === 'pending' && (
+                  <MacosButton variant="primary" icon={CheckCircle2} onClick={() => handleStatusUpdate(detailOrder.id, 'confirmed')} disabled={updatingStatus === detailOrder.id}>
+                    Confirm Order
+                  </MacosButton>
+                )}
+                {detailOrder.status === 'confirmed' && (
+                  <MacosButton
+                    variant="primary"
+                    icon={Ship}
+                    onClick={() => handleStatusUpdate(detailOrder.id, 'shipped')}
+                    disabled={updatingStatus === detailOrder.id}
+                    className="bg-macos-purple hover:bg-macos-purple/90 text-white"
+                  >
+                    Mark as Shipped
+                  </MacosButton>
+                )}
+                {detailOrder.status === 'shipped' && (
+                  <MacosButton
+                    variant="primary"
+                    icon={PackageCheck}
+                    onClick={() => handleStatusUpdate(detailOrder.id, 'delivered')}
+                    disabled={updatingStatus === detailOrder.id}
+                    className="bg-macos-green hover:bg-macos-green/90 text-white"
+                  >
+                    Mark as Delivered
+                  </MacosButton>
+                )}
+                {(detailOrder.status === 'pending' || detailOrder.status === 'confirmed') && (
+                  <MacosButton
+                    variant="danger"
+                    onClick={() => handleStatusUpdate(detailOrder.id, 'cancelled')}
+                    disabled={updatingStatus === detailOrder.id}
+                  >
+                    Cancel Order
+                  </MacosButton>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </MacosDialog>
     </div>
   )
 }

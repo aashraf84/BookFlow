@@ -28,14 +28,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -54,6 +46,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosStatCard,
+  MacosSearch,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosEmptyState,
+  MacosDialog,
+  MacosFormField,
+  MacosStatGrid,
+} from '@/components/macos-ui'
 
 // ==================== TYPES ====================
 
@@ -102,45 +106,28 @@ interface Campaign {
 export function CRMLoyaltyModule() {
   const [activeTab, setActiveTab] = React.useState('customers')
   const tabs = [
-    { value: 'customers', label: 'Customers', icon: Contact },
-    { value: 'loyalty', label: 'Loyalty', icon: Crown },
-    { value: 'campaigns', label: 'Campaigns', icon: Megaphone },
+    { id: 'customers', label: 'Customers', count: undefined },
+    { id: 'loyalty', label: 'Loyalty', count: undefined },
+    { id: 'campaigns', label: 'Campaigns', count: undefined },
   ]
 
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <div className="macos-page-header">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-xl bg-gg-bridge/10 flex items-center justify-center macos-shadow-card">
-            <Contact className="size-5 text-gg-bridge" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h2 className="macos-page-title">CRM & Loyalty</h2>
-            <p className="macos-page-subtitle">Manage customers, loyalty programs, and marketing campaigns</p>
-          </div>
-        </div>
-      </div>
+      <MacosPageHeader
+        title="CRM & Loyalty"
+        subtitle="Manage customers, loyalty programs, and marketing campaigns"
+        icon={Contact}
+        iconColor="text-gg-bridge"
+        iconBg="bg-gg-bridge/10"
+      />
 
-      {/* Filter Bar */}
-      <div className="macos-filter-bar">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.value
-          return (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`macos-filter-item flex items-center gap-1.5 ${isActive ? 'macos-filter-item-active' : ''}`}
-            >
-              <Icon className="size-3.5" strokeWidth={1.5} />
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+      <MacosFilterBar
+        items={tabs}
+        activeId={activeTab}
+        onChange={setActiveTab}
+      />
 
-      <div className="mt-4">
+      <div>
         {activeTab === 'customers' && <CustomersTab />}
         {activeTab === 'loyalty' && <LoyaltyTab />}
         {activeTab === 'campaigns' && <CampaignsTab />}
@@ -197,21 +184,21 @@ function CustomersTab() {
   }
 
   const getTypeBadge = (type: string) => {
-    const styles: Record<string, string> = {
-      retail: 'bg-macos-green/10 text-macos-green',
-      wholesale: 'bg-macos-teal/10 text-macos-teal',
-      school: 'bg-macos-orange/10 text-macos-orange',
-      dealer: 'bg-macos-purple/10 text-macos-purple',
-      distributor: 'bg-macos-red/10 text-macos-red',
+    const variants: Record<string, 'success' | 'info' | 'warning' | 'purple' | 'danger'> = {
+      retail: 'success',
+      wholesale: 'info',
+      school: 'warning',
+      dealer: 'purple',
+      distributor: 'danger',
     }
-    return styles[type] || 'bg-secondary text-secondary-foreground'
+    return variants[type] || 'default'
   }
 
   const getLoyaltyTier = (points: number) => {
-    if (points >= 5000) return { name: 'Platinum', color: 'bg-gg-bridge/10 text-gg-bridge', icon: Crown }
-    if (points >= 2000) return { name: 'Gold', color: 'bg-gg-golden/10 text-gg-golden', icon: Award }
-    if (points >= 500) return { name: 'Silver', color: 'text-muted-foreground bg-secondary', icon: Star }
-    return { name: 'Bronze', color: 'bg-macos-orange/10 text-macos-orange', icon: Gift }
+    if (points >= 5000) return { name: 'Platinum', variant: 'purple' as const, icon: Crown }
+    if (points >= 2000) return { name: 'Gold', variant: 'warning' as const, icon: Award }
+    if (points >= 500) return { name: 'Silver', variant: 'default' as const, icon: Star }
+    return { name: 'Bronze', variant: 'warning' as const, icon: Gift }
   }
 
   const totalCustomers = customers.length
@@ -222,65 +209,17 @@ function CustomersTab() {
   return (
     <div className="space-y-5">
       {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
-              <Users className="size-4 text-macos-blue" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[24px] font-bold leading-tight" style={{ letterSpacing: '-0.03em' }}>{totalCustomers}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Customers</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
-              <DollarSign className="size-4 text-macos-green" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[24px] font-bold leading-tight text-macos-green" style={{ letterSpacing: '-0.03em' }}>${totalRevenue.toLocaleString()}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Revenue</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
-              <TrendingUp className="size-4 text-macos-orange" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[24px] font-bold leading-tight text-macos-orange" style={{ letterSpacing: '-0.03em' }}>${totalOutstanding.toLocaleString()}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Outstanding</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-gg-bridge/10 flex items-center justify-center">
-              <Sparkles className="size-4 text-gg-bridge" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[24px] font-bold leading-tight text-gg-bridge" style={{ letterSpacing: '-0.03em' }}>{totalPoints.toLocaleString()}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Loyalty Points</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MacosStatGrid>
+        <MacosStatCard label="Total Customers" value={totalCustomers} icon={Users} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+        <MacosStatCard label="Total Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+        <MacosStatCard label="Outstanding" value={`$${totalOutstanding.toLocaleString()}`} icon={TrendingUp} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+        <MacosStatCard label="Loyalty Points" value={totalPoints.toLocaleString()} icon={Sparkles} iconColor="text-gg-bridge" iconBg="bg-gg-bridge/10" />
+      </MacosStatGrid>
 
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:flex-initial sm:w-64 macos-search">
-            <Search className="absolute left-2.5 top-1.5 size-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search customers..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 border-0 bg-transparent text-[13px] h-8 focus:ring-0 focus:outline-none"
-            />
-          </div>
+          <MacosSearch value={search} onChange={setSearch} placeholder="Search customers..." className="w-full sm:w-64" />
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-32 rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
               <SelectValue />
@@ -296,9 +235,9 @@ function CustomersTab() {
           </Select>
         </div>
         {!isViewOnly && (
-          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-            <Plus className="size-3.5" strokeWidth={2} /> Add Customer
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowAddDialog(true)}>
+            Add Customer
+          </MacosButton>
         )}
       </div>
 
@@ -312,24 +251,24 @@ function CustomersTab() {
           </div>
         </div>
       ) : customers.length === 0 ? (
-        <div className="macos-card macos-shadow-card macos-empty">
-          <Contact className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
-          <p className="text-[13px] font-medium text-muted-foreground">No customers found</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Add your first customer to get started</p>
-        </div>
+        <MacosEmptyState
+          icon={Contact}
+          title="No customers found"
+          description="Add your first customer to get started"
+        />
       ) : (
         <div className="macos-card macos-shadow-card overflow-hidden">
-          <ScrollArea className="max-h-[500px]">
+          <ScrollArea className="max-h-[500px] custom-scrollbar">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-border/50">
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Contact</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Tier</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Points</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Spent</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Outstanding</TableHead>
+                <TableRow className="hover:bg-transparent border-b border-border/50">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Name</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Contact</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Type</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Tier</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Points</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Total Spent</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Outstanding</TableHead>
                   {!isViewOnly && <TableHead className="w-10"></TableHead>}
                 </TableRow>
               </TableHeader>
@@ -340,10 +279,10 @@ function CustomersTab() {
                   return (
                     <TableRow
                       key={customer.id}
-                      className="macos-table-row cursor-pointer"
+                      className="macos-table-row cursor-pointer border-b border-border/30 last:border-0"
                       onClick={() => setSelectedCustomer(customer)}
                     >
-                      <TableCell className="font-medium text-[13px]">
+                      <TableCell className="font-medium text-[13px] tracking-tight">
                         <div className="flex items-center gap-2.5">
                           <div className="size-8 rounded-full bg-gg-bridge/10 flex items-center justify-center flex-shrink-0">
                             <span className="text-[11px] font-semibold text-gg-bridge">{customer.name.charAt(0).toUpperCase()}</span>
@@ -355,24 +294,24 @@ function CustomersTab() {
                         <div className="text-[11px] space-y-0.5">
                           {customer.email && (
                             <div className="flex items-center gap-1 text-muted-foreground">
-                              <Mail className="size-3" strokeWidth={1.5} /> {customer.email}
+                              <Mail className="size-3" strokeWidth={1.8} /> {customer.email}
                             </div>
                           )}
                           {customer.phone && (
                             <div className="flex items-center gap-1 text-muted-foreground">
-                              <Phone className="size-3" strokeWidth={1.5} /> {customer.phone}
+                              <Phone className="size-3" strokeWidth={1.8} /> {customer.phone}
                             </div>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getTypeBadge(customer.type)}`}>
+                        <MacosBadge variant={getTypeBadge(customer.type)}>
                           {customer.type}
-                        </Badge>
+                        </MacosBadge>
                       </TableCell>
                       <TableCell>
-                        <div className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${tier.color}`}>
-                          <TierIcon className="size-3" strokeWidth={1.5} />
+                        <div className="inline-flex items-center gap-1 macos-badge">
+                          <TierIcon className="size-3" strokeWidth={1.8} />
                           {tier.name}
                         </div>
                       </TableCell>
@@ -389,17 +328,16 @@ function CustomersTab() {
                       </TableCell>
                       {!isViewOnly && (
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+                          <MacosButton
+                            variant="danger"
+                            className="h-6 w-6 p-0"
                             onClick={(e) => {
                               e.stopPropagation()
                               handleDelete(customer.id)
                             }}
                           >
-                            <Trash2 className="size-3" strokeWidth={1.5} />
-                          </Button>
+                            <Trash2 className="size-3" strokeWidth={1.8} />
+                          </MacosButton>
                         </TableCell>
                       )}
                     </TableRow>
@@ -490,17 +428,17 @@ function LoyaltyTab() {
         </div>
       ) : (
         <>
-          {/* Loyalty Tiers - macOS Contacts style cards */}
+          {/* Loyalty Tiers */}
           <div>
             <div className="macos-section-header">
               <div>
                 <h3 className="macos-section-title">Loyalty Tiers</h3>
                 <p className="macos-section-desc">Customer rewards progression</p>
               </div>
-              <Badge className="rounded-md bg-gg-bridge/10 text-gg-bridge border-0 text-[10px] font-semibold px-2.5 py-1">
-                <Crown className="size-3 mr-1" strokeWidth={1.5} />
+              <MacosBadge variant="purple">
+                <Crown className="size-3 mr-1" strokeWidth={1.8} />
                 {displayTiers.length} Tiers
-              </Badge>
+              </MacosBadge>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {displayTiers.map((tier) => {
@@ -512,18 +450,18 @@ function LoyaltyTab() {
                     <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient}`} />
                     <div className="p-5 pt-6">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className={`size-9 rounded-xl ${colors.bg} flex items-center justify-center macos-shadow-card`}>
-                          <Icon className={`size-4 ${colors.text}`} strokeWidth={1.5} />
+                        <div className={`size-9 rounded-xl ${colors.bg} flex items-center justify-center`}>
+                          <Icon className={`size-4 ${colors.text}`} strokeWidth={1.8} />
                         </div>
                         <div>
-                          <h4 className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>{tier.name}</h4>
+                          <h4 className="text-[13px] font-semibold tracking-tight">{tier.name}</h4>
                           <p className="text-[10px] font-semibold tracking-wider text-macos-green">{tier.discount}% discount</p>
                         </div>
                       </div>
                       <div className="space-y-3">
                         <div className="flex justify-between text-[11px]">
                           <span className="text-muted-foreground">Points Range</span>
-                          <span className="font-medium text-[13px]" style={{ fontWeight: 500 }}>
+                          <span className="font-medium text-[13px]">
                             {tier.minPoints.toLocaleString()} – {tier.maxPoints ? tier.maxPoints.toLocaleString() : '∞'}
                           </span>
                         </div>
@@ -557,21 +495,21 @@ function LoyaltyTab() {
             <div className="macos-card macos-shadow-card overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent border-border/50">
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Action</TableHead>
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Points Earned</TableHead>
+                  <TableRow className="hover:bg-transparent border-b border-border/50">
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Action</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Points Earned</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pointsRules.map((rule) => {
                     const Icon = rule.icon
                     return (
-                      <TableRow key={rule.action} className="macos-table-row">
+                      <TableRow key={rule.action} className="macos-table-row border-b border-border/30 last:border-0">
                         <TableCell className="flex items-center gap-2.5 text-[13px]">
                           <div className={`size-7 rounded-lg ${rule.color} flex items-center justify-center`}>
-                            <Icon className="size-3" strokeWidth={1.5} />
+                            <Icon className="size-3" strokeWidth={1.8} />
                           </div>
-                          <span style={{ fontWeight: 500 }}>{rule.action}</span>
+                          <span className="font-medium">{rule.action}</span>
                         </TableCell>
                         <TableCell className="font-medium text-gg-bridge text-[13px]">{rule.points}</TableCell>
                       </TableRow>
@@ -615,33 +553,23 @@ function CampaignsTab() {
     fetchCampaigns()
   }, [fetchCampaigns])
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): 'default' | 'warning' | 'info' | 'success' => {
     switch (status) {
-      case 'draft':
-        return 'bg-secondary text-secondary-foreground'
-      case 'scheduled':
-        return 'bg-macos-orange/10 text-macos-orange'
-      case 'sent':
-        return 'bg-macos-teal/10 text-macos-teal'
-      case 'completed':
-        return 'bg-macos-green/10 text-macos-green'
-      default:
-        return 'bg-secondary text-secondary-foreground'
+      case 'draft': return 'default'
+      case 'scheduled': return 'warning'
+      case 'sent': return 'info'
+      case 'completed': return 'success'
+      default: return 'default'
     }
   }
 
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (type: string): 'success' | 'info' | 'purple' => {
     switch (type) {
-      case 'sms':
-        return 'bg-macos-green/10 text-macos-green'
-      case 'whatsapp':
-        return 'bg-macos-teal/10 text-macos-teal'
-      case 'email':
-        return 'bg-macos-blue/10 text-macos-blue'
-      case 'social':
-        return 'bg-gg-bridge/10 text-gg-bridge'
-      default:
-        return 'bg-secondary text-secondary-foreground'
+      case 'sms': return 'success'
+      case 'whatsapp': return 'info'
+      case 'email': return 'info'
+      case 'social': return 'purple'
+      default: return 'info'
     }
   }
 
@@ -650,9 +578,9 @@ function CampaignsTab() {
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{campaigns.length} campaigns</p>
         {!isViewOnly && (
-          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-            <Plus className="size-3.5" strokeWidth={2} /> Create Campaign
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+            Create Campaign
+          </MacosButton>
         )}
       </div>
 
@@ -665,53 +593,53 @@ function CampaignsTab() {
           </div>
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="macos-card macos-shadow-card macos-empty">
-          <Megaphone className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
-          <p className="text-[13px] font-medium text-muted-foreground">No campaigns found</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Create your first marketing campaign</p>
-        </div>
+        <MacosEmptyState
+          icon={Megaphone}
+          title="No campaigns found"
+          description="Create your first marketing campaign"
+        />
       ) : (
         <div className="macos-card macos-shadow-card overflow-hidden">
-          <ScrollArea className="max-h-[500px]">
+          <ScrollArea className="max-h-[500px] custom-scrollbar">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-border/50">
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Sent</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Responses</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Schedule</TableHead>
+                <TableRow className="hover:bg-transparent border-b border-border/50">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Name</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Type</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Sent</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Responses</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Schedule</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {campaigns.map((campaign) => (
-                  <TableRow key={campaign.id} className="macos-table-row">
-                    <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{campaign.name}</TableCell>
+                  <TableRow key={campaign.id} className="macos-table-row border-b border-border/30 last:border-0">
+                    <TableCell className="font-medium text-[13px] tracking-tight">{campaign.name}</TableCell>
                     <TableCell>
-                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getTypeBadge(campaign.type)}`}>
+                      <MacosBadge variant={getTypeBadge(campaign.type)}>
                         {campaign.type}
-                      </Badge>
+                      </MacosBadge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getStatusBadge(campaign.status)}`}>
+                      <MacosBadge variant={getStatusBadge(campaign.status)}>
                         {campaign.status}
-                      </Badge>
+                      </MacosBadge>
                     </TableCell>
                     <TableCell className="text-right text-[13px]">
                       <span className="flex items-center justify-end gap-1 text-muted-foreground">
-                        <Send className="size-3" strokeWidth={1.5} /> {campaign.sentCount}
+                        <Send className="size-3" strokeWidth={1.8} /> {campaign.sentCount}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="text-macos-green font-medium text-[13px] flex items-center justify-end gap-1">
-                        <TrendingUp className="size-3" strokeWidth={1.5} /> {campaign.responseCount}
+                        <TrendingUp className="size-3" strokeWidth={1.8} /> {campaign.responseCount}
                       </span>
                     </TableCell>
                     <TableCell className="text-[11px] text-muted-foreground">
                       {campaign.scheduledAt ? (
                         <span className="flex items-center gap-1">
-                          <Calendar className="size-3" strokeWidth={1.5} />
+                          <Calendar className="size-3" strokeWidth={1.8} />
                           {new Date(campaign.scheduledAt).toLocaleDateString()}
                         </span>
                       ) : '—'}
@@ -780,61 +708,56 @@ function AddCustomerDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Add Customer</DialogTitle>
-          <DialogDescription className="text-[11px]">Register a new customer</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name *</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1-555-0100" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Address</Label>
-            <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main Street" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Customer Type</Label>
-              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="retail">Retail</SelectItem>
-                  <SelectItem value="wholesale">Wholesale</SelectItem>
-                  <SelectItem value="school">School</SelectItem>
-                  <SelectItem value="dealer">Dealer</SelectItem>
-                  <SelectItem value="distributor">Distributor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Credit Limit ($)</Label>
-              <Input type="number" step="0.01" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} placeholder="5000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Saving...' : 'Add Customer'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add Customer"
+      description="Register a new customer"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.name.trim()}>
+            {saving ? 'Saving...' : 'Add Customer'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <MacosFormField label="Name *">
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+        </MacosFormField>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Email">
+            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+          <MacosFormField label="Phone">
+            <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1-555-0100" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+        </div>
+        <MacosFormField label="Address">
+          <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main Street" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+        </MacosFormField>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Customer Type">
+            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="retail">Retail</SelectItem>
+                <SelectItem value="wholesale">Wholesale</SelectItem>
+                <SelectItem value="school">School</SelectItem>
+                <SelectItem value="dealer">Dealer</SelectItem>
+                <SelectItem value="distributor">Distributor</SelectItem>
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+          <MacosFormField label="Credit Limit ($)">
+            <Input type="number" step="0.01" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} placeholder="5000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+        </div>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -850,140 +773,138 @@ function CustomerDetailDialog({
   if (!customer) return null
 
   const getTypeBadge = (type: string) => {
-    const styles: Record<string, string> = {
-      retail: 'bg-macos-green/10 text-macos-green',
-      wholesale: 'bg-macos-teal/10 text-macos-teal',
-      school: 'bg-macos-orange/10 text-macos-orange',
-      dealer: 'bg-macos-purple/10 text-macos-purple',
-      distributor: 'bg-macos-red/10 text-macos-red',
+    const variants: Record<string, 'success' | 'info' | 'warning' | 'purple' | 'danger'> = {
+      retail: 'success',
+      wholesale: 'info',
+      school: 'warning',
+      dealer: 'purple',
+      distributor: 'danger',
     }
-    return styles[type] || 'bg-secondary text-secondary-foreground'
+    return variants[type] || 'default'
   }
 
   const getLoyaltyTier = (points: number) => {
-    if (points >= 5000) return { name: 'Platinum', color: 'bg-gg-bridge/10 text-gg-bridge', icon: Crown }
-    if (points >= 2000) return { name: 'Gold', color: 'bg-gg-golden/10 text-gg-golden', icon: Award }
-    if (points >= 500) return { name: 'Silver', color: 'text-muted-foreground bg-secondary', icon: Star }
-    return { name: 'Bronze', color: 'bg-macos-orange/10 text-macos-orange', icon: Gift }
+    if (points >= 5000) return { name: 'Platinum', variant: 'purple' as const, icon: Crown }
+    if (points >= 2000) return { name: 'Gold', variant: 'warning' as const, icon: Award }
+    if (points >= 500) return { name: 'Silver', variant: 'default' as const, icon: Star }
+    return { name: 'Bronze', variant: 'warning' as const, icon: Gift }
   }
 
   const tier = getLoyaltyTier(customer.loyaltyPoints)
   const TierIcon = tier.icon
 
   return (
-    <Dialog open={!!customer} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>
-            <div className="size-9 rounded-full bg-gg-bridge/10 flex items-center justify-center macos-shadow-card">
-              <span className="text-sm font-bold text-gg-bridge">{customer.name.charAt(0).toUpperCase()}</span>
-            </div>
-            <div>
-              <span>{customer.name}</span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getTypeBadge(customer.type)}`}>{customer.type}</Badge>
-                <div className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${tier.color}`}>
-                  <TierIcon className="size-3" strokeWidth={1.5} />
-                  {tier.name}
-                </div>
-              </div>
-            </div>
-          </DialogTitle>
-          <DialogDescription className="text-[11px]">Customer details and purchase history</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-3">
-              {customer.email && (
-                <div className="flex items-center gap-2 text-[13px]">
-                  <div className="size-6 rounded-lg bg-macos-blue/10 flex items-center justify-center">
-                    <Mail className="size-3 text-macos-blue" strokeWidth={1.5} />
-                  </div>
-                  <span style={{ fontWeight: 500 }}>{customer.email}</span>
-                </div>
-              )}
-              {customer.phone && (
-                <div className="flex items-center gap-2 text-[13px]">
-                  <div className="size-6 rounded-lg bg-macos-green/10 flex items-center justify-center">
-                    <Phone className="size-3 text-macos-green" strokeWidth={1.5} />
-                  </div>
-                  <span style={{ fontWeight: 500 }}>{customer.phone}</span>
-                </div>
-              )}
-              {customer.address && (
-                <div className="flex items-center gap-2 text-[13px]">
-                  <div className="size-6 rounded-lg bg-macos-orange/10 flex items-center justify-center">
-                    <MapPin className="size-3 text-macos-orange" strokeWidth={1.5} />
-                  </div>
-                  <span style={{ fontWeight: 500 }}>{customer.address}</span>
-                </div>
-              )}
-            </div>
-            <div className="space-y-3">
-              <div className="macos-stat macos-shadow-card" style={{ padding: '12px' }}>
-                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Spent</p>
-                <p className="text-[24px] font-bold text-macos-green" style={{ letterSpacing: '-0.03em' }}>${customer.totalSpent.toLocaleString()}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="macos-stat macos-shadow-card" style={{ padding: '8px 12px' }}>
-                  <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Points</p>
-                  <p className="font-bold text-gg-bridge text-[13px]">{customer.loyaltyPoints}</p>
-                </div>
-                <div className="macos-stat macos-shadow-card" style={{ padding: '8px 12px' }}>
-                  <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Outstanding</p>
-                  <p className="font-bold text-macos-orange text-[13px]">${customer.outstanding.toLocaleString()}</p>
-                </div>
-              </div>
+    <MacosDialog
+      open={!!customer}
+      onOpenChange={onOpenChange}
+      title={customer.name}
+      description="Customer details and purchase history"
+    >
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div className="size-9 rounded-full bg-gg-bridge/10 flex items-center justify-center">
+            <span className="text-sm font-bold text-gg-bridge">{customer.name.charAt(0).toUpperCase()}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <MacosBadge variant={getTypeBadge(customer.type)}>{customer.type}</MacosBadge>
+            <div className="inline-flex items-center gap-1 macos-badge">
+              <TierIcon className="size-3" strokeWidth={1.8} />
+              {tier.name}
             </div>
           </div>
+        </div>
 
-          <Separator className="bg-border/50" />
-
-          <div>
-            <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-3">Purchase History</h4>
-            {(customer._count?.sales || 0) > 0 || (customer._count?.wholesaleOrders || 0) > 0 ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
-                  <span className="flex items-center gap-2">
-                    <div className="size-6 rounded-lg bg-macos-green/10 flex items-center justify-center">
-                      <ShoppingBag className="size-3 text-macos-green" strokeWidth={1.5} />
-                    </div>
-                    Retail Sales
-                  </span>
-                  <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0">{customer._count?.sales || 0}</Badge>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
+            {customer.email && (
+              <div className="flex items-center gap-2 text-[13px]">
+                <div className="size-6 rounded-lg bg-macos-blue/10 flex items-center justify-center">
+                  <Mail className="size-3 text-macos-blue" strokeWidth={1.8} />
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
-                  <span className="flex items-center gap-2">
-                    <div className="size-6 rounded-lg bg-macos-teal/10 flex items-center justify-center">
-                      <DollarSign className="size-3 text-macos-teal" strokeWidth={1.5} />
-                    </div>
-                    Wholesale Orders
-                  </span>
-                  <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0">{customer._count?.wholesaleOrders || 0}</Badge>
-                </div>
+                <span className="font-medium">{customer.email}</span>
               </div>
-            ) : (
-              <p className="text-[13px] text-muted-foreground text-center py-4">No purchase history yet</p>
+            )}
+            {customer.phone && (
+              <div className="flex items-center gap-2 text-[13px]">
+                <div className="size-6 rounded-lg bg-macos-green/10 flex items-center justify-center">
+                  <Phone className="size-3 text-macos-green" strokeWidth={1.8} />
+                </div>
+                <span className="font-medium">{customer.phone}</span>
+              </div>
+            )}
+            {customer.address && (
+              <div className="flex items-center gap-2 text-[13px]">
+                <div className="size-6 rounded-lg bg-macos-orange/10 flex items-center justify-center">
+                  <MapPin className="size-3 text-macos-orange" strokeWidth={1.8} />
+                </div>
+                <span className="font-medium">{customer.address}</span>
+              </div>
             )}
           </div>
-
-          {customer.school && (
-            <>
-              <Separator className="bg-border/50" />
-              <div>
-                <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-2">Linked School</h4>
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50 text-[13px]">
-                  <div className="size-6 rounded-lg bg-macos-orange/10 flex items-center justify-center">
-                    <Award className="size-3 text-macos-orange" strokeWidth={1.5} />
-                  </div>
-                  <span style={{ fontWeight: 500 }}>{customer.school.name}</span>
-                </div>
+          <div className="space-y-3">
+            <div className="macos-stat macos-shadow-card" style={{ padding: '12px' }}>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Spent</p>
+              <p className="text-[24px] font-bold text-macos-green tracking-tight">${customer.totalSpent.toLocaleString()}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="macos-stat macos-shadow-card" style={{ padding: '8px 12px' }}>
+                <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Points</p>
+                <p className="font-bold text-gg-bridge text-[13px]">{customer.loyaltyPoints}</p>
               </div>
-            </>
+              <div className="macos-stat macos-shadow-card" style={{ padding: '8px 12px' }}>
+                <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Outstanding</p>
+                <p className="font-bold text-macos-orange text-[13px]">${customer.outstanding.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Separator className="bg-border/50" />
+
+        <div>
+          <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-3">Purchase History</h4>
+          {(customer._count?.sales || 0) > 0 || (customer._count?.wholesaleOrders || 0) > 0 ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+                <span className="flex items-center gap-2">
+                  <div className="size-6 rounded-lg bg-macos-green/10 flex items-center justify-center">
+                    <ShoppingBag className="size-3 text-macos-green" strokeWidth={1.8} />
+                  </div>
+                  Retail Sales
+                </span>
+                <MacosBadge>{customer._count?.sales || 0}</MacosBadge>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+                <span className="flex items-center gap-2">
+                  <div className="size-6 rounded-lg bg-macos-teal/10 flex items-center justify-center">
+                    <DollarSign className="size-3 text-macos-teal" strokeWidth={1.8} />
+                  </div>
+                  Wholesale Orders
+                </span>
+                <MacosBadge>{customer._count?.wholesaleOrders || 0}</MacosBadge>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[13px] text-muted-foreground text-center py-4">No purchase history yet</p>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+
+        {customer.school && (
+          <>
+            <Separator className="bg-border/50" />
+            <div>
+              <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-2">Linked School</h4>
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50 text-[13px]">
+                <div className="size-6 rounded-lg bg-macos-orange/10 flex items-center justify-center">
+                  <Award className="size-3 text-macos-orange" strokeWidth={1.8} />
+                </div>
+                <span className="font-medium">{customer.school.name}</span>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </MacosDialog>
   )
 }
 
@@ -1037,64 +958,60 @@ function CreateCampaignDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Campaign</DialogTitle>
-          <DialogDescription className="text-[11px]">Launch a new marketing campaign</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Campaign Name *</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Summer Reading Sale" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Campaign Type</Label>
-              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="sms">SMS</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                  <SelectItem value="social">Social Media</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Target Audience</Label>
-              <Select value={form.target} onValueChange={(v) => setForm({ ...form, target: v })}>
-                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Customers</SelectItem>
-                  <SelectItem value="retail">Retail</SelectItem>
-                  <SelectItem value="wholesale">Wholesale</SelectItem>
-                  <SelectItem value="school">Schools</SelectItem>
-                  <SelectItem value="dealer">Dealers</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Message *</Label>
-            <Textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Write your campaign message..." rows={4} className="rounded-lg bg-secondary/80 border-0 text-[13px]" required />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Schedule (optional)</Label>
-            <Input type="datetime-local" value={form.scheduledAt} onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving || !form.name.trim() || !form.message.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Creating...' : 'Create Campaign'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create Campaign"
+      description="Launch a new marketing campaign"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.name.trim() || !form.message.trim()}>
+            {saving ? 'Creating...' : 'Create Campaign'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <MacosFormField label="Campaign Name *">
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Summer Reading Sale" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+        </MacosFormField>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Campaign Type">
+            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="sms">SMS</SelectItem>
+                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                <SelectItem value="social">Social Media</SelectItem>
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+          <MacosFormField label="Target Audience">
+            <Select value={form.target} onValueChange={(v) => setForm({ ...form, target: v })}>
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Customers</SelectItem>
+                <SelectItem value="retail">Retail</SelectItem>
+                <SelectItem value="wholesale">Wholesale</SelectItem>
+                <SelectItem value="school">Schools</SelectItem>
+                <SelectItem value="dealer">Dealers</SelectItem>
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+        </div>
+        <MacosFormField label="Message *">
+          <Textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Write your campaign message..." rows={4} className="rounded-lg bg-secondary/80 border-0 text-[13px]" required />
+        </MacosFormField>
+        <MacosFormField label="Schedule (optional)">
+          <Input type="datetime-local" value={form.scheduledAt} onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+        </MacosFormField>
+      </form>
+    </MacosDialog>
   )
 }

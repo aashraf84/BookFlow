@@ -1,0 +1,677 @@
+     1→     1→---
+     2→     2→Task ID: 1
+     3→     3→Agent: Main Agent
+     4→     4→Task: Add auth models to Prisma schema (User, Session, SerialKey)
+     5→     5→
+     6→     6→Work Log:
+     7→     7→- Added User model with id, name, email, password, role, avatar, isActive, isViewOnly, lastLoginAt
+     8→     8→- Added Session model with id, userId, token, deviceInfo, expiresAt
+     9→     9→- Added SerialKey model with id, key, plan, maxDevices, activatedAt, expiresAt, isActive, deviceFingerprint
+    10→    10→- Ran prisma db push successfully
+    11→    11→- Generated Prisma Client
+    12→    12→
+    13→    13→Stage Summary:
+    14→    14→- 3 new models added to schema: User, Session, SerialKey
+    15→    15→- Database synced and Prisma Client generated
+    16→    16→
+    17→    17→---
+    18→    18→Task ID: 2
+    19→    19→Agent: Subagent (full-stack-developer)
+    20→    20→Task: Create API routes for authentication
+    21→    21→
+    22→    22→Work Log:
+    23→    23→- Created /api/auth/activate - POST endpoint for serial key validation and activation
+    24→    24→- Created /api/auth/login - POST endpoint for user login with email/password
+    25→    25→- Created /api/auth/demo - POST endpoint for demo user auto-login with view-only rights
+    26→    26→- Created /api/auth/verify - GET endpoint for session token verification
+    27→    27→- Created /api/auth/logout - POST endpoint for session deletion
+    28→    28→
+    29→    29→Stage Summary:
+    30→    30→- 5 API routes created for authentication
+    31→    31→- All routes tested successfully with curl
+    32→    32→- Demo login returns {success:true, token, user:{isViewOnly:true}}
+    33→    33→- Admin login returns {success:true, token, user:{isViewOnly:false}}
+    34→    34→- Invalid credentials return {success:false, message:"Invalid email or password"}
+    35→    35→- Invalid serial key returns {success:false, message:"Invalid serial key"}
+    36→    36→
+    37→    37→---
+    38→    38→Task ID: 3
+    39→    39→Agent: Main Agent
+    40→    40→Task: Update app store with auth state and view-only mode
+    41→    41→
+    42→    42→Work Log:
+    43→    43→- Added AuthUser interface with id, name, email, role, isViewOnly
+    44→    44→- Added isAuthenticated, isDeviceActivated, authUser, authToken state
+    45→    45→- Added setAuth, setDeviceActivated, logout actions
+    46→    46→- Updated store to manage complete auth lifecycle
+    47→    47→
+    48→    48→Stage Summary:
+    49→    49→- App store now manages auth state including view-only mode detection
+    50→    50→- Logout clears all auth state
+    51→    51→
+    52→    52→---
+    53→    53→Task ID: 4
+    54→    54→Agent: Main Agent
+    55→    55→Task: Build macOS Golden Gate login page component
+    56→    56→
+    57→    57→Work Log:
+    58→    58→- Created LoginGate component with macOS Golden Gate bridge-inspired background
+    59→    59→- Implemented CSS art of Golden Gate Bridge with fog layers, towers, and suspension cables
+    60→    60→- Added macOS-style clock display with real-time updates
+    61→    61→- Added macOS menu bar at top with File/Edit/View/Window/Help
+    62→    62→- Implemented 3-stage flow: initial → serial-key → login
+    63→    63→- Added frosted glass/vibrancy effects for the auth card
+    64→    64→- Added animated transitions with Framer Motion
+    65→    65→- Added star animations for dark mode
+    66→    66→- Added device activation state persistence in localStorage
+    67→    67→- Added session persistence in localStorage
+    68→    68→- Added session verification on page load
+    69→    69→- Added demo login button with VIEW ONLY badge
+    70→    70→- Added dark/light mode toggle in menu bar
+    71→    71→- Added vignette, noise texture, and ambient light overlays
+    72→    72→
+    73→    73→Stage Summary:
+    74→    74→- Complete macOS-style login page with Golden Gate Bridge background
+    75→    75→- 3-stage auth flow: Click to Start → Serial Key → Login
+    76→    76→- Demo login button auto-logs in with view-only rights
+    77→    77→- Session persistence and verification
+    78→    78→- Beautiful frosted glass effects and animations
+    79→    79→
+    80→    80→---
+    81→    81→Task ID: 5
+    82→    82→Agent: Main Agent
+    83→    83→Task: Update app-shell to handle auth state and view-only mode
+    84→    84→
+    85→    85→Work Log:
+    86→    86→- Updated AppSidebar to show View Only Mode banner in footer
+    87→    87→- Updated AppHeader to show VIEW ONLY badge when user is view-only
+    88→    88→- Updated user avatar to show user initials and purple color for demo
+    89→    89→- Added click-to-logout on user avatar
+    90→    90→- Updated AppFooter to show "Demo" indicator for view-only users
+    91→    91→- Added logout handler that clears server session and local storage
+    92→    92→
+    93→    93→Stage Summary:
+    94→    94→- App shell fully integrated with auth state
+    95→    95→- VIEW ONLY badge visible in header
+    96→    96→- "View Only Mode - Actions are disabled" banner in sidebar
+    97→    97→- Click avatar to logout
+    98→    98→
+    99→    99→---
+   100→   100→Task ID: 6
+   101→   101→Agent: Main Agent
+   102→   102→Task: Update page.tsx to wire login flow
+   103→   103→
+   104→   104→Work Log:
+   105→   105→- Updated Home component to show LoginGate when not authenticated
+   106→   106→- Show AppShell when authenticated
+   107→   107→
+   108→   108→Stage Summary:
+   109→   109→- Simple conditional rendering based on isAuthenticated state
+   110→   110→
+   111→   111→---
+   112→   112→Task ID: 7
+   113→   113→Agent: Subagent (full-stack-developer)
+   114→   114→Task: Add seed data for demo user and serial keys
+   115→   115→
+   116→   116→Work Log:
+   117→   117→- Created prisma/seed-auth.ts script
+   118→   118→- Seeded 3 users: admin@bookflow.os, manager@bookflow.os, demo@bookflow.os
+   119→   119→- Seeded 4 serial keys: BF-TRIAL-2027-XXXX, BF-STD-2027-XXXX, BF-PRO-2027-XXXX, BF-ENT-2027-XXXX
+   120→   120→- Added db:seed-auth script to package.json
+   121→   121→- Ran seeding successfully with idempotent upsert
+   122→   122→
+   123→   123→Stage Summary:
+   124→   124→- 3 users seeded (admin, manager, demo with isViewOnly=true)
+   125→   125→- 4 serial keys seeded for different plans
+   126→   126→- Seeding is idempotent (can run multiple times)
+   127→   127→
+   128→   128→---
+   129→   129→Task ID: 8
+   130→   130→Agent: Subagent (UI Developer)
+   131→   131→Task: Rebuild Dashboard module with macOS 27 Golden Gate design language
+   132→   132→
+   133→   133→Work Log:
+   134→   134→- Rebuilt /src/components/modules/dashboard.tsx with complete macOS 27 Golden Gate design system
+   135→   135→- Applied `macos-card` class with 12px border-radius, 0.5px border, subtle shadow
+   136→   136→- Used `macos-shadow-card` for card-level elements, proper shadow hierarchy
+   137→   137→- Typography: Page title 22px/700 with -0.03em tracking via `macos-page-title`, section headers 13px/600, body 13px/500, labels 10px uppercase semibold tracking-wider
+   138→   138→- Stat cards: `macos-stat` class with size-9 rounded-xl icon containers, 24px/700 values, ArrowUpRight/ArrowDownRight change indicators
+   139→   139→- Added secondary stats row (Wholesale Orders, Online Orders, Pending POs, Low Stock Items) with Golden Gate palette colors
+   140→   140→- Tables: `macos-table-row` class on rows, 10px uppercase tracking-wider headers, 13px body cells
+   141→   141→- Badges: rounded-md (6px), bg-{color}/10 text-{color}, 10px/600 font, border-0
+   142→   142→- Charts: recharts with macOS color CSS variables, gradient fills on AreaChart, rounded top corners on BarChart, ChartLegend on category chart
+   143→   143→- Added time range filter bar using `macos-filter-bar` with `macos-filter-item` / `macos-filter-item-active`
+   144→   144→- Page header: `macos-page-header` with title + subtitle left, Refresh/New Sale buttons right
+   145→   145→- Quick actions: `macos-pill` class, icon + text, bg-secondary/80 hover:bg-secondary
+   146→   146→- Empty states: Center-aligned with icon container, title, description
+   147→   147→- Loading skeletons: Matching card layout structure with `macos-stat` and `macos-card` classes
+   148→   148→- Error state: Center-aligned with icon, title, description, retry button
+   149→   149→- View-only mode: Checks `authUser?.isViewOnly` from `useAppStore`, hides "New Sale" button when true
+   150→   150→- All existing data fetching logic, API calls, and type definitions preserved unchanged
+   151→   151→- No new API routes added
+   152→   152→- Component is 'use client' with default export
+   153→   153→- ESLint passes clean, dev server compiles successfully
+   154→   154→
+   155→   155→Stage Summary:
+   156→   156→- Complete visual overhaul of Dashboard module to macOS 27 Golden Gate design language
+   157→   157→- All 20 design spec requirements implemented
+   158→   158→- View-only mode properly integrated (hides create/edit actions)
+   159→   159→- Secondary stats row added for operational metrics
+   160→   160→- Time range filter bar added to Revenue Trend chart
+   161→   161→- All existing functionality preserved
+   162→   162→
+   163→   163→---
+   164→   164→Task ID: 5
+   165→   165→Agent: Subagent (UI Developer)
+   166→   166→Task: Rebuild Retail POS module with macOS 27 Golden Gate design language
+   167→   167→
+   168→   168→Work Log:
+   169→   169→- Rebuilt /src/components/modules/retail-pos.tsx with complete macOS 27 Golden Gate design system
+   170→   170→- Applied `macos-card` class with 12px border-radius, 0.5px border, subtle shadow on all card surfaces
+   171→   171→- Used `macos-shadow-card` for product cards and search bar, `macos-shadow` for cart panel, `macos-shadow-float` for dialogs
+   172→   172→- Typography: Page title 22px/700 with -0.03em tracking via `macos-page-title`, section headers 13px/600, body 13px/500, labels 10px uppercase semibold tracking-wider
+   173→   173→- POS Layout: Split view — product grid left (3 cols), sticky cart panel right (2 cols), Apple Store POS style
+   174→   174→- Product grid: `macos-card macos-shadow-card macos-card-hover` with hover lift effect, click-to-add, type badge with Golden Gate colors (`bg-gg-bridge/10 text-gg-bridge` for books, `bg-gg-sunset/10 text-gg-sunset` for stationery), category badges, in-cart indicator with green ring
+   175→   175→- Search: `macos-search` class at top of product grid with clear button, native input for seamless macOS feel
+   176→   176→- Category filter: `macos-filter-bar` with `macos-filter-item` and `macos-filter-item-active` for All/Books/Stationery/School tabs
+   177→   177→- Cart panel: Sticky right panel with type indicator dots (gg-bridge for books, gg-sunset for stationery), hover-reveal remove buttons, quantity stepper with minus/plus
+   178→   178→- Payment dialog: macOS-style modal using `macos-shadow-float` with 4-column radio grid, color-coded payment methods (green=Cash, blue=Card, purple=Bank, orange=Wallet), ring highlight on selection
+   179→   179→- Receipt dialog: Golden Gate styled receipt with `Sparkles` icon and `gg-golden` accent, rounded-lg background for item list, large total display
+   180→   180→- Customer lookup dialog: `macos-search` field, customer list with `gg-golden` loyalty point badges
+   181→   181→- Customer display in cart: `bg-gg-bay/5 border-gg-bay/10` card with loyalty points
+   182→   182→- Cart header: `gg-bridge` icon accent with item count badge
+   183→   183→- Complete Sale button: `bg-gg-bridge hover:bg-gg-bridge/90` Golden Gate red, large 11-height button
+   184→   184→- View-only mode: Checks `authUser?.isViewOnly` from `useAppStore`, disables add-to-cart, quantity changes, remove, clear cart, discount/tax inputs, checkout; shows "View Only" badge in header and disabled checkout button with eye icon
+   185→   185→- Error alert: `macos-card macos-shadow-card` with `bg-macos-red/5 border-macos-red/20`, icon in rounded container, dismiss button
+   186→   186→- All existing data fetching logic, API calls, and type definitions preserved unchanged
+   187→   187→- No new API routes added
+   188→   188→- Component is 'use client' with named export `RetailPOSModule`
+   189→   189→- ESLint passes clean, dev server compiles successfully
+   190→   190→
+   191→   191→Stage Summary:
+   192→   192→- Complete visual overhaul of Retail POS module to macOS 27 Golden Gate design language
+   193→   193→- All 15 design spec requirements implemented
+   194→   194→- Split POS layout with Apple Store-style product grid and sticky cart
+   195→   195→- View-only mode fully integrated (disables all cart/checkout actions)
+   196→   196→- Golden Gate bridge color palette used throughout (gg-bridge, gg-sunset, gg-golden, gg-bay)
+   197→   197→- macOS search field and filter bar properly applied
+   198→   198→- All existing functionality preserved
+   199→   199→
+   200→   200→---
+   201→   201→Task ID: 4
+   202→   202→Agent: Subagent (UI Developer)
+   203→   203→Task: Rebuild Inventory module with macOS 27 Golden Gate design language
+   204→   204→
+   205→   205→Work Log:
+   206→   206→- Rebuilt /src/components/modules/inventory.tsx with complete macOS 27 Golden Gate design system
+   207→   207→- Applied `macos-card` class with 12px border-radius, 0.5px border, subtle shadow on all card surfaces
+   208→   208→- Used `macos-shadow-card` for stat cards and table containers, `macos-shadow-float` for dialogs
+   209→   209→- Typography: Page title 22px/700 -0.03em via `macos-page-title`, subtitle via `macos-page-subtitle`, section headers 13px/600, body 13px/500, labels 10px uppercase semibold tracking-wider, form labels 12px/500
+   210→   210→- Stat cards: `macos-stat` class with size-9 rounded-xl icon containers in colored backgrounds, 24px/700 values
+   211→   211→  - Total Items: macos-blue icon container
+   212→   212→  - Low Stock: macos-orange icon container
+   213→   213→  - Out of Stock: macos-red icon container
+   214→   214→  - Total Value: gg-golden (Golden Gate) icon container
+   215→   215→- Tables: `macos-table-row` class on all table rows, 10px uppercase tracking-wider font-semibold headers, 13px body cells
+   216→   216→- Stock Level Indicators: Color-coded progress bars with 4 levels:
+   217→   217→  - Green (healthy) > Yellow (moderate) > Orange (low) > Red (critical/out of stock)
+   218→   218→  - Progress bar width based on quantity/maxStockLevel ratio
+   219→   219→  - Status badges use matching bg-{color}/10 text-{color} with rounded-md, 10px/600
+   220→   220→- Filters: `macos-filter-bar` with `macos-filter-item` / `macos-filter-item-active` for tab navigation
+   221→   221→- Search: `macos-search` class with clear button for product search (ISBN, SKU, name)
+   222→   222→- Transfer status badges: rounded-md, bg-{color}/10 text-{color}, 10px/600 font
+   223→   223→- Warehouse cards: `macos-card macos-shadow-card` with icon containers using gg-bay color, code badges
+   224→   224→- Transfer tab: Header with gg-sunset icon container, gg-bridge colored New Transfer button
+   225→   225→- Dialogs: `macos-shadow-float` rounded-2xl for Adjust Stock and Create Transfer dialogs
+   226→   226→  - Adjust dialog shows current quantity in large 24px bold, preview of new quantity in macos-blue/5 bg
+   227→   227→  - Transfer dialog has visual arrow indicator between From/To branches
+   228→   228→- Buttons: shadcn Button rounded-lg, primary actions use gg-bridge (Golden Gate red), secondary use macos-blue
+   229→   229→- Empty states: Center-aligned with size-14 rounded-2xl icon containers, title + description
+   230→   230→- Error alert: `macos-card macos-shadow-card` with macos-red/5 bg, icon in rounded container, dismiss button
+   231→   231→- Loading: shadcn Skeleton matching card layout structure with `macos-stat` and `macos-card` classes
+   232→   232→- View-only mode: Imports `useAppStore`, checks `authUser?.isViewOnly`, hides Adjust/Restock/New Transfer buttons and Actions column
+   233→   233→- Named export `InventoryModule`. 'use client'.
+   234→   234→- All existing data fetching, API calls, and types preserved unchanged
+   235→   235→- Extracted helper functions (getProductName, getStockLevel, getStockLevelColors) outside component
+   236→   236→- Added search filtering with useMemo
+   237→   237→- ESLint passes clean, dev server compiles successfully
+   238→   238→
+   239→   239→Stage Summary:
+   240→   240→- Complete visual overhaul of Inventory module to macOS 27 Golden Gate design language
+   241→   241→- All 17 design spec requirements implemented
+   242→   242→- Color-coded stock level progress bars (green > yellow > orange > red) added
+   243→   243→- View-only mode fully integrated (hides all CRUD buttons and actions column)
+   244→   244→- Golden Gate bridge color palette used for primary actions and warehouse cards
+   245→   245→- macOS search field and filter bar properly applied
+   246→   246→- All existing functionality preserved
+   247→   247→
+   248→   248→---
+   249→   249→Task ID: 2
+   250→   250→Agent: Subagent (UI Developer)
+   251→   251→Task: Rebuild Book Catalog and Authors modules with macOS 27 Golden Gate design language
+   252→   252→
+   253→   253→Work Log:
+   254→   254→- Rebuilt /src/components/modules/book-catalog.tsx with complete macOS 27 Golden Gate design system
+   255→   255→- Rebuilt /src/components/modules/authors.tsx with complete macOS 27 Golden Gate design system
+   256→   256→- Applied `macos-card` class with 12px border-radius, 0.5px border, subtle shadow on all card surfaces
+   257→   257→- Used `macos-shadow-card` for table containers and search cards, `macos-shadow-float` for dialogs
+   258→   258→- Typography: Page title 22px/700 -0.03em via `macos-page-title`, subtitle via `macos-page-subtitle`, section headers 10px uppercase tracking-wider font-semibold, form labels 12px/500
+   259→   259→- Book Catalog specific:
+   260→   260→  - Page header with Library icon in macos-blue/10 container, title + subtitle, Add Book button
+   261→   261→  - `macos-search` class for spotlight-style search with clear button (native input)
+   262→   262→  - Filter dropdowns wrapped in `macos-filter-bar` containers for consistent macOS segmented control look
+   263→   263→  - Clear All filter button using `macos-filter-item macos-filter-item-active` with macos-red color
+   264→   264→  - Books table with `macos-table-row` rows, 10px uppercase tracking-wider headers, 13px body cells
+   265→   265→  - Cover thumbnails: macOS Retina color palette + Golden Gate (8 colors), with colored initials
+   266→   266→  - Category badges: `macos-badge` class with per-category color mapping (10 categories mapped)
+   267→   267→  - Stock status: size-[6px] dot indicator (green/red) with 11px label
+   268→   268→  - Action buttons: Ghost buttons with colored hover states (blue for edit, red for delete)
+   269→   269→  - Pagination: Ghost buttons with macos-blue hover, chevron icons
+   270→   270→  - Dialog: `macos-shadow-float` rounded-2xl, macOS-style sticky header with icon + title + subtitle, close button
+   271→   271→  - Dialog sections: Basic Information, Classification, Publication Details, Pricing, Academic, Description
+   272→   272→  - Form labels: 12px/500 text-muted-foreground with inline icons for context
+   273→   273→  - Inputs: rounded-lg, border-border/50, focus:ring-primary/20
+   274→   274→  - Dialog footer: Sticky bottom with Cancel (ghost) and Create/Update (primary) buttons
+   275→   275→- Authors specific:
+   276→   276→  - Page header with Users icon in gg-sunset/10 container, title + subtitle, Add Author button
+   277→   277→  - `macos-search` class for spotlight-style search with clear button
+   278→   278→  - Author grid cards: `macos-card macos-shadow-card macos-card-hover`, cursor-pointer, group hover
+   279→   279→  - Author names highlight with macos-blue on card hover
+   280→   280→  - Avatar colors: 10-color palette (macOS Retina + Golden Gate), with ring-offset effect on detail view
+   281→   281→  - Detail view: Profile card with large avatar + ring effect, contact links, book table with category badges
+   282→   282→  - Dialog: macOS-style header with PenTool icon in gg-sunset/10 container, same form styling
+   283→   283→- View-only mode: Both modules import `useAppStore`, check `authUser?.isViewOnly`
+   284→   284→  - Book Catalog: Hides "Add Book" button and "Actions" column
+   285→   285→  - Authors: Hides "Add Author" button and edit/delete buttons on cards
+   286→   286→- book-catalog.tsx: 'use client', default export (BookCatalogModule)
+   287→   287→- authors.tsx: 'use client', named export (AuthorsModule) — updated module-content.tsx import
+   288→   288→- All existing data fetching logic, API calls, and type definitions preserved unchanged
+   289→   289→- No new API routes added
+   290→   290→- ESLint passes clean, dev server compiles successfully
+   291→   291→
+   292→   292→Stage Summary:
+   293→   293→- Complete visual overhaul of Book Catalog and Authors modules to macOS 27 Golden Gate design language
+   294→   294→- All 18 design spec requirements implemented across both modules
+   295→   295→- View-only mode properly integrated (hides create/edit/delete actions in both modules)
+   296→   296→- Golden Gate bridge color palette used throughout (gg-sunset for authors, macos-blue for books)
+   297→   297→- macOS search field and filter bar properly applied
+   298→   298→- Named export for AuthorsModule correctly imported in module-content.tsx
+   299→   299→- All existing functionality preserved
+   300→   300→
+   301→   301→---
+   302→   302→Task ID: 3
+   303→   303→Agent: Subagent (UI Developer)
+   304→   304→Task: Rebuild Publishers and Stationery modules with macOS 27 Golden Gate design language
+   305→   305→
+   306→   306→Work Log:
+   307→   307→- Rebuilt /src/components/modules/publishers.tsx with complete macOS 27 Golden Gate design system
+   308→   308→  - Changed from default export to named export `PublishersModule`
+   309→   309→  - Updated module-content.tsx import from default to named import
+   310→   310→  - Applied `macos-card` class with `macos-shadow-card` on all card surfaces
+   311→   311→  - Typography: Page title 22px/700 -0.03em via `macos-page-title`, subtitle via `macos-page-subtitle`, section headers 13px/600
+   312→   312→  - Search: `macos-search` class with native input for macOS Spotlight feel
+   313→   313→  - Tables: `macos-table-row` class on rows, 10px uppercase tracking-wider headers, 13px body cells
+   314→   314→  - Badges: rounded-md, bg-{color}/10 text-{color}, 10px/600 uppercase tracking-wider (gg-sunset for book counts, macos-green for detail badges)
+   315→   315→  - Publisher icons: Golden Gate palette colors added (gg-bridge, gg-bay, gg-sunset) alongside macOS Retina colors
+   316→   316→  - Detail view: Publisher profile card with size-16 rounded-2xl icon container, contact info with colored icons, agreement shown in gg-golden
+   317→   317→  - Dialog: `macos-shadow-float` rounded-2xl, form labels 12px/500, inputs rounded-lg border-border/50
+   318→   318→  - Empty state: Center-aligned with Building2/BookOpen icon, title, description
+   319→   319→  - Loading: Skeleton with icon + line matching table row structure
+   320→   320→  - Pagination: Clean with text-[11px] info and rounded-lg buttons
+   321→   321→  - View-only mode: Imports `useAppStore`, checks `authUser?.isViewOnly`, hides Add Publisher button and Actions column
+   322→   322→  - Added DialogDescription and DialogFooter for proper dialog structure
+   323→   323→  - Replaced RefreshCw with Loader2 for delete loading state
+   324→   324→
+   325→   325→- Rebuilt /src/components/modules/stationery.tsx with complete macOS 27 Golden Gate design system
+   326→   326→  - Named export `StationeryModule` preserved
+   327→   327→  - Added stat cards row: Total Products (macos-blue), In Stock (macos-green), Low Stock (macos-orange), Categories (gg-sunset)
+   328→   328→  - Stat cards use `macos-card macos-shadow-card` with size-9 rounded-xl icon containers, 22px/700 values
+   329→   329→  - Search: `macos-search` class with native input for macOS Spotlight feel
+   330→   330→  - Filters: `macos-filter-bar` with `macos-filter-item` / `macos-filter-item-active` replacing macos-segmented
+   331→   331→  - Tables: `macos-table-row` class on rows, 10px uppercase tracking-wider headers, 13px body cells
+   332→   332→  - Product rows: Package icon in macos-teal rounded-xl container, brand shown as secondary text under product name
+   333→   333→  - Stock badges: rounded-md, bg-{color}/10 text-{color}, 10px/600 uppercase (In Stock=green, Low Stock=orange, Out/No Stock=red)
+   334→   334→  - Category badges: macos-purple rounded-md with uppercase tracking-wider
+   335→   335→  - Price column: Stacked with discount % in macos-green below
+   336→   336→  - Dialog: `macos-shadow-float` rounded-2xl, form labels 12px/500, inputs rounded-lg border-border/50
+   337→   337→  - Error alert: macos-card with macos-red/5 bg, icon in rounded container, dismiss button
+   338→   338→  - Empty state: Center-aligned with Package icon, title, description
+   339→   339→  - Loading: Skeleton with icon + line matching table row structure
+   340→   340→  - View-only mode: Imports `useAppStore`, checks `authUser?.isViewOnly`, hides Add Product button and Actions column
+   341→   341→  - Added DialogDescription and DialogFooter for proper dialog structure
+   342→   342→
+   343→   343→Stage Summary:
+   344→   344→- Complete visual overhaul of both Publishers and Stationery modules to macOS 27 Golden Gate design language
+   345→   345→- All 17 design spec requirements implemented in both modules
+   346→   346→- View-only mode properly integrated (hides create/edit/delete actions)
+   347→   347→- Golden Gate bridge palette used throughout (gg-bridge, gg-sunset, gg-golden, gg-bay)
+   348→   348→- Stat cards row added to Stationery module for catalog overview
+   349→   349→- macOS search field and filter bar properly applied
+   350→   350→- Fixed publishers import from default to named export
+   351→   351→- All existing functionality preserved
+   352→   352→
+   353→   353→---
+   354→   354→Task ID: 11
+   355→   355→Agent: Subagent (UI Developer)
+   356→   356→Task: Rebuild Reports and AI Suite modules with macOS 27 Golden Gate design language
+   357→   357→
+   358→   358→Work Log:
+   359→   359→- Rebuilt /src/components/modules/reports.tsx with complete macOS 27 Golden Gate design system (macOS Activity Monitor style)
+   360→   360→  - Applied `macos-card` class with `macos-shadow-card` on all card surfaces (replacing `rounded-2xl macos-shadow p-5 bg-card`)
+   361→   361→  - Typography: Page title 22px/700 -0.03em via `macos-page-title`, subtitle via `macos-page-subtitle`, section headers via `macos-section-title`/`macos-section-desc`, labels 10px uppercase semibold tracking-wider
+   362→   362→  - Replaced `macos-segmented` with `macos-filter-bar` + `macos-filter-item`/`macos-filter-item-active` for category tabs and date range selector
+   363→   363→  - Charts: Migrated from raw recharts to `ChartContainer`, `ChartTooltip`, `ChartTooltipContent`, `ChartLegend`, `ChartLegendContent` from @/components/ui/chart
+   364→   364→  - Added `ChartConfig` objects for each chart type (revenue, stock, publisher, author, financial, school, payment)
+   365→   365→  - Added gradient fills via SVG `linearGradient` defs on all Bar and Area charts
+   366→   366→  - Rounded bar corners: `radius={[6, 6, 0, 0]}` on all bar charts
+   367→   367→  - Financial report uses AreaChart with gradient fills instead of LineChart for richer visual
+   368→   368→  - Pie charts use innerRadius for donut style with paddingAngle=3
+   369→   369→  - Removed CartesianGrid vertical lines for cleaner macOS look
+   370→   370→  - Removed axis lines and tick lines (`axisLine={false} tickLine={false}`)
+   371→   371→  - Tables: `macos-table-row` class on all rows, `border-border/30` between rows, headers 10px uppercase tracking-wider font-semibold text-muted-foreground, cells 13px with tabular-nums
+   372→   372→  - MetricCard: Uses `macos-card macos-shadow-card`, 10px uppercase labels, 22px bold values
+   373→   373→  - Badges: rounded-md, bg-{color}/10 text-{color}, 10px/600 with tracking-wider
+   374→   374→  - Added category-specific badges on charts (LIVE, INVENTORY, PUBLISHERS, AUTHORS, WHOLESALE, SCHOOLS, FINANCIAL)
+   375→   375→  - Golden Gate colors: `text-gg-bridge`, `bg-gg-bridge/10` for publisher badge, `text-gg-sunset`, `bg-gg-sunset/10` for schools badge, `text-gg-golden`, `bg-gg-golden/10` for financial badge
+   376→   376→  - View-only: Imports `useAppStore`, checks `authUser?.isViewOnly`, shows VIEW ONLY badge, disables Export button
+   377→   377→  - Named export `ReportsModule`. 'use client'.
+   378→   378→  - All existing data and types preserved unchanged
+   379→   379→
+   380→   380→- Rebuilt /src/components/modules/ai-suite.tsx with complete macOS 27 Golden Gate design system (iMessage-style chat)
+   381→   381→  - Complete iMessage-style chat interface with colored avatars, bubble messages, typing animation
+   382→   382→  - Added per-assistant color theming: each AI tab has unique `color`, `colorBg`, and `avatarEmoji`
+   383→   383→    - Sales Forecast: macos-blue + 📈
+   384→   384→    - Inventory AI: macos-green + 📦
+   385→   385→    - Academic Planning: macos-purple + 🎓
+   386→   386→    - Marketing AI: macos-orange + 📣
+   387→   387→    - Business Assistant: gg-bridge (Golden Gate red) + 💼
+   388→   388→  - Chat bubbles: User messages `bg-macos-blue text-white rounded-2xl rounded-br-md`, AI messages `bg-secondary rounded-2xl rounded-bl-md`
+   389→   389→  - AI avatars: Circular with `rounded-full`, colored background, emoji inside
+   390→   390→  - User avatars: Circular with `bg-macos-blue/10`, User icon
+   391→   391→  - Typing animation: Character-by-character rendering with blinking cursor, configurable speed (12-30ms per char)
+   392→   392→  - Loading state: Three bouncing dots with "Thinking..." text
+   393→   393→  - Input bar: iMessage-style with `rounded-full` input and `rounded-full` send button with `bg-macos-blue`
+   394→   394→  - Chat header: macOS style with avatar, name, online indicator (green dot), DEMO and AI badges
+   395→   395→  - Sidebar (desktop): Context data + Quick Suggestions in `macos-card macos-shadow-card`
+   396→   396→  - Mobile: Horizontal scrolling suggestion chips below messages
+   397→   397→  - View-only/demo mode: Shows DEMO badge in header and DEMO MODE badge in page header, allows chat but marks as demo
+   398→   398→  - Page header: `macos-page-title` 22px/700 -0.03em, `macos-page-subtitle`, AI POWERED badge with Zap icon
+   399→   399→  - Filter bar: `macos-filter-bar` with `macos-filter-item`/`macos-filter-item-active` for assistant tabs
+   400→   400→  - `/api/ai` endpoint call preserved exactly
+   401→   401→  - Named export `AiSuiteModule`. 'use client'.
+   402→   402→  - All existing data and types preserved unchanged
+   403→   403→
+   404→   404→Stage Summary:
+   405→   405→- Complete visual overhaul of both Reports and AI Suite modules to macOS 27 Golden Gate design language
+   406→   406→- Reports: macOS Activity Monitor style with ChartContainer integration, gradient fills, donut pies, filter bar
+   407→   407→- AI Suite: iMessage-style chat with per-assistant colored avatars, emoji, typing animation, bubble messages
+   408→   408→- View-only mode integrated in both modules (VIEW ONLY badge, disabled export, DEMO mode in chat)
+   409→   409→- Golden Gate palette used throughout (gg-bridge for business/publishers, gg-sunset for schools, gg-golden for financial)
+   410→   410→- All existing functionality and API calls preserved
+   411→   411→
+   412→   412→---
+   413→   413→Task ID: 10
+   414→   414→Agent: Subagent (UI Developer)
+   415→   415→Task: Rebuild Publishing and E-Commerce modules with macOS 27 Golden Gate design language
+   416→   416→
+   417→   417→Work Log:
+   418→   418→- Rebuilt /src/components/modules/publishing.tsx with complete macOS 27 Golden Gate design system
+   419→   419→  - Applied `macos-card` class with 12px border-radius, 0.5px border, subtle shadow on all card surfaces
+   420→   420→  - Used `macos-shadow-card` for stat cards and table containers, `macos-shadow` for pipeline, `macos-shadow-float` for dialogs
+   421→   421→  - Typography: Page title 22px/700 -0.03em via `macos-page-title`, subtitle via `macos-page-subtitle`, section headers 13px/600, body 13px/500, labels 10px uppercase semibold tracking-wider
+   422→   422→  - Stat cards: `macos-card macos-shadow-card` with size-10 rounded-xl icon containers (Manuscripts=macos-blue, Submitted=macos-orange, Published=macos-teal, Print Orders=macos-purple, Print Cost=macos-green)
+   423→   423→  - **Manuscript Workflow Pipeline Visualization**: Custom `PipelineStep` component showing submitted → reviewed → approved → published flow with:
+   424→   424→    - Step icons (Send, PenTool, Shield, Globe) in colored containers
+   425→   425→    - Count badges on each step showing manuscripts in that status
+   426→   426→    - Active ring highlight on steps with items, completed state for passed stages
+   427→   427→    - Connecting arrows with golden color for completed transitions
+   428→   428→    - Rejected count indicator below pipeline
+   429→   429→  - Tables: `macos-table-row` class on all table rows, 10px uppercase tracking-wider font-semibold headers, 13px body cells
+   430→   430→  - Status badges per spec: submitted=macos-blue, reviewed=macos-purple, approved=macos-green, published=macos-teal, rejected=macos-red
+   431→   431→  - Each table row has status icon container with colored background
+   432→   432→  - Filters: `macos-filter-bar` with `macos-filter-item` / `macos-filter-item-active` for Manuscripts/Print Orders tabs
+   433→   433→  - Search: `macos-search` class for manuscript search by title/author
+   434→   434→  - Status filter dropdown for filtering manuscripts by status
+   435→   435→  - Dialogs: `macos-shadow-float` rounded-2xl for Submit Manuscript and Create Print Order dialogs
+   436→   436→  - Print cost preview: `macos-card` with `text-gg-golden` Golden Gate gold color
+   437→   437→  - Buttons: shadcn Button rounded-lg, CRUD buttons hidden for view-only users
+   438→   438→  - View-only mode: Imports `useAppStore`, checks `authUser?.isViewOnly`, hides Submit Manuscript/Print Order buttons, disables status transition buttons, shows "View only" text for print orders
+   439→   439→  - Named export `PublishingModule`. 'use client'.
+   440→   440→  - All existing data fetching, API calls, and types preserved unchanged
+   441→   441→
+   442→   442→- Rebuilt /src/components/modules/ecommerce.tsx with complete macOS 27 Golden Gate design system
+   443→   443→  - Applied `macos-card` class with 12px border-radius, 0.5px border, subtle shadow on all card surfaces
+   444→   444→  - Used `macos-shadow-card` for stat cards and table containers, `macos-shadow` for pipeline, `macos-shadow-float` for dialogs
+   445→   445→  - Typography: Page title 22px/700 -0.03em via `macos-page-title`, subtitle via `macos-page-subtitle`, section headers 13px/600, body 13px/500, labels 10px uppercase semibold tracking-wider
+   446→   446→  - Stat cards: `macos-card macos-shadow-card` with size-10 rounded-xl icon containers (Total=macos-blue, Pending=macos-orange, Shipped=macos-purple, Delivered=macos-green)
+   447→   447→  - **Order Tracking Delivery Pipeline**: Pipeline visualization showing pending → confirmed → shipped → delivered flow with:
+   448→   448→    - Step icons (Clock, CheckCircle2, Truck, Package) in colored containers
+   449→   449→    - Count badges on each step showing orders in that status
+   450→   450→    - Active ring highlight on steps with items, completed state for passed stages
+   451→   451→    - Connecting arrows with gg-golden (Golden Gate gold) color for completed transitions
+   452→   452→    - Revenue display with gg-golden color
+   453→   453→    - Cancelled count indicator below pipeline
+   454→   454→  - **Order Detail Delivery Pipeline**: `OrderDeliveryPipeline` component in detail dialog showing per-order delivery status with:
+   455→   455→    - Individual step progression with active pulse indicator on current step
+   456→   456→    - Cancelled state with macos-red alert card
+   457→   457→    - Step icons with ring highlight on current status
+   458→   458→  - Tables: `macos-table-row` class on all table rows, 10px uppercase tracking-wider font-semibold headers, 13px body cells
+   459→   459→  - Status badges per spec: pending=macos-orange, confirmed=macos-blue, shipped=macos-purple, delivered=macos-green, cancelled=macos-red
+   460→   460→  - Delivery method badges: home=macos-blue, pickup=macos-green, click-collect=macos-purple
+   461→   461→  - Total amounts in gg-golden Golden Gate gold color
+   462→   462→  - Filters: `macos-filter-bar` with `macos-filter-item` / `macos-filter-item-active` for All/Pending/Confirmed/Shipped/Delivered/Cancelled
+   463→   463→  - Search: `macos-search` class for order search by number, customer name, email
+   464→   464→  - Dialogs: `macos-shadow-float` rounded-2xl for Order Detail dialog
+   465→   465→  - View-only mode: Imports `useAppStore`, checks `authUser?.isViewOnly`, disables status transition buttons, hides update actions in detail dialog
+   466→   466→  - Named export `EcommerceModule`. 'use client'.
+   467→   467→  - All existing data fetching, API calls, and types preserved unchanged
+   468→   468→
+   469→   469→Stage Summary:
+   470→   470→- Complete visual overhaul of both Publishing and E-Commerce modules to macOS 27 Golden Gate design language
+   471→   471→- All 13 design spec requirements implemented in both modules
+   472→   472→- Publishing: Manuscript Workflow Pipeline visualization with step-by-step progression
+   473→   473→- E-Commerce: Order Tracking Pipeline (aggregate) + Order Delivery Pipeline (per-order in detail dialog)
+   474→   474→- View-only mode fully integrated in both modules
+   475→   475→- Golden Gate color palette (gg-golden, gg-bridge, gg-sunset, gg-bay) used for accents and pipelines
+   476→   476→- Search and filter bar functionality added
+   477→   477→- ESLint passes clean, dev server compiles successfully
+   478→   478→
+   479→   479→---
+   480→   480→Task ID: 9
+   481→   481→Agent: Subagent (UI Developer)
+   482→   482→Task: Rebuild Employees and Branches modules with macOS 27 Golden Gate design language
+   483→   483→
+   484→   484→Work Log:
+   485→   485→- Rebuilt /src/components/modules/employees.tsx with macOS Contacts-style design
+   486→   486→  - Two-column layout: left sidebar with department groups (like Contacts Groups), right panel with contact list
+   487→   487→  - Each employee row: Avatar with department-colored fallback, name+email, department badge, position, chevron indicator
+   488→   488→  - Hover-reveal edit/delete action buttons (hidden for view-only users)
+   489→   489→  - Status filter bar using `macos-filter-bar` with `macos-filter-item` / `macos-filter-item-active` for All/Active/Inactive
+   490→   490→  - Search field using `macos-search` class with native input for seamless macOS feel
+   491→   491→  - Mobile-responsive: department pills shown below search on small screens (sidebar hidden)
+   492→   492→  - Detail dialog: macOS Contacts Card style with icon-labeled contact info sections, employment stats in colored cards
+   493→   493→  - Stats row: `macos-stat macos-shadow-card` with 22px/700 values, Golden Gate palette (gg-golden for payroll)
+   494→   494→  - Dialogs: `macos-shadow-float` rounded-2xl, `macos-search` input styling
+   495→   495→  - View-only: imports `useAppStore`, checks `authUser?.isViewOnly`, hides Add Employee button and hover action buttons
+   496→   496→  - Named export `EmployeesModule`. 'use client'.
+   497→   497→  - All existing data fetching, API calls, and types preserved unchanged
+   498→   498→
+   499→   499→- Rebuilt /src/components/modules/branches.tsx with macOS System Settings > Network-style design
+   500→   500→  - Single unified card with Active Locations and Offline Locations sections (like Network panel)
+   501→   501→  - Each branch row: Building icon with status dot overlay (green=online, red=offline), branch name + code badge, address with MapPin, signal bars indicator, metrics (staff/sales/warehouses)
+   502→   502→  - SignalBars component: 4-bar strength indicator based on employee count and sales metrics
+   503→   503→  - Offline section: Dimmed rows with "Offline" badge and Reactivate button
+   504→   504→  - Click to open detail dialog with Network Details style: location info with icon-labeled fields, performance metrics in colored cards, signal strength display
+   505→   505→  - Stats row: `macos-stat macos-shadow-card` with 22px/700 values, Network-themed icons (Wifi for online, Globe for locations, gg-bay/gg-sunset colors)
+   506→   506→  - DropdownMenu for edit/deactivate actions (hidden for view-only)
+   507→   507→  - Dialogs: `macos-shadow-float` rounded-2xl, `macos-search` input styling
+   508→   508→  - View-only: imports `useAppStore`, checks `authUser?.isViewOnly`, hides Add Location button and action dropdowns
+   509→   509→  - Named export `BranchesModule`. 'use client'.
+   510→   510→  - All existing data fetching, API calls, and types preserved unchanged
+   511→   511→
+   512→   512→Stage Summary:
+   513→   513→- Complete visual overhaul of both Employees and Branches modules to macOS 27 Golden Gate design language
+   514→   514→- Employees module redesigned as macOS Contacts with department sidebar, contact list, and status filters
+   515→   515→- Branches module redesigned as macOS System Settings > Network with signal indicators, online/offline sections
+   516→   516→- View-only mode fully integrated in both modules (hides all CRUD buttons)
+   517→   517→- Golden Gate bridge color palette used throughout (gg-bridge, gg-sunset, gg-golden, gg-bay)
+   518→   518→- macOS search field, filter bar, stat cards, and shadow classes properly applied
+   519→   519→- All existing functionality preserved
+   520→   520→- ESLint passes clean, dev server compiles successfully
+   521→   521→
+   522→   522→---
+   523→   523→Task ID: 7+8
+   524→   524→Agent: Subagent (full-stack-developer)
+   525→   525→Task: Rebuild CRM Loyalty and Finance modules with macOS 27 Golden Gate design
+   526→   526→
+   527→   527→Work Log:
+   528→   528→- Rebuilt crm-loyalty.tsx with macOS Contacts-style design
+   529→   529→  - Page header: 22px/700 -0.03em title with gg-bridge icon
+   530→   530→  - macos-filter-bar with macos-filter-item-active for tab navigation
+   531→   531→  - macos-stat cards with size-9 rounded-xl icons, 24px/700 values
+   532→   532→  - Customer table with macos-table-row, avatar initials, loyalty tier badges (Bronze/Silver/Gold/Platinum using gg-bridge/gg-golden colors)
+   533→   533→  - macos-search class on search field
+   534→   534→  - macos-card + macos-shadow-card on all cards
+   535→   535→  - Loyalty tiers with gradient top bars and progress indicators
+   536→   536→  - Dialogs with macos-shadow-float and rounded-2xl
+   537→   537→  - View-only mode: imported useAppStore, hides Add Customer/Create Campaign/delete buttons
+   538→   538→  - Named export: CRMLoyaltyModule
+   539→   539→- Rebuilt finance.tsx with macOS System Settings > Finance design
+   540→   540→  - Page header: 22px/700 -0.03em title with macos-green icon
+   541→   541→  - macos-filter-bar for tab navigation
+   542→   542→  - P&L summary stat cards with 24px/700 values
+   543→   543→  - Revenue vs Expenses area chart with gradient fills using recharts
+   544→   544→  - Cash Flow area chart with inflow/outflow gradients
+   545→   545→  - Account Breakdown donut/pie chart with macOS colors
+   546→   546→  - Expense Categories horizontal bar chart with multi-color bars
+   547→   547→  - Balance Sheet with progress bars
+   548→   548→  - Recent expenses with receipt icons
+   549→   549→  - All tables: macos-table-row, 10px uppercase tracking-wider headers
+   550→   550→  - All badges: rounded-md, bg-{color}/10 text-{color}, 10px/600
+   551→   551→  - View-only mode: imported useAppStore, hides Create Account/Create Entry/Add Expense buttons
+   552→   552→  - Named export: FinanceModule
+   553→   553→- Both modules preserve all existing data fetching, API calls, and types
+   554→   554→- ESLint passes clean, dev server compiles successfully
+   555→   555→
+   556→   556→Stage Summary:
+   557→   557→- CRM Loyalty module redesigned as macOS Contacts with loyalty tier badges (Bronze→Platinum using Golden Gate palette)
+   558→   558→- Finance module redesigned as macOS System Settings > Finance with beautiful recharts area/bar/pie charts
+   559→   559→- View-only mode fully integrated in both modules (hides all CRUD buttons)
+   560→   560→- macOS 27 design system consistently applied: macos-card, macos-stat, macos-shadow-card/float, macos-search, macos-filter-bar, macos-table-row
+   561→   561→- Typography: 22px/700 page titles, 13px/600 sections, 10px uppercase tracking-wider labels
+   562→   562→- All existing functionality preserved
+   563→   563→
+   564→   564→---
+   565→   565→Task ID: 6
+   566→   566→Agent: Subagent (full-stack-developer)
+   567→   567→Task: Rebuild wholesale.tsx and school-supply.tsx with macOS 27 Golden Gate design
+   568→   568→
+   569→   569→Work Log:
+   570→   570→- Rebuilt wholesale.tsx (WholesaleModule) with full macOS 27 Golden Gate design
+   571→   571→  - Page header: macos-page-title (22px/700/-0.03em) + macos-page-subtitle
+   572→   572→  - Stat cards: macos-stat class with size-9 rounded-xl icons and 24px/700 values
+   573→   573→  - Golden Gate colors: gg-bay for total orders icon, gg-golden for top dealer rank
+   574→   574→  - Filter bar: macos-filter-bar with macos-filter-item / macos-filter-item-active for tabs and status filters
+   575→   575→  - Tables: macos-card + macos-shadow-card containers with macos-table-row class
+   576→   576→  - Table headers: text-[10px] uppercase tracking-wider font-semibold text-muted-foreground
+   577→   577→  - Search: macos-search class for product search in order dialog
+   578→   578→  - Badges: rounded-md text-[10px] font-semibold tracking-wide, shipped=purple (per spec)
+   579→   579→  - Dialogs: rounded-2xl macos-shadow-float
+   580→   580→  - Form labels: text-[12px] font-medium (12px/500)
+   581→   581→  - View-only: imports useAppStore, checks authUser?.isViewOnly, hides New Order/Confirm/Ship/Deliver/Cancel buttons
+   582→   582→  - Empty states: macos-empty class
+   583→   583→  - Error alerts: macos-card with macos-shadow-card, bg-macos-red/5
+   584→   584→
+   585→   585→- Rebuilt school-supply.tsx (SchoolSupplyModule) with full macOS 27 Golden Gate design
+   586→   586→  - Page header: macos-page-title + macos-page-subtitle
+   587→   587→  - Tab navigation: macos-filter-bar with icon labels
+   588→   588→  - SchoolsTab: Added stat cards row (Total Schools, Active, Contracts, Packages) with macos-stat
+   589→   589→  - Search field: macos-search class
+   590→   590→  - School cards: macos-card + macos-shadow-card + macos-card-hover with size-9 rounded-xl icons
+   591→   591→  - Badges replaced with plain spans (rounded-md text-[10px] font-semibold) instead of Badge component
+   592→   592→  - ContractsTab: Added stat cards (Total, Active, Total Value with gg-golden)
+   593→   593→  - Table: macos-card + macos-shadow-card container with macos-table-row
+   594→   594→  - PackagesTab: Added stat cards (Packages, Active, Total Value with gg-golden)
+   595→   595→  - Package cards: macos-card + macos-shadow-card with size-9 rounded-xl icons
+   596→   596→  - All dialogs: rounded-2xl macos-shadow-float
+   597→   597→  - View-only: isViewOnly prop passed to all sub-tabs, hides Add/Create/Delete buttons, disables edit form fields
+   598→   598→  - Package detail: size-9 rounded-xl item type icons, 24px/700 total price
+   599→   599→  - All existing data fetching, API calls, types preserved
+   600→   600→
+   601→   601→Stage Summary:
+   602→   602→- Both modules fully redesigned with macOS 27 Golden Gate design language
+   603→   603→- macos-card, macos-stat, macos-shadow-card, macos-shadow-float, macos-filter-bar, macos-search applied
+   604→   604→- Golden Gate colors used: gg-bay, gg-golden for accent icons/values
+   605→   605→- Status badges: pending=orange, confirmed=blue, shipped=purple, delivered=green, cancelled=red
+   606→   606→- View-only mode integrated in both modules (hides all CRUD buttons, disables edit fields)
+   607→   607→- Typography follows spec: page title 22px/700, section 13px/600, labels 10px uppercase, form labels 12px/500
+   608→   608→- All existing functionality and API integrations preserved
+   609→   609→- ESLint passes clean, dev server compiles successfully
+   610→   610→
+   611→   611→---
+   612→   612→Task ID: 12
+   613→   613→Agent: Main Agent
+   614→   614→Task: Update globals.css with enhanced macOS 27 design tokens
+   615→   615→
+   616→   616→Work Log:
+   617→   617→- Added Golden Gate color palette (gg-bridge, gg-fog, gg-sunset, gg-bay, gg-golden)
+   618→   618→- Added macOS 27 extended Retina colors (macos-rose, macos-sky, macos-sand, macos-sage)
+   619→   619→- Updated light theme background to #F5F5F7 for more macOS feel
+   620→   620→- Added glass-card backdrop filter class
+   621→   621→- Added macos-shadow-card, macos-shadow-float shadow classes
+   622→   622→- Added macos-card, macos-stat, macos-table-row component classes
+   623→   623→- Added macos-badge, macos-search, macos-filter-bar, macos-filter-item classes
+   624→   624→- Added macos-page-header, macos-page-title, macos-page-subtitle classes
+   625→   625→- Added macos-section-header, macos-section-title classes
+   626→   626→- Added macos-gradient-golden, macos-gradient-bay, macos-gradient-sunset gradients
+   627→   627→- Added macos-empty, macos-filter-item-active state classes
+   628→   628→
+   629→   629→Stage Summary:
+   630→   630→- Complete macOS 27 Golden Gate design system in globals.css
+   631→   631→- All utility classes needed by the 17 modules are defined
+   632→   632→
+   633→   633→---
+   634→   634→Task ID: 1-11
+   635→   635→Agent: Multiple parallel subagents
+   636→   636→Task: Rebuild all 17 ERP modules with macOS 27 Golden Gate design
+   637→   637→
+   638→   638→Work Log:
+   639→   639→- Dashboard: macos-stat cards, macos-filter-bar for time range, Golden Gate secondary stats
+   640→   640→- Book Catalog: macos-search, cover thumbnails with macOS colors, category badges
+   641→   641→- Authors: macOS Contacts-style layout with colored avatars, detail view
+   642→   642→- Publishers: System Settings table, Golden Gate palette for publisher details
+   643→   643→- Stationery: Stat cards row, macos-filter-bar, product rows with stock badges
+   644→   644→- Inventory: Color-coded stock level progress bars (green→yellow→orange→red)
+   645→   645→- Retail POS: Split view with product grid + cart panel, Apple Store POS style
+   646→   646→- Wholesale: macos-filter-bar tabs, status badges, order detail dialogs
+   647→   647→- School Supply: Tab navigation with stat cards, school cards with hover effects
+   648→   648→- CRM & Loyalty: macOS Contacts-style, loyalty tier badges with Golden Gate palette
+   649→   649→- Finance: macOS System Settings style with recharts charts, gradient fills
+   650→   650→- Employees: macOS Contacts layout with department sidebar, contact cards
+   651→   651→- Branches: macOS Network settings style with signal strength bars
+   652→   652→- Publishing: Manuscript workflow pipeline visualization with step indicators
+   653→   653→- E-Commerce: Order tracking delivery pipeline with per-order progress
+   654→   654→- Reports: macOS Activity Monitor style with ChartContainer, donut charts
+   655→   655→- AI Suite: iMessage-style chat with colored AI avatars, typing animation
+   656→   656→
+   657→   657→Stage Summary:
+   658→   658→- All 17 modules rebuilt with consistent macOS 27 Golden Gate design
+   659→   659→- All modules support view-only mode via useAppStore authUser?.isViewOnly
+   660→   660→- Clean lint, all APIs verified working
+   661→   661→- Design tokens used: macos-card, macos-stat, macos-shadow-card, macos-filter-bar, macos-search, macos-table-row, macos-badge
+   662→   662→- Golden Gate palette used throughout: gg-bridge, gg-sunset, gg-golden, gg-bay, gg-fog
+   663→   663→
+   664→   664→---
+   665→   665→Task ID: 13
+   666→   666→Agent: Main Agent
+   667→   667→Task: Update app-shell with Golden Gate branding
+   668→   668→
+   669→   669→Work Log:
+   670→   670→- Changed sidebar logo gradient to macos-gradient-golden
+   671→   671→- Updated subtitle to "Golden Gate Edition"
+   672→   672→- Updated footer version to "v27.0 · GG"
+   673→   673→- Updated sidebar footer to "v27.0 · Golden Gate"
+   674→   674→
+   675→   675→Stage Summary:
+   676→   676→- App shell now reflects Golden Gate branding throughout
+   677→   677→

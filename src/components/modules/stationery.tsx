@@ -2,31 +2,18 @@
 
 import * as React from 'react'
 import {
-  Search,
+  Package,
   Plus,
   Pencil,
   Trash2,
-  Package,
   Loader2,
   AlertCircle,
   Filter,
   Tag,
-  DollarSign,
   Archive,
   CheckCircle2,
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -42,10 +29,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosStatCard,
+  MacosCard,
+  MacosSearch,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosDialog,
+  MacosFormField,
+  MacosStatGrid,
+  MacosEmptyState,
+} from '@/components/macos-ui'
 
 // ─── Types ────────────────────────────────────────────────────────
 interface StationeryCategory {
@@ -101,14 +101,6 @@ const emptyForm: ProductFormData = {
   unit: 'piece',
   minOrderQty: '1',
 }
-
-// ─── Stat Card Colors ─────────────────────────────────────────
-const statColors = [
-  { icon: Package, bg: 'bg-macos-blue/10', text: 'text-macos-blue', label: 'Total Products' },
-  { icon: Archive, bg: 'bg-macos-green/10', text: 'text-macos-green', label: 'In Stock' },
-  { icon: AlertCircle, bg: 'bg-macos-orange/10', text: 'text-macos-orange', label: 'Low Stock' },
-  { icon: Tag, bg: 'bg-gg-sunset/10', text: 'text-gg-sunset', label: 'Categories' },
-]
 
 // ─── Component ────────────────────────────────────────────────────
 export function StationeryModule() {
@@ -196,8 +188,6 @@ export function StationeryModule() {
     const reorder = inv[0]?.reorderLevel || 10
     return qty > 0 && qty <= reorder
   }).length
-
-  const statValues = [products.length, inStockCount, lowStockCount, categories.length]
 
   // Open add dialog
   const handleAdd = () => {
@@ -293,64 +283,72 @@ export function StationeryModule() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="macos-page-header flex-col gap-3 sm:flex-row">
-        <div>
-          <h2 className="macos-page-title">Stationery</h2>
-          <p className="macos-page-subtitle">{products.length} products in catalog</p>
-        </div>
+      {/* ─── Page Header ──────────────────────────────────────────── */}
+      <MacosPageHeader
+        title="Stationery"
+        subtitle={`${products.length} products in catalog`}
+        icon={Package}
+        iconColor="text-macos-teal"
+        iconBg="bg-macos-teal/10"
+      >
         {!isViewOnly && (
-          <Button
-            onClick={handleAdd}
-            className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0"
-          >
-            <Plus className="size-3.5 mr-1.5" strokeWidth={1.5} />
+          <MacosButton variant="primary" icon={Plus} onClick={handleAdd}>
             Add Product
-          </Button>
+          </MacosButton>
         )}
-      </div>
+      </MacosPageHeader>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {statColors.map((stat, i) => {
-          const Icon = stat.icon
-          return (
-            <div key={stat.label} className="macos-card macos-shadow-card p-4 flex items-center gap-3">
-              <div className={`size-9 rounded-xl ${stat.bg} flex items-center justify-center shrink-0`}>
-                <Icon className={`size-4 ${stat.text}`} strokeWidth={1.5} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[22px] font-bold tracking-[-0.03em] leading-tight">{statValues[i]}</p>
-                <p className="text-[11px] text-muted-foreground font-medium truncate">{stat.label}</p>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      {/* ─── Stat Cards ───────────────────────────────────────────── */}
+      <MacosStatGrid>
+        <MacosStatCard
+          label="Total Products"
+          value={products.length}
+          icon={Package}
+          iconColor="text-macos-blue"
+          iconBg="bg-macos-blue/10"
+        />
+        <MacosStatCard
+          label="In Stock"
+          value={inStockCount}
+          icon={Archive}
+          iconColor="text-macos-green"
+          iconBg="bg-macos-green/10"
+        />
+        <MacosStatCard
+          label="Low Stock"
+          value={lowStockCount}
+          icon={AlertCircle}
+          iconColor="text-macos-orange"
+          iconBg="bg-macos-orange/10"
+        />
+        <MacosStatCard
+          label="Categories"
+          value={categories.length}
+          icon={Tag}
+          iconColor="text-gg-sunset"
+          iconBg="bg-gg-sunset/10"
+        />
+      </MacosStatGrid>
 
-      {/* Search + Filter Bar */}
-      <div className="macos-card macos-shadow-card p-4 space-y-3">
-        <div className="macos-search flex items-center px-3 h-9">
-          <Search className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
-          <input
-            placeholder="Search by name, SKU, brand, or barcode..."
+      {/* ─── Search + Filter Bar ──────────────────────────────────── */}
+      <MacosCard noPadding>
+        <div className="p-4 space-y-3">
+          <MacosSearch
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent border-0 text-[13px] font-medium placeholder:text-muted-foreground/60 focus:outline-none ml-2"
+            onChange={setSearch}
+            placeholder="Search by name, SKU, brand, or barcode..."
           />
-        </div>
-        <div className="flex items-center gap-3">
-          <Filter className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
-          <div className="macos-filter-bar overflow-x-auto">
-            {categoryTabs.slice(0, 7).map((tab) => (
-              <button
-                key={tab.id}
-                className={`macos-filter-item whitespace-nowrap ${categoryFilter === tab.id ? 'macos-filter-item-active' : ''}`}
-                onClick={() => setCategoryFilter(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-3">
+            <Filter className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.8} />
+            <MacosFilterBar
+              items={categoryTabs.slice(0, 7).map((tab) => ({
+                id: tab.id,
+                label: tab.label,
+              }))}
+              activeId={categoryFilter}
+              onChange={setCategoryFilter}
+              className="overflow-x-auto"
+            />
             {categoryTabs.length > 7 && (
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="h-6 w-auto border-0 bg-transparent text-[12px] font-medium text-muted-foreground hover:text-foreground p-0 pl-2">
@@ -365,27 +363,22 @@ export function StationeryModule() {
             )}
           </div>
         </div>
-      </div>
+      </MacosCard>
 
-      {/* Error Alert */}
+      {/* ─── Error Alert ──────────────────────────────────────────── */}
       {error && (
         <div className="flex items-center gap-2.5 macos-card macos-shadow-card p-4 bg-macos-red/5 border-macos-red/20">
           <div className="size-7 rounded-lg bg-macos-red/10 flex items-center justify-center shrink-0">
             <AlertCircle className="size-3.5 text-macos-red" />
           </div>
           <span className="text-[13px] font-medium text-macos-red flex-1">{error}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-[11px] text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
-            onClick={() => setError(null)}
-          >
+          <MacosButton variant="ghost" onClick={() => setError(null)} className="text-macos-red hover:text-macos-red hover:bg-macos-red/10">
             Dismiss
-          </Button>
+          </MacosButton>
         </div>
       )}
 
-      {/* Products Table */}
+      {/* ─── Products Table ───────────────────────────────────────── */}
       <div className="macos-card macos-shadow-card overflow-hidden">
         {loading ? (
           <div className="p-5 space-y-3">
@@ -397,24 +390,24 @@ export function StationeryModule() {
             ))}
           </div>
         ) : products.length === 0 ? (
-          <div className="macos-empty py-16">
-            <Package className="size-12 text-muted-foreground/25 mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] font-semibold text-muted-foreground">No stationery products found</p>
-            <p className="text-[11px] text-muted-foreground mt-1">Add your first product to get started</p>
-          </div>
+          <MacosEmptyState
+            icon={Package}
+            title="No stationery products found"
+            description="Add your first product to get started"
+          />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-border/50 hover:bg-transparent">
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">SKU</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Category</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell">Brand</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Stock</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Product</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden md:table-cell">SKU</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden sm:table-cell">Category</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden lg:table-cell">Brand</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Price</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden sm:table-cell">Stock</TableHead>
                   {!isViewOnly && (
-                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Actions</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
@@ -422,33 +415,31 @@ export function StationeryModule() {
                 {products.map((product) => {
                   const stock = getStockStatus(product)
                   return (
-                    <TableRow key={product.id} className="macos-table-row border-b border-border/30">
+                    <TableRow key={product.id} className="macos-table-row border-b border-border/30 last:border-0">
                       <TableCell>
                         <div className="flex items-center gap-2.5">
                           <div className="size-8 rounded-xl bg-macos-teal/10 flex items-center justify-center shrink-0">
-                            <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+                            <Package className="size-4 text-macos-teal" strokeWidth={1.8} />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[13px] font-medium truncate max-w-[180px]">{product.name}</p>
+                            <p className="text-[13px] font-medium tracking-tight truncate max-w-[180px]">{product.name}</p>
                             {product.brand && (
                               <p className="text-[11px] text-muted-foreground truncate">{product.brand}</p>
                             )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] font-mono">
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] font-mono tracking-tight">
                         {product.sku || '\u2014'}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {product.category ? (
-                          <span className="rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 bg-macos-purple/10 text-macos-purple uppercase">
-                            {product.category.name}
-                          </span>
+                          <MacosBadge variant="purple">{product.category.name}</MacosBadge>
                         ) : (
                           <span className="text-[13px] text-muted-foreground">{'\u2014'}</span>
                         )}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">
+                      <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground tracking-tight">
                         {product.brand || '\u2014'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -464,36 +455,39 @@ export function StationeryModule() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
-                        <span className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 uppercase ${stock.badgeClass}`}>
+                        <MacosBadge
+                          variant={
+                            stock.label === 'In Stock' ? 'success' :
+                            stock.label === 'Low Stock' ? 'warning' : 'danger'
+                          }
+                        >
                           {stock.label}
-                        </span>
+                        </MacosBadge>
                       </TableCell>
                       {!isViewOnly && (
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-0.5">
-                            <Button
+                            <MacosButton
                               variant="ghost"
-                              size="icon"
-                              className="size-7 rounded-lg hover:bg-secondary"
                               onClick={() => handleEdit(product)}
                               aria-label={`Edit ${product.name}`}
+                              className="size-7 px-0"
                             >
-                              <Pencil className="size-3" strokeWidth={1.5} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-7 rounded-lg text-macos-red hover:bg-macos-red/10 hover:text-macos-red"
+                              <Pencil className="size-3" strokeWidth={1.8} />
+                            </MacosButton>
+                            <MacosButton
+                              variant="danger"
                               onClick={() => handleDelete(product.id)}
                               disabled={deleting === product.id}
                               aria-label={`Delete ${product.name}`}
+                              className="size-7 px-0"
                             >
                               {deleting === product.id ? (
                                 <Loader2 className="size-3 animate-spin" />
                               ) : (
-                                <Trash2 className="size-3" strokeWidth={1.5} />
+                                <Trash2 className="size-3" strokeWidth={1.8} />
                               )}
-                            </Button>
+                            </MacosButton>
                           </div>
                         </TableCell>
                       )}
@@ -506,185 +500,160 @@ export function StationeryModule() {
         )}
       </div>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto macos-shadow-float rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-[13px] font-semibold tracking-[-0.01em]">
-              {editingProduct ? 'Edit Product' : 'Add New Product'}
-            </DialogTitle>
-            <DialogDescription className="text-[11px] text-muted-foreground">
-              {editingProduct ? 'Update stationery product details.' : 'Add a new stationery product to your catalog.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="name" className="text-[12px] font-medium text-muted-foreground">Product Name *</Label>
-                <Input
-                  id="name"
-                  value={form.name}
-                  onChange={(e) => updateField('name', e.target.value)}
-                  placeholder="e.g., Premium Notebook A5"
-                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="sku" className="text-[12px] font-medium text-muted-foreground">SKU</Label>
-                <Input
-                  id="sku"
-                  value={form.sku}
-                  onChange={(e) => updateField('sku', e.target.value)}
-                  placeholder="e.g., STA-NB-001"
-                  className="rounded-lg border-border/50 text-[13px] h-8 font-mono focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="category" className="text-[12px] font-medium text-muted-foreground">Category</Label>
-                <Select value={form.categoryId} onValueChange={(v) => updateField('categoryId', v)}>
-                  <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="brand" className="text-[12px] font-medium text-muted-foreground">Brand</Label>
-                <Input
-                  id="brand"
-                  value={form.brand}
-                  onChange={(e) => updateField('brand', e.target.value)}
-                  placeholder="e.g., Moleskine"
-                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="barcode" className="text-[12px] font-medium text-muted-foreground">Barcode</Label>
-                <Input
-                  id="barcode"
-                  value={form.barcode}
-                  onChange={(e) => updateField('barcode', e.target.value)}
-                  placeholder="e.g., 8901234567890"
-                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="description" className="text-[12px] font-medium text-muted-foreground">Description</Label>
-                <Textarea
-                  id="description"
-                  value={form.description}
-                  onChange={(e) => updateField('description', e.target.value)}
-                  placeholder="Product description..."
-                  rows={3}
-                  className="rounded-lg border-border/50 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="price" className="text-[12px] font-medium text-muted-foreground">Selling Price ($)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={form.price}
-                  onChange={(e) => updateField('price', e.target.value)}
-                  placeholder="0.00"
-                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="costPrice" className="text-[12px] font-medium text-muted-foreground">Cost Price ($)</Label>
-                <Input
-                  id="costPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={form.costPrice}
-                  onChange={(e) => updateField('costPrice', e.target.value)}
-                  placeholder="0.00"
-                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="discount" className="text-[12px] font-medium text-muted-foreground">Discount (%)</Label>
-                <Input
-                  id="discount"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  value={form.discount}
-                  onChange={(e) => updateField('discount', e.target.value)}
-                  placeholder="0"
-                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="unit" className="text-[12px] font-medium text-muted-foreground">Unit</Label>
-                <Select value={form.unit} onValueChange={(v) => updateField('unit', v)}>
-                  <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="piece">Piece</SelectItem>
-                    <SelectItem value="pack">Pack</SelectItem>
-                    <SelectItem value="box">Box</SelectItem>
-                    <SelectItem value="set">Set</SelectItem>
-                    <SelectItem value="dozen">Dozen</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="minOrderQty" className="text-[12px] font-medium text-muted-foreground">Min Order Qty</Label>
-                <Input
-                  id="minOrderQty"
-                  type="number"
-                  min="1"
-                  value={form.minOrderQty}
-                  onChange={(e) => updateField('minOrderQty', e.target.value)}
-                  placeholder="1"
-                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setDialogOpen(false)}
-              disabled={saving}
-              className="rounded-lg text-[13px] font-medium h-8"
-            >
+      {/* ─── Add/Edit Dialog ──────────────────────────────────────── */}
+      <MacosDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={editingProduct ? 'Edit Product' : 'Add New Product'}
+        description={editingProduct ? 'Update stationery product details.' : 'Add a new stationery product to your catalog.'}
+        footer={
+          <>
+            <MacosButton variant="secondary" onClick={() => setDialogOpen(false)} disabled={saving}>
               Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving || !form.name.trim()}
-              className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="size-3.5 mr-1.5 animate-spin" />
-                  Saving...
-                </>
-              ) : editingProduct ? (
-                'Update Product'
-              ) : (
-                <>
-                  <Plus className="size-3.5 mr-1.5" strokeWidth={1.5} />
-                  Create Product
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </MacosButton>
+            <MacosButton variant="primary" onClick={handleSave} disabled={saving || !form.name.trim()} icon={saving ? Loader2 : (editingProduct ? CheckCircle2 : Plus)}>
+              {saving ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product'}
+            </MacosButton>
+          </>
+        }
+      >
+        <div className="grid gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <MacosFormField label="Product Name *" className="sm:col-span-2">
+              <Input
+                id="name"
+                value={form.name}
+                onChange={(e) => updateField('name', e.target.value)}
+                placeholder="e.g., Premium Notebook A5"
+                className="macos-search border-0 h-8 text-[13px] font-medium focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+
+            <MacosFormField label="SKU">
+              <Input
+                id="sku"
+                value={form.sku}
+                onChange={(e) => updateField('sku', e.target.value)}
+                placeholder="e.g., STA-NB-001"
+                className="macos-search border-0 h-8 text-[13px] font-mono font-medium focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+
+            <MacosFormField label="Category">
+              <Select value={form.categoryId} onValueChange={(v) => updateField('categoryId', v)}>
+                <SelectTrigger className="macos-search border-0 h-8 text-[13px] font-medium">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </MacosFormField>
+
+            <MacosFormField label="Brand">
+              <Input
+                id="brand"
+                value={form.brand}
+                onChange={(e) => updateField('brand', e.target.value)}
+                placeholder="e.g., Moleskine"
+                className="macos-search border-0 h-8 text-[13px] font-medium focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+
+            <MacosFormField label="Barcode">
+              <Input
+                id="barcode"
+                value={form.barcode}
+                onChange={(e) => updateField('barcode', e.target.value)}
+                placeholder="e.g., 8901234567890"
+                className="macos-search border-0 h-8 text-[13px] font-medium focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+
+            <MacosFormField label="Description" className="sm:col-span-2">
+              <Textarea
+                id="description"
+                value={form.description}
+                onChange={(e) => updateField('description', e.target.value)}
+                placeholder="Product description..."
+                rows={3}
+                className="macos-search border-0 text-[13px] font-medium focus-visible:ring-1 focus-visible:ring-primary/30 resize-none"
+              />
+            </MacosFormField>
+
+            <MacosFormField label="Selling Price ($)">
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.price}
+                onChange={(e) => updateField('price', e.target.value)}
+                placeholder="0.00"
+                className="macos-search border-0 h-8 text-[13px] font-medium focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+
+            <MacosFormField label="Cost Price ($)">
+              <Input
+                id="costPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.costPrice}
+                onChange={(e) => updateField('costPrice', e.target.value)}
+                placeholder="0.00"
+                className="macos-search border-0 h-8 text-[13px] font-medium focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+
+            <MacosFormField label="Discount (%)">
+              <Input
+                id="discount"
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={form.discount}
+                onChange={(e) => updateField('discount', e.target.value)}
+                placeholder="0"
+                className="macos-search border-0 h-8 text-[13px] font-medium focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+
+            <MacosFormField label="Unit">
+              <Select value={form.unit} onValueChange={(v) => updateField('unit', v)}>
+                <SelectTrigger className="macos-search border-0 h-8 text-[13px] font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="piece">Piece</SelectItem>
+                  <SelectItem value="pack">Pack</SelectItem>
+                  <SelectItem value="box">Box</SelectItem>
+                  <SelectItem value="set">Set</SelectItem>
+                  <SelectItem value="dozen">Dozen</SelectItem>
+                </SelectContent>
+              </Select>
+            </MacosFormField>
+
+            <MacosFormField label="Min Order Qty">
+              <Input
+                id="minOrderQty"
+                type="number"
+                min="1"
+                value={form.minOrderQty}
+                onChange={(e) => updateField('minOrderQty', e.target.value)}
+                placeholder="1"
+                className="macos-search border-0 h-8 text-[13px] font-medium focus-visible:ring-1 focus-visible:ring-primary/30"
+              />
+            </MacosFormField>
+          </div>
+        </div>
+      </MacosDialog>
     </div>
   )
 }

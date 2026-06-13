@@ -1,0 +1,693 @@
+   900→            </Table>
+   901→          </ScrollArea>
+   902→        </div>
+   903→      )}
+   904→
+   905→      <CreateJournalEntryDialog
+   906→        open={showCreateDialog}
+   907→        onOpenChange={setShowCreateDialog}
+   908→        accounts={accounts}
+   909→        onSuccess={fetchEntries}
+   910→      />
+   911→
+   912→      <JournalEntryDetailDialog
+   913→        entry={selectedEntry}
+   914→        onOpenChange={(open) => !open && setSelectedEntry(null)}
+   915→      />
+   916→    </div>
+   917→  )
+   918→}
+   919→
+   920→// ==================== EXPENSES TAB ====================
+   921→
+   922→function ExpensesTab() {
+   923→  const { authUser } = useAppStore()
+   924→  const isViewOnly = authUser?.isViewOnly ?? false
+   925→  const [expenses, setExpenses] = React.useState<Expense[]>([])
+   926→  const [loading, setLoading] = React.useState(true)
+   927→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   928→
+   929→  const fetchExpenses = React.useCallback(async () => {
+   930→    setLoading(true)
+   931→    try {
+   932→      const res = await fetch('/api/finance?type=expenses&limit=50')
+   933→      const json = await res.json()
+   934→      if (json.data) setExpenses(json.data)
+   935→    } catch (err) {
+   936→      console.error('Failed to fetch expenses:', err)
+   937→    } finally {
+   938→      setLoading(false)
+   939→    }
+   940→  }, [])
+   941→
+   942→  React.useEffect(() => {
+   943→    fetchExpenses()
+   944→  }, [fetchExpenses])
+   945→
+   946→  const getStatusBadge = (status: string) => {
+   947→    switch (status) {
+   948→      case 'paid':
+   949→        return 'bg-macos-green/10 text-macos-green'
+   950→      case 'approved':
+   951→        return 'bg-macos-blue/10 text-macos-blue'
+   952→      case 'pending':
+   953→        return 'bg-macos-orange/10 text-macos-orange'
+   954→      default:
+   955→        return 'bg-secondary text-secondary-foreground'
+   956→    }
+   957→  }
+   958→
+   959→  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+   960→  const pendingAmount = expenses.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0)
+   961→  const paidAmount = expenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0)
+   962→
+   963→  return (
+   964→    <div className="space-y-5">
+   965→      {/* Summary */}
+   966→      <div className="grid grid-cols-3 gap-3">
+   967→        <div className="macos-stat macos-shadow-card">
+   968→          <div className="flex items-center gap-3">
+   969→            <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
+   970→              <Receipt className="size-4 text-macos-red" strokeWidth={1.5} />
+   971→            </div>
+   972→            <div>
+   973→              <p className="text-[24px] font-bold leading-tight" style={{ letterSpacing: '-0.03em' }}>${totalExpenses.toLocaleString()}</p>
+   974→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Expenses</p>
+   975→            </div>
+   976→          </div>
+   977→        </div>
+   978→        <div className="macos-stat macos-shadow-card">
+   979→          <div className="flex items-center gap-3">
+   980→            <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+   981→              <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
+   982→            </div>
+   983→            <div>
+   984→              <p className="text-[24px] font-bold leading-tight text-macos-orange" style={{ letterSpacing: '-0.03em' }}>${pendingAmount.toLocaleString()}</p>
+   985→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
+   986→            </div>
+   987→          </div>
+   988→        </div>
+   989→        <div className="macos-stat macos-shadow-card">
+   990→          <div className="flex items-center gap-3">
+   991→            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
+   992→              <CheckCircle2 className="size-4 text-macos-green" strokeWidth={1.5} />
+   993→            </div>
+   994→            <div>
+   995→              <p className="text-[24px] font-bold leading-tight text-macos-green" style={{ letterSpacing: '-0.03em' }}>${paidAmount.toLocaleString()}</p>
+   996→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid</p>
+   997→            </div>
+   998→          </div>
+   999→        </div>
+  1000→      </div>
+  1001→
+  1002→      <div className="flex items-center justify-between">
+  1003→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{expenses.length} expense records</p>
+  1004→        {!isViewOnly && (
+  1005→          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1006→            <Plus className="size-3.5" strokeWidth={2} /> Add Expense
+  1007→          </Button>
+  1008→        )}
+  1009→      </div>
+  1010→
+  1011→      {loading ? (
+  1012→        <div className="macos-card macos-shadow-card p-6">
+  1013→          <div className="space-y-3">
+  1014→            {[1, 2, 3, 4].map((i) => (
+  1015→              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+  1016→            ))}
+  1017→          </div>
+  1018→        </div>
+  1019→      ) : expenses.length === 0 ? (
+  1020→        <div className="macos-card macos-shadow-card macos-empty">
+  1021→          <Receipt className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
+  1022→          <p className="text-[13px] font-medium text-muted-foreground">No expenses found</p>
+  1023→          <p className="text-[11px] text-muted-foreground mt-1">Record your first expense</p>
+  1024→        </div>
+  1025→      ) : (
+  1026→        <div className="macos-card macos-shadow-card overflow-hidden">
+  1027→          <ScrollArea className="max-h-[400px]">
+  1028→            <Table>
+  1029→              <TableHeader>
+  1030→                <TableRow className="hover:bg-transparent border-border/50">
+  1031→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+  1032→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
+  1033→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Amount</TableHead>
+  1034→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
+  1035→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</TableHead>
+  1036→                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+  1037→                </TableRow>
+  1038→              </TableHeader>
+  1039→              <TableBody>
+  1040→                {expenses.map((expense) => (
+  1041→                  <TableRow key={expense.id} className="macos-table-row">
+  1042→                    <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{expense.category}</TableCell>
+  1043→                    <TableCell className="text-[11px] text-muted-foreground max-w-32 truncate">
+  1044→                      {expense.description || '—'}
+  1045→                    </TableCell>
+  1046→                    <TableCell className="text-right font-semibold text-macos-red text-[13px]">
+  1047→                      ${expense.amount.toLocaleString()}
+  1048→                    </TableCell>
+  1049→                    <TableCell className="text-[11px] text-muted-foreground">
+  1050→                      {new Date(expense.date).toLocaleDateString()}
+  1051→                    </TableCell>
+  1052→                    <TableCell className="text-[11px] text-muted-foreground">
+  1053→                      {expense.paidBy || '—'}
+  1054→                    </TableCell>
+  1055→                    <TableCell>
+  1056→                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getStatusBadge(expense.status)}`}>
+  1057→                        {expense.status}
+  1058→                      </Badge>
+  1059→                    </TableCell>
+  1060→                  </TableRow>
+  1061→                ))}
+  1062→              </TableBody>
+  1063→            </Table>
+  1064→          </ScrollArea>
+  1065→        </div>
+  1066→      )}
+  1067→
+  1068→      <AddExpenseDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchExpenses} />
+  1069→    </div>
+  1070→  )
+  1071→}
+  1072→
+  1073→// ==================== CREATE ACCOUNT DIALOG ====================
+  1074→
+  1075→function CreateAccountDialog({
+  1076→  open,
+  1077→  onOpenChange,
+  1078→  onSuccess,
+  1079→}: {
+  1080→  open: boolean
+  1081→  onOpenChange: (open: boolean) => void
+  1082→  onSuccess: () => void
+  1083→}) {
+  1084→  const [saving, setSaving] = React.useState(false)
+  1085→  const [form, setForm] = React.useState({
+  1086→    code: '',
+  1087→    name: '',
+  1088→    type: 'asset',
+  1089→    parentCode: '',
+  1090→  })
+  1091→
+  1092→  const handleSubmit = async (e: React.FormEvent) => {
+  1093→    e.preventDefault()
+  1094→    if (!form.code.trim() || !form.name.trim()) return
+  1095→    setSaving(true)
+  1096→    try {
+  1097→      const res = await fetch('/api/finance?type=accounts', {
+  1098→        method: 'POST',
+  1099→        headers: { 'Content-Type': 'application/json' },
+  1100→        body: JSON.stringify({
+  1101→          ...form,
+  1102→          parentCode: form.parentCode || null,
+  1103→        }),
+  1104→      })
+  1105→      if (res.ok) {
+  1106→        setForm({ code: '', name: '', type: 'asset', parentCode: '' })
+  1107→        onOpenChange(false)
+  1108→        onSuccess()
+  1109→      } else {
+  1110→        const json = await res.json()
+  1111→        alert(json.error || 'Failed to create account')
+  1112→      }
+  1113→    } catch (err) {
+  1114→      console.error('Failed to create account:', err)
+  1115→      alert('Failed to create account')
+  1116→    } finally {
+  1117→      setSaving(false)
+  1118→    }
+  1119→  }
+  1120→
+  1121→  return (
+  1122→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1123→      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
+  1124→        <DialogHeader>
+  1125→          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Account</DialogTitle>
+  1126→          <DialogDescription className="text-[11px]">Add a new account to your chart of accounts</DialogDescription>
+  1127→        </DialogHeader>
+  1128→        <form onSubmit={handleSubmit} className="space-y-4">
+  1129→          <div className="grid grid-cols-2 gap-3">
+  1130→            <div className="space-y-2">
+  1131→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Code *</Label>
+  1132→              <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="1000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1133→            </div>
+  1134→            <div className="space-y-2">
+  1135→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Type *</Label>
+  1136→              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+  1137→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1138→                  <SelectValue />
+  1139→                </SelectTrigger>
+  1140→                <SelectContent>
+  1141→                  <SelectItem value="asset">Asset</SelectItem>
+  1142→                  <SelectItem value="liability">Liability</SelectItem>
+  1143→                  <SelectItem value="equity">Equity</SelectItem>
+  1144→                  <SelectItem value="revenue">Revenue</SelectItem>
+  1145→                  <SelectItem value="expense">Expense</SelectItem>
+  1146→                </SelectContent>
+  1147→              </Select>
+  1148→            </div>
+  1149→          </div>
+  1150→          <div className="space-y-2">
+  1151→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Name *</Label>
+  1152→            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cash on Hand" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1153→          </div>
+  1154→          <div className="space-y-2">
+  1155→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Parent Code</Label>
+  1156→            <Input value={form.parentCode} onChange={(e) => setForm({ ...form, parentCode: e.target.value })} placeholder="1000 (optional)" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1157→          </div>
+  1158→          <DialogFooter>
+  1159→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1160→            <Button type="submit" disabled={saving || !form.code.trim() || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1161→              {saving ? 'Creating...' : 'Create Account'}
+  1162→            </Button>
+  1163→          </DialogFooter>
+  1164→        </form>
+  1165→      </DialogContent>
+  1166→    </Dialog>
+  1167→  )
+  1168→}
+  1169→
+  1170→// ==================== CREATE JOURNAL ENTRY DIALOG ====================
+  1171→
+  1172→interface JournalLineForm {
+  1173→  key: string
+  1174→  accountId: string
+  1175→  debit: string
+  1176→  credit: string
+  1177→  description: string
+  1178→}
+  1179→
+  1180→function CreateJournalEntryDialog({
+  1181→  open,
+  1182→  onOpenChange,
+  1183→  accounts,
+  1184→  onSuccess,
+  1185→}: {
+  1186→  open: boolean
+  1187→  onOpenChange: (open: boolean) => void
+  1188→  accounts: Account[]
+  1189→  onSuccess: () => void
+  1190→}) {
+  1191→  const [saving, setSaving] = React.useState(false)
+  1192→  const [form, setForm] = React.useState({
+  1193→    date: new Date().toISOString().split('T')[0],
+  1194→    description: '',
+  1195→    reference: '',
+  1196→    isPosted: false,
+  1197→  })
+  1198→  const [lines, setLines] = React.useState<JournalLineForm[]>([
+  1199→    { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1200→    { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1201→  ])
+  1202→
+  1203→  const totalDebit = lines.reduce((sum, l) => sum + (parseFloat(l.debit) || 0), 0)
+  1204→  const totalCredit = lines.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0)
+  1205→  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0
+  1206→
+  1207→  const addLine = () => {
+  1208→    setLines([...lines, { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' }])
+  1209→  }
+  1210→
+  1211→  const removeLine = (key: string) => {
+  1212→    if (lines.length > 2) {
+  1213→      setLines(lines.filter((l) => l.key !== key))
+  1214→    }
+  1215→  }
+  1216→
+  1217→  const updateLine = (key: string, updates: Partial<JournalLineForm>) => {
+  1218→    setLines(lines.map((l) => (l.key === key ? { ...l, ...updates } : l)))
+  1219→  }
+  1220→
+  1221→  const handleSubmit = async (e: React.FormEvent) => {
+  1222→    e.preventDefault()
+  1223→    if (!form.description.trim() || !isBalanced) return
+  1224→    setSaving(true)
+  1225→    try {
+  1226→      const res = await fetch('/api/finance?type=entries', {
+  1227→        method: 'POST',
+  1228→        headers: { 'Content-Type': 'application/json' },
+  1229→        body: JSON.stringify({
+  1230→          ...form,
+  1231→          lines: lines
+  1232→            .filter((l) => l.accountId && (parseFloat(l.debit) > 0 || parseFloat(l.credit) > 0))
+  1233→            .map((l) => ({
+  1234→              accountId: l.accountId,
+  1235→              debit: parseFloat(l.debit) || 0,
+  1236→              credit: parseFloat(l.credit) || 0,
+  1237→              description: l.description || null,
+  1238→            })),
+  1239→        }),
+  1240→      })
+  1241→      if (res.ok) {
+  1242→        setForm({ date: new Date().toISOString().split('T')[0], description: '', reference: '', isPosted: false })
+  1243→        setLines([
+  1244→          { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1245→          { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1246→        ])
+  1247→        onOpenChange(false)
+  1248→        onSuccess()
+  1249→      } else {
+  1250→        const json = await res.json()
+  1251→        alert(json.error || 'Failed to create journal entry')
+  1252→      }
+  1253→    } catch (err) {
+  1254→      console.error('Failed to create journal entry:', err)
+  1255→      alert('Failed to create journal entry')
+  1256→    } finally {
+  1257→      setSaving(false)
+  1258→    }
+  1259→  }
+  1260→
+  1261→  return (
+  1262→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1263→      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-float">
+  1264→        <DialogHeader>
+  1265→          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Journal Entry</DialogTitle>
+  1266→          <DialogDescription className="text-[11px]">Record a double-entry journal transaction</DialogDescription>
+  1267→        </DialogHeader>
+  1268→        <form onSubmit={handleSubmit} className="space-y-4">
+  1269→          <div className="grid grid-cols-2 gap-3">
+  1270→            <div className="space-y-2">
+  1271→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date *</Label>
+  1272→              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1273→            </div>
+  1274→            <div className="space-y-2">
+  1275→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</Label>
+  1276→              <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="JE-001" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1277→            </div>
+  1278→          </div>
+  1279→          <div className="space-y-2">
+  1280→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description *</Label>
+  1281→            <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Monthly rent payment" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1282→          </div>
+  1283→
+  1284→          <Separator className="bg-border/50" />
+  1285→
+  1286→          <div className="space-y-3">
+  1287→            <div className="flex items-center justify-between">
+  1288→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Entry Lines</Label>
+  1289→              <Button type="button" variant="ghost" size="sm" onClick={addLine} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
+  1290→                <Plus className="size-3" strokeWidth={2} /> Add Line
+  1291→              </Button>
+  1292→            </div>
+  1293→            {lines.map((line) => (
+  1294→              <div key={line.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
+  1295→                <div className="flex-[2] space-y-1">
+  1296→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Account</Label>
+  1297→                  <Select value={line.accountId} onValueChange={(v) => updateLine(line.key, { accountId: v })}>
+  1298→                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
+  1299→                      <SelectValue placeholder="Select account..." />
+  1300→                    </SelectTrigger>
+  1301→                    <SelectContent>
+  1302→                      {accounts.map((a) => (
+  1303→                        <SelectItem key={a.id} value={a.id}>
+  1304→                          {a.code} - {a.name}
+  1305→                        </SelectItem>
+  1306→                      ))}
+  1307→                    </SelectContent>
+  1308→                  </Select>
+  1309→                </div>
+  1310→                <div className="w-24 space-y-1">
+  1311→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Debit</Label>
+  1312→                  <Input type="number" step="0.01" min="0" value={line.debit} onChange={(e) => updateLine(line.key, { debit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1313→                </div>
+  1314→                <div className="w-24 space-y-1">
+  1315→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Credit</Label>
+  1316→                  <Input type="number" step="0.01" min="0" value={line.credit} onChange={(e) => updateLine(line.key, { credit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1317→                </div>
+  1318→                <div className="flex-[1] space-y-1">
+  1319→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Note</Label>
+  1320→                  <Input value={line.description} onChange={(e) => updateLine(line.key, { description: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" placeholder="Optional" />
+  1321→                </div>
+  1322→                <Button
+  1323→                  type="button"
+  1324→                  variant="ghost"
+  1325→                  size="sm"
+  1326→                  className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+  1327→                  onClick={() => removeLine(line.key)}
+  1328→                  disabled={lines.length <= 2}
+  1329→                >
+  1330→                  <X className="size-3" />
+  1331→                </Button>
+  1332→              </div>
+  1333→            ))}
+  1334→          </div>
+  1335→
+  1336→          <div className={`flex items-center justify-between p-3 rounded-xl ${
+  1337→            isBalanced
+  1338→              ? 'bg-macos-green/10'
+  1339→              : 'bg-macos-orange/10'
+  1340→          }`}>
+  1341→            <div className="flex items-center gap-4 text-[13px]">
+  1342→              <span>
+  1343→                Debit: <strong>${totalDebit.toLocaleString()}</strong>
+  1344→              </span>
+  1345→              <span>
+  1346→                Credit: <strong>${totalCredit.toLocaleString()}</strong>
+  1347→              </span>
+  1348→            </div>
+  1349→            <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${isBalanced ? 'bg-macos-green/10 text-macos-green' : 'bg-macos-orange/10 text-macos-orange'}`}>
+  1350→              {isBalanced ? 'Balanced' : 'Unbalanced'}
+  1351→            </Badge>
+  1352→          </div>
+  1353→
+  1354→          <div className="flex items-center gap-2">
+  1355→            <Label htmlFor="post-entry" className="text-[13px]">Post immediately</Label>
+  1356→            <input
+  1357→              id="post-entry"
+  1358→              type="checkbox"
+  1359→              checked={form.isPosted}
+  1360→              onChange={(e) => setForm({ ...form, isPosted: e.target.checked })}
+  1361→              className="rounded"
+  1362→            />
+  1363→          </div>
+  1364→
+  1365→          <DialogFooter>
+  1366→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1367→            <Button type="submit" disabled={saving || !form.description.trim() || !isBalanced} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1368→              {saving ? 'Creating...' : 'Create Entry'}
+  1369→            </Button>
+  1370→          </DialogFooter>
+  1371→        </form>
+  1372→      </DialogContent>
+  1373→    </Dialog>
+  1374→  )
+  1375→}
+  1376→
+  1377→// ==================== JOURNAL ENTRY DETAIL DIALOG ====================
+  1378→
+  1379→function JournalEntryDetailDialog({
+  1380→  entry,
+  1381→  onOpenChange,
+  1382→}: {
+  1383→  entry: JournalEntry | null
+  1384→  onOpenChange: (open: boolean) => void
+  1385→}) {
+  1386→  if (!entry) return null
+  1387→
+  1388→  const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+  1389→  const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
+  1390→
+  1391→  return (
+  1392→    <Dialog open={!!entry} onOpenChange={onOpenChange}>
+  1393→      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
+  1394→        <DialogHeader>
+  1395→          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>
+  1396→            <div className="size-8 rounded-lg bg-macos-green/10 flex items-center justify-center">
+  1397→              <BookOpen className="size-4 text-macos-green" strokeWidth={1.5} />
+  1398→            </div>
+  1399→            Journal Entry
+  1400→          </DialogTitle>
+  1401→          <DialogDescription className="text-[11px]">{entry.description}</DialogDescription>
+  1402→        </DialogHeader>
+  1403→        <div className="space-y-4">
+  1404→          <div className="flex items-center gap-4">
+  1405→            <div className="grid grid-cols-2 gap-3 text-[13px] flex-1">
+  1406→              <div>
+  1407→                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Date: </span>
+  1408→                <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
+  1409→              </div>
+  1410→              <div>
+  1411→                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Reference: </span>
+  1412→                <span className="font-medium">{entry.reference || '—'}</span>
+  1413→              </div>
+  1414→            </div>
+  1415→            <Badge
+  1416→              className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
+  1417→                entry.isPosted
+  1418→                  ? 'bg-macos-green/10 text-macos-green'
+  1419→                  : 'bg-macos-orange/10 text-macos-orange'
+  1420→              }`}
+  1421→            >
+  1422→              {entry.isPosted ? 'Posted' : 'Draft'}
+  1423→            </Badge>
+  1424→          </div>
+  1425→
+  1426→          <Separator className="bg-border/50" />
+  1427→
+  1428→          <div className="space-y-2">
+  1429→            <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Entry Lines</h4>
+  1430→            {entry.lines.map((line) => (
+  1431→              <div key={line.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
+  1432→                <div>
+  1433→                  <p className="text-[13px] font-medium">
+  1434→                    {line.account?.name || 'Unknown'}
+  1435→                    <span className="text-[11px] text-muted-foreground ml-1.5">({line.account?.code})</span>
+  1436→                  </p>
+  1437→                  {line.description && (
+  1438→                    <p className="text-[11px] text-muted-foreground">{line.description}</p>
+  1439→                  )}
+  1440→                </div>
+  1441→                <div className="text-right text-[13px] font-medium">
+  1442→                  {line.debit > 0 && <span className="text-macos-blue">${line.debit.toLocaleString()}</span>}
+  1443→                  {line.credit > 0 && <span className="text-macos-green">${line.credit.toLocaleString()}</span>}
+  1444→                </div>
+  1445→              </div>
+  1446→            ))}
+  1447→          </div>
+  1448→
+  1449→          <Separator className="bg-border/50" />
+  1450→
+  1451→          <div className="grid grid-cols-2 gap-3">
+  1452→            <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+  1453→              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Debit</p>
+  1454→              <p className="text-[13px] font-bold text-macos-blue">${totalDebit.toLocaleString()}</p>
+  1455→            </div>
+  1456→            <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+  1457→              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Credit</p>
+  1458→              <p className="text-[13px] font-bold text-macos-green">${totalCredit.toLocaleString()}</p>
+  1459→            </div>
+  1460→          </div>
+  1461→        </div>
+  1462→      </DialogContent>
+  1463→    </Dialog>
+  1464→  )
+  1465→}
+  1466→
+  1467→// ==================== ADD EXPENSE DIALOG ====================
+  1468→
+  1469→function AddExpenseDialog({
+  1470→  open,
+  1471→  onOpenChange,
+  1472→  onSuccess,
+  1473→}: {
+  1474→  open: boolean
+  1475→  onOpenChange: (open: boolean) => void
+  1476→  onSuccess: () => void
+  1477→}) {
+  1478→  const [saving, setSaving] = React.useState(false)
+  1479→  const [form, setForm] = React.useState({
+  1480→    category: '',
+  1481→    amount: '',
+  1482→    date: new Date().toISOString().split('T')[0],
+  1483→    description: '',
+  1484→    paidBy: '',
+  1485→    status: 'pending',
+  1486→  })
+  1487→
+  1488→  const handleSubmit = async (e: React.FormEvent) => {
+  1489→    e.preventDefault()
+  1490→    if (!form.category.trim() || !form.amount || !form.date) return
+  1491→    setSaving(true)
+  1492→    try {
+  1493→      const res = await fetch('/api/finance?type=expenses', {
+  1494→        method: 'POST',
+  1495→        headers: { 'Content-Type': 'application/json' },
+  1496→        body: JSON.stringify({
+  1497→          category: form.category,
+  1498→          amount: parseFloat(form.amount),
+  1499→          date: form.date,
+  1500→          description: form.description || null,
+  1501→          paidBy: form.paidBy || null,
+  1502→          status: form.status,
+  1503→        }),
+  1504→      })
+  1505→      if (res.ok) {
+  1506→        setForm({ category: '', amount: '', date: new Date().toISOString().split('T')[0], description: '', paidBy: '', status: 'pending' })
+  1507→        onOpenChange(false)
+  1508→        onSuccess()
+  1509→      } else {
+  1510→        const json = await res.json()
+  1511→        alert(json.error || 'Failed to add expense')
+  1512→      }
+  1513→    } catch (err) {
+  1514→      console.error('Failed to add expense:', err)
+  1515→      alert('Failed to add expense')
+  1516→    } finally {
+  1517→      setSaving(false)
+  1518→    }
+  1519→  }
+  1520→
+  1521→  return (
+  1522→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1523→      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
+  1524→        <DialogHeader>
+  1525→          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Add Expense</DialogTitle>
+  1526→          <DialogDescription className="text-[11px]">Record a new expense</DialogDescription>
+  1527→        </DialogHeader>
+  1528→        <form onSubmit={handleSubmit} className="space-y-4">
+  1529→          <div className="grid grid-cols-2 gap-3">
+  1530→            <div className="space-y-2">
+  1531→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category *</Label>
+  1532→              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+  1533→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1534→                  <SelectValue placeholder="Select category" />
+  1535→                </SelectTrigger>
+  1536→                <SelectContent>
+  1537→                  <SelectItem value="Rent">Rent</SelectItem>
+  1538→                  <SelectItem value="Utilities">Utilities</SelectItem>
+  1539→                  <SelectItem value="Salaries">Salaries</SelectItem>
+  1540→                  <SelectItem value="Office Supplies">Office Supplies</SelectItem>
+  1541→                  <SelectItem value="Marketing">Marketing</SelectItem>
+  1542→                  <SelectItem value="Transport">Transport</SelectItem>
+  1543→                  <SelectItem value="Maintenance">Maintenance</SelectItem>
+  1544→                  <SelectItem value="Insurance">Insurance</SelectItem>
+  1545→                  <SelectItem value="Other">Other</SelectItem>
+  1546→                </SelectContent>
+  1547→              </Select>
+  1548→            </div>
+  1549→            <div className="space-y-2">
+  1550→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Amount ($) *</Label>
+  1551→              <Input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="500" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1552→            </div>
+  1553→          </div>
+  1554→          <div className="grid grid-cols-2 gap-3">
+  1555→            <div className="space-y-2">
+  1556→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date *</Label>
+  1557→              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1558→            </div>
+  1559→            <div className="space-y-2">
+  1560→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</Label>
+  1561→              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+  1562→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1563→                  <SelectValue />
+  1564→                </SelectTrigger>
+  1565→                <SelectContent>
+  1566→                  <SelectItem value="pending">Pending</SelectItem>
+  1567→                  <SelectItem value="approved">Approved</SelectItem>
+  1568→                  <SelectItem value="paid">Paid</SelectItem>
+  1569→                </SelectContent>
+  1570→              </Select>
+  1571→            </div>
+  1572→          </div>
+  1573→          <div className="space-y-2">
+  1574→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</Label>
+  1575→            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Expense details..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+  1576→          </div>
+  1577→          <div className="space-y-2">
+  1578→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</Label>
+  1579→            <Input value={form.paidBy} onChange={(e) => setForm({ ...form, paidBy: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1580→          </div>
+  1581→          <DialogFooter>
+  1582→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1583→            <Button type="submit" disabled={saving || !form.category || !form.amount || !form.date} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1584→              {saving ? 'Adding...' : 'Add Expense'}
+  1585→            </Button>
+  1586→          </DialogFooter>
+  1587→        </form>
+  1588→      </DialogContent>
+  1589→    </Dialog>
+  1590→  )
+  1591→}
+  1592→

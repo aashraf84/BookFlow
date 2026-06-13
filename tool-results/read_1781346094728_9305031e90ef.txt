@@ -1,0 +1,825 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import * as React from 'react'
+     4→     4→import {
+     5→     5→  Printer,
+     6→     6→  Plus,
+     7→     7→  FileText,
+     8→     8→  BookOpen,
+     9→     9→  CheckCircle2,
+    10→    10→  XCircle,
+    11→    11→  ArrowRight,
+    12→    12→  Clock,
+    13→    13→  Package,
+    14→    14→  DollarSign,
+    15→    15→  Search,
+    16→    16→  Eye,
+    17→    17→  Send,
+    18→    18→  PenTool,
+    19→    19→  Shield,
+    20→    20→  Globe,
+    21→    21→} from 'lucide-react'
+    22→    22→import { Button } from '@/components/ui/button'
+    23→    23→import { Input } from '@/components/ui/input'
+    24→    24→import { Label } from '@/components/ui/label'
+    25→    25→import { Textarea } from '@/components/ui/textarea'
+    26→    26→import { Badge } from '@/components/ui/badge'
+    27→    27→import {
+    28→    28→  Dialog,
+    29→    29→  DialogContent,
+    30→    30→  DialogDescription,
+    31→    31→  DialogFooter,
+    32→    32→  DialogHeader,
+    33→    33→  DialogTitle,
+    34→    34→} from '@/components/ui/dialog'
+    35→    35→import {
+    36→    36→  Select,
+    37→    37→  SelectContent,
+    38→    38→  SelectItem,
+    39→    39→  SelectTrigger,
+    40→    40→  SelectValue,
+    41→    41→} from '@/components/ui/select'
+    42→    42→import {
+    43→    43→  Table,
+    44→    44→  TableBody,
+    45→    45→  TableCell,
+    46→    46→  TableHead,
+    47→    47→  TableHeader,
+    48→    48→  TableRow,
+    49→    49→} from '@/components/ui/table'
+    50→    50→import { useToast } from '@/hooks/use-toast'
+    51→    51→import { useAppStore } from '@/store/app-store'
+    52→    52→
+    53→    53→// Types
+    54→    54→interface Manuscript {
+    55→    55→  id: string
+    56→    56→  title: string
+    57→    57→  author: string | null
+    58→    58→  status: string
+    59→    59→  submittedAt: string
+    60→    60→  reviewedAt: string | null
+    61→    61→  publishedAt: string | null
+    62→    62→  notes: string | null
+    63→    63→  createdAt: string
+    64→    64→  updatedAt: string
+    65→    65→}
+    66→    66→
+    67→    67→interface PrintOrder {
+    68→    68→  id: string
+    69→    69→  bookId: string | null
+    70→    70→  quantity: number
+    71→    71→  status: string
+    72→    72→  costPerUnit: number
+    73→    73→  totalCost: number
+    74→    74→  notes: string | null
+    75→    75→  createdAt: string
+    76→    76→  updatedAt: string
+    77→    77→  book?: { id: string; title: string; isbn: string | null } | null
+    78→    78→}
+    79→    79→
+    80→    80→interface BookOption {
+    81→    81→  id: string
+    82→    82→  title: string
+    83→    83→  isbn: string | null
+    84→    84→}
+    85→    85→
+    86→    86→// Manuscript status config - spec: submitted=blue, reviewed=purple, approved=green, published=teal, rejected=red
+    87→    87→const manuscriptStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+    88→    88→  submitted: { label: 'Submitted', color: 'text-macos-blue', bgColor: 'bg-macos-blue/10', icon: Send },
+    89→    89→  reviewed: { label: 'Reviewed', color: 'text-macos-purple', bgColor: 'bg-macos-purple/10', icon: PenTool },
+    90→    90→  approved: { label: 'Approved', color: 'text-macos-green', bgColor: 'bg-macos-green/10', icon: Shield },
+    91→    91→  published: { label: 'Published', color: 'text-macos-teal', bgColor: 'bg-macos-teal/10', icon: Globe },
+    92→    92→  rejected: { label: 'Rejected', color: 'text-macos-red', bgColor: 'bg-macos-red/10', icon: XCircle },
+    93→    93→}
+    94→    94→
+    95→    95→const printStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+    96→    96→  ordered: { label: 'Ordered', color: 'text-macos-orange', bgColor: 'bg-macos-orange/10', icon: Clock },
+    97→    97→  printing: { label: 'Printing', color: 'text-macos-blue', bgColor: 'bg-macos-blue/10', icon: Printer },
+    98→    98→  completed: { label: 'Completed', color: 'text-macos-green', bgColor: 'bg-macos-green/10', icon: CheckCircle2 },
+    99→    99→}
+   100→   100→
+   101→   101→const statusWorkflow = ['submitted', 'reviewed', 'approved', 'published']
+   102→   102→const rejectionStates = ['rejected']
+   103→   103→
+   104→   104→function getNextStatus(current: string): string[] {
+   105→   105→  if (current === 'rejected') return []
+   106→   106→  const idx = statusWorkflow.indexOf(current)
+   107→   107→  if (idx === -1) return []
+   108→   108→  if (idx === statusWorkflow.length - 1) return []
+   109→   109→  return [statusWorkflow[idx + 1]]
+   110→   110→}
+   111→   111→
+   112→   112→// Pipeline step component for manuscript workflow visualization
+   113→   113→function PipelineStep({
+   114→   114→  label,
+   115→   115→  icon: Icon,
+   116→   116→  isActive,
+   117→   117→  isCompleted,
+   118→   118→  count,
+   119→   119→  color,
+   120→   120→  bgColor,
+   121→   121→  isLast,
+   122→   122→}: {
+   123→   123→  label: string
+   124→   124→  icon: React.ElementType
+   125→   125→  isActive: boolean
+   126→   126→  isCompleted: boolean
+   127→   127→  count: number
+   128→   128→  color: string
+   129→   129→  bgColor: string
+   130→   130→  isLast: boolean
+   131→   131→}) {
+   132→   132→  return (
+   133→   133→    <div className="flex items-center gap-0 flex-1 min-w-0">
+   134→   134→      <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1">
+   135→   135→        <div
+   136→   136→          className={`relative flex items-center justify-center size-10 rounded-xl transition-all duration-300 ${
+   137→   137→            isActive
+   138→   138→              ? `${bgColor} ring-2 ring-offset-1 ring-offset-background ${color.replace('text-', 'ring-')}`
+   139→   139→              : isCompleted
+   140→   140→              ? bgColor
+   141→   141→              : 'bg-secondary/60'
+   142→   142→          }`}
+   143→   143→        >
+   144→   144→          <Icon className={`size-4 ${isActive || isCompleted ? color : 'text-muted-foreground/50'}`} />
+   145→   145→          {count > 0 && (
+   146→   146→            <span className={`absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-bold px-1 ${
+   147→   147→              isActive ? 'bg-macos-blue text-white' : isCompleted ? bgColor + ' ' + color : 'bg-secondary text-muted-foreground'
+   148→   148→            }`}>
+   149→   149→              {count}
+   150→   150→            </span>
+   151→   151→          )}
+   152→   152→        </div>
+   153→   153→        <div className="text-center">
+   154→   154→          <p className={`text-[10px] font-semibold uppercase tracking-wider ${isActive ? color : isCompleted ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+   155→   155→            {label}
+   156→   156→          </p>
+   157→   157→        </div>
+   158→   158→      </div>
+   159→   159→      {!isLast && (
+   160→   160→        <div className="flex items-center pt-[-16px] self-start mt-5 -ml-1 -mr-1">
+   161→   161→          <div className={`h-[2px] w-full min-w-[24px] rounded-full transition-colors ${
+   162→   162→            isCompleted ? 'bg-macos-green/40' : 'bg-border'
+   163→   163→          }`} />
+   164→   164→          <ArrowRight className={`size-3 -ml-1 ${isCompleted ? 'text-macos-green/40' : 'text-muted-foreground/30'}`} />
+   165→   165→        </div>
+   166→   166→      )}
+   167→   167→    </div>
+   168→   168→  )
+   169→   169→}
+   170→   170→
+   171→   171→export function PublishingModule() {
+   172→   172→  const { toast } = useToast()
+   173→   173→  const authUser = useAppStore((s) => s.authUser)
+   174→   174→  const isViewOnly = authUser?.isViewOnly ?? false
+   175→   175→
+   176→   176→  const [manuscripts, setManuscripts] = React.useState<Manuscript[]>([])
+   177→   177→  const [printOrders, setPrintOrders] = React.useState<PrintOrder[]>([])
+   178→   178→  const [books, setBooks] = React.useState<BookOption[]>([])
+   179→   179→  const [loading, setLoading] = React.useState(true)
+   180→   180→  const [manuscriptDialogOpen, setManuscriptDialogOpen] = React.useState(false)
+   181→   181→  const [printOrderDialogOpen, setPrintOrderDialogOpen] = React.useState(false)
+   182→   182→  const [submitting, setSubmitting] = React.useState(false)
+   183→   183→  const [activeTab, setActiveTab] = React.useState('manuscripts')
+   184→   184→  const [searchQuery, setSearchQuery] = React.useState('')
+   185→   185→  const [statusFilter, setStatusFilter] = React.useState('all')
+   186→   186→
+   187→   187→  const [msForm, setMsForm] = React.useState({ title: '', author: '', notes: '' })
+   188→   188→  const [poForm, setPoForm] = React.useState({ bookId: '', quantity: '', costPerUnit: '' })
+   189→   189→
+   190→   190→  const fetchManuscripts = React.useCallback(async () => {
+   191→   191→    try {
+   192→   192→      const res = await fetch('/api/publishing?type=manuscripts')
+   193→   193→      if (!res.ok) throw new Error('Failed to fetch manuscripts')
+   194→   194→      const json = await res.json()
+   195→   195→      setManuscripts(json.data || [])
+   196→   196→    } catch {
+   197→   197→      toast({ title: 'Error', description: 'Failed to fetch manuscripts', variant: 'destructive' })
+   198→   198→    }
+   199→   199→  }, [toast])
+   200→   200→
+   201→   201→  const fetchPrintOrders = React.useCallback(async () => {
+   202→   202→    try {
+   203→   203→      const res = await fetch('/api/publishing?type=print-orders')
+   204→   204→      if (!res.ok) throw new Error('Failed to fetch print orders')
+   205→   205→      const json = await res.json()
+   206→   206→      setPrintOrders(json.data || [])
+   207→   207→    } catch {
+   208→   208→      toast({ title: 'Error', description: 'Failed to fetch print orders', variant: 'destructive' })
+   209→   209→    }
+   210→   210→  }, [toast])
+   211→   211→
+   212→   212→  const fetchBooks = React.useCallback(async () => {
+   213→   213→    try {
+   214→   214→      const res = await fetch('/api/books')
+   215→   215→      if (!res.ok) throw new Error('Failed to fetch books')
+   216→   216→      const json = await res.json()
+   217→   217→      setBooks(json.data || [])
+   218→   218→    } catch {
+   219→   219→      // Silently fail
+   220→   220→    }
+   221→   221→  }, [])
+   222→   222→
+   223→   223→  React.useEffect(() => {
+   224→   224→    const loadAll = async () => {
+   225→   225→      setLoading(true)
+   226→   226→      await Promise.all([fetchManuscripts(), fetchPrintOrders(), fetchBooks()])
+   227→   227→      setLoading(false)
+   228→   228→    }
+   229→   229→    loadAll()
+   230→   230→  }, [fetchManuscripts, fetchPrintOrders, fetchBooks])
+   231→   231→
+   232→   232→  const handleSubmitManuscript = async () => {
+   233→   233→    if (!msForm.title) {
+   234→   234→      toast({ title: 'Validation Error', description: 'Title is required', variant: 'destructive' })
+   235→   235→      return
+   236→   236→    }
+   237→   237→    try {
+   238→   238→      setSubmitting(true)
+   239→   239→      const res = await fetch('/api/publishing?type=manuscripts', {
+   240→   240→        method: 'POST',
+   241→   241→        headers: { 'Content-Type': 'application/json' },
+   242→   242→        body: JSON.stringify(msForm),
+   243→   243→      })
+   244→   244→      if (!res.ok) throw new Error('Failed to submit manuscript')
+   245→   245→      toast({ title: 'Success', description: 'Manuscript submitted successfully' })
+   246→   246→      setManuscriptDialogOpen(false)
+   247→   247→      setMsForm({ title: '', author: '', notes: '' })
+   248→   248→      fetchManuscripts()
+   249→   249→    } catch {
+   250→   250→      toast({ title: 'Error', description: 'Failed to submit manuscript', variant: 'destructive' })
+   251→   251→    } finally {
+   252→   252→      setSubmitting(false)
+   253→   253→    }
+   254→   254→  }
+   255→   255→
+   256→   256→  const handleCreatePrintOrder = async () => {
+   257→   257→    if (!poForm.bookId || !poForm.quantity) {
+   258→   258→      toast({ title: 'Validation Error', description: 'Book and quantity are required', variant: 'destructive' })
+   259→   259→      return
+   260→   260→    }
+   261→   261→    try {
+   262→   262→      setSubmitting(true)
+   263→   263→      const res = await fetch('/api/publishing?type=print-orders', {
+   264→   264→        method: 'POST',
+   265→   265→        headers: { 'Content-Type': 'application/json' },
+   266→   266→        body: JSON.stringify({
+   267→   267→          bookId: poForm.bookId,
+   268→   268→          quantity: parseInt(poForm.quantity),
+   269→   269→          costPerUnit: parseFloat(poForm.costPerUnit) || 0,
+   270→   270→        }),
+   271→   271→      })
+   272→   272→      if (!res.ok) throw new Error('Failed to create print order')
+   273→   273→      toast({ title: 'Success', description: 'Print order created successfully' })
+   274→   274→      setPrintOrderDialogOpen(false)
+   275→   275→      setPoForm({ bookId: '', quantity: '', costPerUnit: '' })
+   276→   276→      fetchPrintOrders()
+   277→   277→    } catch {
+   278→   278→      toast({ title: 'Error', description: 'Failed to create print order', variant: 'destructive' })
+   279→   279→    } finally {
+   280→   280→      setSubmitting(false)
+   281→   281→    }
+   282→   282→  }
+   283→   283→
+   284→   284→  const handleManuscriptStatus = async (manuscript: Manuscript, newStatus: string) => {
+   285→   285→    try {
+   286→   286→      const res = await fetch('/api/publishing?type=manuscripts', {
+   287→   287→        method: 'PUT',
+   288→   288→        headers: { 'Content-Type': 'application/json' },
+   289→   289→        body: JSON.stringify({ id: manuscript.id, status: newStatus }),
+   290→   290→      })
+   291→   291→      if (!res.ok) throw new Error('Failed to update status')
+   292→   292→      toast({ title: 'Success', description: `Manuscript status updated to ${newStatus}` })
+   293→   293→      fetchManuscripts()
+   294→   294→    } catch {
+   295→   295→      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' })
+   296→   296→    }
+   297→   297→  }
+   298→   298→
+   299→   299→  const handlePrintOrderStatus = async (order: PrintOrder, newStatus: string) => {
+   300→   300→    try {
+   301→   301→      const res = await fetch('/api/publishing?type=print-orders', {
+   302→   302→        method: 'PUT',
+   303→   303→        headers: { 'Content-Type': 'application/json' },
+   304→   304→        body: JSON.stringify({ id: order.id, status: newStatus }),
+   305→   305→      })
+   306→   306→      if (!res.ok) throw new Error('Failed to update status')
+   307→   307→      toast({ title: 'Success', description: `Print order status updated to ${newStatus}` })
+   308→   308→      fetchPrintOrders()
+   309→   309→    } catch {
+   310→   310→      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' })
+   311→   311→    }
+   312→   312→  }
+   313→   313→
+   314→   314→  const msByStatus = manuscripts.reduce<Record<string, number>>((acc, m) => {
+   315→   315→    acc[m.status] = (acc[m.status] || 0) + 1
+   316→   316→    return acc
+   317→   317→  }, {})
+   318→   318→
+   319→   319→  const totalPrintCost = printOrders.reduce((sum, o) => sum + o.totalCost, 0)
+   320→   320→
+   321→   321→  // Filter manuscripts
+   322→   322→  const filteredManuscripts = manuscripts.filter((m) => {
+   323→   323→    const matchesSearch = !searchQuery || 
+   324→   324→      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   325→   325→      (m.author && m.author.toLowerCase().includes(searchQuery.toLowerCase()))
+   326→   326→    const matchesStatus = statusFilter === 'all' || m.status === statusFilter
+   327→   327→    return matchesSearch && matchesStatus
+   328→   328→  })
+   329→   329→
+   330→   330→  const tabs = [
+   331→   331→    { id: 'manuscripts', label: 'Manuscripts' },
+   332→   332→    { id: 'print-orders', label: 'Print Orders' },
+   333→   333→  ]
+   334→   334→
+   335→   335→  return (
+   336→   336→    <div className="space-y-6">
+   337→   337→      {/* Page Title */}
+   338→   338→      <div>
+   339→   339→        <h1 className="macos-page-title">Publishing</h1>
+   340→   340→        <p className="macos-page-subtitle">Manage manuscripts, reviews, and print production</p>
+   341→   341→      </div>
+   342→   342→
+   343→   343→      {/* Summary Metrics */}
+   344→   344→      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+   345→   345→        <div className="macos-card macos-shadow-card p-4">
+   346→   346→          <div className="flex items-center justify-between">
+   347→   347→            <div>
+   348→   348→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Manuscripts</p>
+   349→   349→              <p className="text-2xl font-bold tracking-tight mt-0.5">{manuscripts.length}</p>
+   350→   350→            </div>
+   351→   351→            <div className="rounded-xl bg-macos-blue/10 p-2.5">
+   352→   352→              <FileText className="size-5 text-macos-blue" />
+   353→   353→            </div>
+   354→   354→          </div>
+   355→   355→        </div>
+   356→   356→        <div className="macos-card macos-shadow-card p-4">
+   357→   357→          <div className="flex items-center justify-between">
+   358→   358→            <div>
+   359→   359→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Submitted</p>
+   360→   360→              <p className="text-2xl font-bold tracking-tight mt-0.5">{msByStatus['submitted'] || 0}</p>
+   361→   361→            </div>
+   362→   362→            <div className="rounded-xl bg-macos-orange/10 p-2.5">
+   363→   363→              <Clock className="size-5 text-macos-orange" />
+   364→   364→            </div>
+   365→   365→          </div>
+   366→   366→        </div>
+   367→   367→        <div className="macos-card macos-shadow-card p-4">
+   368→   368→          <div className="flex items-center justify-between">
+   369→   369→            <div>
+   370→   370→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Published</p>
+   371→   371→              <p className="text-2xl font-bold tracking-tight mt-0.5">{msByStatus['published'] || 0}</p>
+   372→   372→            </div>
+   373→   373→            <div className="rounded-xl bg-macos-teal/10 p-2.5">
+   374→   374→              <Globe className="size-5 text-macos-teal" />
+   375→   375→            </div>
+   376→   376→          </div>
+   377→   377→        </div>
+   378→   378→        <div className="macos-card macos-shadow-card p-4">
+   379→   379→          <div className="flex items-center justify-between">
+   380→   380→            <div>
+   381→   381→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Print Orders</p>
+   382→   382→              <p className="text-2xl font-bold tracking-tight mt-0.5">{printOrders.length}</p>
+   383→   383→            </div>
+   384→   384→            <div className="rounded-xl bg-macos-purple/10 p-2.5">
+   385→   385→              <Printer className="size-5 text-macos-purple" />
+   386→   386→            </div>
+   387→   387→          </div>
+   388→   388→        </div>
+   389→   389→        <div className="macos-card macos-shadow-card p-4">
+   390→   390→          <div className="flex items-center justify-between">
+   391→   391→            <div>
+   392→   392→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Print Cost</p>
+   393→   393→              <p className="text-2xl font-bold tracking-tight mt-0.5">${totalPrintCost.toLocaleString()}</p>
+   394→   394→            </div>
+   395→   395→            <div className="rounded-xl bg-macos-green/10 p-2.5">
+   396→   396→              <DollarSign className="size-5 text-macos-green" />
+   397→   397→            </div>
+   398→   398→          </div>
+   399→   399→        </div>
+   400→   400→      </div>
+   401→   401→
+   402→   402→      {/* Manuscript Workflow Pipeline Visualization */}
+   403→   403→      <div className="macos-card macos-shadow p-6">
+   404→   404→        <div className="macos-section-header mb-4">
+   405→   405→          <div>
+   406→   406→            <p className="macos-section-title">Manuscript Workflow Pipeline</p>
+   407→   407→            <p className="macos-section-desc">Track manuscripts through the publishing lifecycle</p>
+   408→   408→          </div>
+   409→   409→        </div>
+   410→   410→        <div className="flex items-start justify-between gap-2">
+   411→   411→          {statusWorkflow.map((status, idx) => {
+   412→   412→            const config = manuscriptStatusConfig[status]
+   413→   413→            const count = msByStatus[status] || 0
+   414→   414→            const isLast = idx === statusWorkflow.length - 1
+   415→   415→            // Determine if this step is "active" (has items) or "completed" (all items have passed this stage)
+   416→   416→            const isActive = count > 0
+   417→   417→            const laterCounts = statusWorkflow.slice(idx + 1).reduce((sum, s) => sum + (msByStatus[s] || 0), 0)
+   418→   418→            const isCompleted = count === 0 && laterCounts > 0
+   419→   419→            return (
+   420→   420→              <PipelineStep
+   421→   421→                key={status}
+   422→   422→                label={config.label}
+   423→   423→                icon={config.icon}
+   424→   424→                isActive={isActive}
+   425→   425→                isCompleted={isCompleted}
+   426→   426→                count={count}
+   427→   427→                color={config.color}
+   428→   428→                bgColor={config.bgColor}
+   429→   429→                isLast={isLast}
+   430→   430→              />
+   431→   431→            )
+   432→   432→          })}
+   433→   433→        </div>
+   434→   434→        {/* Rejected count if any */}
+   435→   435→        {(msByStatus['rejected'] || 0) > 0 && (
+   436→   436→          <div className="mt-4 flex items-center gap-2 pt-3 border-t border-border">
+   437→   437→            <XCircle className="size-3.5 text-macos-red" />
+   438→   438→            <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Rejected:</span>
+   439→   439→            <Badge className="rounded-md bg-macos-red/10 text-macos-red text-[10px] font-semibold px-2 py-0.5">
+   440→   440→              {msByStatus['rejected']}
+   441→   441→            </Badge>
+   442→   442→          </div>
+   443→   443→        )}
+   444→   444→      </div>
+   445→   445→
+   446→   446→      {/* Header + Filter Bar */}
+   447→   447→      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+   448→   448→        <div className="macos-filter-bar">
+   449→   449→          {tabs.map((tab) => (
+   450→   450→            <button
+   451→   451→              key={tab.id}
+   452→   452→              onClick={() => setActiveTab(tab.id)}
+   453→   453→              className={`macos-filter-item ${activeTab === tab.id ? 'macos-filter-item-active' : ''}`}
+   454→   454→            >
+   455→   455→              {tab.label}
+   456→   456→            </button>
+   457→   457→          ))}
+   458→   458→        </div>
+   459→   459→        <div className="flex items-center gap-2">
+   460→   460→          {/* Search */}
+   461→   461→          {activeTab === 'manuscripts' && (
+   462→   462→            <div className="macos-search flex items-center gap-2 px-3 h-8">
+   463→   463→              <Search className="size-3.5 text-muted-foreground" />
+   464→   464→              <Input
+   465→   465→                placeholder="Search manuscripts..."
+   466→   466→                value={searchQuery}
+   467→   467→                onChange={(e) => setSearchQuery(e.target.value)}
+   468→   468→                className="border-0 bg-transparent h-6 text-[13px] p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60"
+   469→   469→              />
+   470→   470→            </div>
+   471→   471→          )}
+   472→   472→          {/* Status Filter */}
+   473→   473→          {activeTab === 'manuscripts' && (
+   474→   474→            <Select value={statusFilter} onValueChange={setStatusFilter}>
+   475→   475→              <SelectTrigger className="w-[140px] h-8 text-[13px] rounded-lg bg-secondary/80 border-0">
+   476→   476→                <SelectValue placeholder="Filter status" />
+   477→   477→              </SelectTrigger>
+   478→   478→              <SelectContent>
+   479→   479→                <SelectItem value="all">All Status</SelectItem>
+   480→   480→                <SelectItem value="submitted">Submitted</SelectItem>
+   481→   481→                <SelectItem value="reviewed">Reviewed</SelectItem>
+   482→   482→                <SelectItem value="approved">Approved</SelectItem>
+   483→   483→                <SelectItem value="published">Published</SelectItem>
+   484→   484→                <SelectItem value="rejected">Rejected</SelectItem>
+   485→   485→              </SelectContent>
+   486→   486→            </Select>
+   487→   487→          )}
+   488→   488→          {/* CRUD Buttons - hidden for view-only */}
+   489→   489→          {!isViewOnly && (
+   490→   490→            <>
+   491→   491→              <Button
+   492→   492→                onClick={() => setManuscriptDialogOpen(true)}
+   493→   493→                variant="outline"
+   494→   494→                className="rounded-lg font-medium text-[13px] h-8"
+   495→   495→              >
+   496→   496→                <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
+   497→   497→                Submit Manuscript
+   498→   498→              </Button>
+   499→   499→              <Button
+   500→   500→                onClick={() => setPrintOrderDialogOpen(true)}
+   501→   501→                className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8"
+   502→   502→              >
+   503→   503→                <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
+   504→   504→                Print Order
+   505→   505→              </Button>
+   506→   506→            </>
+   507→   507→          )}
+   508→   508→        </div>
+   509→   509→      </div>
+   510→   510→
+   511→   511→      {/* Manuscripts Tab */}
+   512→   512→      {activeTab === 'manuscripts' && (
+   513→   513→        <div>
+   514→   514→          {loading ? (
+   515→   515→            <div className="macos-card macos-shadow-card p-8 text-center text-muted-foreground animate-pulse text-[13px]">
+   516→   516→              Loading manuscripts...
+   517→   517→            </div>
+   518→   518→          ) : filteredManuscripts.length === 0 ? (
+   519→   519→            <div className="macos-card macos-shadow-card macos-empty">
+   520→   520→              <FileText className="size-12 text-muted-foreground/40 mb-4" />
+   521→   521→              <h3 className="text-[13px] font-semibold tracking-tight mb-1">No manuscripts found</h3>
+   522→   522→              <p className="text-[13px] text-muted-foreground">
+   523→   523→                {searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'Submit your first manuscript to get started'}
+   524→   524→              </p>
+   525→   525→            </div>
+   526→   526→          ) : (
+   527→   527→            <div className="macos-card macos-shadow overflow-hidden">
+   528→   528→              <Table>
+   529→   529→                <TableHeader>
+   530→   530→                  <TableRow className="hover:bg-transparent border-b border-border">
+   531→   531→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+   532→   532→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
+   533→   533→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+   534→   534→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Submitted</TableHead>
+   535→   535→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   536→   536→                  </TableRow>
+   537→   537→                </TableHeader>
+   538→   538→                <TableBody>
+   539→   539→                  {filteredManuscripts.map((ms) => {
+   540→   540→                    const nextStatuses = getNextStatus(ms.status)
+   541→   541→                    const statusConf = manuscriptStatusConfig[ms.status] || manuscriptStatusConfig.submitted
+   542→   542→                    const StatusIcon = statusConf.icon
+   543→   543→                    return (
+   544→   544→                      <TableRow key={ms.id} className="macos-table-row">
+   545→   545→                        <TableCell className="text-[13px] font-medium max-w-[200px] truncate">
+   546→   546→                          <div className="flex items-center gap-2">
+   547→   547→                            <div className={`size-6 rounded-lg flex items-center justify-center ${statusConf.bgColor}`}>
+   548→   548→                              <StatusIcon className={`size-3 ${statusConf.color}`} />
+   549→   549→                            </div>
+   550→   550→                            <span className="truncate">{ms.title}</span>
+   551→   551→                          </div>
+   552→   552→                        </TableCell>
+   553→   553→                        <TableCell className="text-[13px] text-muted-foreground">{ms.author || '—'}</TableCell>
+   554→   554→                        <TableCell>
+   555→   555→                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${statusConf.bgColor} ${statusConf.color}`}>
+   556→   556→                            {statusConf.label}
+   557→   557→                          </Badge>
+   558→   558→                        </TableCell>
+   559→   559→                        <TableCell className="text-[13px] text-muted-foreground">
+   560→   560→                          {new Date(ms.submittedAt).toLocaleDateString()}
+   561→   561→                        </TableCell>
+   562→   562→                        <TableCell className="text-right">
+   563→   563→                          <div className="flex items-center justify-end gap-1">
+   564→   564→                            {nextStatuses.map((ns) => {
+   565→   565→                              const nsConf = manuscriptStatusConfig[ns]
+   566→   566→                              return (
+   567→   567→                                <Button
+   568→   568→                                  key={ns}
+   569→   569→                                  size="sm"
+   570→   570→                                  variant="outline"
+   571→   571→                                  className={`h-7 text-[10px] rounded-lg font-semibold px-2.5 ${nsConf?.color} border-current/20`}
+   572→   572→                                  onClick={() => handleManuscriptStatus(ms, ns)}
+   573→   573→                                  disabled={isViewOnly}
+   574→   574→                                >
+   575→   575→                                  <ArrowRight className="size-3 mr-1" />
+   576→   576→                                  {ns.charAt(0).toUpperCase() + ns.slice(1)}
+   577→   577→                                </Button>
+   578→   578→                              )
+   579→   579→                            })}
+   580→   580→                            {!rejectionStates.includes(ms.status) && ms.status !== 'published' && !isViewOnly && (
+   581→   581→                              <Button
+   582→   582→                                size="sm"
+   583→   583→                                variant="outline"
+   584→   584→                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5 text-macos-red border-macos-red/20 hover:bg-macos-red/10"
+   585→   585→                                onClick={() => handleManuscriptStatus(ms, 'rejected')}
+   586→   586→                                disabled={isViewOnly}
+   587→   587→                              >
+   588→   588→                                <XCircle className="size-3 mr-1" />
+   589→   589→                                Reject
+   590→   590→                              </Button>
+   591→   591→                            )}
+   592→   592→                            {ms.status === 'published' && (
+   593→   593→                              <CheckCircle2 className="size-4 text-macos-green" />
+   594→   594→                            )}
+   595→   595→                            {ms.status === 'rejected' && (
+   596→   596→                              <XCircle className="size-4 text-macos-red" />
+   597→   597→                            )}
+   598→   598→                          </div>
+   599→   599→                        </TableCell>
+   600→   600→                      </TableRow>
+   601→   601→                    )
+   602→   602→                  })}
+   603→   603→                </TableBody>
+   604→   604→              </Table>
+   605→   605→            </div>
+   606→   606→          )}
+   607→   607→        </div>
+   608→   608→      )}
+   609→   609→
+   610→   610→      {/* Print Orders Tab */}
+   611→   611→      {activeTab === 'print-orders' && (
+   612→   612→        <div>
+   613→   613→          {loading ? (
+   614→   614→            <div className="macos-card macos-shadow-card p-8 text-center text-muted-foreground animate-pulse text-[13px]">
+   615→   615→              Loading print orders...
+   616→   616→            </div>
+   617→   617→          ) : printOrders.length === 0 ? (
+   618→   618→            <div className="macos-card macos-shadow-card macos-empty">
+   619→   619→              <Printer className="size-12 text-muted-foreground/40 mb-4" />
+   620→   620→              <h3 className="text-[13px] font-semibold tracking-tight mb-1">No print orders yet</h3>
+   621→   621→              <p className="text-[13px] text-muted-foreground">Create a print order for a published book</p>
+   622→   622→            </div>
+   623→   623→          ) : (
+   624→   624→            <div className="macos-card macos-shadow overflow-hidden">
+   625→   625→              <Table>
+   626→   626→                <TableHeader>
+   627→   627→                  <TableRow className="hover:bg-transparent border-b border-border">
+   628→   628→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Book</TableHead>
+   629→   629→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Quantity</TableHead>
+   630→   630→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Cost/Unit</TableHead>
+   631→   631→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Cost</TableHead>
+   632→   632→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+   633→   633→                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   634→   634→                  </TableRow>
+   635→   635→                </TableHeader>
+   636→   636→                <TableBody>
+   637→   637→                  {printOrders.map((po) => {
+   638→   638→                    const poConf = printStatusConfig[po.status] || printStatusConfig.ordered
+   639→   639→                    const PoIcon = poConf.icon
+   640→   640→                    return (
+   641→   641→                      <TableRow key={po.id} className="macos-table-row">
+   642→   642→                        <TableCell className="text-[13px] font-medium">
+   643→   643→                          <div className="flex items-center gap-2">
+   644→   644→                            <div className={`size-6 rounded-lg flex items-center justify-center ${poConf.bgColor}`}>
+   645→   645→                              <PoIcon className={`size-3 ${poConf.color}`} />
+   646→   646→                            </div>
+   647→   647→                            {po.book?.title || 'Unknown Book'}
+   648→   648→                          </div>
+   649→   649→                        </TableCell>
+   650→   650→                        <TableCell className="text-[13px]">{po.quantity.toLocaleString()}</TableCell>
+   651→   651→                        <TableCell className="text-[13px]">${po.costPerUnit.toFixed(2)}</TableCell>
+   652→   652→                        <TableCell className="text-[13px] font-medium">${po.totalCost.toLocaleString()}</TableCell>
+   653→   653→                        <TableCell>
+   654→   654→                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${poConf.bgColor} ${poConf.color}`}>
+   655→   655→                            {poConf.label}
+   656→   656→                          </Badge>
+   657→   657→                        </TableCell>
+   658→   658→                        <TableCell className="text-right">
+   659→   659→                          <div className="flex items-center justify-end gap-1">
+   660→   660→                            {po.status === 'ordered' && !isViewOnly && (
+   661→   661→                              <Button
+   662→   662→                                size="sm"
+   663→   663→                                variant="outline"
+   664→   664→                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5"
+   665→   665→                                onClick={() => handlePrintOrderStatus(po, 'printing')}
+   666→   666→                                disabled={isViewOnly}
+   667→   667→                              >
+   668→   668→                                <ArrowRight className="size-3 mr-1" />
+   669→   669→                                Start Printing
+   670→   670→                              </Button>
+   671→   671→                            )}
+   672→   672→                            {po.status === 'printing' && !isViewOnly && (
+   673→   673→                              <Button
+   674→   674→                                size="sm"
+   675→   675→                                variant="outline"
+   676→   676→                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5 text-macos-green border-macos-green/20 hover:bg-macos-green/10"
+   677→   677→                                onClick={() => handlePrintOrderStatus(po, 'completed')}
+   678→   678→                                disabled={isViewOnly}
+   679→   679→                              >
+   680→   680→                                <CheckCircle2 className="size-3 mr-1" />
+   681→   681→                                Complete
+   682→   682→                              </Button>
+   683→   683→                            )}
+   684→   684→                            {po.status === 'completed' && (
+   685→   685→                              <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+   686→   686→                                <CheckCircle2 className="size-3 mr-1" />
+   687→   687→                                Done
+   688→   688→                              </Badge>
+   689→   689→                            )}
+   690→   690→                            {isViewOnly && po.status !== 'completed' && (
+   691→   691→                              <span className="text-[10px] text-muted-foreground">View only</span>
+   692→   692→                            )}
+   693→   693→                          </div>
+   694→   694→                        </TableCell>
+   695→   695→                      </TableRow>
+   696→   696→                    )
+   697→   697→                  })}
+   698→   698→                </TableBody>
+   699→   699→              </Table>
+   700→   700→            </div>
+   701→   701→          )}
+   702→   702→        </div>
+   703→   703→      )}
+   704→   704→
+   705→   705→      {/* Submit Manuscript Dialog */}
+   706→   706→      <Dialog open={manuscriptDialogOpen} onOpenChange={setManuscriptDialogOpen}>
+   707→   707→        <DialogContent className="sm:max-w-md macos-shadow-float rounded-2xl">
+   708→   708→          <DialogHeader>
+   709→   709→            <DialogTitle className="text-[13px] font-semibold tracking-tight">Submit Manuscript</DialogTitle>
+   710→   710→            <DialogDescription className="text-[13px]">Submit a new manuscript for review and publishing</DialogDescription>
+   711→   711→          </DialogHeader>
+   712→   712→          <div className="grid gap-4 py-4">
+   713→   713→            <div className="space-y-2">
+   714→   714→              <Label htmlFor="ms-title" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Title *</Label>
+   715→   715→              <Input
+   716→   716→                id="ms-title"
+   717→   717→                placeholder="The Great Adventure"
+   718→   718→                value={msForm.title}
+   719→   719→                onChange={(e) => setMsForm((prev) => ({ ...prev, title: e.target.value }))}
+   720→   720→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   721→   721→              />
+   722→   722→            </div>
+   723→   723→            <div className="space-y-2">
+   724→   724→              <Label htmlFor="ms-author" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Author</Label>
+   725→   725→              <Input
+   726→   726→                id="ms-author"
+   727→   727→                placeholder="Jane Doe"
+   728→   728→                value={msForm.author}
+   729→   729→                onChange={(e) => setMsForm((prev) => ({ ...prev, author: e.target.value }))}
+   730→   730→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   731→   731→              />
+   732→   732→            </div>
+   733→   733→            <div className="space-y-2">
+   734→   734→              <Label htmlFor="ms-notes" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Notes</Label>
+   735→   735→              <Textarea
+   736→   736→                id="ms-notes"
+   737→   737→                placeholder="Additional notes about this manuscript..."
+   738→   738→                value={msForm.notes}
+   739→   739→                onChange={(e) => setMsForm((prev) => ({ ...prev, notes: e.target.value }))}
+   740→   740→                rows={3}
+   741→   741→                className="rounded-lg bg-secondary/80 border-0 text-[13px]"
+   742→   742→              />
+   743→   743→            </div>
+   744→   744→          </div>
+   745→   745→          <DialogFooter>
+   746→   746→            <Button variant="outline" onClick={() => setManuscriptDialogOpen(false)} className="bg-secondary text-secondary-foreground rounded-lg font-medium text-[13px]">Cancel</Button>
+   747→   747→            <Button onClick={handleSubmitManuscript} disabled={submitting} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   748→   748→              {submitting ? 'Submitting...' : 'Submit Manuscript'}
+   749→   749→            </Button>
+   750→   750→          </DialogFooter>
+   751→   751→        </DialogContent>
+   752→   752→      </Dialog>
+   753→   753→
+   754→   754→      {/* Create Print Order Dialog */}
+   755→   755→      <Dialog open={printOrderDialogOpen} onOpenChange={setPrintOrderDialogOpen}>
+   756→   756→        <DialogContent className="sm:max-w-md macos-shadow-float rounded-2xl">
+   757→   757→          <DialogHeader>
+   758→   758→            <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Print Order</DialogTitle>
+   759→   759→            <DialogDescription className="text-[13px]">Order a print run for a published book</DialogDescription>
+   760→   760→          </DialogHeader>
+   761→   761→          <div className="grid gap-4 py-4">
+   762→   762→            <div className="space-y-2">
+   763→   763→              <Label htmlFor="po-book" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Book *</Label>
+   764→   764→              <Select
+   765→   765→                value={poForm.bookId}
+   766→   766→                onValueChange={(v) => setPoForm((prev) => ({ ...prev, bookId: v }))}
+   767→   767→              >
+   768→   768→                <SelectTrigger id="po-book" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   769→   769→                  <SelectValue placeholder="Select a book" />
+   770→   770→                </SelectTrigger>
+   771→   771→                <SelectContent>
+   772→   772→                  {books.map((book) => (
+   773→   773→                    <SelectItem key={book.id} value={book.id}>
+   774→   774→                      {book.title}{book.isbn ? ` (${book.isbn})` : ''}
+   775→   775→                    </SelectItem>
+   776→   776→                  ))}
+   777→   777→                </SelectContent>
+   778→   778→              </Select>
+   779→   779→            </div>
+   780→   780→            <div className="grid grid-cols-2 gap-4">
+   781→   781→              <div className="space-y-2">
+   782→   782→                <Label htmlFor="po-qty" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Quantity *</Label>
+   783→   783→                <Input
+   784→   784→                  id="po-qty"
+   785→   785→                  type="number"
+   786→   786→                  placeholder="500"
+   787→   787→                  value={poForm.quantity}
+   788→   788→                  onChange={(e) => setPoForm((prev) => ({ ...prev, quantity: e.target.value }))}
+   789→   789→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   790→   790→                />
+   791→   791→              </div>
+   792→   792→              <div className="space-y-2">
+   793→   793→                <Label htmlFor="po-cost" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Cost Per Unit</Label>
+   794→   794→                <Input
+   795→   795→                  id="po-cost"
+   796→   796→                  type="number"
+   797→   797→                  step="0.01"
+   798→   798→                  placeholder="2.50"
+   799→   799→                  value={poForm.costPerUnit}
+   800→   800→                  onChange={(e) => setPoForm((prev) => ({ ...prev, costPerUnit: e.target.value }))}
+   801→   801→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   802→   802→                />
+   803→   803→              </div>
+   804→   804→            </div>
+   805→   805→            {poForm.quantity && poForm.costPerUnit && (
+   806→   806→              <div className="macos-card p-3 text-[13px]">
+   807→   807→                <span className="text-muted-foreground">Total Cost: </span>
+   808→   808→                <span className="font-bold text-gg-golden">
+   809→   809→                  ${(parseInt(poForm.quantity) * parseFloat(poForm.costPerUnit)).toLocaleString()}
+   810→   810→                </span>
+   811→   811→              </div>
+   812→   812→            )}
+   813→   813→          </div>
+   814→   814→          <DialogFooter>
+   815→   815→            <Button variant="outline" onClick={() => setPrintOrderDialogOpen(false)} className="bg-secondary text-secondary-foreground rounded-lg font-medium text-[13px]">Cancel</Button>
+   816→   816→            <Button onClick={handleCreatePrintOrder} disabled={submitting} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   817→   817→              {submitting ? 'Creating...' : 'Create Order'}
+   818→   818→            </Button>
+   819→   819→          </DialogFooter>
+   820→   820→        </DialogContent>
+   821→   821→      </Dialog>
+   822→   822→    </div>
+   823→   823→  )
+   824→   824→}
+   825→   825→

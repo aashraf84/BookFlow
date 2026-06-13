@@ -29,14 +29,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -70,6 +62,18 @@ import {
   Legend,
 } from 'recharts'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosStatCard,
+  MacosSearch,
+  MacosFilterBar,
+  MacosButton,
+  MacosBadge,
+  MacosEmptyState,
+  MacosDialog,
+  MacosFormField,
+  MacosStatGrid,
+} from '@/components/macos-ui'
 
 // ==================== TYPES ====================
 
@@ -134,46 +138,29 @@ const CHART_COLORS = {
 export function FinanceModule() {
   const [activeTab, setActiveTab] = React.useState('overview')
   const tabs = [
-    { value: 'overview', label: 'Overview', icon: Activity },
-    { value: 'accounts', label: 'Accounts', icon: Wallet },
-    { value: 'entries', label: 'Journal', icon: BookOpen },
-    { value: 'expenses', label: 'Expenses', icon: Receipt },
+    { id: 'overview', label: 'Overview', count: undefined },
+    { id: 'accounts', label: 'Accounts', count: undefined },
+    { id: 'entries', label: 'Journal', count: undefined },
+    { id: 'expenses', label: 'Expenses', count: undefined },
   ]
 
   return (
     <div className="space-y-5">
-      {/* Page Header */}
-      <div className="macos-page-header">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-xl bg-macos-green/10 flex items-center justify-center macos-shadow-card">
-            <DollarSign className="size-5 text-macos-green" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h2 className="macos-page-title">Finance</h2>
-            <p className="macos-page-subtitle">Financial management, accounting, and reporting</p>
-          </div>
-        </div>
-      </div>
+      <MacosPageHeader
+        title="Finance"
+        subtitle="Financial management, accounting, and reporting"
+        icon={DollarSign}
+        iconColor="text-macos-green"
+        iconBg="bg-macos-green/10"
+      />
 
-      {/* Filter Bar */}
-      <div className="macos-filter-bar">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.value
-          return (
-            <button
-              key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
-              className={`macos-filter-item flex items-center gap-1.5 ${isActive ? 'macos-filter-item-active' : ''}`}
-            >
-              <Icon className="size-3.5" strokeWidth={1.5} />
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+      <MacosFilterBar
+        items={tabs}
+        activeId={activeTab}
+        onChange={setActiveTab}
+      />
 
-      <div className="mt-4">
+      <div>
         {activeTab === 'overview' && <OverviewTab />}
         {activeTab === 'accounts' && <AccountsTab />}
         {activeTab === 'entries' && <JournalEntriesTab />}
@@ -281,65 +268,32 @@ function OverviewTab() {
       ) : (
         <>
           {/* P&L Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="macos-stat macos-shadow-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue</p>
-                  <p className="text-[24px] font-bold text-macos-green" style={{ letterSpacing: '-0.03em' }}>${revenue.toLocaleString()}</p>
-                  <div className="flex items-center gap-1 text-[11px] mt-1">
-                    <ArrowUpRight className="size-3 text-macos-green" />
-                    <span className="text-macos-green font-medium">+8.5%</span>
-                    <span className="text-muted-foreground">vs last month</span>
-                  </div>
-                </div>
-                <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
-                  <TrendingUp className="size-4 text-macos-green" strokeWidth={1.5} />
-                </div>
-              </div>
-            </div>
-            <div className="macos-stat macos-shadow-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Expenses</p>
-                  <p className="text-[24px] font-bold text-macos-red" style={{ letterSpacing: '-0.03em' }}>${expenseTotal.toLocaleString()}</p>
-                  <div className="flex items-center gap-1 text-[11px] mt-1">
-                    <ArrowDownRight className="size-3 text-macos-red" />
-                    <span className="text-macos-red font-medium">+3.2%</span>
-                    <span className="text-muted-foreground">vs last month</span>
-                  </div>
-                </div>
-                <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
-                  <TrendingDown className="size-4 text-macos-red" strokeWidth={1.5} />
-                </div>
-              </div>
-            </div>
-            <div className="macos-stat macos-shadow-card">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Net Income</p>
-                  <p className="text-[24px] font-bold text-macos-blue" style={{ letterSpacing: '-0.03em' }}>${netIncome.toLocaleString()}</p>
-                  <div className="flex items-center gap-1 text-[11px] mt-1">
-                    {netIncome >= 0 ? (
-                      <>
-                        <ArrowUpRight className="size-3 text-macos-blue" />
-                        <span className="text-macos-blue font-medium">+12.1%</span>
-                      </>
-                    ) : (
-                      <>
-                        <ArrowDownRight className="size-3 text-macos-red" />
-                        <span className="text-macos-red font-medium">-5.3%</span>
-                      </>
-                    )}
-                    <span className="text-muted-foreground">vs last month</span>
-                  </div>
-                </div>
-                <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
-                  <DollarSign className="size-4 text-macos-blue" strokeWidth={1.5} />
-                </div>
-              </div>
-            </div>
-          </div>
+          <MacosStatGrid className="grid-cols-1 sm:grid-cols-3">
+            <MacosStatCard
+              label="Revenue"
+              value={`$${revenue.toLocaleString()}`}
+              icon={TrendingUp}
+              iconColor="text-macos-green"
+              iconBg="bg-macos-green/10"
+              trend={{ value: 8.5, label: 'vs last month' }}
+            />
+            <MacosStatCard
+              label="Expenses"
+              value={`$${expenseTotal.toLocaleString()}`}
+              icon={TrendingDown}
+              iconColor="text-macos-red"
+              iconBg="bg-macos-red/10"
+              trend={{ value: -3.2, label: 'vs last month' }}
+            />
+            <MacosStatCard
+              label="Net Income"
+              value={`$${netIncome.toLocaleString()}`}
+              icon={DollarSign}
+              iconColor="text-macos-blue"
+              iconBg="bg-macos-blue/10"
+              trend={{ value: netIncome >= 0 ? 12.1 : -5.3, label: 'vs last month' }}
+            />
+          </MacosStatGrid>
 
           {/* Revenue vs Expenses Area Chart */}
           <div className="macos-card macos-shadow-card p-5">
@@ -555,7 +509,7 @@ function OverviewTab() {
                       />
                       <Bar dataKey="amount" radius={[0, 4, 4, 0]} maxBarSize={24}>
                         {expenseCategoryData.map((_, index) => (
-                          <Cell key={`bar-${index}`} fill={categoryColors[index % categoryColors.length]} />
+                          <Cell key={`cat-${index}`} fill={categoryColors[index % categoryColors.length]} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -575,16 +529,14 @@ function OverviewTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
-                    <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
+                    <Clock className="size-4 text-macos-orange" strokeWidth={1.8} />
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Payments</p>
-                    <p className="text-[24px] font-bold text-macos-orange" style={{ letterSpacing: '-0.03em' }}>${pendingExpenses.toLocaleString()}</p>
+                    <p className="text-[24px] font-bold text-macos-orange tracking-tight">${pendingExpenses.toLocaleString()}</p>
                   </div>
                 </div>
-                <Badge className="rounded-md bg-macos-orange/10 text-macos-orange border-0 text-[10px] font-semibold px-2.5 py-1">
-                  Requires Attention
-                </Badge>
+                <MacosBadge variant="warning">Requires Attention</MacosBadge>
               </div>
             </div>
           )}
@@ -605,7 +557,7 @@ function OverviewTab() {
                   <div key={expense.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
                     <div className="flex items-center gap-3">
                       <div className="size-8 rounded-lg bg-macos-red/10 flex items-center justify-center">
-                        <Receipt className="size-3.5 text-macos-red" strokeWidth={1.5} />
+                        <Receipt className="size-3.5 text-macos-red" strokeWidth={1.8} />
                       </div>
                       <div>
                         <p className="font-medium">{expense.category}</p>
@@ -616,17 +568,15 @@ function OverviewTab() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-macos-red">${expense.amount.toLocaleString()}</p>
-                      <Badge
-                        className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
-                          expense.status === 'paid'
-                            ? 'bg-macos-green/10 text-macos-green'
-                            : expense.status === 'approved'
-                            ? 'bg-macos-blue/10 text-macos-blue'
-                            : 'bg-macos-orange/10 text-macos-orange'
-                        }`}
+                      <MacosBadge
+                        variant={
+                          expense.status === 'paid' ? 'success' :
+                          expense.status === 'approved' ? 'info' :
+                          'warning'
+                        }
                       >
                         {expense.status}
-                      </Badge>
+                      </MacosBadge>
                     </div>
                   </div>
                 ))}
@@ -665,27 +615,22 @@ function AccountsTab() {
     fetchAccounts()
   }, [fetchAccounts])
 
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (type: string): 'success' | 'danger' | 'info' | 'warning' | 'default' => {
     switch (type) {
-      case 'asset':
-        return 'bg-macos-green/10 text-macos-green'
-      case 'liability':
-        return 'bg-macos-red/10 text-macos-red'
-      case 'equity':
-        return 'bg-macos-teal/10 text-macos-teal'
-      case 'revenue':
-        return 'bg-macos-blue/10 text-macos-blue'
-      case 'expense':
-        return 'bg-macos-orange/10 text-macos-orange'
-      default:
-        return 'bg-secondary text-secondary-foreground'
+      case 'asset': return 'success'
+      case 'liability': return 'danger'
+      case 'equity': return 'info'
+      case 'revenue': return 'info'
+      case 'expense': return 'warning'
+      default: return 'default'
     }
   }
 
   const groupedAccounts = accounts.reduce(
     (groups, account) => {
-      if (!groups[account.type]) groups[account.type] = []
-      groups[account.type].push(account)
+      const type = account.type
+      if (!groups[type]) groups[type] = []
+      groups[type].push(account)
       return groups
     },
     {} as Record<string, Account[]>
@@ -696,9 +641,9 @@ function AccountsTab() {
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{accounts.length} accounts</p>
         {!isViewOnly && (
-          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-            <Plus className="size-3.5" strokeWidth={2} /> Create Account
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+            Create Account
+          </MacosButton>
         )}
       </div>
 
@@ -711,41 +656,41 @@ function AccountsTab() {
           </div>
         </div>
       ) : accounts.length === 0 ? (
-        <div className="macos-card macos-shadow-card macos-empty">
-          <Wallet className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
-          <p className="text-[13px] font-medium text-muted-foreground">No accounts found</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Create your chart of accounts</p>
-        </div>
+        <MacosEmptyState
+          icon={Wallet}
+          title="No accounts found"
+          description="Create your chart of accounts"
+        />
       ) : (
         <div className="macos-card macos-shadow-card overflow-hidden">
-          <ScrollArea className="max-h-[500px]">
+          <ScrollArea className="max-h-[500px] custom-scrollbar">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-border/50">
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Code</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Parent</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Balance</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                <TableRow className="hover:bg-transparent border-b border-border/50">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Code</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Name</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Type</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Parent</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Balance</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {Object.entries(groupedAccounts).map(([type, typeAccounts]) => (
                   <React.Fragment key={type}>
-                    <TableRow className="bg-secondary/30 hover:bg-secondary/30 border-border/50">
+                    <TableRow className="bg-secondary/30 hover:bg-secondary/30 border-b border-border/50">
                       <TableCell colSpan={6} className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground py-2">
                         {type} ({typeAccounts.length})
                       </TableCell>
                     </TableRow>
                     {typeAccounts.map((account) => (
-                      <TableRow key={account.id} className="macos-table-row">
+                      <TableRow key={account.id} className="macos-table-row border-b border-border/30 last:border-0">
                         <TableCell className="font-mono text-[11px] text-muted-foreground">{account.code}</TableCell>
-                        <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{account.name}</TableCell>
+                        <TableCell className="font-medium text-[13px] tracking-tight">{account.name}</TableCell>
                         <TableCell>
-                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getTypeBadge(account.type)}`}>
+                          <MacosBadge variant={getTypeBadge(account.type)}>
                             {account.type}
-                          </Badge>
+                          </MacosBadge>
                         </TableCell>
                         <TableCell className="text-[11px] text-muted-foreground">
                           {account.parentCode || '—'}
@@ -754,15 +699,9 @@ function AccountsTab() {
                           ${account.balance.toLocaleString()}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
-                              account.isActive
-                                ? 'bg-macos-green/10 text-macos-green'
-                                : 'bg-macos-red/10 text-macos-red'
-                            }`}
-                          >
+                          <MacosBadge variant={account.isActive ? 'success' : 'danger'}>
                             {account.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
+                          </MacosBadge>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -821,11 +760,11 @@ function JournalEntriesTab() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{entries.length} entries</p>
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{entries.length} journal entries</p>
         {!isViewOnly && (
-          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-            <Plus className="size-3.5" strokeWidth={2} /> Create Entry
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+            Create Entry
+          </MacosButton>
         )}
       </div>
 
@@ -838,24 +777,23 @@ function JournalEntriesTab() {
           </div>
         </div>
       ) : entries.length === 0 ? (
-        <div className="macos-card macos-shadow-card macos-empty">
-          <BookOpen className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
-          <p className="text-[13px] font-medium text-muted-foreground">No journal entries found</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Record your first journal entry</p>
-        </div>
+        <MacosEmptyState
+          icon={BookOpen}
+          title="No journal entries found"
+          description="Record your first journal entry"
+        />
       ) : (
         <div className="macos-card macos-shadow-card overflow-hidden">
-          <ScrollArea className="max-h-[500px]">
+          <ScrollArea className="max-h-[500px] custom-scrollbar">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-border/50">
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Debit</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Credit</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                  <TableHead className="w-10"></TableHead>
+                <TableRow className="hover:bg-transparent border-b border-border/50">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Date</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Description</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Reference</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Debit</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Credit</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -863,11 +801,11 @@ function JournalEntriesTab() {
                   const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
                   const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
                   return (
-                    <TableRow key={entry.id} className="macos-table-row cursor-pointer" onClick={() => setSelectedEntry(entry)}>
+                    <TableRow key={entry.id} className="macos-table-row cursor-pointer border-b border-border/30 last:border-0" onClick={() => setSelectedEntry(entry)}>
                       <TableCell className="text-[11px] text-muted-foreground">
                         {new Date(entry.date).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="font-medium text-[13px] max-w-48 truncate" style={{ fontWeight: 500 }}>
+                      <TableCell className="font-medium text-[13px] max-w-48 truncate tracking-tight">
                         {entry.description}
                       </TableCell>
                       <TableCell className="text-[11px] text-muted-foreground">
@@ -880,18 +818,9 @@ function JournalEntriesTab() {
                         ${totalCredit.toLocaleString()}
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
-                            entry.isPosted
-                              ? 'bg-macos-green/10 text-macos-green'
-                              : 'bg-macos-orange/10 text-macos-orange'
-                          }`}
-                        >
+                        <MacosBadge variant={entry.isPosted ? 'success' : 'warning'}>
                           {entry.isPosted ? 'Posted' : 'Draft'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Eye className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+                        </MacosBadge>
                       </TableCell>
                     </TableRow>
                   )
@@ -943,16 +872,12 @@ function ExpensesTab() {
     fetchExpenses()
   }, [fetchExpenses])
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): 'success' | 'info' | 'warning' => {
     switch (status) {
-      case 'paid':
-        return 'bg-macos-green/10 text-macos-green'
-      case 'approved':
-        return 'bg-macos-blue/10 text-macos-blue'
-      case 'pending':
-        return 'bg-macos-orange/10 text-macos-orange'
-      default:
-        return 'bg-secondary text-secondary-foreground'
+      case 'paid': return 'success'
+      case 'approved': return 'info'
+      case 'pending': return 'warning'
+      default: return 'warning'
     }
   }
 
@@ -963,48 +888,18 @@ function ExpensesTab() {
   return (
     <div className="space-y-5">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
-              <Receipt className="size-4 text-macos-red" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[24px] font-bold leading-tight" style={{ letterSpacing: '-0.03em' }}>${totalExpenses.toLocaleString()}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Expenses</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
-              <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[24px] font-bold leading-tight text-macos-orange" style={{ letterSpacing: '-0.03em' }}>${pendingAmount.toLocaleString()}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
-            </div>
-          </div>
-        </div>
-        <div className="macos-stat macos-shadow-card">
-          <div className="flex items-center gap-3">
-            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
-              <CheckCircle2 className="size-4 text-macos-green" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-[24px] font-bold leading-tight text-macos-green" style={{ letterSpacing: '-0.03em' }}>${paidAmount.toLocaleString()}</p>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MacosStatGrid className="grid-cols-3">
+        <MacosStatCard label="Total Expenses" value={`$${totalExpenses.toLocaleString()}`} icon={Receipt} iconColor="text-macos-red" iconBg="bg-macos-red/10" />
+        <MacosStatCard label="Pending" value={`$${pendingAmount.toLocaleString()}`} icon={Clock} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+        <MacosStatCard label="Paid" value={`$${paidAmount.toLocaleString()}`} icon={CheckCircle2} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+      </MacosStatGrid>
 
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{expenses.length} expense records</p>
         {!isViewOnly && (
-          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-            <Plus className="size-3.5" strokeWidth={2} /> Add Expense
-          </Button>
+          <MacosButton variant="primary" icon={Plus} onClick={() => setShowAddDialog(true)}>
+            Add Expense
+          </MacosButton>
         )}
       </div>
 
@@ -1017,29 +912,29 @@ function ExpensesTab() {
           </div>
         </div>
       ) : expenses.length === 0 ? (
-        <div className="macos-card macos-shadow-card macos-empty">
-          <Receipt className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
-          <p className="text-[13px] font-medium text-muted-foreground">No expenses found</p>
-          <p className="text-[11px] text-muted-foreground mt-1">Record your first expense</p>
-        </div>
+        <MacosEmptyState
+          icon={Receipt}
+          title="No expenses found"
+          description="Record your first expense"
+        />
       ) : (
         <div className="macos-card macos-shadow-card overflow-hidden">
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="max-h-[400px] custom-scrollbar">
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent border-border/50">
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Amount</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                <TableRow className="hover:bg-transparent border-b border-border/50">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Category</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Description</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Amount</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Date</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Paid By</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {expenses.map((expense) => (
-                  <TableRow key={expense.id} className="macos-table-row">
-                    <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{expense.category}</TableCell>
+                  <TableRow key={expense.id} className="macos-table-row border-b border-border/30 last:border-0">
+                    <TableCell className="font-medium text-[13px] tracking-tight">{expense.category}</TableCell>
                     <TableCell className="text-[11px] text-muted-foreground max-w-32 truncate">
                       {expense.description || '—'}
                     </TableCell>
@@ -1053,9 +948,9 @@ function ExpensesTab() {
                       {expense.paidBy || '—'}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getStatusBadge(expense.status)}`}>
+                      <MacosBadge variant={getStatusBadge(expense.status)}>
                         {expense.status}
-                      </Badge>
+                      </MacosBadge>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1119,51 +1014,48 @@ function CreateAccountDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Account</DialogTitle>
-          <DialogDescription className="text-[11px]">Add a new account to your chart of accounts</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Code *</Label>
-              <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="1000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Type *</Label>
-              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
-                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="asset">Asset</SelectItem>
-                  <SelectItem value="liability">Liability</SelectItem>
-                  <SelectItem value="equity">Equity</SelectItem>
-                  <SelectItem value="revenue">Revenue</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Name *</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cash on Hand" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Parent Code</Label>
-            <Input value={form.parentCode} onChange={(e) => setForm({ ...form, parentCode: e.target.value })} placeholder="1000 (optional)" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving || !form.code.trim() || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Creating...' : 'Create Account'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create Account"
+      description="Add a new account to your chart of accounts"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.code.trim() || !form.name.trim()}>
+            {saving ? 'Creating...' : 'Create Account'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Account Code *">
+            <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="1000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+          </MacosFormField>
+          <MacosFormField label="Account Type *">
+            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="asset">Asset</SelectItem>
+                <SelectItem value="liability">Liability</SelectItem>
+                <SelectItem value="equity">Equity</SelectItem>
+                <SelectItem value="revenue">Revenue</SelectItem>
+                <SelectItem value="expense">Expense</SelectItem>
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+        </div>
+        <MacosFormField label="Account Name *">
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cash on Hand" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+        </MacosFormField>
+        <MacosFormField label="Parent Code">
+          <Input value={form.parentCode} onChange={(e) => setForm({ ...form, parentCode: e.target.value })} placeholder="1000 (optional)" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+        </MacosFormField>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -1259,37 +1151,44 @@ function CreateJournalEntryDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Journal Entry</DialogTitle>
-          <DialogDescription className="text-[11px]">Record a double-entry journal transaction</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date *</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</Label>
-              <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="JE-001" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description *</Label>
-            <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Monthly rent payment" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-          </div>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Create Journal Entry"
+      description="Record a double-entry journal transaction"
+      className="max-w-2xl"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.description.trim() || !isBalanced}>
+            {saving ? 'Creating...' : 'Create Entry'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Date *">
+            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+          </MacosFormField>
+          <MacosFormField label="Reference">
+            <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="JE-001" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+          </MacosFormField>
+        </div>
+        <MacosFormField label="Description *">
+          <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Monthly rent payment" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+        </MacosFormField>
 
-          <Separator className="bg-border/50" />
+        <Separator className="bg-border/50" />
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Entry Lines</Label>
-              <Button type="button" variant="ghost" size="sm" onClick={addLine} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
-                <Plus className="size-3" strokeWidth={2} /> Add Line
-              </Button>
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Entry Lines</Label>
+            <MacosButton variant="ghost" className="text-[11px]" onClick={addLine}>
+              <Plus className="size-3" strokeWidth={2} /> Add Line
+            </MacosButton>
+          </div>
+          <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
             {lines.map((line) => (
               <div key={line.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
                 <div className="flex-[2] space-y-1">
@@ -1332,45 +1231,38 @@ function CreateJournalEntryDialog({
               </div>
             ))}
           </div>
+        </div>
 
-          <div className={`flex items-center justify-between p-3 rounded-xl ${
-            isBalanced
-              ? 'bg-macos-green/10'
-              : 'bg-macos-orange/10'
-          }`}>
-            <div className="flex items-center gap-4 text-[13px]">
-              <span>
-                Debit: <strong>${totalDebit.toLocaleString()}</strong>
-              </span>
-              <span>
-                Credit: <strong>${totalCredit.toLocaleString()}</strong>
-              </span>
-            </div>
-            <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${isBalanced ? 'bg-macos-green/10 text-macos-green' : 'bg-macos-orange/10 text-macos-orange'}`}>
-              {isBalanced ? 'Balanced' : 'Unbalanced'}
-            </Badge>
+        <div className={`flex items-center justify-between p-3 rounded-xl ${
+          isBalanced
+            ? 'bg-macos-green/10'
+            : 'bg-macos-orange/10'
+        }`}>
+          <div className="flex items-center gap-4 text-[13px]">
+            <span>
+              Debit: <strong>${totalDebit.toLocaleString()}</strong>
+            </span>
+            <span>
+              Credit: <strong>${totalCredit.toLocaleString()}</strong>
+            </span>
           </div>
+          <MacosBadge variant={isBalanced ? 'success' : 'warning'}>
+            {isBalanced ? 'Balanced' : 'Unbalanced'}
+          </MacosBadge>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Label htmlFor="post-entry" className="text-[13px]">Post immediately</Label>
-            <input
-              id="post-entry"
-              type="checkbox"
-              checked={form.isPosted}
-              onChange={(e) => setForm({ ...form, isPosted: e.target.checked })}
-              className="rounded"
-            />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving || !form.description.trim() || !isBalanced} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Creating...' : 'Create Entry'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="post-entry" className="text-[13px]">Post immediately</Label>
+          <input
+            id="post-entry"
+            type="checkbox"
+            checked={form.isPosted}
+            onChange={(e) => setForm({ ...form, isPosted: e.target.checked })}
+            className="rounded"
+          />
+        </div>
+      </form>
+    </MacosDialog>
   )
 }
 
@@ -1389,44 +1281,34 @@ function JournalEntryDetailDialog({
   const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
 
   return (
-    <Dialog open={!!entry} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>
-            <div className="size-8 rounded-lg bg-macos-green/10 flex items-center justify-center">
-              <BookOpen className="size-4 text-macos-green" strokeWidth={1.5} />
+    <MacosDialog
+      open={!!entry}
+      onOpenChange={onOpenChange}
+      title="Journal Entry"
+      description={entry.description}
+    >
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="grid grid-cols-2 gap-3 text-[13px] flex-1">
+            <div>
+              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Date: </span>
+              <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
             </div>
-            Journal Entry
-          </DialogTitle>
-          <DialogDescription className="text-[11px]">{entry.description}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="grid grid-cols-2 gap-3 text-[13px] flex-1">
-              <div>
-                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Date: </span>
-                <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Reference: </span>
-                <span className="font-medium">{entry.reference || '—'}</span>
-              </div>
+            <div>
+              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Reference: </span>
+              <span className="font-medium">{entry.reference || '—'}</span>
             </div>
-            <Badge
-              className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
-                entry.isPosted
-                  ? 'bg-macos-green/10 text-macos-green'
-                  : 'bg-macos-orange/10 text-macos-orange'
-              }`}
-            >
-              {entry.isPosted ? 'Posted' : 'Draft'}
-            </Badge>
           </div>
+          <MacosBadge variant={entry.isPosted ? 'success' : 'warning'}>
+            {entry.isPosted ? 'Posted' : 'Draft'}
+          </MacosBadge>
+        </div>
 
-          <Separator className="bg-border/50" />
+        <Separator className="bg-border/50" />
 
-          <div className="space-y-2">
-            <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Entry Lines</h4>
+        <div className="space-y-2">
+          <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Entry Lines</h4>
+          <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
             {entry.lines.map((line) => (
               <div key={line.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                 <div>
@@ -1445,22 +1327,22 @@ function JournalEntryDetailDialog({
               </div>
             ))}
           </div>
+        </div>
 
-          <Separator className="bg-border/50" />
+        <Separator className="bg-border/50" />
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
-              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Debit</p>
-              <p className="text-[13px] font-bold text-macos-blue">${totalDebit.toLocaleString()}</p>
-            </div>
-            <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
-              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Credit</p>
-              <p className="text-[13px] font-bold text-macos-green">${totalCredit.toLocaleString()}</p>
-            </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Debit</p>
+            <p className="text-[13px] font-bold text-macos-blue">${totalDebit.toLocaleString()}</p>
+          </div>
+          <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Credit</p>
+            <p className="text-[13px] font-bold text-macos-green">${totalCredit.toLocaleString()}</p>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </MacosDialog>
   )
 }
 
@@ -1519,73 +1401,68 @@ function AddExpenseDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
-        <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Add Expense</DialogTitle>
-          <DialogDescription className="text-[11px]">Record a new expense</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category *</Label>
-              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Rent">Rent</SelectItem>
-                  <SelectItem value="Utilities">Utilities</SelectItem>
-                  <SelectItem value="Salaries">Salaries</SelectItem>
-                  <SelectItem value="Office Supplies">Office Supplies</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="Transport">Transport</SelectItem>
-                  <SelectItem value="Maintenance">Maintenance</SelectItem>
-                  <SelectItem value="Insurance">Insurance</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Amount ($) *</Label>
-              <Input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="500" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date *</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</Label>
-            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Expense details..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</Label>
-            <Input value={form.paidBy} onChange={(e) => setForm({ ...form, paidBy: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
-            <Button type="submit" disabled={saving || !form.category || !form.amount || !form.date} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Adding...' : 'Add Expense'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <MacosDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add Expense"
+      description="Record a new expense"
+      footer={
+        <>
+          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.category || !form.amount || !form.date}>
+            {saving ? 'Adding...' : 'Add Expense'}
+          </MacosButton>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Category *">
+            <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Rent">Rent</SelectItem>
+                <SelectItem value="Utilities">Utilities</SelectItem>
+                <SelectItem value="Salaries">Salaries</SelectItem>
+                <SelectItem value="Office Supplies">Office Supplies</SelectItem>
+                <SelectItem value="Marketing">Marketing</SelectItem>
+                <SelectItem value="Transport">Transport</SelectItem>
+                <SelectItem value="Maintenance">Maintenance</SelectItem>
+                <SelectItem value="Insurance">Insurance</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+          <MacosFormField label="Amount ($) *">
+            <Input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="500" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+          </MacosFormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <MacosFormField label="Date *">
+            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+          </MacosFormField>
+          <MacosFormField label="Status">
+            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+              </SelectContent>
+            </Select>
+          </MacosFormField>
+        </div>
+        <MacosFormField label="Description">
+          <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Expense details..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+        </MacosFormField>
+        <MacosFormField label="Paid By">
+          <Input value={form.paidBy} onChange={(e) => setForm({ ...form, paidBy: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+        </MacosFormField>
+      </form>
+    </MacosDialog>
   )
 }

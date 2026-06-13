@@ -22,11 +22,15 @@ import {
   Zap,
   MessageSquare,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/hooks/use-toast'
 import { useAppStore } from '@/store/app-store'
+import {
+  MacosPageHeader,
+  MacosCard,
+  MacosBadge,
+  MacosButton,
+  MacosSection,
+} from '@/components/macos-ui'
 
 // Types
 interface ChatMessage {
@@ -162,7 +166,7 @@ const aiTabs: AITabConfig[] = [
   },
 ]
 
-// ─── AI Chat Panel (iMessage-style) ───
+// ─── AI Chat Panel (iMessage-style with frosted glass) ───
 
 function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean }) {
   const { toast } = useToast()
@@ -307,7 +311,7 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
             })}
           </div>
 
-          <Separator className="my-3" />
+          <div className="my-3 h-px bg-border" />
 
           <div>
             <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-2 flex items-center gap-1">
@@ -330,7 +334,7 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
         </div>
       </div>
 
-      {/* iMessage-style Chat Area */}
+      {/* iMessage-style Chat Area with frosted glass */}
       <div className="lg:col-span-3 flex flex-col">
         <div className="macos-card macos-shadow-card flex-1 flex flex-col overflow-hidden">
           {/* Chat Header - macOS Titlebar style */}
@@ -350,20 +354,20 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
             </div>
             <div className="flex items-center gap-2">
               {isDemo && (
-                <Badge className="rounded-md bg-macos-orange/10 text-macos-orange text-[10px] font-semibold tracking-wider px-2 py-0.5">
+                <MacosBadge variant="warning">
                   <Eye className="size-3 mr-1" />
                   DEMO
-                </Badge>
+                </MacosBadge>
               )}
-              <Badge className={`rounded-md ${config.colorBg} ${config.color} text-[10px] font-semibold tracking-wider px-2 py-0.5`}>
+              <MacosBadge variant="purple">
                 <Sparkles className="size-3 mr-1" />
                 AI
-              </Badge>
+              </MacosBadge>
             </div>
           </div>
 
-          {/* Messages Area - iMessage bubble style */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3" style={{ scrollbarGutter: 'stable' }}>
+          {/* Messages Area - iMessage bubble style with frosted glass */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3 custom-scrollbar" style={{ scrollbarGutter: 'stable' }}>
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -380,12 +384,12 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
                       <User className="size-3.5 text-macos-blue" />
                     </div>
                   )}
-                  {/* Bubble */}
+                  {/* Bubble - frosted glass for assistant */}
                   <div
                     className={`px-3.5 py-2.5 text-[13px] leading-relaxed ${
                       msg.role === 'user'
-                        ? 'bg-macos-blue text-white rounded-2xl rounded-br-md'
-                        : 'bg-secondary rounded-2xl rounded-bl-md'
+                        ? 'bg-macos-blue text-white rounded-2xl rounded-br-md shadow-sm'
+                        : 'glass-card bg-secondary/80 rounded-2xl rounded-bl-md shadow-sm'
                     }`}
                   >
                     <div className="whitespace-pre-wrap">{msg.content}</div>
@@ -406,7 +410,7 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
                   <div className={`shrink-0 rounded-full ${config.colorBg} p-1.5 size-7 flex items-center justify-center`}>
                     <span className="text-xs leading-none">{config.avatarEmoji}</span>
                   </div>
-                  <div className="px-3.5 py-2.5 bg-secondary rounded-2xl rounded-bl-md">
+                  <div className="px-3.5 py-2.5 glass-card bg-secondary/80 rounded-2xl rounded-bl-md shadow-sm">
                     {isTyping ? (
                       <div className="text-[13px] leading-relaxed whitespace-pre-wrap">{typingText}<span className="inline-block w-0.5 h-4 bg-current animate-pulse ml-0.5 align-text-bottom" /></div>
                     ) : (
@@ -427,7 +431,7 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
 
           {/* Mobile suggestions */}
           <div className="lg:hidden px-4 py-2 border-t border-border/30">
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
               {config.suggestions.map((suggestion) => (
                 <button
                   key={suggestion}
@@ -441,7 +445,7 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
             </div>
           </div>
 
-          {/* iMessage-style Input Bar */}
+          {/* iMessage-style Input Bar - macOS pill shape */}
           <div className="border-t border-border/50 px-4 py-3">
             <form onSubmit={handleSubmit} className="flex items-center gap-2">
               <div className="flex-1 relative">
@@ -455,18 +459,13 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
                   disabled={isLoading}
                 />
               </div>
-              <Button
-                type="submit"
-                size="sm"
+              <MacosButton
+                variant="primary"
+                icon={isLoading ? Loader2 : Send}
+                onClick={handleSubmit}
                 disabled={isLoading || !input.trim()}
-                className="rounded-full bg-macos-blue text-white hover:bg-macos-blue/90 h-10 w-10 p-0 shadow-sm disabled:opacity-40"
-              >
-                {isLoading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Send className="size-4" />
-                )}
-              </Button>
+                className={`rounded-full bg-macos-blue text-white hover:bg-macos-blue/90 h-10 w-10 p-0 shadow-sm disabled:opacity-40 ${isLoading ? 'animate-spin' : ''}`}
+              />
             </form>
           </div>
         </div>
@@ -486,25 +485,25 @@ export function AiSuiteModule() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="macos-page-title">AI Suite</h2>
-          <p className="macos-page-subtitle">AI-powered business intelligence and automated workflows</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {isViewOnly && (
-            <Badge className="rounded-md bg-macos-orange/10 text-macos-orange text-[10px] font-semibold tracking-wider px-2 py-0.5">
-              <Eye className="size-3 mr-1" />
-              DEMO MODE
-            </Badge>
-          )}
-          <Badge className="rounded-md bg-macos-purple/10 text-macos-purple text-[10px] font-semibold tracking-wider px-2 py-0.5">
-            <Zap className="size-3 mr-1" />
-            AI POWERED
-          </Badge>
-        </div>
-      </div>
+      {/* macOS Page Header */}
+      <MacosPageHeader
+        title="AI Suite"
+        subtitle="AI-powered business intelligence and automated workflows"
+        icon={Brain}
+        iconColor="text-macos-purple"
+        iconBg="bg-macos-purple/10"
+      >
+        {isViewOnly && (
+          <MacosBadge variant="warning">
+            <Eye className="size-3 mr-1" />
+            DEMO MODE
+          </MacosBadge>
+        )}
+        <MacosBadge variant="purple">
+          <Zap className="size-3 mr-1" />
+          AI POWERED
+        </MacosBadge>
+      </MacosPageHeader>
 
       {/* AI Assistant Tabs - macOS Filter Bar style */}
       <div className="macos-filter-bar">
