@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureSeedData } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
   try {
+    // Ensure seed data exists on fresh deployments
+    await ensureSeedData()
+
     const body = await request.json()
     const { email, password } = body
 

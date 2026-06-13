@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureSeedData } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
+    // Ensure seed data exists on fresh deployments
+    await ensureSeedData()
+
     const body = await request.json()
     const { key, deviceFingerprint } = body
 
     if (!key || typeof key !== 'string') {
       return NextResponse.json(
-        { success: false, message: 'Serial key is required' },
-        { status: 400 }
+        { success: false, error: 'Serial key is required' },
+        { status: 200 }
       )
     }
 

@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureSeedData } from '@/lib/db'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST() {
   try {
+    // Ensure seed data exists on fresh deployments
+    await ensureSeedData()
+
     // Find or create demo user
     let user = await db.user.findFirst({
       where: { role: 'demo' },
