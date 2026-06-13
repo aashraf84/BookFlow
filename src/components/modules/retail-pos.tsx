@@ -36,7 +36,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAppStore } from '@/store/app-store'
 import {
@@ -363,7 +362,7 @@ export function RetailPOSModule() {
   ]
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-[calc(100vh-52px-32px)] overflow-hidden">
       {/* ─── Page Header ─── */}
       <MacosPageHeader
         title="Point of Sale"
@@ -469,7 +468,7 @@ export function RetailPOSModule() {
       </MacosDialog>
 
       {/* ─── Main POS Split Layout ─── */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-0 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-0">
         {/* ─── Left: Products ─── */}
         <div className="lg:col-span-3 flex flex-col min-h-0 gap-4">
           {/* Search + Category Filter Bar */}
@@ -566,7 +565,7 @@ export function RetailPOSModule() {
 
         {/* ─── Right: Cart Panel (Frosted Glass) ─── */}
         <div className="lg:col-span-2 flex flex-col min-h-0">
-          <div className="macos-card glass-card macos-shadow-elevated flex-1 flex flex-col min-h-0 sticky top-4 max-h-[calc(100vh-10rem)]">
+          <div className="macos-card glass-card macos-shadow-elevated flex-1 flex flex-col min-h-0">
             {/* Cart Header */}
             <div className="p-4 pb-3 flex items-center justify-between border-b border-border/40 flex-shrink-0">
               <h3 className="macos-section-title flex items-center gap-2">
@@ -589,6 +588,7 @@ export function RetailPOSModule() {
               )}
             </div>
 
+            {/* Scrollable Cart Content */}
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4">
               {/* Customer Selection */}
               <div className="space-y-2">
@@ -633,57 +633,55 @@ export function RetailPOSModule() {
                     description="Click products to add them"
                   />
                 ) : (
-                  <ScrollArea className="max-h-52">
-                    <div className="space-y-0.5 pr-1">
-                      {cart.map((item, index) => (
-                        <div key={`${item.product.type}-${item.product.id}`} className="flex items-center gap-2.5 rounded-xl p-2.5 hover:bg-secondary/30 transition-colors group/item">
-                          {/* Type indicator */}
-                          <div className={`size-2 rounded-full flex-shrink-0 ${item.product.type === 'book' ? 'bg-gg-bridge' : 'bg-gg-sunset'}`} />
+                  <div className="space-y-0.5">
+                    {cart.map((item, index) => (
+                      <div key={`${item.product.type}-${item.product.id}`} className="flex items-center gap-2.5 rounded-xl p-2.5 hover:bg-secondary/30 transition-colors group/item">
+                        {/* Type indicator */}
+                        <div className={`size-2 rounded-full flex-shrink-0 ${item.product.type === 'book' ? 'bg-gg-bridge' : 'bg-gg-sunset'}`} />
 
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-medium truncate tracking-tight">{item.product.name}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[11px] text-muted-foreground tracking-tight tabular-nums">${item.unitPrice.toFixed(2)}</span>
-                              {item.discount > 0 && (
-                                <MacosBadge variant="success">-{item.discount}%</MacosBadge>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Quantity controls */}
-                          <div className="flex items-center gap-0.5">
-                            <button
-                              className="size-6 rounded-lg bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
-                              onClick={() => updateQuantity(index, item.quantity - 1)}
-                              disabled={isViewOnly}
-                            >
-                              <Minus className="size-2.5" />
-                            </button>
-                            <span className="w-7 text-center text-[13px] font-semibold tabular-nums tracking-tight">{item.quantity}</span>
-                            <button
-                              className="size-6 rounded-lg bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
-                              onClick={() => updateQuantity(index, item.quantity + 1)}
-                              disabled={isViewOnly}
-                            >
-                              <Plus className="size-2.5" />
-                            </button>
-                          </div>
-
-                          <div className="text-right min-w-[52px]">
-                            <p className="text-[13px] font-semibold tabular-nums tracking-tight">${item.totalPrice.toFixed(2)}</p>
-                            {!isViewOnly && (
-                              <button
-                                className="size-4 text-muted-foreground/50 hover:text-macos-red mt-0.5 inline-flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity"
-                                onClick={() => removeFromCart(index)}
-                              >
-                                <X className="size-2.5" />
-                              </button>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium truncate tracking-tight">{item.product.name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[11px] text-muted-foreground tracking-tight tabular-nums">${item.unitPrice.toFixed(2)}</span>
+                            {item.discount > 0 && (
+                              <MacosBadge variant="success">-{item.discount}%</MacosBadge>
                             )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
+
+                        {/* Quantity controls */}
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            className="size-6 rounded-lg bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
+                            onClick={() => updateQuantity(index, item.quantity - 1)}
+                            disabled={isViewOnly}
+                          >
+                            <Minus className="size-2.5" />
+                          </button>
+                          <span className="w-7 text-center text-[13px] font-semibold tabular-nums tracking-tight">{item.quantity}</span>
+                          <button
+                            className="size-6 rounded-lg bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
+                            onClick={() => updateQuantity(index, item.quantity + 1)}
+                            disabled={isViewOnly}
+                          >
+                            <Plus className="size-2.5" />
+                          </button>
+                        </div>
+
+                        <div className="text-right min-w-[52px]">
+                          <p className="text-[13px] font-semibold tabular-nums tracking-tight">${item.totalPrice.toFixed(2)}</p>
+                          {!isViewOnly && (
+                            <button
+                              className="size-4 text-muted-foreground/50 hover:text-macos-red mt-0.5 inline-flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity"
+                              onClick={() => removeFromCart(index)}
+                            >
+                              <X className="size-2.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -728,11 +726,12 @@ export function RetailPOSModule() {
                   className="w-16 text-right rounded-lg bg-secondary/60 border-0 text-[13px] h-7 font-medium focus-visible:ring-1 focus-visible:ring-macos-blue/30"
                 />
               </div>
+            </div>
 
-              <Separator className="opacity-40" />
-
+            {/* Fixed Bottom: Totals + Payment + Checkout */}
+            <div className="flex-shrink-0 border-t border-border/40 p-4 space-y-3 bg-card/50">
               {/* Totals */}
-              <div className="space-y-2 text-[13px] tracking-tight">
+              <div className="space-y-1.5 text-[13px] tracking-tight">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground font-medium">Subtotal</span>
                   <span className="tabular-nums font-medium">${subtotal.toFixed(2)}</span>
@@ -757,7 +756,7 @@ export function RetailPOSModule() {
               </div>
 
               {/* Payment Method */}
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Payment Method</Label>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-4 gap-2">
                   {paymentMethods.map((pm) => {
@@ -772,11 +771,11 @@ export function RetailPOSModule() {
                     return (
                       <Label
                         key={pm.value}
-                        className={`flex flex-col items-center gap-1.5 rounded-xl p-3 cursor-pointer transition-all ${isSelected ? `ring-1 ${colorMap[pm.color]}` : 'bg-secondary/40 hover:bg-secondary/60 ring-0'}`}
+                        className={`flex flex-col items-center gap-1.5 rounded-xl p-2.5 cursor-pointer transition-all ${isSelected ? `ring-1 ${colorMap[pm.color]}` : 'bg-secondary/40 hover:bg-secondary/60 ring-0'}`}
                       >
                         <RadioGroupItem value={pm.value} className="sr-only" />
-                        <Icon className={`size-4 ${isSelected ? '' : 'text-muted-foreground'}`} />
-                        <span className="text-[10px] font-semibold tracking-wide">{pm.label}</span>
+                        <Icon className={`size-3.5 ${isSelected ? '' : 'text-muted-foreground'}`} />
+                        <span className="text-[9px] font-semibold tracking-wide">{pm.label}</span>
                       </Label>
                     )
                   })}
