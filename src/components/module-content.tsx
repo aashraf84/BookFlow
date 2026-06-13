@@ -17,6 +17,7 @@ import { PublishingModule } from '@/components/modules/publishing'
 import { EcommerceModule } from '@/components/modules/ecommerce'
 import { ReportsModule } from '@/components/modules/reports'
 import { AiSuiteModule } from '@/components/modules/ai-suite'
+import { OwnerModule } from '@/components/modules/owner'
 
 interface ModuleContentProps {
   activeModule: string
@@ -40,6 +41,7 @@ const moduleComponents: Record<string, React.ComponentType> = {
   'e-commerce': EcommerceModule,
   'reports': ReportsModule,
   'ai-suite': AiSuiteModule,
+  'owner': OwnerModule,
 }
 
 export function ModuleContent({ activeModule }: ModuleContentProps) {

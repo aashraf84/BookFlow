@@ -1,0 +1,1469 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  DollarSign,
+     6→  TrendingUp,
+     7→  TrendingDown,
+     8→  BarChart3,
+     9→  Wallet,
+    10→  BookOpen,
+    11→  Plus,
+    12→  Trash2,
+    13→  X,
+    14→  ArrowUpRight,
+    15→  ArrowDownRight,
+    16→  Calendar,
+    17→  FileText,
+    18→  CreditCard,
+    19→  Receipt,
+    20→  CheckCircle2,
+    21→  Clock,
+    22→  AlertCircle,
+    23→  Eye,
+    24→  PieChart,
+    25→  Activity,
+    26→} from 'lucide-react'
+    27→import { Button } from '@/components/ui/button'
+    28→import { Input } from '@/components/ui/input'
+    29→import { Label } from '@/components/ui/label'
+    30→import { Badge } from '@/components/ui/badge'
+    31→import {
+    32→  Select,
+    33→  SelectContent,
+    34→  SelectItem,
+    35→  SelectTrigger,
+    36→  SelectValue,
+    37→} from '@/components/ui/select'
+    38→import { Textarea } from '@/components/ui/textarea'
+    39→import { Separator } from '@/components/ui/separator'
+    40→import { ScrollArea } from '@/components/ui/scroll-area'
+    41→import {
+    42→  Table,
+    43→  TableBody,
+    44→  TableCell,
+    45→  TableHead,
+    46→  TableHeader,
+    47→  TableRow,
+    48→} from '@/components/ui/table'
+    49→import {
+    50→  AreaChart,
+    51→  Area,
+    52→  XAxis,
+    53→  YAxis,
+    54→  CartesianGrid,
+    55→  Tooltip,
+    56→  ResponsiveContainer,
+    57→  BarChart,
+    58→  Bar,
+    59→  PieChart as RechartsPieChart,
+    60→  Pie,
+    61→  Cell,
+    62→  Legend,
+    63→} from 'recharts'
+    64→import { useAppStore } from '@/store/app-store'
+    65→import {
+    66→  MacosPageHeader,
+    67→  MacosStatCard,
+    68→  MacosSearch,
+    69→  MacosFilterBar,
+    70→  MacosButton,
+    71→  MacosBadge,
+    72→  MacosEmptyState,
+    73→  MacosDialog,
+    74→  MacosFormField,
+    75→  MacosStatGrid,
+    76→} from '@/components/macos-ui'
+    77→
+    78→// ==================== TYPES ====================
+    79→
+    80→interface Account {
+    81→  id: string
+    82→  code: string
+    83→  name: string
+    84→  type: string
+    85→  parentCode?: string | null
+    86→  balance: number
+    87→  isActive: boolean
+    88→}
+    89→
+    90→interface JournalEntryLine {
+    91→  id: string
+    92→  accountId: string
+    93→  account?: { id: string; code: string; name: string; type: string }
+    94→  debit: number
+    95→  credit: number
+    96→  description?: string | null
+    97→}
+    98→
+    99→interface JournalEntry {
+   100→  id: string
+   101→  date: string
+   102→  description: string
+   103→  reference?: string | null
+   104→  isPosted: boolean
+   105→  createdAt: string
+   106→  lines: JournalEntryLine[]
+   107→}
+   108→
+   109→interface Expense {
+   110→  id: string
+   111→  category: string
+   112→  amount: number
+   113→  date: string
+   114→  description?: string | null
+   115→  paidBy?: string | null
+   116→  receipt?: string | null
+   117→  status: string
+   118→  createdAt: string
+   119→}
+   120→
+   121→// ==================== CHART COLORS ====================
+   122→
+   123→const CHART_COLORS = {
+   124→  blue: '#007AFF',
+   125→  green: '#34C759',
+   126→  orange: '#FF9500',
+   127→  red: '#FF3B30',
+   128→  purple: '#AF52DE',
+   129→  teal: '#5AC8FA',
+   130→  bridge: '#C0392B',
+   131→  golden: '#D4A853',
+   132→  bay: '#2D5F8A',
+   133→  sunset: '#FF6B35',
+   134→}
+   135→
+   136→// ==================== FINANCE MODULE ====================
+   137→
+   138→export function FinanceModule() {
+   139→  const [activeTab, setActiveTab] = React.useState('overview')
+   140→  const tabs = [
+   141→    { id: 'overview', label: 'Overview', count: undefined },
+   142→    { id: 'accounts', label: 'Accounts', count: undefined },
+   143→    { id: 'entries', label: 'Journal', count: undefined },
+   144→    { id: 'expenses', label: 'Expenses', count: undefined },
+   145→  ]
+   146→
+   147→  return (
+   148→    <div className="space-y-5">
+   149→      <MacosPageHeader
+   150→        title="Finance"
+   151→        subtitle="Financial management, accounting, and reporting"
+   152→        icon={DollarSign}
+   153→        iconColor="text-macos-green"
+   154→        iconBg="bg-macos-green/10"
+   155→      />
+   156→
+   157→      <MacosFilterBar
+   158→        items={tabs}
+   159→        activeId={activeTab}
+   160→        onChange={setActiveTab}
+   161→      />
+   162→
+   163→      <div>
+   164→        {activeTab === 'overview' && <OverviewTab />}
+   165→        {activeTab === 'accounts' && <AccountsTab />}
+   166→        {activeTab === 'entries' && <JournalEntriesTab />}
+   167→        {activeTab === 'expenses' && <ExpensesTab />}
+   168→      </div>
+   169→    </div>
+   170→  )
+   171→}
+   172→
+   173→// ==================== OVERVIEW TAB ====================
+   174→
+   175→function OverviewTab() {
+   176→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   177→  const [expenses, setExpenses] = React.useState<Expense[]>([])
+   178→  const [loading, setLoading] = React.useState(true)
+   179→
+   180→  React.useEffect(() => {
+   181→    async function fetchData() {
+   182→      setLoading(true)
+   183→      try {
+   184→        const [accRes, expRes] = await Promise.all([
+   185→          fetch('/api/finance?type=accounts&limit=100'),
+   186→          fetch('/api/finance?type=expenses&limit=100'),
+   187→        ])
+   188→        const [accJson, expJson] = await Promise.all([accRes.json(), expRes.json()])
+   189→        if (accJson.data) setAccounts(accJson.data)
+   190→        if (expJson.data) setExpenses(expJson.data)
+   191→      } catch (err) {
+   192→        console.error('Failed to fetch finance data:', err)
+   193→      } finally {
+   194→        setLoading(false)
+   195→      }
+   196→    }
+   197→    fetchData()
+   198→  }, [])
+   199→
+   200→  const revenue = accounts.filter((a) => a.type === 'revenue').reduce((sum, a) => sum + a.balance, 0)
+   201→  const expenseTotal = accounts.filter((a) => a.type === 'expense').reduce((sum, a) => sum + a.balance, 0)
+   202→  const assets = accounts.filter((a) => a.type === 'asset').reduce((sum, a) => sum + a.balance, 0)
+   203→  const liabilities = accounts.filter((a) => a.type === 'liability').reduce((sum, a) => sum + a.balance, 0)
+   204→  const netIncome = revenue - expenseTotal
+   205→  const pendingExpenses = expenses.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0)
+   206→
+   207→  const accountTypes = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const
+   208→  const accountTypeLabels: Record<string, string> = {
+   209→    asset: 'Assets',
+   210→    liability: 'Liabilities',
+   211→    equity: 'Equity',
+   212→    revenue: 'Revenue',
+   213→    expense: 'Expenses',
+   214→  }
+   215→  const accountTypeColors: Record<string, string> = {
+   216→    asset: CHART_COLORS.green,
+   217→    liability: CHART_COLORS.red,
+   218→    equity: CHART_COLORS.teal,
+   219→    revenue: CHART_COLORS.blue,
+   220→    expense: CHART_COLORS.orange,
+   221→  }
+   222→
+   223→  // Generate mock monthly data for charts
+   224→  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+   225→  const revenueExpenseData = months.map((month, i) => ({
+   226→    month,
+   227→    revenue: Math.round(revenue * (0.6 + Math.random() * 0.5 + i * 0.03)),
+   228→    expenses: Math.round(expenseTotal * (0.5 + Math.random() * 0.5 + i * 0.02)),
+   229→  }))
+   230→
+   231→  // Account breakdown for pie chart
+   232→  const accountBreakdown = accountTypes.map((type) => {
+   233→    const balance = accounts.filter((a) => a.type === type).reduce((sum, a) => sum + a.balance, 0)
+   234→    return { name: accountTypeLabels[type], value: Math.abs(balance), color: accountTypeColors[type] }
+   235→  }).filter((d) => d.value > 0)
+   236→
+   237→  // Expense categories for bar chart
+   238→  const expenseByCategory = expenses.reduce((acc, e) => {
+   239→    acc[e.category] = (acc[e.category] || 0) + e.amount
+   240→    return acc
+   241→  }, {} as Record<string, number>)
+   242→
+   243→  const expenseCategoryData = Object.entries(expenseByCategory)
+   244→    .map(([category, amount]) => ({ category, amount }))
+   245→    .sort((a, b) => b.amount - a.amount)
+   246→    .slice(0, 8)
+   247→
+   248→  const categoryColors = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.orange, CHART_COLORS.purple, CHART_COLORS.teal, CHART_COLORS.red, CHART_COLORS.golden, CHART_COLORS.sunset]
+   249→
+   250→  // Cash flow area chart data
+   251→  const cashFlowData = months.map((month, i) => ({
+   252→    month,
+   253→    inflow: Math.round(revenue * (0.7 + Math.random() * 0.4 + i * 0.02)),
+   254→    outflow: Math.round(expenseTotal * (0.6 + Math.random() * 0.4 + i * 0.015)),
+   255→  }))
+   256→
+   257→  return (
+   258→    <div className="space-y-5">
+   259→      {loading ? (
+   260→        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   261→          {[1, 2, 3].map((i) => (
+   262→            <div key={i} className="macos-card macos-shadow-card p-5 animate-pulse">
+   263→              <div className="h-4 bg-muted/50 rounded w-2/3 mb-3" />
+   264→              <div className="h-8 bg-muted/50 rounded w-1/2" />
+   265→            </div>
+   266→          ))}
+   267→        </div>
+   268→      ) : (
+   269→        <>
+   270→          {/* P&L Summary Cards */}
+   271→          <MacosStatGrid className="grid-cols-1 sm:grid-cols-3">
+   272→            <MacosStatCard
+   273→              label="Revenue"
+   274→              value={`$${revenue.toLocaleString()}`}
+   275→              icon={TrendingUp}
+   276→              iconColor="text-macos-green"
+   277→              iconBg="bg-macos-green/10"
+   278→              trend={{ value: 8.5, label: 'vs last month' }}
+   279→            />
+   280→            <MacosStatCard
+   281→              label="Expenses"
+   282→              value={`$${expenseTotal.toLocaleString()}`}
+   283→              icon={TrendingDown}
+   284→              iconColor="text-macos-red"
+   285→              iconBg="bg-macos-red/10"
+   286→              trend={{ value: -3.2, label: 'vs last month' }}
+   287→            />
+   288→            <MacosStatCard
+   289→              label="Net Income"
+   290→              value={`$${netIncome.toLocaleString()}`}
+   291→              icon={DollarSign}
+   292→              iconColor="text-macos-blue"
+   293→              iconBg="bg-macos-blue/10"
+   294→              trend={{ value: netIncome >= 0 ? 12.1 : -5.3, label: 'vs last month' }}
+   295→            />
+   296→          </MacosStatGrid>
+   297→
+   298→          {/* Revenue vs Expenses Area Chart */}
+   299→          <div className="macos-card macos-shadow-card p-5">
+   300→            <div className="macos-section-header mb-4">
+   301→              <div>
+   302→                <h3 className="macos-section-title">Revenue vs Expenses</h3>
+   303→                <p className="macos-section-desc">Monthly financial performance</p>
+   304→              </div>
+   305→              <div className="flex items-center gap-3">
+   306→                <div className="flex items-center gap-1.5">
+   307→                  <div className="size-2.5 rounded-full bg-macos-green" />
+   308→                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue</span>
+   309→                </div>
+   310→                <div className="flex items-center gap-1.5">
+   311→                  <div className="size-2.5 rounded-full bg-macos-red" />
+   312→                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Expenses</span>
+   313→                </div>
+   314→              </div>
+   315→            </div>
+   316→            <div className="h-64">
+   317→              <ResponsiveContainer width="100%" height="100%">
+   318→                <AreaChart data={revenueExpenseData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+   319→                  <defs>
+   320→                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+   321→                      <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.3} />
+   322→                      <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0} />
+   323→                    </linearGradient>
+   324→                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+   325→                      <stop offset="5%" stopColor={CHART_COLORS.red} stopOpacity={0.3} />
+   326→                      <stop offset="95%" stopColor={CHART_COLORS.red} stopOpacity={0} />
+   327→                    </linearGradient>
+   328→                  </defs>
+   329→                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+   330→                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   331→                  <YAxis tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   332→                  <Tooltip
+   333→                    contentStyle={{
+   334→                      borderRadius: '10px',
+   335→                      border: '0.5px solid rgba(0,0,0,0.06)',
+   336→                      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+   337→                      fontSize: '12px',
+   338→                      padding: '8px 12px',
+   339→                    }}
+   340→                    formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+   341→                  />
+   342→                  <Area type="monotone" dataKey="revenue" stroke={CHART_COLORS.green} strokeWidth={2} fill="url(#revenueGradient)" />
+   343→                  <Area type="monotone" dataKey="expenses" stroke={CHART_COLORS.red} strokeWidth={2} fill="url(#expenseGradient)" />
+   344→                </AreaChart>
+   345→              </ResponsiveContainer>
+   346→            </div>
+   347→          </div>
+   348→
+   349→          {/* Two column: Cash Flow + Account Breakdown Pie */}
+   350→          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   351→            {/* Cash Flow Area Chart */}
+   352→            <div className="macos-card macos-shadow-card p-5">
+   353→              <div className="macos-section-header mb-4">
+   354→                <div>
+   355→                  <h3 className="macos-section-title">Cash Flow</h3>
+   356→                  <p className="macos-section-desc">Monthly inflow vs outflow</p>
+   357→                </div>
+   358→              </div>
+   359→              <div className="h-56">
+   360→                <ResponsiveContainer width="100%" height="100%">
+   361→                  <AreaChart data={cashFlowData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+   362→                    <defs>
+   363→                      <linearGradient id="inflowGradient" x1="0" y1="0" x2="0" y2="1">
+   364→                        <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3} />
+   365→                        <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
+   366→                      </linearGradient>
+   367→                      <linearGradient id="outflowGradient" x1="0" y1="0" x2="0" y2="1">
+   368→                        <stop offset="5%" stopColor={CHART_COLORS.orange} stopOpacity={0.3} />
+   369→                        <stop offset="95%" stopColor={CHART_COLORS.orange} stopOpacity={0} />
+   370→                      </linearGradient>
+   371→                    </defs>
+   372→                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+   373→                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   374→                    <YAxis tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   375→                    <Tooltip
+   376→                      contentStyle={{
+   377→                        borderRadius: '10px',
+   378→                        border: '0.5px solid rgba(0,0,0,0.06)',
+   379→                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+   380→                        fontSize: '12px',
+   381→                        padding: '8px 12px',
+   382→                      }}
+   383→                      formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+   384→                    />
+   385→                    <Area type="monotone" dataKey="inflow" stroke={CHART_COLORS.blue} strokeWidth={2} fill="url(#inflowGradient)" />
+   386→                    <Area type="monotone" dataKey="outflow" stroke={CHART_COLORS.orange} strokeWidth={2} fill="url(#outflowGradient)" />
+   387→                  </AreaChart>
+   388→                </ResponsiveContainer>
+   389→              </div>
+   390→            </div>
+   391→
+   392→            {/* Account Breakdown Pie */}
+   393→            <div className="macos-card macos-shadow-card p-5">
+   394→              <div className="macos-section-header mb-4">
+   395→                <div>
+   396→                  <h3 className="macos-section-title">Account Breakdown</h3>
+   397→                  <p className="macos-section-desc">Distribution by type</p>
+   398→                </div>
+   399→              </div>
+   400→              {accountBreakdown.length > 0 ? (
+   401→                <div className="h-56">
+   402→                  <ResponsiveContainer width="100%" height="100%">
+   403→                    <RechartsPieChart>
+   404→                      <Pie
+   405→                        data={accountBreakdown}
+   406→                        cx="50%"
+   407→                        cy="50%"
+   408→                        innerRadius={55}
+   409→                        outerRadius={80}
+   410→                        paddingAngle={3}
+   411→                        dataKey="value"
+   412→                        strokeWidth={0}
+   413→                      >
+   414→                        {accountBreakdown.map((entry, index) => (
+   415→                          <Cell key={`cell-${index}`} fill={entry.color} />
+   416→                        ))}
+   417→                      </Pie>
+   418→                      <Tooltip
+   419→                        contentStyle={{
+   420→                          borderRadius: '10px',
+   421→                          border: '0.5px solid rgba(0,0,0,0.06)',
+   422→                          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+   423→                          fontSize: '12px',
+   424→                          padding: '8px 12px',
+   425→                        }}
+   426→                        formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+   427→                      />
+   428→                      <Legend
+   429→                        iconType="circle"
+   430→                        iconSize={8}
+   431→                        wrapperStyle={{ fontSize: '11px' }}
+   432→                      />
+   433→                    </RechartsPieChart>
+   434→                  </ResponsiveContainer>
+   435→                </div>
+   436→              ) : (
+   437→                <div className="h-56 flex items-center justify-center">
+   438→                  <p className="text-[13px] text-muted-foreground">No account data</p>
+   439→                </div>
+   440→              )}
+   441→            </div>
+   442→          </div>
+   443→
+   444→          {/* Balance Sheet + Expense Categories */}
+   445→          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+   446→            {/* Balance Sheet */}
+   447→            <div className="macos-card macos-shadow-card p-5">
+   448→              <div className="macos-section-header mb-4">
+   449→                <div>
+   450→                  <h3 className="macos-section-title">Balance Sheet</h3>
+   451→                  <p className="macos-section-desc">Financial position summary</p>
+   452→                </div>
+   453→              </div>
+   454→              <div className="space-y-3">
+   455→                <div className="flex justify-between text-[13px]">
+   456→                  <span className="text-muted-foreground">Total Assets</span>
+   457→                  <span className="font-medium">${assets.toLocaleString()}</span>
+   458→                </div>
+   459→                <div className="h-2 rounded-full bg-secondary overflow-hidden">
+   460→                  <div
+   461→                    className="h-full bg-macos-green rounded-full transition-all"
+   462→                    style={{ width: `${assets > 0 ? Math.min((assets / (assets + liabilities || 1)) * 100, 100) : 0}%` }}
+   463→                  />
+   464→                </div>
+   465→                <div className="flex justify-between text-[13px]">
+   466→                  <span className="text-muted-foreground">Total Liabilities</span>
+   467→                  <span className="font-medium">${liabilities.toLocaleString()}</span>
+   468→                </div>
+   469→                <div className="h-2 rounded-full bg-secondary overflow-hidden">
+   470→                  <div
+   471→                    className="h-full bg-macos-red rounded-full transition-all"
+   472→                    style={{ width: `${liabilities > 0 ? Math.min((liabilities / (assets + liabilities || 1)) * 100, 100) : 0}%` }}
+   473→                  />
+   474→                </div>
+   475→                <Separator className="bg-border/50" />
+   476→                <div className="flex justify-between text-[13px] font-semibold">
+   477→                  <span>Net Worth</span>
+   478→                  <span className={(assets - liabilities) >= 0 ? 'text-macos-green' : 'text-macos-red'}>
+   479→                    ${(assets - liabilities).toLocaleString()}
+   480→                  </span>
+   481→                </div>
+   482→              </div>
+   483→            </div>
+   484→
+   485→            {/* Expense Categories Bar Chart */}
+   486→            <div className="macos-card macos-shadow-card p-5">
+   487→              <div className="macos-section-header mb-4">
+   488→                <div>
+   489→                  <h3 className="macos-section-title">Expense Categories</h3>
+   490→                  <p className="macos-section-desc">Spending by category</p>
+   491→                </div>
+   492→              </div>
+   493→              {expenseCategoryData.length > 0 ? (
+   494→                <div className="h-56">
+   495→                  <ResponsiveContainer width="100%" height="100%">
+   496→                    <BarChart data={expenseCategoryData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} layout="vertical">
+   497→                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" horizontal={false} />
+   498→                      <XAxis type="number" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+   499→                      <YAxis type="category" dataKey="category" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} width={80} />
+   500→                      <Tooltip
+   501→                        contentStyle={{
+   502→                          borderRadius: '10px',
+   503→                          border: '0.5px solid rgba(0,0,0,0.06)',
+   504→                          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+   505→                          fontSize: '12px',
+   506→                          padding: '8px 12px',
+   507→                        }}
+   508→                        formatter={(value: number) => [`$${value.toLocaleString()}`, 'Amount']}
+   509→                      />
+   510→                      <Bar dataKey="amount" radius={[0, 4, 4, 0]} maxBarSize={24}>
+   511→                        {expenseCategoryData.map((_, index) => (
+   512→                          <Cell key={`cat-${index}`} fill={categoryColors[index % categoryColors.length]} />
+   513→                        ))}
+   514→                      </Bar>
+   515→                    </BarChart>
+   516→                  </ResponsiveContainer>
+   517→                </div>
+   518→              ) : (
+   519→                <div className="h-56 flex items-center justify-center">
+   520→                  <p className="text-[13px] text-muted-foreground">No expense data</p>
+   521→                </div>
+   522→              )}
+   523→            </div>
+   524→          </div>
+   525→
+   526→          {/* Pending Payments */}
+   527→          {pendingExpenses > 0 && (
+   528→            <div className="macos-stat macos-shadow-card">
+   529→              <div className="flex items-center justify-between">
+   530→                <div className="flex items-center gap-3">
+   531→                  <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+   532→                    <Clock className="size-4 text-macos-orange" strokeWidth={1.8} />
+   533→                  </div>
+   534→                  <div>
+   535→                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Payments</p>
+   536→                    <p className="text-[24px] font-bold text-macos-orange tracking-tight">${pendingExpenses.toLocaleString()}</p>
+   537→                  </div>
+   538→                </div>
+   539→                <MacosBadge variant="warning">Requires Attention</MacosBadge>
+   540→              </div>
+   541→            </div>
+   542→          )}
+   543→
+   544→          {/* Recent Expenses */}
+   545→          <div className="macos-card macos-shadow-card p-5">
+   546→            <div className="macos-section-header mb-4">
+   547→              <div>
+   548→                <h3 className="macos-section-title">Recent Expenses</h3>
+   549→                <p className="macos-section-desc">Latest expense records</p>
+   550→              </div>
+   551→            </div>
+   552→            {expenses.length === 0 ? (
+   553→              <p className="text-[13px] text-muted-foreground text-center py-4">No expenses recorded</p>
+   554→            ) : (
+   555→              <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+   556→                {expenses.slice(0, 5).map((expense) => (
+   557→                  <div key={expense.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+   558→                    <div className="flex items-center gap-3">
+   559→                      <div className="size-8 rounded-lg bg-macos-red/10 flex items-center justify-center">
+   560→                        <Receipt className="size-3.5 text-macos-red" strokeWidth={1.8} />
+   561→                      </div>
+   562→                      <div>
+   563→                        <p className="font-medium">{expense.category}</p>
+   564→                        <p className="text-[11px] text-muted-foreground">
+   565→                          {expense.description || 'No description'} · {new Date(expense.date).toLocaleDateString()}
+   566→                        </p>
+   567→                      </div>
+   568→                    </div>
+   569→                    <div className="text-right">
+   570→                      <p className="font-semibold text-macos-red">${expense.amount.toLocaleString()}</p>
+   571→                      <MacosBadge
+   572→                        variant={
+   573→                          expense.status === 'paid' ? 'success' :
+   574→                          expense.status === 'approved' ? 'info' :
+   575→                          'warning'
+   576→                        }
+   577→                      >
+   578→                        {expense.status}
+   579→                      </MacosBadge>
+   580→                    </div>
+   581→                  </div>
+   582→                ))}
+   583→              </div>
+   584→            )}
+   585→          </div>
+   586→        </>
+   587→      )}
+   588→    </div>
+   589→  )
+   590→}
+   591→
+   592→// ==================== ACCOUNTS TAB ====================
+   593→
+   594→function AccountsTab() {
+   595→  const { authUser } = useAppStore()
+   596→  const isViewOnly = authUser?.isViewOnly ?? false
+   597→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   598→  const [loading, setLoading] = React.useState(true)
+   599→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   600→
+   601→  const fetchAccounts = React.useCallback(async () => {
+   602→    setLoading(true)
+   603→    try {
+   604→      const res = await fetch('/api/finance?type=accounts&limit=100')
+   605→      const json = await res.json()
+   606→      if (json.data) setAccounts(json.data)
+   607→    } catch (err) {
+   608→      console.error('Failed to fetch accounts:', err)
+   609→    } finally {
+   610→      setLoading(false)
+   611→    }
+   612→  }, [])
+   613→
+   614→  React.useEffect(() => {
+   615→    fetchAccounts()
+   616→  }, [fetchAccounts])
+   617→
+   618→  const getTypeBadge = (type: string): 'success' | 'danger' | 'info' | 'warning' | 'default' => {
+   619→    switch (type) {
+   620→      case 'asset': return 'success'
+   621→      case 'liability': return 'danger'
+   622→      case 'equity': return 'info'
+   623→      case 'revenue': return 'info'
+   624→      case 'expense': return 'warning'
+   625→      default: return 'default'
+   626→    }
+   627→  }
+   628→
+   629→  const groupedAccounts = accounts.reduce(
+   630→    (groups, account) => {
+   631→      const type = account.type
+   632→      if (!groups[type]) groups[type] = []
+   633→      groups[type].push(account)
+   634→      return groups
+   635→    },
+   636→    {} as Record<string, Account[]>
+   637→  )
+   638→
+   639→  return (
+   640→    <div className="space-y-5">
+   641→      <div className="flex items-center justify-between">
+   642→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{accounts.length} accounts</p>
+   643→        {!isViewOnly && (
+   644→          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+   645→            Create Account
+   646→          </MacosButton>
+   647→        )}
+   648→      </div>
+   649→
+   650→      {loading ? (
+   651→        <div className="macos-card macos-shadow-card p-6">
+   652→          <div className="space-y-3">
+   653→            {[1, 2, 3, 4, 5].map((i) => (
+   654→              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+   655→            ))}
+   656→          </div>
+   657→        </div>
+   658→      ) : accounts.length === 0 ? (
+   659→        <MacosEmptyState
+   660→          icon={Wallet}
+   661→          title="No accounts found"
+   662→          description="Create your chart of accounts"
+   663→        />
+   664→      ) : (
+   665→        <div className="macos-card macos-shadow-card overflow-hidden">
+   666→          <ScrollArea className="max-h-[500px] custom-scrollbar">
+   667→            <Table>
+   668→              <TableHeader>
+   669→                <TableRow className="hover:bg-transparent border-b border-border/50">
+   670→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Code</TableHead>
+   671→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Name</TableHead>
+   672→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Type</TableHead>
+   673→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Parent</TableHead>
+   674→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Balance</TableHead>
+   675→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
+   676→                </TableRow>
+   677→              </TableHeader>
+   678→              <TableBody>
+   679→                {Object.entries(groupedAccounts).map(([type, typeAccounts]) => (
+   680→                  <React.Fragment key={type}>
+   681→                    <TableRow className="bg-secondary/30 hover:bg-secondary/30 border-b border-border/50">
+   682→                      <TableCell colSpan={6} className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground py-2">
+   683→                        {type} ({typeAccounts.length})
+   684→                      </TableCell>
+   685→                    </TableRow>
+   686→                    {typeAccounts.map((account) => (
+   687→                      <TableRow key={account.id} className="macos-table-row border-b border-border/30 last:border-0">
+   688→                        <TableCell className="font-mono text-[11px] text-muted-foreground">{account.code}</TableCell>
+   689→                        <TableCell className="font-medium text-[13px] tracking-tight">{account.name}</TableCell>
+   690→                        <TableCell>
+   691→                          <MacosBadge variant={getTypeBadge(account.type)}>
+   692→                            {account.type}
+   693→                          </MacosBadge>
+   694→                        </TableCell>
+   695→                        <TableCell className="text-[11px] text-muted-foreground">
+   696→                          {account.parentCode || '—'}
+   697→                        </TableCell>
+   698→                        <TableCell className="text-right font-medium text-[13px]">
+   699→                          ${account.balance.toLocaleString()}
+   700→                        </TableCell>
+   701→                        <TableCell>
+   702→                          <MacosBadge variant={account.isActive ? 'success' : 'danger'}>
+   703→                            {account.isActive ? 'Active' : 'Inactive'}
+   704→                          </MacosBadge>
+   705→                        </TableCell>
+   706→                      </TableRow>
+   707→                    ))}
+   708→                  </React.Fragment>
+   709→                ))}
+   710→              </TableBody>
+   711→            </Table>
+   712→          </ScrollArea>
+   713→        </div>
+   714→      )}
+   715→
+   716→      <CreateAccountDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSuccess={fetchAccounts} />
+   717→    </div>
+   718→  )
+   719→}
+   720→
+   721→// ==================== JOURNAL ENTRIES TAB ====================
+   722→
+   723→function JournalEntriesTab() {
+   724→  const { authUser } = useAppStore()
+   725→  const isViewOnly = authUser?.isViewOnly ?? false
+   726→  const [entries, setEntries] = React.useState<JournalEntry[]>([])
+   727→  const [accounts, setAccounts] = React.useState<Account[]>([])
+   728→  const [loading, setLoading] = React.useState(true)
+   729→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   730→  const [selectedEntry, setSelectedEntry] = React.useState<JournalEntry | null>(null)
+   731→
+   732→  const fetchEntries = React.useCallback(async () => {
+   733→    setLoading(true)
+   734→    try {
+   735→      const res = await fetch('/api/finance?type=entries&limit=50')
+   736→      const json = await res.json()
+   737→      if (json.data) setEntries(json.data)
+   738→    } catch (err) {
+   739→      console.error('Failed to fetch entries:', err)
+   740→    } finally {
+   741→      setLoading(false)
+   742→    }
+   743→  }, [])
+   744→
+   745→  const fetchAccounts = React.useCallback(async () => {
+   746→    try {
+   747→      const res = await fetch('/api/finance?type=accounts&limit=100')
+   748→      const json = await res.json()
+   749→      if (json.data) setAccounts(json.data)
+   750→    } catch (err) {
+   751→      console.error('Failed to fetch accounts:', err)
+   752→    }
+   753→  }, [])
+   754→
+   755→  React.useEffect(() => {
+   756→    fetchEntries()
+   757→    fetchAccounts()
+   758→  }, [fetchEntries, fetchAccounts])
+   759→
+   760→  return (
+   761→    <div className="space-y-5">
+   762→      <div className="flex items-center justify-between">
+   763→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{entries.length} journal entries</p>
+   764→        {!isViewOnly && (
+   765→          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+   766→            Create Entry
+   767→          </MacosButton>
+   768→        )}
+   769→      </div>
+   770→
+   771→      {loading ? (
+   772→        <div className="macos-card macos-shadow-card p-6">
+   773→          <div className="space-y-3">
+   774→            {[1, 2, 3].map((i) => (
+   775→              <div key={i} className="h-16 bg-muted/50 rounded-xl animate-pulse" />
+   776→            ))}
+   777→          </div>
+   778→        </div>
+   779→      ) : entries.length === 0 ? (
+   780→        <MacosEmptyState
+   781→          icon={BookOpen}
+   782→          title="No journal entries found"
+   783→          description="Record your first journal entry"
+   784→        />
+   785→      ) : (
+   786→        <div className="macos-card macos-shadow-card overflow-hidden">
+   787→          <ScrollArea className="max-h-[500px] custom-scrollbar">
+   788→            <Table>
+   789→              <TableHeader>
+   790→                <TableRow className="hover:bg-transparent border-b border-border/50">
+   791→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Date</TableHead>
+   792→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Description</TableHead>
+   793→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Reference</TableHead>
+   794→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Debit</TableHead>
+   795→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Credit</TableHead>
+   796→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
+   797→                </TableRow>
+   798→              </TableHeader>
+   799→              <TableBody>
+   800→                {entries.map((entry) => {
+   801→                  const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+   802→                  const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
+   803→                  return (
+   804→                    <TableRow key={entry.id} className="macos-table-row cursor-pointer border-b border-border/30 last:border-0" onClick={() => setSelectedEntry(entry)}>
+   805→                      <TableCell className="text-[11px] text-muted-foreground">
+   806→                        {new Date(entry.date).toLocaleDateString()}
+   807→                      </TableCell>
+   808→                      <TableCell className="font-medium text-[13px] max-w-48 truncate tracking-tight">
+   809→                        {entry.description}
+   810→                      </TableCell>
+   811→                      <TableCell className="text-[11px] text-muted-foreground">
+   812→                        {entry.reference || '—'}
+   813→                      </TableCell>
+   814→                      <TableCell className="text-right text-[13px] font-medium">
+   815→                        ${totalDebit.toLocaleString()}
+   816→                      </TableCell>
+   817→                      <TableCell className="text-right text-[13px] font-medium">
+   818→                        ${totalCredit.toLocaleString()}
+   819→                      </TableCell>
+   820→                      <TableCell>
+   821→                        <MacosBadge variant={entry.isPosted ? 'success' : 'warning'}>
+   822→                          {entry.isPosted ? 'Posted' : 'Draft'}
+   823→                        </MacosBadge>
+   824→                      </TableCell>
+   825→                    </TableRow>
+   826→                  )
+   827→                })}
+   828→              </TableBody>
+   829→            </Table>
+   830→          </ScrollArea>
+   831→        </div>
+   832→      )}
+   833→
+   834→      <CreateJournalEntryDialog
+   835→        open={showCreateDialog}
+   836→        onOpenChange={setShowCreateDialog}
+   837→        accounts={accounts}
+   838→        onSuccess={fetchEntries}
+   839→      />
+   840→
+   841→      <JournalEntryDetailDialog
+   842→        entry={selectedEntry}
+   843→        onOpenChange={(open) => !open && setSelectedEntry(null)}
+   844→      />
+   845→    </div>
+   846→  )
+   847→}
+   848→
+   849→// ==================== EXPENSES TAB ====================
+   850→
+   851→function ExpensesTab() {
+   852→  const { authUser } = useAppStore()
+   853→  const isViewOnly = authUser?.isViewOnly ?? false
+   854→  const [expenses, setExpenses] = React.useState<Expense[]>([])
+   855→  const [loading, setLoading] = React.useState(true)
+   856→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   857→
+   858→  const fetchExpenses = React.useCallback(async () => {
+   859→    setLoading(true)
+   860→    try {
+   861→      const res = await fetch('/api/finance?type=expenses&limit=50')
+   862→      const json = await res.json()
+   863→      if (json.data) setExpenses(json.data)
+   864→    } catch (err) {
+   865→      console.error('Failed to fetch expenses:', err)
+   866→    } finally {
+   867→      setLoading(false)
+   868→    }
+   869→  }, [])
+   870→
+   871→  React.useEffect(() => {
+   872→    fetchExpenses()
+   873→  }, [fetchExpenses])
+   874→
+   875→  const getStatusBadge = (status: string): 'success' | 'info' | 'warning' => {
+   876→    switch (status) {
+   877→      case 'paid': return 'success'
+   878→      case 'approved': return 'info'
+   879→      case 'pending': return 'warning'
+   880→      default: return 'warning'
+   881→    }
+   882→  }
+   883→
+   884→  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+   885→  const pendingAmount = expenses.filter((e) => e.status === 'pending').reduce((sum, e) => sum + e.amount, 0)
+   886→  const paidAmount = expenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0)
+   887→
+   888→  return (
+   889→    <div className="space-y-5">
+   890→      {/* Summary */}
+   891→      <MacosStatGrid className="grid-cols-3">
+   892→        <MacosStatCard label="Total Expenses" value={`$${totalExpenses.toLocaleString()}`} icon={Receipt} iconColor="text-macos-red" iconBg="bg-macos-red/10" />
+   893→        <MacosStatCard label="Pending" value={`$${pendingAmount.toLocaleString()}`} icon={Clock} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   894→        <MacosStatCard label="Paid" value={`$${paidAmount.toLocaleString()}`} icon={CheckCircle2} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   895→      </MacosStatGrid>
+   896→
+   897→      <div className="flex items-center justify-between">
+   898→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{expenses.length} expense records</p>
+   899→        {!isViewOnly && (
+   900→          <MacosButton variant="primary" icon={Plus} onClick={() => setShowAddDialog(true)}>
+   901→            Add Expense
+   902→          </MacosButton>
+   903→        )}
+   904→      </div>
+   905→
+   906→      {loading ? (
+   907→        <div className="macos-card macos-shadow-card p-6">
+   908→          <div className="space-y-3">
+   909→            {[1, 2, 3, 4].map((i) => (
+   910→              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+   911→            ))}
+   912→          </div>
+   913→        </div>
+   914→      ) : expenses.length === 0 ? (
+   915→        <MacosEmptyState
+   916→          icon={Receipt}
+   917→          title="No expenses found"
+   918→          description="Record your first expense"
+   919→        />
+   920→      ) : (
+   921→        <div className="macos-card macos-shadow-card overflow-hidden">
+   922→          <ScrollArea className="max-h-[400px] custom-scrollbar">
+   923→            <Table>
+   924→              <TableHeader>
+   925→                <TableRow className="hover:bg-transparent border-b border-border/50">
+   926→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Category</TableHead>
+   927→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Description</TableHead>
+   928→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Amount</TableHead>
+   929→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Date</TableHead>
+   930→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Paid By</TableHead>
+   931→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
+   932→                </TableRow>
+   933→              </TableHeader>
+   934→              <TableBody>
+   935→                {expenses.map((expense) => (
+   936→                  <TableRow key={expense.id} className="macos-table-row border-b border-border/30 last:border-0">
+   937→                    <TableCell className="font-medium text-[13px] tracking-tight">{expense.category}</TableCell>
+   938→                    <TableCell className="text-[11px] text-muted-foreground max-w-32 truncate">
+   939→                      {expense.description || '—'}
+   940→                    </TableCell>
+   941→                    <TableCell className="text-right font-semibold text-macos-red text-[13px]">
+   942→                      ${expense.amount.toLocaleString()}
+   943→                    </TableCell>
+   944→                    <TableCell className="text-[11px] text-muted-foreground">
+   945→                      {new Date(expense.date).toLocaleDateString()}
+   946→                    </TableCell>
+   947→                    <TableCell className="text-[11px] text-muted-foreground">
+   948→                      {expense.paidBy || '—'}
+   949→                    </TableCell>
+   950→                    <TableCell>
+   951→                      <MacosBadge variant={getStatusBadge(expense.status)}>
+   952→                        {expense.status}
+   953→                      </MacosBadge>
+   954→                    </TableCell>
+   955→                  </TableRow>
+   956→                ))}
+   957→              </TableBody>
+   958→            </Table>
+   959→          </ScrollArea>
+   960→        </div>
+   961→      )}
+   962→
+   963→      <AddExpenseDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchExpenses} />
+   964→    </div>
+   965→  )
+   966→}
+   967→
+   968→// ==================== CREATE ACCOUNT DIALOG ====================
+   969→
+   970→function CreateAccountDialog({
+   971→  open,
+   972→  onOpenChange,
+   973→  onSuccess,
+   974→}: {
+   975→  open: boolean
+   976→  onOpenChange: (open: boolean) => void
+   977→  onSuccess: () => void
+   978→}) {
+   979→  const [saving, setSaving] = React.useState(false)
+   980→  const [form, setForm] = React.useState({
+   981→    code: '',
+   982→    name: '',
+   983→    type: 'asset',
+   984→    parentCode: '',
+   985→  })
+   986→
+   987→  const handleSubmit = async (e: React.FormEvent) => {
+   988→    e.preventDefault()
+   989→    if (!form.code.trim() || !form.name.trim()) return
+   990→    setSaving(true)
+   991→    try {
+   992→      const res = await fetch('/api/finance?type=accounts', {
+   993→        method: 'POST',
+   994→        headers: { 'Content-Type': 'application/json' },
+   995→        body: JSON.stringify({
+   996→          ...form,
+   997→          parentCode: form.parentCode || null,
+   998→        }),
+   999→      })
+  1000→      if (res.ok) {
+  1001→        setForm({ code: '', name: '', type: 'asset', parentCode: '' })
+  1002→        onOpenChange(false)
+  1003→        onSuccess()
+  1004→      } else {
+  1005→        const json = await res.json()
+  1006→        alert(json.error || 'Failed to create account')
+  1007→      }
+  1008→    } catch (err) {
+  1009→      console.error('Failed to create account:', err)
+  1010→      alert('Failed to create account')
+  1011→    } finally {
+  1012→      setSaving(false)
+  1013→    }
+  1014→  }
+  1015→
+  1016→  return (
+  1017→    <MacosDialog
+  1018→      open={open}
+  1019→      onOpenChange={onOpenChange}
+  1020→      title="Create Account"
+  1021→      description="Add a new account to your chart of accounts"
+  1022→      footer={
+  1023→        <>
+  1024→          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+  1025→          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.code.trim() || !form.name.trim()}>
+  1026→            {saving ? 'Creating...' : 'Create Account'}
+  1027→          </MacosButton>
+  1028→        </>
+  1029→      }
+  1030→    >
+  1031→      <form onSubmit={handleSubmit} className="space-y-4">
+  1032→        <div className="grid grid-cols-2 gap-3">
+  1033→          <MacosFormField label="Account Code *">
+  1034→            <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="1000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+  1035→          </MacosFormField>
+  1036→          <MacosFormField label="Account Type *">
+  1037→            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+  1038→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1039→                <SelectValue />
+  1040→              </SelectTrigger>
+  1041→              <SelectContent>
+  1042→                <SelectItem value="asset">Asset</SelectItem>
+  1043→                <SelectItem value="liability">Liability</SelectItem>
+  1044→                <SelectItem value="equity">Equity</SelectItem>
+  1045→                <SelectItem value="revenue">Revenue</SelectItem>
+  1046→                <SelectItem value="expense">Expense</SelectItem>
+  1047→              </SelectContent>
+  1048→            </Select>
+  1049→          </MacosFormField>
+  1050→        </div>
+  1051→        <MacosFormField label="Account Name *">
+  1052→          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cash on Hand" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+  1053→        </MacosFormField>
+  1054→        <MacosFormField label="Parent Code">
+  1055→          <Input value={form.parentCode} onChange={(e) => setForm({ ...form, parentCode: e.target.value })} placeholder="1000 (optional)" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+  1056→        </MacosFormField>
+  1057→      </form>
+  1058→    </MacosDialog>
+  1059→  )
+  1060→}
+  1061→
+  1062→// ==================== CREATE JOURNAL ENTRY DIALOG ====================
+  1063→
+  1064→interface JournalLineForm {
+  1065→  key: string
+  1066→  accountId: string
+  1067→  debit: string
+  1068→  credit: string
+  1069→  description: string
+  1070→}
+  1071→
+  1072→function CreateJournalEntryDialog({
+  1073→  open,
+  1074→  onOpenChange,
+  1075→  accounts,
+  1076→  onSuccess,
+  1077→}: {
+  1078→  open: boolean
+  1079→  onOpenChange: (open: boolean) => void
+  1080→  accounts: Account[]
+  1081→  onSuccess: () => void
+  1082→}) {
+  1083→  const [saving, setSaving] = React.useState(false)
+  1084→  const [form, setForm] = React.useState({
+  1085→    date: new Date().toISOString().split('T')[0],
+  1086→    description: '',
+  1087→    reference: '',
+  1088→    isPosted: false,
+  1089→  })
+  1090→  const [lines, setLines] = React.useState<JournalLineForm[]>([
+  1091→    { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1092→    { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1093→  ])
+  1094→
+  1095→  const totalDebit = lines.reduce((sum, l) => sum + (parseFloat(l.debit) || 0), 0)
+  1096→  const totalCredit = lines.reduce((sum, l) => sum + (parseFloat(l.credit) || 0), 0)
+  1097→  const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0
+  1098→
+  1099→  const addLine = () => {
+  1100→    setLines([...lines, { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' }])
+  1101→  }
+  1102→
+  1103→  const removeLine = (key: string) => {
+  1104→    if (lines.length > 2) {
+  1105→      setLines(lines.filter((l) => l.key !== key))
+  1106→    }
+  1107→  }
+  1108→
+  1109→  const updateLine = (key: string, updates: Partial<JournalLineForm>) => {
+  1110→    setLines(lines.map((l) => (l.key === key ? { ...l, ...updates } : l)))
+  1111→  }
+  1112→
+  1113→  const handleSubmit = async (e: React.FormEvent) => {
+  1114→    e.preventDefault()
+  1115→    if (!form.description.trim() || !isBalanced) return
+  1116→    setSaving(true)
+  1117→    try {
+  1118→      const res = await fetch('/api/finance?type=entries', {
+  1119→        method: 'POST',
+  1120→        headers: { 'Content-Type': 'application/json' },
+  1121→        body: JSON.stringify({
+  1122→          ...form,
+  1123→          lines: lines
+  1124→            .filter((l) => l.accountId && (parseFloat(l.debit) > 0 || parseFloat(l.credit) > 0))
+  1125→            .map((l) => ({
+  1126→              accountId: l.accountId,
+  1127→              debit: parseFloat(l.debit) || 0,
+  1128→              credit: parseFloat(l.credit) || 0,
+  1129→              description: l.description || null,
+  1130→            })),
+  1131→        }),
+  1132→      })
+  1133→      if (res.ok) {
+  1134→        setForm({ date: new Date().toISOString().split('T')[0], description: '', reference: '', isPosted: false })
+  1135→        setLines([
+  1136→          { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1137→          { key: crypto.randomUUID(), accountId: '', debit: '', credit: '', description: '' },
+  1138→        ])
+  1139→        onOpenChange(false)
+  1140→        onSuccess()
+  1141→      } else {
+  1142→        const json = await res.json()
+  1143→        alert(json.error || 'Failed to create journal entry')
+  1144→      }
+  1145→    } catch (err) {
+  1146→      console.error('Failed to create journal entry:', err)
+  1147→      alert('Failed to create journal entry')
+  1148→    } finally {
+  1149→      setSaving(false)
+  1150→    }
+  1151→  }
+  1152→
+  1153→  return (
+  1154→    <MacosDialog
+  1155→      open={open}
+  1156→      onOpenChange={onOpenChange}
+  1157→      title="Create Journal Entry"
+  1158→      description="Record a double-entry journal transaction"
+  1159→      className="max-w-2xl"
+  1160→      footer={
+  1161→        <>
+  1162→          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+  1163→          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.description.trim() || !isBalanced}>
+  1164→            {saving ? 'Creating...' : 'Create Entry'}
+  1165→          </MacosButton>
+  1166→        </>
+  1167→      }
+  1168→    >
+  1169→      <form onSubmit={handleSubmit} className="space-y-4">
+  1170→        <div className="grid grid-cols-2 gap-3">
+  1171→          <MacosFormField label="Date *">
+  1172→            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+  1173→          </MacosFormField>
+  1174→          <MacosFormField label="Reference">
+  1175→            <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="JE-001" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+  1176→          </MacosFormField>
+  1177→        </div>
+  1178→        <MacosFormField label="Description *">
+  1179→          <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Monthly rent payment" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+  1180→        </MacosFormField>
+  1181→
+  1182→        <Separator className="bg-border/50" />
+  1183→
+  1184→        <div className="space-y-3">
+  1185→          <div className="flex items-center justify-between">
+  1186→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Entry Lines</Label>
+  1187→            <MacosButton variant="ghost" className="text-[11px]" onClick={addLine}>
+  1188→              <Plus className="size-3" strokeWidth={2} /> Add Line
+  1189→            </MacosButton>
+  1190→          </div>
+  1191→          <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+  1192→            {lines.map((line) => (
+  1193→              <div key={line.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
+  1194→                <div className="flex-[2] space-y-1">
+  1195→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Account</Label>
+  1196→                  <Select value={line.accountId} onValueChange={(v) => updateLine(line.key, { accountId: v })}>
+  1197→                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
+  1198→                      <SelectValue placeholder="Select account..." />
+  1199→                    </SelectTrigger>
+  1200→                    <SelectContent>
+  1201→                      {accounts.map((a) => (
+  1202→                        <SelectItem key={a.id} value={a.id}>
+  1203→                          {a.code} - {a.name}
+  1204→                        </SelectItem>
+  1205→                      ))}
+  1206→                    </SelectContent>
+  1207→                  </Select>
+  1208→                </div>
+  1209→                <div className="w-24 space-y-1">
+  1210→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Debit</Label>
+  1211→                  <Input type="number" step="0.01" min="0" value={line.debit} onChange={(e) => updateLine(line.key, { debit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1212→                </div>
+  1213→                <div className="w-24 space-y-1">
+  1214→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Credit</Label>
+  1215→                  <Input type="number" step="0.01" min="0" value={line.credit} onChange={(e) => updateLine(line.key, { credit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1216→                </div>
+  1217→                <div className="flex-[1] space-y-1">
+  1218→                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Note</Label>
+  1219→                  <Input value={line.description} onChange={(e) => updateLine(line.key, { description: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" placeholder="Optional" />
+  1220→                </div>
+  1221→                <Button
+  1222→                  type="button"
+  1223→                  variant="ghost"
+  1224→                  size="sm"
+  1225→                  className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+  1226→                  onClick={() => removeLine(line.key)}
+  1227→                  disabled={lines.length <= 2}
+  1228→                >
+  1229→                  <X className="size-3" />
+  1230→                </Button>
+  1231→              </div>
+  1232→            ))}
+  1233→          </div>
+  1234→        </div>
+  1235→
+  1236→        <div className={`flex items-center justify-between p-3 rounded-xl ${
+  1237→          isBalanced
+  1238→            ? 'bg-macos-green/10'
+  1239→            : 'bg-macos-orange/10'
+  1240→        }`}>
+  1241→          <div className="flex items-center gap-4 text-[13px]">
+  1242→            <span>
+  1243→              Debit: <strong>${totalDebit.toLocaleString()}</strong>
+  1244→            </span>
+  1245→            <span>
+  1246→              Credit: <strong>${totalCredit.toLocaleString()}</strong>
+  1247→            </span>
+  1248→          </div>
+  1249→          <MacosBadge variant={isBalanced ? 'success' : 'warning'}>
+  1250→            {isBalanced ? 'Balanced' : 'Unbalanced'}
+  1251→          </MacosBadge>
+  1252→        </div>
+  1253→
+  1254→        <div className="flex items-center gap-2">
+  1255→          <Label htmlFor="post-entry" className="text-[13px]">Post immediately</Label>
+  1256→          <input
+  1257→            id="post-entry"
+  1258→            type="checkbox"
+  1259→            checked={form.isPosted}
+  1260→            onChange={(e) => setForm({ ...form, isPosted: e.target.checked })}
+  1261→            className="rounded"
+  1262→          />
+  1263→        </div>
+  1264→      </form>
+  1265→    </MacosDialog>
+  1266→  )
+  1267→}
+  1268→
+  1269→// ==================== JOURNAL ENTRY DETAIL DIALOG ====================
+  1270→
+  1271→function JournalEntryDetailDialog({
+  1272→  entry,
+  1273→  onOpenChange,
+  1274→}: {
+  1275→  entry: JournalEntry | null
+  1276→  onOpenChange: (open: boolean) => void
+  1277→}) {
+  1278→  if (!entry) return null
+  1279→
+  1280→  const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+  1281→  const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
+  1282→
+  1283→  return (
+  1284→    <MacosDialog
+  1285→      open={!!entry}
+  1286→      onOpenChange={onOpenChange}
+  1287→      title="Journal Entry"
+  1288→      description={entry.description}
+  1289→    >
+  1290→      <div className="space-y-4">
+  1291→        <div className="flex items-center gap-4">
+  1292→          <div className="grid grid-cols-2 gap-3 text-[13px] flex-1">
+  1293→            <div>
+  1294→              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Date: </span>
+  1295→              <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
+  1296→            </div>
+  1297→            <div>
+  1298→              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Reference: </span>
+  1299→              <span className="font-medium">{entry.reference || '—'}</span>
+  1300→            </div>
+  1301→          </div>
+  1302→          <MacosBadge variant={entry.isPosted ? 'success' : 'warning'}>
+  1303→            {entry.isPosted ? 'Posted' : 'Draft'}
+  1304→          </MacosBadge>
+  1305→        </div>
+  1306→
+  1307→        <Separator className="bg-border/50" />
+  1308→
+  1309→        <div className="space-y-2">
+  1310→          <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Entry Lines</h4>
+  1311→          <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+  1312→            {entry.lines.map((line) => (
+  1313→              <div key={line.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
+  1314→                <div>
+  1315→                  <p className="text-[13px] font-medium">
+  1316→                    {line.account?.name || 'Unknown'}
+  1317→                    <span className="text-[11px] text-muted-foreground ml-1.5">({line.account?.code})</span>
+  1318→                  </p>
+  1319→                  {line.description && (
+  1320→                    <p className="text-[11px] text-muted-foreground">{line.description}</p>
+  1321→                  )}
+  1322→                </div>
+  1323→                <div className="text-right text-[13px] font-medium">
+  1324→                  {line.debit > 0 && <span className="text-macos-blue">${line.debit.toLocaleString()}</span>}
+  1325→                  {line.credit > 0 && <span className="text-macos-green">${line.credit.toLocaleString()}</span>}
+  1326→                </div>
+  1327→              </div>
+  1328→            ))}
+  1329→          </div>
+  1330→        </div>
+  1331→
+  1332→        <Separator className="bg-border/50" />
+  1333→
+  1334→        <div className="grid grid-cols-2 gap-3">
+  1335→          <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+  1336→            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Debit</p>
+  1337→            <p className="text-[13px] font-bold text-macos-blue">${totalDebit.toLocaleString()}</p>
+  1338→          </div>
+  1339→          <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+  1340→            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Credit</p>
+  1341→            <p className="text-[13px] font-bold text-macos-green">${totalCredit.toLocaleString()}</p>
+  1342→          </div>
+  1343→        </div>
+  1344→      </div>
+  1345→    </MacosDialog>
+  1346→  )
+  1347→}
+  1348→
+  1349→// ==================== ADD EXPENSE DIALOG ====================
+  1350→
+  1351→function AddExpenseDialog({
+  1352→  open,
+  1353→  onOpenChange,
+  1354→  onSuccess,
+  1355→}: {
+  1356→  open: boolean
+  1357→  onOpenChange: (open: boolean) => void
+  1358→  onSuccess: () => void
+  1359→}) {
+  1360→  const [saving, setSaving] = React.useState(false)
+  1361→  const [form, setForm] = React.useState({
+  1362→    category: '',
+  1363→    amount: '',
+  1364→    date: new Date().toISOString().split('T')[0],
+  1365→    description: '',
+  1366→    paidBy: '',
+  1367→    status: 'pending',
+  1368→  })
+  1369→
+  1370→  const handleSubmit = async (e: React.FormEvent) => {
+  1371→    e.preventDefault()
+  1372→    if (!form.category.trim() || !form.amount || !form.date) return
+  1373→    setSaving(true)
+  1374→    try {
+  1375→      const res = await fetch('/api/finance?type=expenses', {
+  1376→        method: 'POST',
+  1377→        headers: { 'Content-Type': 'application/json' },
+  1378→        body: JSON.stringify({
+  1379→          category: form.category,
+  1380→          amount: parseFloat(form.amount),
+  1381→          date: form.date,
+  1382→          description: form.description || null,
+  1383→          paidBy: form.paidBy || null,
+  1384→          status: form.status,
+  1385→        }),
+  1386→      })
+  1387→      if (res.ok) {
+  1388→        setForm({ category: '', amount: '', date: new Date().toISOString().split('T')[0], description: '', paidBy: '', status: 'pending' })
+  1389→        onOpenChange(false)
+  1390→        onSuccess()
+  1391→      } else {
+  1392→        const json = await res.json()
+  1393→        alert(json.error || 'Failed to add expense')
+  1394→      }
+  1395→    } catch (err) {
+  1396→      console.error('Failed to add expense:', err)
+  1397→      alert('Failed to add expense')
+  1398→    } finally {
+  1399→      setSaving(false)
+  1400→    }
+  1401→  }
+  1402→
+  1403→  return (
+  1404→    <MacosDialog
+  1405→      open={open}
+  1406→      onOpenChange={onOpenChange}
+  1407→      title="Add Expense"
+  1408→      description="Record a new expense"
+  1409→      footer={
+  1410→        <>
+  1411→          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+  1412→          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.category || !form.amount || !form.date}>
+  1413→            {saving ? 'Adding...' : 'Add Expense'}
+  1414→          </MacosButton>
+  1415→        </>
+  1416→      }
+  1417→    >
+  1418→      <form onSubmit={handleSubmit} className="space-y-4">
+  1419→        <div className="grid grid-cols-2 gap-3">
+  1420→          <MacosFormField label="Category *">
+  1421→            <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+  1422→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1423→                <SelectValue placeholder="Select category" />
+  1424→              </SelectTrigger>
+  1425→              <SelectContent>
+  1426→                <SelectItem value="Rent">Rent</SelectItem>
+  1427→                <SelectItem value="Utilities">Utilities</SelectItem>
+  1428→                <SelectItem value="Salaries">Salaries</SelectItem>
+  1429→                <SelectItem value="Office Supplies">Office Supplies</SelectItem>
+  1430→                <SelectItem value="Marketing">Marketing</SelectItem>
+  1431→                <SelectItem value="Transport">Transport</SelectItem>
+  1432→                <SelectItem value="Maintenance">Maintenance</SelectItem>
+  1433→                <SelectItem value="Insurance">Insurance</SelectItem>
+  1434→                <SelectItem value="Other">Other</SelectItem>
+  1435→              </SelectContent>
+  1436→            </Select>
+  1437→          </MacosFormField>
+  1438→          <MacosFormField label="Amount ($) *">
+  1439→            <Input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="500" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+  1440→          </MacosFormField>
+  1441→        </div>
+  1442→        <div className="grid grid-cols-2 gap-3">
+  1443→          <MacosFormField label="Date *">
+  1444→            <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+  1445→          </MacosFormField>
+  1446→          <MacosFormField label="Status">
+  1447→            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+  1448→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1449→                <SelectValue />
+  1450→              </SelectTrigger>
+  1451→              <SelectContent>
+  1452→                <SelectItem value="pending">Pending</SelectItem>
+  1453→                <SelectItem value="approved">Approved</SelectItem>
+  1454→                <SelectItem value="paid">Paid</SelectItem>
+  1455→              </SelectContent>
+  1456→            </Select>
+  1457→          </MacosFormField>
+  1458→        </div>
+  1459→        <MacosFormField label="Description">
+  1460→          <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Expense details..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+  1461→        </MacosFormField>
+  1462→        <MacosFormField label="Paid By">
+  1463→          <Input value={form.paidBy} onChange={(e) => setForm({ ...form, paidBy: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+  1464→        </MacosFormField>
+  1465→      </form>
+  1466→    </MacosDialog>
+  1467→  )
+  1468→}
+  1469→

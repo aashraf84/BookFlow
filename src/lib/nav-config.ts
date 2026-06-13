@@ -16,6 +16,7 @@ import {
   Globe,
   BarChart3,
   Brain,
+  Crown,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -44,6 +45,7 @@ export const navModules: NavModule[] = [
   { id: 'e-commerce', label: 'E-Commerce', icon: Globe, group: 'intelligence' },
   { id: 'reports', label: 'Reports', icon: BarChart3, group: 'intelligence' },
   { id: 'ai-suite', label: 'AI Suite', icon: Brain, group: 'intelligence' },
+  { id: 'owner', label: 'Owner Portal', icon: Crown, group: 'management' },
 ]
 
 export const navGroups = [

@@ -566,3 +566,163 @@ model Campaign {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// ==================== OWNER / SaaS MANAGEMENT ====================
+
+model OwnerClient {
+  id              String   @id @default(cuid())
+  companyName     String
+  contactPerson   String
+  email           String   @unique
+  phone           String?
+  address         String?
+  city            String?
+  state           String?
+  country         String?
+  postalCode      String?
+  taxId           String?
+  website         String?
+  logo            String?
+  industry        String?
+  notes           String?
+  status          String   @default("active") // active, suspended, churned, trial
+  onboardingDate  DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subscriptions   OwnerSubscription[]
+  invoices        OwnerInvoice[]
+  quotations      OwnerQuotation[]
+  devices         OwnerDevice[]
+  serialKeys      OwnerSerialKey[]
+}
+
+model OwnerSubscription {
+  id              String   @id @default(cuid())
+  clientId        String
+  client          OwnerClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planName        String   // Trial, Starter, Professional, Enterprise
+  planType        String   @default("monthly") // trial, monthly, yearly
+  price           Float    @default(0)
+  currency        String   @default("USD")
+  startDate       DateTime
+  endDate         DateTime?
+  status          String   @default("active") // active, expired, cancelled, past_due, trial
+  autoRenew       Boolean  @default(true)
+  maxUsers        Int      @default(5)
+  maxBranches     Int      @default(1)
+  maxDevices      Int      @default(3)
+  storageGB       Int      @default(5)
+  features        String?  // JSON string of included features
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  invoice         OwnerInvoice?
+}
+
+model OwnerInvoice {
+  id              String   @id @default(cuid())
+  invoiceNumber   String   @unique
+  clientId        String
+  client          OwnerClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  subscriptionId  String?  @unique
+  subscription    OwnerSubscription? @relation(fields: [subscriptionId], references: [id])
+  issueDate       DateTime
+  dueDate         DateTime
+  subtotal        Float    @default(0)
+  discountAmount  Float    @default(0)
+  taxRate         Float    @default(0)
+  taxAmount       Float    @default(0)
+  total           Float    @default(0)
+  currency        String   @default("USD")
+  status          String   @default("draft") // draft, sent, paid, overdue, cancelled, refunded
+  paymentMethod   String?  // bank_transfer, credit_card, paypal, stripe
+  paymentRef      String?
+  paidAt          DateTime?
+  notes           String?
+  terms           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           OwnerInvoiceItem[]
+}
+
+model OwnerInvoiceItem {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  invoice         OwnerInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Int      @default(1)
+  unitPrice       Float    @default(0)
+  discount        Float    @default(0)
+  total           Float    @default(0)
+}
+
+model OwnerQuotation {
+  id              String   @id @default(cuid())
+  quotationNumber String   @unique
+  clientId        String
+  client          OwnerClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  issueDate       DateTime
+  validUntil      DateTime
+  subtotal        Float    @default(0)
+  discountAmount  Float    @default(0)
+  taxRate         Float    @default(0)
+  taxAmount       Float    @default(0)
+  total           Float    @default(0)
+  currency        String   @default("USD")
+  status          String   @default("draft") // draft, sent, accepted, rejected, expired, converted
+  notes           String?
+  terms           String?
+  convertedInvoiceId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           OwnerQuotationItem[]
+}
+
+model OwnerQuotationItem {
+  id              String   @id @default(cuid())
+  quotationId     String
+  quotation       OwnerQuotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  description     String
+  quantity        Int      @default(1)
+  unitPrice       Float    @default(0)
+  discount        Float    @default(0)
+  total           Float    @default(0)
+}
+
+model OwnerSerialKey {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  clientId        String?
+  client          OwnerClient? @relation(fields: [clientId], references: [id])
+  plan            String   @default("professional") // trial, starter, professional, enterprise
+  maxDevices      Int      @default(3)
+  maxUsers        Int      @default(5)
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  isActive        Boolean  @default(true)
+  deviceFingerprint String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model OwnerDevice {
+  id              String   @id @default(cuid())
+  clientId        String
+  client          OwnerClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  serialKeyId     String?
+  deviceName      String?
+  deviceType      String?  // desktop, laptop, tablet, mobile
+  os              String?
+  browser         String?
+  fingerprint     String?
+  ipAddress       String?
+  lastActiveAt    DateTime?
+  isActive        Boolean  @default(true)
+  registeredAt    DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
