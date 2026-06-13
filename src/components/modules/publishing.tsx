@@ -12,6 +12,12 @@ import {
   Clock,
   Package,
   DollarSign,
+  Search,
+  Eye,
+  Send,
+  PenTool,
+  Shield,
+  Globe,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +48,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useToast } from '@/hooks/use-toast'
+import { useAppStore } from '@/store/app-store'
 
 // Types
 interface Manuscript {
@@ -76,18 +83,19 @@ interface BookOption {
   isbn: string | null
 }
 
-const manuscriptStatusColors: Record<string, string> = {
-  submitted: 'bg-macos-orange/10 text-macos-orange',
-  reviewed: 'bg-macos-blue/10 text-macos-blue',
-  approved: 'bg-macos-green/10 text-macos-green',
-  published: 'bg-macos-purple/10 text-macos-purple',
-  rejected: 'bg-macos-red/10 text-macos-red',
+// Manuscript status config - spec: submitted=blue, reviewed=purple, approved=green, published=teal, rejected=red
+const manuscriptStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+  submitted: { label: 'Submitted', color: 'text-macos-blue', bgColor: 'bg-macos-blue/10', icon: Send },
+  reviewed: { label: 'Reviewed', color: 'text-macos-purple', bgColor: 'bg-macos-purple/10', icon: PenTool },
+  approved: { label: 'Approved', color: 'text-macos-green', bgColor: 'bg-macos-green/10', icon: Shield },
+  published: { label: 'Published', color: 'text-macos-teal', bgColor: 'bg-macos-teal/10', icon: Globe },
+  rejected: { label: 'Rejected', color: 'text-macos-red', bgColor: 'bg-macos-red/10', icon: XCircle },
 }
 
-const printStatusColors: Record<string, string> = {
-  ordered: 'bg-macos-orange/10 text-macos-orange',
-  printing: 'bg-macos-blue/10 text-macos-blue',
-  completed: 'bg-macos-green/10 text-macos-green',
+const printStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+  ordered: { label: 'Ordered', color: 'text-macos-orange', bgColor: 'bg-macos-orange/10', icon: Clock },
+  printing: { label: 'Printing', color: 'text-macos-blue', bgColor: 'bg-macos-blue/10', icon: Printer },
+  completed: { label: 'Completed', color: 'text-macos-green', bgColor: 'bg-macos-green/10', icon: CheckCircle2 },
 }
 
 const statusWorkflow = ['submitted', 'reviewed', 'approved', 'published']
@@ -101,8 +109,70 @@ function getNextStatus(current: string): string[] {
   return [statusWorkflow[idx + 1]]
 }
 
+// Pipeline step component for manuscript workflow visualization
+function PipelineStep({
+  label,
+  icon: Icon,
+  isActive,
+  isCompleted,
+  count,
+  color,
+  bgColor,
+  isLast,
+}: {
+  label: string
+  icon: React.ElementType
+  isActive: boolean
+  isCompleted: boolean
+  count: number
+  color: string
+  bgColor: string
+  isLast: boolean
+}) {
+  return (
+    <div className="flex items-center gap-0 flex-1 min-w-0">
+      <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1">
+        <div
+          className={`relative flex items-center justify-center size-10 rounded-xl transition-all duration-300 ${
+            isActive
+              ? `${bgColor} ring-2 ring-offset-1 ring-offset-background ${color.replace('text-', 'ring-')}`
+              : isCompleted
+              ? bgColor
+              : 'bg-secondary/60'
+          }`}
+        >
+          <Icon className={`size-4 ${isActive || isCompleted ? color : 'text-muted-foreground/50'}`} />
+          {count > 0 && (
+            <span className={`absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-bold px-1 ${
+              isActive ? 'bg-macos-blue text-white' : isCompleted ? bgColor + ' ' + color : 'bg-secondary text-muted-foreground'
+            }`}>
+              {count}
+            </span>
+          )}
+        </div>
+        <div className="text-center">
+          <p className={`text-[10px] font-semibold uppercase tracking-wider ${isActive ? color : isCompleted ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+            {label}
+          </p>
+        </div>
+      </div>
+      {!isLast && (
+        <div className="flex items-center pt-[-16px] self-start mt-5 -ml-1 -mr-1">
+          <div className={`h-[2px] w-full min-w-[24px] rounded-full transition-colors ${
+            isCompleted ? 'bg-macos-green/40' : 'bg-border'
+          }`} />
+          <ArrowRight className={`size-3 -ml-1 ${isCompleted ? 'text-macos-green/40' : 'text-muted-foreground/30'}`} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function PublishingModule() {
   const { toast } = useToast()
+  const authUser = useAppStore((s) => s.authUser)
+  const isViewOnly = authUser?.isViewOnly ?? false
+
   const [manuscripts, setManuscripts] = React.useState<Manuscript[]>([])
   const [printOrders, setPrintOrders] = React.useState<PrintOrder[]>([])
   const [books, setBooks] = React.useState<BookOption[]>([])
@@ -111,6 +181,8 @@ export function PublishingModule() {
   const [printOrderDialogOpen, setPrintOrderDialogOpen] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [activeTab, setActiveTab] = React.useState('manuscripts')
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [statusFilter, setStatusFilter] = React.useState('all')
 
   const [msForm, setMsForm] = React.useState({ title: '', author: '', notes: '' })
   const [poForm, setPoForm] = React.useState({ bookId: '', quantity: '', costPerUnit: '' })
@@ -246,6 +318,15 @@ export function PublishingModule() {
 
   const totalPrintCost = printOrders.reduce((sum, o) => sum + o.totalCost, 0)
 
+  // Filter manuscripts
+  const filteredManuscripts = manuscripts.filter((m) => {
+    const matchesSearch = !searchQuery || 
+      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (m.author && m.author.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesStatus = statusFilter === 'all' || m.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
   const tabs = [
     { id: 'manuscripts', label: 'Manuscripts' },
     { id: 'print-orders', label: 'Print Orders' },
@@ -253,99 +334,177 @@ export function PublishingModule() {
 
   return (
     <div className="space-y-6">
+      {/* Page Title */}
+      <div>
+        <h1 className="macos-page-title">Publishing</h1>
+        <p className="macos-page-subtitle">Manage manuscripts, reviews, and print production</p>
+      </div>
+
       {/* Summary Metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="rounded-2xl macos-shadow p-4 bg-card">
+        <div className="macos-card macos-shadow-card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Manuscripts</p>
-              <p className="text-2xl font-bold tracking-tight">{manuscripts.length}</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Manuscripts</p>
+              <p className="text-2xl font-bold tracking-tight mt-0.5">{manuscripts.length}</p>
             </div>
-            <div className="rounded-lg bg-macos-blue/10 p-2.5">
+            <div className="rounded-xl bg-macos-blue/10 p-2.5">
               <FileText className="size-5 text-macos-blue" />
             </div>
           </div>
         </div>
-        <div className="rounded-2xl macos-shadow p-4 bg-card">
+        <div className="macos-card macos-shadow-card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Submitted</p>
-              <p className="text-2xl font-bold tracking-tight">{msByStatus['submitted'] || 0}</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Submitted</p>
+              <p className="text-2xl font-bold tracking-tight mt-0.5">{msByStatus['submitted'] || 0}</p>
             </div>
-            <div className="rounded-lg bg-macos-orange/10 p-2.5">
+            <div className="rounded-xl bg-macos-orange/10 p-2.5">
               <Clock className="size-5 text-macos-orange" />
             </div>
           </div>
         </div>
-        <div className="rounded-2xl macos-shadow p-4 bg-card">
+        <div className="macos-card macos-shadow-card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Published</p>
-              <p className="text-2xl font-bold tracking-tight">{msByStatus['published'] || 0}</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Published</p>
+              <p className="text-2xl font-bold tracking-tight mt-0.5">{msByStatus['published'] || 0}</p>
             </div>
-            <div className="rounded-lg bg-macos-purple/10 p-2.5">
-              <BookOpen className="size-5 text-macos-purple" />
+            <div className="rounded-xl bg-macos-teal/10 p-2.5">
+              <Globe className="size-5 text-macos-teal" />
             </div>
           </div>
         </div>
-        <div className="rounded-2xl macos-shadow p-4 bg-card">
+        <div className="macos-card macos-shadow-card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Print Orders</p>
-              <p className="text-2xl font-bold tracking-tight">{printOrders.length}</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Print Orders</p>
+              <p className="text-2xl font-bold tracking-tight mt-0.5">{printOrders.length}</p>
             </div>
-            <div className="rounded-lg bg-macos-teal/10 p-2.5">
-              <Printer className="size-5 text-macos-teal" />
+            <div className="rounded-xl bg-macos-purple/10 p-2.5">
+              <Printer className="size-5 text-macos-purple" />
             </div>
           </div>
         </div>
-        <div className="rounded-2xl macos-shadow p-4 bg-card">
+        <div className="macos-card macos-shadow-card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Print Cost</p>
-              <p className="text-2xl font-bold tracking-tight">${totalPrintCost.toLocaleString()}</p>
+              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Print Cost</p>
+              <p className="text-2xl font-bold tracking-tight mt-0.5">${totalPrintCost.toLocaleString()}</p>
             </div>
-            <div className="rounded-lg bg-macos-green/10 p-2.5">
+            <div className="rounded-xl bg-macos-green/10 p-2.5">
               <DollarSign className="size-5 text-macos-green" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Header + Segmented Tabs */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight">Publishing</h2>
-          <p className="text-[13px] text-muted-foreground mt-0.5">Manage manuscripts, reviews, and print production</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="macos-segmented inline-flex p-0.5">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1 text-[12px] font-medium rounded-md transition-colors ${
-                  activeTab === tab.id ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+      {/* Manuscript Workflow Pipeline Visualization */}
+      <div className="macos-card macos-shadow p-6">
+        <div className="macos-section-header mb-4">
+          <div>
+            <p className="macos-section-title">Manuscript Workflow Pipeline</p>
+            <p className="macos-section-desc">Track manuscripts through the publishing lifecycle</p>
           </div>
-          <Button
-            onClick={() => setManuscriptDialogOpen(true)}
-            className="bg-secondary text-secondary-foreground rounded-lg font-medium text-[13px]"
-          >
-            <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
-            Submit Manuscript
-          </Button>
-          <Button
-            onClick={() => setPrintOrderDialogOpen(true)}
-            className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]"
-          >
-            <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
-            Print Order
-          </Button>
+        </div>
+        <div className="flex items-start justify-between gap-2">
+          {statusWorkflow.map((status, idx) => {
+            const config = manuscriptStatusConfig[status]
+            const count = msByStatus[status] || 0
+            const isLast = idx === statusWorkflow.length - 1
+            // Determine if this step is "active" (has items) or "completed" (all items have passed this stage)
+            const isActive = count > 0
+            const laterCounts = statusWorkflow.slice(idx + 1).reduce((sum, s) => sum + (msByStatus[s] || 0), 0)
+            const isCompleted = count === 0 && laterCounts > 0
+            return (
+              <PipelineStep
+                key={status}
+                label={config.label}
+                icon={config.icon}
+                isActive={isActive}
+                isCompleted={isCompleted}
+                count={count}
+                color={config.color}
+                bgColor={config.bgColor}
+                isLast={isLast}
+              />
+            )
+          })}
+        </div>
+        {/* Rejected count if any */}
+        {(msByStatus['rejected'] || 0) > 0 && (
+          <div className="mt-4 flex items-center gap-2 pt-3 border-t border-border">
+            <XCircle className="size-3.5 text-macos-red" />
+            <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Rejected:</span>
+            <Badge className="rounded-md bg-macos-red/10 text-macos-red text-[10px] font-semibold px-2 py-0.5">
+              {msByStatus['rejected']}
+            </Badge>
+          </div>
+        )}
+      </div>
+
+      {/* Header + Filter Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="macos-filter-bar">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`macos-filter-item ${activeTab === tab.id ? 'macos-filter-item-active' : ''}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          {activeTab === 'manuscripts' && (
+            <div className="macos-search flex items-center gap-2 px-3 h-8">
+              <Search className="size-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search manuscripts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border-0 bg-transparent h-6 text-[13px] p-0 shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/60"
+              />
+            </div>
+          )}
+          {/* Status Filter */}
+          {activeTab === 'manuscripts' && (
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-8 text-[13px] rounded-lg bg-secondary/80 border-0">
+                <SelectValue placeholder="Filter status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="submitted">Submitted</SelectItem>
+                <SelectItem value="reviewed">Reviewed</SelectItem>
+                <SelectItem value="approved">Approved</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          {/* CRUD Buttons - hidden for view-only */}
+          {!isViewOnly && (
+            <>
+              <Button
+                onClick={() => setManuscriptDialogOpen(true)}
+                variant="outline"
+                className="rounded-lg font-medium text-[13px] h-8"
+              >
+                <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
+                Submit Manuscript
+              </Button>
+              <Button
+                onClick={() => setPrintOrderDialogOpen(true)}
+                className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8"
+              >
+                <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
+                Print Order
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -353,62 +512,78 @@ export function PublishingModule() {
       {activeTab === 'manuscripts' && (
         <div>
           {loading ? (
-            <div className="rounded-2xl macos-shadow p-8 bg-card text-center text-muted-foreground animate-pulse text-[13px]">
+            <div className="macos-card macos-shadow-card p-8 text-center text-muted-foreground animate-pulse text-[13px]">
               Loading manuscripts...
             </div>
-          ) : manuscripts.length === 0 ? (
-            <div className="rounded-2xl macos-shadow p-5 bg-card text-center py-16">
-              <FileText className="size-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold tracking-tight mb-1">No manuscripts yet</h3>
-              <p className="text-[13px] text-muted-foreground">Submit your first manuscript to get started</p>
+          ) : filteredManuscripts.length === 0 ? (
+            <div className="macos-card macos-shadow-card macos-empty">
+              <FileText className="size-12 text-muted-foreground/40 mb-4" />
+              <h3 className="text-[13px] font-semibold tracking-tight mb-1">No manuscripts found</h3>
+              <p className="text-[13px] text-muted-foreground">
+                {searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'Submit your first manuscript to get started'}
+              </p>
             </div>
           ) : (
-            <div className="rounded-2xl macos-shadow bg-card overflow-hidden">
+            <div className="macos-card macos-shadow overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Submitted</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Actions</TableHead>
+                  <TableRow className="hover:bg-transparent border-b border-border">
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Submitted</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {manuscripts.map((ms) => {
+                  {filteredManuscripts.map((ms) => {
                     const nextStatuses = getNextStatus(ms.status)
+                    const statusConf = manuscriptStatusConfig[ms.status] || manuscriptStatusConfig.submitted
+                    const StatusIcon = statusConf.icon
                     return (
-                      <TableRow key={ms.id} className="hover:bg-secondary/50">
-                        <TableCell className="text-[13px] font-medium max-w-[200px] truncate">{ms.title}</TableCell>
+                      <TableRow key={ms.id} className="macos-table-row">
+                        <TableCell className="text-[13px] font-medium max-w-[200px] truncate">
+                          <div className="flex items-center gap-2">
+                            <div className={`size-6 rounded-lg flex items-center justify-center ${statusConf.bgColor}`}>
+                              <StatusIcon className={`size-3 ${statusConf.color}`} />
+                            </div>
+                            <span className="truncate">{ms.title}</span>
+                          </div>
+                        </TableCell>
                         <TableCell className="text-[13px] text-muted-foreground">{ms.author || '—'}</TableCell>
                         <TableCell>
-                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${manuscriptStatusColors[ms.status] || ''}`}>
-                            {ms.status.charAt(0).toUpperCase() + ms.status.slice(1)}
+                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${statusConf.bgColor} ${statusConf.color}`}>
+                            {statusConf.label}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-[13px] text-muted-foreground">
                           {new Date(ms.submittedAt).toLocaleDateString()}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {nextStatuses.map((ns) => (
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {nextStatuses.map((ns) => {
+                              const nsConf = manuscriptStatusConfig[ns]
+                              return (
+                                <Button
+                                  key={ns}
+                                  size="sm"
+                                  variant="outline"
+                                  className={`h-7 text-[10px] rounded-lg font-semibold px-2.5 ${nsConf?.color} border-current/20`}
+                                  onClick={() => handleManuscriptStatus(ms, ns)}
+                                  disabled={isViewOnly}
+                                >
+                                  <ArrowRight className="size-3 mr-1" />
+                                  {ns.charAt(0).toUpperCase() + ns.slice(1)}
+                                </Button>
+                              )
+                            })}
+                            {!rejectionStates.includes(ms.status) && ms.status !== 'published' && !isViewOnly && (
                               <Button
-                                key={ns}
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-[11px] rounded-md font-medium px-2"
-                                onClick={() => handleManuscriptStatus(ms, ns)}
-                              >
-                                <ArrowRight className="size-3 mr-1" />
-                                {ns.charAt(0).toUpperCase() + ns.slice(1)}
-                              </Button>
-                            ))}
-                            {!rejectionStates.includes(ms.status) && ms.status !== 'published' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-[11px] rounded-md font-medium px-2 text-macos-red border-macos-red/20 hover:bg-macos-red/10"
+                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5 text-macos-red border-macos-red/20 hover:bg-macos-red/10"
                                 onClick={() => handleManuscriptStatus(ms, 'rejected')}
+                                disabled={isViewOnly}
                               >
                                 <XCircle className="size-3 mr-1" />
                                 Reject
@@ -436,76 +611,90 @@ export function PublishingModule() {
       {activeTab === 'print-orders' && (
         <div>
           {loading ? (
-            <div className="rounded-2xl macos-shadow p-8 bg-card text-center text-muted-foreground animate-pulse text-[13px]">
+            <div className="macos-card macos-shadow-card p-8 text-center text-muted-foreground animate-pulse text-[13px]">
               Loading print orders...
             </div>
           ) : printOrders.length === 0 ? (
-            <div className="rounded-2xl macos-shadow p-5 bg-card text-center py-16">
-              <Printer className="size-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold tracking-tight mb-1">No print orders yet</h3>
+            <div className="macos-card macos-shadow-card macos-empty">
+              <Printer className="size-12 text-muted-foreground/40 mb-4" />
+              <h3 className="text-[13px] font-semibold tracking-tight mb-1">No print orders yet</h3>
               <p className="text-[13px] text-muted-foreground">Create a print order for a published book</p>
             </div>
           ) : (
-            <div className="rounded-2xl macos-shadow bg-card overflow-hidden">
+            <div className="macos-card macos-shadow overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Book</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Quantity</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Cost/Unit</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Cost</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Actions</TableHead>
+                  <TableRow className="hover:bg-transparent border-b border-border">
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Book</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Quantity</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Cost/Unit</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Cost</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {printOrders.map((po) => (
-                    <TableRow key={po.id} className="hover:bg-secondary/50">
-                      <TableCell className="text-[13px] font-medium">
-                        {po.book?.title || 'Unknown Book'}
-                      </TableCell>
-                      <TableCell className="text-[13px]">{po.quantity.toLocaleString()}</TableCell>
-                      <TableCell className="text-[13px]">${po.costPerUnit.toFixed(2)}</TableCell>
-                      <TableCell className="text-[13px] font-medium">${po.totalCost.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${printStatusColors[po.status] || ''}`}>
-                          {po.status.charAt(0).toUpperCase() + po.status.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {po.status === 'ordered' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] rounded-md font-medium px-2"
-                              onClick={() => handlePrintOrderStatus(po, 'printing')}
-                            >
-                              <ArrowRight className="size-3 mr-1" />
-                              Start Printing
-                            </Button>
-                          )}
-                          {po.status === 'printing' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] rounded-md font-medium px-2 text-macos-green border-macos-green/20 hover:bg-macos-green/10"
-                              onClick={() => handlePrintOrderStatus(po, 'completed')}
-                            >
-                              <CheckCircle2 className="size-3 mr-1" />
-                              Complete
-                            </Button>
-                          )}
-                          {po.status === 'completed' && (
-                            <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
-                              <CheckCircle2 className="size-3 mr-1" />
-                              Done
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {printOrders.map((po) => {
+                    const poConf = printStatusConfig[po.status] || printStatusConfig.ordered
+                    const PoIcon = poConf.icon
+                    return (
+                      <TableRow key={po.id} className="macos-table-row">
+                        <TableCell className="text-[13px] font-medium">
+                          <div className="flex items-center gap-2">
+                            <div className={`size-6 rounded-lg flex items-center justify-center ${poConf.bgColor}`}>
+                              <PoIcon className={`size-3 ${poConf.color}`} />
+                            </div>
+                            {po.book?.title || 'Unknown Book'}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-[13px]">{po.quantity.toLocaleString()}</TableCell>
+                        <TableCell className="text-[13px]">${po.costPerUnit.toFixed(2)}</TableCell>
+                        <TableCell className="text-[13px] font-medium">${po.totalCost.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${poConf.bgColor} ${poConf.color}`}>
+                            {poConf.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {po.status === 'ordered' && !isViewOnly && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5"
+                                onClick={() => handlePrintOrderStatus(po, 'printing')}
+                                disabled={isViewOnly}
+                              >
+                                <ArrowRight className="size-3 mr-1" />
+                                Start Printing
+                              </Button>
+                            )}
+                            {po.status === 'printing' && !isViewOnly && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-[10px] rounded-lg font-semibold px-2.5 text-macos-green border-macos-green/20 hover:bg-macos-green/10"
+                                onClick={() => handlePrintOrderStatus(po, 'completed')}
+                                disabled={isViewOnly}
+                              >
+                                <CheckCircle2 className="size-3 mr-1" />
+                                Complete
+                              </Button>
+                            )}
+                            {po.status === 'completed' && (
+                              <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+                                <CheckCircle2 className="size-3 mr-1" />
+                                Done
+                              </Badge>
+                            )}
+                            {isViewOnly && po.status !== 'completed' && (
+                              <span className="text-[10px] text-muted-foreground">View only</span>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -515,14 +704,14 @@ export function PublishingModule() {
 
       {/* Submit Manuscript Dialog */}
       <Dialog open={manuscriptDialogOpen} onOpenChange={setManuscriptDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent className="sm:max-w-md macos-shadow-float rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-[13px] font-semibold tracking-tight">Submit Manuscript</DialogTitle>
             <DialogDescription className="text-[13px]">Submit a new manuscript for review and publishing</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="ms-title" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Title *</Label>
+              <Label htmlFor="ms-title" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Title *</Label>
               <Input
                 id="ms-title"
                 placeholder="The Great Adventure"
@@ -532,7 +721,7 @@ export function PublishingModule() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ms-author" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Author</Label>
+              <Label htmlFor="ms-author" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Author</Label>
               <Input
                 id="ms-author"
                 placeholder="Jane Doe"
@@ -542,7 +731,7 @@ export function PublishingModule() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ms-notes" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Notes</Label>
+              <Label htmlFor="ms-notes" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Notes</Label>
               <Textarea
                 id="ms-notes"
                 placeholder="Additional notes about this manuscript..."
@@ -564,14 +753,14 @@ export function PublishingModule() {
 
       {/* Create Print Order Dialog */}
       <Dialog open={printOrderDialogOpen} onOpenChange={setPrintOrderDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent className="sm:max-w-md macos-shadow-float rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Print Order</DialogTitle>
             <DialogDescription className="text-[13px]">Order a print run for a published book</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="po-book" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Book *</Label>
+              <Label htmlFor="po-book" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Book *</Label>
               <Select
                 value={poForm.bookId}
                 onValueChange={(v) => setPoForm((prev) => ({ ...prev, bookId: v }))}
@@ -590,7 +779,7 @@ export function PublishingModule() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="po-qty" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Quantity *</Label>
+                <Label htmlFor="po-qty" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Quantity *</Label>
                 <Input
                   id="po-qty"
                   type="number"
@@ -601,7 +790,7 @@ export function PublishingModule() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="po-cost" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Cost Per Unit</Label>
+                <Label htmlFor="po-cost" className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Cost Per Unit</Label>
                 <Input
                   id="po-cost"
                   type="number"
@@ -614,9 +803,9 @@ export function PublishingModule() {
               </div>
             </div>
             {poForm.quantity && poForm.costPerUnit && (
-              <div className="rounded-xl bg-secondary/50 p-3 text-[13px]">
+              <div className="macos-card p-3 text-[13px]">
                 <span className="text-muted-foreground">Total Cost: </span>
-                <span className="font-bold text-macos-green">
+                <span className="font-bold text-gg-golden">
                   ${(parseInt(poForm.quantity) * parseFloat(poForm.costPerUnit)).toLocaleString()}
                 </span>
               </div>

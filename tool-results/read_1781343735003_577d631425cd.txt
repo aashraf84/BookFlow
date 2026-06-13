@@ -1,0 +1,765 @@
+     1→     1→     1→'use client'
+     2→     2→     2→
+     3→     3→     3→import * as React from 'react'
+     4→     4→     4→import {
+     5→     5→     5→  Search,
+     6→     6→     6→  Warehouse as WarehouseIcon,
+     7→     7→     7→  AlertTriangle,
+     8→     8→     8→  ArrowRightLeft,
+     9→     9→     9→  Loader2,
+    10→    10→    10→  AlertCircle,
+    11→    11→    11→  Plus,
+    12→    12→    12→  Settings2,
+    13→    13→    13→  Package,
+    14→    14→    14→  TrendingDown,
+    15→    15→    15→  Building2,
+    16→    16→    16→  ChevronRight,
+    17→    17→    17→} from 'lucide-react'
+    18→    18→    18→
+    19→    19→    19→import { Button } from '@/components/ui/button'
+    20→    20→    20→import { Input } from '@/components/ui/input'
+    21→    21→    21→import { Label } from '@/components/ui/label'
+    22→    22→    22→import {
+    23→    23→    23→  Dialog,
+    24→    24→    24→  DialogContent,
+    25→    25→    25→  DialogDescription,
+    26→    26→    26→  DialogFooter,
+    27→    27→    27→  DialogHeader,
+    28→    28→    28→  DialogTitle,
+    29→    29→    29→} from '@/components/ui/dialog'
+    30→    30→    30→import {
+    31→    31→    31→  Select,
+    32→    32→    32→  SelectContent,
+    33→    33→    33→  SelectItem,
+    34→    34→    34→  SelectTrigger,
+    35→    35→    35→  SelectValue,
+    36→    36→    36→} from '@/components/ui/select'
+    37→    37→    37→import {
+    38→    38→    38→  Table,
+    39→    39→    39→  TableBody,
+    40→    40→    40→  TableCell,
+    41→    41→    41→  TableHead,
+    42→    42→    42→  TableHeader,
+    43→    43→    43→  TableRow,
+    44→    44→    44→} from '@/components/ui/table'
+    45→    45→    45→import { Badge } from '@/components/ui/badge'
+    46→    46→    46→import { Skeleton } from '@/components/ui/skeleton'
+    47→    47→    47→import { Textarea } from '@/components/ui/textarea'
+    48→    48→    48→
+    49→    49→    49→// ─── Types ────────────────────────────────────────────────────────
+    50→    50→    50→interface Branch {
+    51→    51→    51→  id: string
+    52→    52→    52→  name: string
+    53→    53→    53→  code: string
+    54→    54→    54→}
+    55→    55→    55→
+    56→    56→    56→interface Warehouse {
+    57→    57→    57→  id: string
+    58→    58→    58→  name: string
+    59→    59→    59→  code: string
+    60→    60→    60→  address?: string | null
+    61→    61→    61→  branchId?: string | null
+    62→    62→    62→  branch?: Branch | null
+    63→    63→    63→  isActive: boolean
+    64→    64→    64→  inventory?: Array<{ quantity: number; costPrice: number; sellingPrice: number }>
+    65→    65→    65→}
+    66→    66→    66→
+    67→    67→    67→interface InventoryItem {
+    68→    68→    68→  id: string
+    69→    69→    69→  warehouseId: string | null
+    70→    70→    70→  branchId: string | null
+    71→    71→    71→  bookId: string | null
+    72→    72→    72→  stationeryId: string | null
+    73→    73→    73→  quantity: number
+    74→    74→    74→  reorderLevel: number
+    75→    75→    75→  maxStockLevel: number
+    76→    76→    76→  batchNumber: string | null
+    77→    77→    77→  costPrice: number
+    78→    78→    78→  sellingPrice: number
+    79→    79→    79→  location: string | null
+    80→    80→    80→  isLowStock?: boolean
+    81→    81→    81→  book?: { id: string; title: string; isbn: string | null; price: number; author?: { name: string } | null } | null
+    82→    82→    82→  stationery?: { id: string; name: string; sku: string | null; price: number; brand: string | null } | null
+    83→    83→    83→  warehouse?: { id: string; name: string; code: string } | null
+    84→    84→    84→  branch?: { id: string; name: string; code: string } | null
+    85→    85→    85→}
+    86→    86→    86→
+    87→    87→    87→interface StockTransfer {
+    88→    88→    88→  id: string
+    89→    89→    89→  fromBranchId: string
+    90→    90→    90→  toBranchId: string
+    91→    91→    91→  items: string
+    92→    92→    92→  status: string
+    93→    93→    93→  notes: string | null
+    94→    94→    94→  createdAt: string
+    95→    95→    95→  updatedAt: string
+    96→    96→    96→  fromBranch: Branch
+    97→    97→    97→  toBranch: Branch
+    98→    98→    98→}
+    99→    99→    99→
+   100→   100→   100→// ─── Component ────────────────────────────────────────────────────
+   101→   101→   101→export function InventoryModule() {
+   102→   102→   102→  const [activeTab, setActiveTab] = React.useState('overview')
+   103→   103→   103→  const [items, setItems] = React.useState<InventoryItem[]>([])
+   104→   104→   104→  const [warehouses, setWarehouses] = React.useState<Warehouse[]>([])
+   105→   105→   105→  const [transfers, setTransfers] = React.useState<StockTransfer[]>([])
+   106→   106→   106→  const [branches, setBranches] = React.useState<Branch[]>([])
+   107→   107→   107→  const [loading, setLoading] = React.useState(true)
+   108→   108→   108→  const [error, setError] = React.useState<string | null>(null)
+   109→   109→   109→
+   110→   110→   110→  // Filters
+   111→   111→   111→  const [branchFilter, setBranchFilter] = React.useState('all')
+   112→   112→   112→  const [warehouseFilter, setWarehouseFilter] = React.useState('all')
+   113→   113→   113→  const [lowStockOnly, setLowStockOnly] = React.useState(false)
+   114→   114→   114→
+   115→   115→   115→  // Dialogs
+   116→   116→   116→  const [adjustDialogOpen, setAdjustDialogOpen] = React.useState(false)
+   117→   117→   117→  const [transferDialogOpen, setTransferDialogOpen] = React.useState(false)
+   118→   118→   118→  const [adjustingItem, setAdjustingItem] = React.useState<InventoryItem | null>(null)
+   119→   119→   119→  const [saving, setSaving] = React.useState(false)
+   120→   120→   120→
+   121→   121→   121→  // Adjust form
+   122→   122→   122→  const [adjustQty, setAdjustQty] = React.useState('')
+   123→   123→   123→  const [adjustOperation, setAdjustOperation] = React.useState('set')
+   124→   124→   124→
+   125→   125→   125→  // Transfer form
+   126→   126→   126→  const [transferFrom, setTransferFrom] = React.useState('')
+   127→   127→   127→  const [transferTo, setTransferTo] = React.useState('')
+   128→   128→   128→  const [transferNotes, setTransferNotes] = React.useState('')
+   129→   129→   129→
+   130→   130→   130→  // Fetch inventory items
+   131→   131→   131→  const fetchItems = React.useCallback(async () => {
+   132→   132→   132→    setLoading(true)
+   133→   133→   133→    setError(null)
+   134→   134→   134→    try {
+   135→   135→   135→      const params = new URLSearchParams()
+   136→   136→   136→      params.set('limit', '100')
+   137→   137→   137→      if (branchFilter && branchFilter !== 'all') params.set('branchId', branchFilter)
+   138→   138→   138→      if (warehouseFilter && warehouseFilter !== 'all') params.set('warehouseId', warehouseFilter)
+   139→   139→   139→      if (lowStockOnly) params.set('lowStock', 'true')
+   140→   140→   140→
+   141→   141→   141→      const res = await fetch(`/api/inventory?${params.toString()}`)
+   142→   142→   142→      if (!res.ok) throw new Error('Failed to fetch inventory')
+   143→   143→   143→      const json = await res.json()
+   144→   144→   144→      setItems(json.data || [])
+   145→   145→   145→    } catch (err) {
+   146→   146→   146→      setError(err instanceof Error ? err.message : 'Unknown error')
+   147→   147→   147→    } finally {
+   148→   148→   148→      setLoading(false)
+   149→   149→   149→    }
+   150→   150→   150→  }, [branchFilter, warehouseFilter, lowStockOnly])
+   151→   151→   151→
+   152→   152→   152→  // Fetch warehouses
+   153→   153→   153→  const fetchWarehouses = React.useCallback(async () => {
+   154→   154→   154→    try {
+   155→   155→   155→      const res = await fetch('/api/warehouses')
+   156→   156→   156→      if (!res.ok) throw new Error('Failed to fetch warehouses')
+   157→   157→   157→      const json = await res.json()
+   158→   158→   158→      setWarehouses(json.data || [])
+   159→   159→   159→    } catch {
+   160→   160→   160→      // silent
+   161→   161→   161→    }
+   162→   162→   162→  }, [])
+   163→   163→   163→
+   164→   164→   164→  // Fetch branches
+   165→   165→   165→  const fetchBranches = React.useCallback(async () => {
+   166→   166→   166→    try {
+   167→   167→   167→      const res = await fetch('/api/branches')
+   168→   168→   168→      if (!res.ok) throw new Error('Failed to fetch branches')
+   169→   169→   169→      const json = await res.json()
+   170→   170→   170→      setBranches(json.data || [])
+   171→   171→   171→    } catch {
+   172→   172→   172→      // silent
+   173→   173→   173→    }
+   174→   174→   174→  }, [])
+   175→   175→   175→
+   176→   176→   176→  // Fetch transfers
+   177→   177→   177→  const fetchTransfers = React.useCallback(async () => {
+   178→   178→   178→    try {
+   179→   179→   179→      const res = await fetch('/api/inventory?transfers=true&limit=50')
+   180→   180→   180→      if (!res.ok) throw new Error('Failed to fetch transfers')
+   181→   181→   181→      const json = await res.json()
+   182→   182→   182→      setTransfers(json.transfers || [])
+   183→   183→   183→    } catch {
+   184→   184→   184→      // silent
+   185→   185→   185→    }
+   186→   186→   186→  }, [])
+   187→   187→   187→
+   188→   188→   188→  React.useEffect(() => {
+   189→   189→   189→    fetchItems()
+   190→   190→   190→  }, [fetchItems])
+   191→   191→   191→
+   192→   192→   192→  React.useEffect(() => {
+   193→   193→   193→    fetchWarehouses()
+   194→   194→   194→    fetchBranches()
+   195→   195→   195→    fetchTransfers()
+   196→   196→   196→  }, [fetchWarehouses, fetchBranches, fetchTransfers])
+   197→   197→   197→
+   198→   198→   198→  // Product name helper
+   199→   199→   199→  const getProductName = (item: InventoryItem): string => {
+   200→   200→   200→    if (item.book) return item.book.title
+   201→   201→   201→    if (item.stationery) return item.stationery.name
+   202→   202→   202→    return 'Unknown Product'
+   203→   203→   203→  }
+   204→   204→   204→
+   205→   205→   205→  // Stock status
+   206→   206→   206→  const getStockStatus = (item: InventoryItem): { dotClass: string; textClass: string; label: string } => {
+   207→   207→   207→    if (item.quantity === 0) {
+   208→   208→   208→      return { dotClass: 'bg-macos-red', textClass: 'text-macos-red', label: 'Out of Stock' }
+   209→   209→   209→    }
+   210→   210→   210→    if (item.isLowStock || item.quantity <= item.reorderLevel) {
+   211→   211→   211→      return { dotClass: 'bg-macos-orange', textClass: 'text-macos-orange', label: 'Low Stock' }
+   212→   212→   212→    }
+   213→   213→   213→    return { dotClass: 'bg-macos-green', textClass: 'text-macos-green', label: 'In Stock' }
+   214→   214→   214→  }
+   215→   215→   215→
+   216→   216→   216→  // Transfer status badge
+   217→   217→   217→  const getTransferStatusBadge = (status: string) => {
+   218→   218→   218→    const map: Record<string, { className: string; label: string }> = {
+   219→   219→   219→      pending: { className: 'bg-macos-orange/10 text-macos-orange', label: 'Pending' },
+   220→   220→   220→      'in-transit': { className: 'bg-macos-blue/10 text-macos-blue', label: 'In Transit' },
+   221→   221→   221→      completed: { className: 'bg-macos-green/10 text-macos-green', label: 'Completed' },
+   222→   222→   222→      cancelled: { className: 'bg-macos-red/10 text-macos-red', label: 'Cancelled' },
+   223→   223→   223→    }
+   224→   224→   224→    const s = map[status] || { className: 'bg-secondary text-secondary-foreground', label: status }
+   225→   225→   225→    return <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${s.className}`}>{s.label}</span>
+   226→   226→   226→  }
+   227→   227→   227→
+   228→   228→   228→  // Open adjust dialog
+   229→   229→   229→  const handleAdjust = (item: InventoryItem) => {
+   230→   230→   230→    setAdjustingItem(item)
+   231→   231→   231→    setAdjustQty('')
+   232→   232→   232→    setAdjustOperation('set')
+   233→   233→   233→    setAdjustDialogOpen(true)
+   234→   234→   234→  }
+   235→   235→   235→
+   236→   236→   236→  // Save stock adjustment
+   237→   237→   237→  const handleAdjustSave = async () => {
+   238→   238→   238→    if (!adjustingItem || !adjustQty) return
+   239→   239→   239→    setSaving(true)
+   240→   240→   240→    try {
+   241→   241→   241→      const res = await fetch('/api/inventory', {
+   242→   242→   242→        method: 'PUT',
+   243→   243→   243→        headers: { 'Content-Type': 'application/json' },
+   244→   244→   244→        body: JSON.stringify({
+   245→   245→   245→          id: adjustingItem.id,
+   246→   246→   246→          quantity: parseInt(adjustQty),
+   247→   247→   247→          operation: adjustOperation,
+   248→   248→   248→        }),
+   249→   249→   249→      })
+   250→   250→   250→      if (!res.ok) throw new Error('Failed to adjust stock')
+   251→   251→   251→      setAdjustDialogOpen(false)
+   252→   252→   252→      fetchItems()
+   253→   253→   253→      fetchWarehouses()
+   254→   254→   254→    } catch (err) {
+   255→   255→   255→      setError(err instanceof Error ? err.message : 'Failed to adjust stock')
+   256→   256→   256→    } finally {
+   257→   257→   257→      setSaving(false)
+   258→   258→   258→    }
+   259→   259→   259→  }
+   260→   260→   260→
+   261→   261→   261→  // Create transfer
+   262→   262→   262→  const handleTransferCreate = async () => {
+   263→   263→   263→    if (!transferFrom || !transferTo || transferFrom === transferTo) return
+   264→   264→   264→    setSaving(true)
+   265→   265→   265→    try {
+   266→   266→   266→      const res = await fetch('/api/inventory', {
+   267→   267→   267→        method: 'POST',
+   268→   268→   268→        headers: { 'Content-Type': 'application/json' },
+   269→   269→   269→        body: JSON.stringify({
+   270→   270→   270→          type: 'transfer',
+   271→   271→   271→          fromBranchId: transferFrom,
+   272→   272→   272→          toBranchId: transferTo,
+   273→   273→   273→          notes: transferNotes,
+   274→   274→   274→        }),
+   275→   275→   275→      })
+   276→   276→   276→      if (!res.ok) throw new Error('Failed to create transfer')
+   277→   277→   277→      setTransferDialogOpen(false)
+   278→   278→   278→      setTransferFrom('')
+   279→   279→   279→      setTransferTo('')
+   280→   280→   280→      setTransferNotes('')
+   281→   281→   281→      fetchTransfers()
+   282→   282→   282→    } catch (err) {
+   283→   283→   283→      setError(err instanceof Error ? err.message : 'Failed to create transfer')
+   284→   284→   284→    } finally {
+   285→   285→   285→      setSaving(false)
+   286→   286→   286→    }
+   287→   287→   287→  }
+   288→   288→   288→
+   289→   289→   289→  // Compute stats
+   290→   290→   290→  const totalItems = items.length
+   291→   291→   291→  const lowStockItems = items.filter((i) => i.isLowStock || i.quantity <= i.reorderLevel)
+   292→   292→   292→  const outOfStockItems = items.filter((i) => i.quantity === 0)
+   293→   293→   293→  const totalValue = items.reduce((s, i) => s + i.quantity * i.costPrice, 0)
+   294→   294→   294→
+   295→   295→   295→  // Segmented tabs
+   296→   296→   296→  const tabs = [
+   297→   297→   297→    { id: 'overview', label: 'Stock Overview' },
+   298→   298→   298→    { id: 'low-stock', label: 'Low Stock' },
+   299→   299→   299→    { id: 'warehouses', label: 'Warehouses' },
+   300→   300→   300→    { id: 'transfers', label: 'Transfers' },
+   301→   301→   301→  ]
+   302→   302→   302→
+   303→   303→   303→  // Quantity bar visualization
+   304→   304→   304→  const QuantityBar = ({ quantity, max }: { quantity: number; max: number }) => {
+   305→   305→   305→    const pct = max > 0 ? Math.min(100, (quantity / max) * 100) : 0
+   306→   306→   306→    const barColor = quantity === 0 ? 'bg-macos-red' : pct < 30 ? 'bg-macos-orange' : 'bg-macos-green'
+   307→   307→   307→    return (
+   308→   308→   308→      <div className="flex items-center gap-2">
+   309→   309→   309→        <div className="w-16 h-1.5 rounded-full bg-secondary/80 overflow-hidden">
+   310→   310→   310→          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+   311→   311→   311→        </div>
+   312→   312→   312→        <span className="text-[13px] font-medium tracking-tight">{quantity}</span>
+   313→   313→   313→      </div>
+   314→   314→   314→    )
+   315→   315→   315→  }
+   316→   316→   316→
+   317→   317→   317→  return (
+   318→   318→   318→    <div className="space-y-4">
+   319→   319→   319→      {/* Header */}
+   320→   320→   320→      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   321→   321→   321→        <div>
+   322→   322→   322→          <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Inventory Management</h2>
+   323→   323→   323→          <p className="text-[11px] text-muted-foreground tracking-tight">Real-time stock tracking across warehouses and branches</p>
+   324→   324→   324→        </div>
+   325→   325→   325→        <div className="flex gap-2">
+   326→   326→   326→          <Button onClick={() => setTransferDialogOpen(true)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+   327→   327→   327→            <ArrowRightLeft className="size-3.5 mr-1.5" />
+   328→   328→   328→            New Transfer
+   329→   329→   329→          </Button>
+   330→   330→   330→        </div>
+   331→   331→   331→      </div>
+   332→   332→   332→
+   333→   333→   333→      {/* Stats Cards */}
+   334→   334→   334→      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+   335→   335→   335→        <div className="rounded-2xl macos-shadow p-4 bg-background">
+   336→   336→   336→          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Items</p>
+   337→   337→   337→          <p className="text-2xl font-bold tracking-tight">{totalItems}</p>
+   338→   338→   338→        </div>
+   339→   339→   339→        <div className="rounded-2xl macos-shadow p-4 bg-background">
+   340→   340→   340→          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Low Stock</p>
+   341→   341→   341→          <p className="text-2xl font-bold tracking-tight text-macos-orange">{lowStockItems.length}</p>
+   342→   342→   342→        </div>
+   343→   343→   343→        <div className="rounded-2xl macos-shadow p-4 bg-background">
+   344→   344→   344→          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Out of Stock</p>
+   345→   345→   345→          <p className="text-2xl font-bold tracking-tight text-macos-red">{outOfStockItems.length}</p>
+   346→   346→   346→        </div>
+   347→   347→   347→        <div className="rounded-2xl macos-shadow p-4 bg-background">
+   348→   348→   348→          <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Value</p>
+   349→   349→   349→          <p className="text-2xl font-bold tracking-tight">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+   350→   350→   350→        </div>
+   351→   351→   351→      </div>
+   352→   352→   352→
+   353→   353→   353→      {/* Error Alert */}
+   354→   354→   354→      {error && (
+   355→   355→   355→        <div className="flex items-center gap-2 rounded-xl bg-macos-red/10 p-3 text-[13px] text-macos-red macos-shadow">
+   356→   356→   356→          <AlertCircle className="size-3.5 shrink-0" />
+   357→   357→   357→          {error}
+   358→   358→   358→          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[11px] text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
+   359→   359→   359→            Dismiss
+   360→   360→   360→          </Button>
+   361→   361→   361→        </div>
+   362→   362→   362→      )}
+   363→   363→   363→
+   364→   364→   364→      {/* Segmented Tabs */}
+   365→   365→   365→      <div className="macos-segmented inline-flex p-0.5">
+   366→   366→   366→        {tabs.map((tab) => (
+   367→   367→   367→          <button
+   368→   368→   368→            key={tab.id}
+   369→   369→   369→            className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all ${activeTab === tab.id ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'}`}
+   370→   370→   370→            onClick={() => setActiveTab(tab.id)}
+   371→   371→   371→          >
+   372→   372→   372→            {tab.label}
+   373→   373→   373→          </button>
+   374→   374→   374→        ))}
+   375→   375→   375→      </div>
+   376→   376→   376→
+   377→   377→   377→      {/* Stock Overview Tab */}
+   378→   378→   378→      {activeTab === 'overview' && (
+   379→   379→   379→        <div className="space-y-4">
+   380→   380→   380→          {/* Filters */}
+   381→   381→   381→          <div className="rounded-2xl macos-shadow p-4 bg-background">
+   382→   382→   382→            <div className="flex flex-col gap-3 sm:flex-row">
+   383→   383→   383→              <div className="flex items-center gap-2 flex-1">
+   384→   384→   384→                <Building2 className="size-3.5 text-muted-foreground shrink-0" />
+   385→   385→   385→                <Select value={branchFilter} onValueChange={setBranchFilter}>
+   386→   386→   386→                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 w-full focus-visible:ring-1 focus-visible:ring-primary/30">
+   387→   387→   387→                    <SelectValue placeholder="All Branches" />
+   388→   388→   388→                  </SelectTrigger>
+   389→   389→   389→                  <SelectContent>
+   390→   390→   390→                    <SelectItem value="all">All Branches</SelectItem>
+   391→   391→   391→                    {branches.map((b) => (
+   392→   392→   392→                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+   393→   393→   393→                    ))}
+   394→   394→   394→                  </SelectContent>
+   395→   395→   395→                </Select>
+   396→   396→   396→              </div>
+   397→   397→   397→              <div className="flex items-center gap-2 flex-1">
+   398→   398→   398→                <WarehouseIcon className="size-3.5 text-muted-foreground shrink-0" />
+   399→   399→   399→                <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+   400→   400→   400→                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 w-full focus-visible:ring-1 focus-visible:ring-primary/30">
+   401→   401→   401→                    <SelectValue placeholder="All Warehouses" />
+   402→   402→   402→                  </SelectTrigger>
+   403→   403→   403→                  <SelectContent>
+   404→   404→   404→                    <SelectItem value="all">All Warehouses</SelectItem>
+   405→   405→   405→                    {warehouses.map((w) => (
+   406→   406→   406→                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+   407→   407→   407→                    ))}
+   408→   408→   408→                  </SelectContent>
+   409→   409→   409→                </Select>
+   410→   410→   410→              </div>
+   411→   411→   411→              <Button
+   412→   412→   412→                variant="ghost"
+   413→   413→   413→                size="sm"
+   414→   414→   414→                className={`rounded-lg text-[13px] h-8 ${lowStockOnly ? 'bg-macos-orange/10 text-macos-orange hover:bg-macos-orange/20' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
+   415→   415→   415→                onClick={() => setLowStockOnly(!lowStockOnly)}
+   416→   416→   416→              >
+   417→   417→   417→                <AlertTriangle className="size-3.5 mr-1.5" />
+   418→   418→   418→                Low Stock Only
+   419→   419→   419→              </Button>
+   420→   420→   420→            </div>
+   421→   421→   421→          </div>
+   422→   422→   422→
+   423→   423→   423→          {/* Inventory Table */}
+   424→   424→   424→          <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+   425→   425→   425→            {loading ? (
+   426→   426→   426→              <div className="p-4 space-y-3">
+   427→   427→   427→                {Array.from({ length: 5 }).map((_, i) => (
+   428→   428→   428→                  <Skeleton key={i} className="h-10 w-full" />
+   429→   429→   429→                ))}
+   430→   430→   430→              </div>
+   431→   431→   431→            ) : items.length === 0 ? (
+   432→   432→   432→              <div className="flex flex-col items-center justify-center py-16 text-center">
+   433→   433→   433→                <Package className="size-12 text-muted-foreground/30 mb-3" />
+   434→   434→   434→                <p className="text-[13px] text-muted-foreground">No inventory items found</p>
+   435→   435→   435→              </div>
+   436→   436→   436→            ) : (
+   437→   437→   437→              <div className="overflow-x-auto">
+   438→   438→   438→                <Table>
+   439→   439→   439→                  <TableHeader>
+   440→   440→   440→                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+   441→   441→   441→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
+   442→   442→   442→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Warehouse</TableHead>
+   443→   443→   443→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Branch</TableHead>
+   444→   444→   444→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Quantity</TableHead>
+   445→   445→   445→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell text-right">Reorder</TableHead>
+   446→   446→   446→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+   447→   447→   447→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell text-right">Cost</TableHead>
+   448→   448→   448→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell text-right">Selling</TableHead>
+   449→   449→   449→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   450→   450→   450→                    </TableRow>
+   451→   451→   451→                  </TableHeader>
+   452→   452→   452→                  <TableBody>
+   453→   453→   453→                    {items.map((item) => {
+   454→   454→   454→                      const status = getStockStatus(item)
+   455→   455→   455→                      return (
+   456→   456→   456→                        <TableRow key={item.id} className={`hover:bg-secondary/50 border-b border-border/30 ${item.quantity === 0 ? 'bg-macos-red/5' : item.quantity <= item.reorderLevel ? 'bg-macos-orange/5' : ''}`}>
+   457→   457→   457→                          <TableCell className="text-[13px] font-medium max-w-[200px] truncate tracking-tight">
+   458→   458→   458→                            {getProductName(item)}
+   459→   459→   459→                          </TableCell>
+   460→   460→   460→                          <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] tracking-tight">
+   461→   461→   461→                            {item.warehouse?.name || '—'}
+   462→   462→   462→                          </TableCell>
+   463→   463→   463→                          <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight">
+   464→   464→   464→                            {item.branch?.name || '—'}
+   465→   465→   465→                          </TableCell>
+   466→   466→   466→                          <TableCell>
+   467→   467→   467→                            <QuantityBar quantity={item.quantity} max={item.maxStockLevel || item.reorderLevel * 3} />
+   468→   468→   468→                          </TableCell>
+   469→   469→   469→                          <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-[13px] tracking-tight">{item.reorderLevel}</TableCell>
+   470→   470→   470→                          <TableCell>
+   471→   471→   471→                            <span className={`inline-flex items-center gap-1.5 text-[13px] font-medium ${status.textClass}`}>
+   472→   472→   472→                              <span className={`inline-block size-2 rounded-full ${status.dotClass}`} />
+   473→   473→   473→                              {status.label}
+   474→   474→   474→                            </span>
+   475→   475→   475→                          </TableCell>
+   476→   476→   476→                          <TableCell className="hidden lg:table-cell text-right text-[13px] tracking-tight">${item.costPrice.toFixed(2)}</TableCell>
+   477→   477→   477→                          <TableCell className="hidden lg:table-cell text-right text-[13px] tracking-tight">${item.sellingPrice.toFixed(2)}</TableCell>
+   478→   478→   478→                          <TableCell className="text-right">
+   479→   479→   479→                            <Button variant="ghost" size="sm" onClick={() => handleAdjust(item)} className="h-7 text-[13px] rounded-md hover:bg-secondary">
+   480→   480→   480→                              <Settings2 className="size-3 mr-1" />
+   481→   481→   481→                              Adjust
+   482→   482→   482→                            </Button>
+   483→   483→   483→                          </TableCell>
+   484→   484→   484→                        </TableRow>
+   485→   485→   485→                      )
+   486→   486→   486→                    })}
+   487→   487→   487→                  </TableBody>
+   488→   488→   488→                </Table>
+   489→   489→   489→              </div>
+   490→   490→   490→            )}
+   491→   491→   491→          </div>
+   492→   492→   492→        </div>
+   493→   493→   493→      )}
+   494→   494→   494→
+   495→   495→   495→      {/* Low Stock Alerts Tab */}
+   496→   496→   496→      {activeTab === 'low-stock' && (
+   497→   497→   497→        <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+   498→   498→   498→          {lowStockItems.length === 0 ? (
+   499→   499→   499→            <div className="flex flex-col items-center justify-center py-16 text-center">
+   500→   500→   500→              <Package className="size-12 text-macos-green/30 mb-3" />
+   501→   501→   501→              <p className="text-[13px] text-macos-green font-medium">All items are well stocked!</p>
+   502→   502→   502→            </div>
+   503→   503→   503→          ) : (
+   504→   504→   504→            <div className="overflow-x-auto">
+   505→   505→   505→              <Table>
+   506→   506→   506→                <TableHeader>
+   507→   507→   507→                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+   508→   508→   508→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
+   509→   509→   509→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Current Qty</TableHead>
+   510→   510→   510→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Reorder Level</TableHead>
+   511→   511→   511→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Warehouse</TableHead>
+   512→   512→   512→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   513→   513→   513→                  </TableRow>
+   514→   514→   514→                </TableHeader>
+   515→   515→   515→                <TableBody>
+   516→   516→   516→                  {lowStockItems.map((item) => (
+   517→   517→   517→                    <TableRow key={item.id} className={`hover:bg-secondary/50 border-b border-border/30 ${item.quantity === 0 ? 'bg-macos-red/5' : 'bg-macos-orange/5'}`}>
+   518→   518→   518→                      <TableCell className="text-[13px] font-medium tracking-tight">{getProductName(item)}</TableCell>
+   519→   519→   519→                      <TableCell className="text-right text-[13px] font-bold text-macos-red tracking-tight">{item.quantity}</TableCell>
+   520→   520→   520→                      <TableCell className="text-right text-muted-foreground text-[13px] tracking-tight">{item.reorderLevel}</TableCell>
+   521→   521→   521→                      <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight">{item.warehouse?.name || '—'}</TableCell>
+   522→   522→   522→                      <TableCell className="text-right">
+   523→   523→   523→                        <Button variant="ghost" size="sm" onClick={() => handleAdjust(item)} className="h-7 text-[13px] rounded-md hover:bg-secondary">
+   524→   524→   524→                          <Settings2 className="size-3 mr-1" />
+   525→   525→   525→                          Restock
+   526→   526→   526→                        </Button>
+   527→   527→   527→                      </TableCell>
+   528→   528→   528→                    </TableRow>
+   529→   529→   529→                  ))}
+   530→   530→   530→                </TableBody>
+   531→   531→   531→              </Table>
+   532→   532→   532→            </div>
+   533→   533→   533→          )}
+   534→   534→   534→        </div>
+   535→   535→   535→      )}
+   536→   536→   536→
+   537→   537→   537→      {/* Warehouses Tab */}
+   538→   538→   538→      {activeTab === 'warehouses' && (
+   539→   539→   539→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   540→   540→   540→          {warehouses.length === 0 ? (
+   541→   541→   541→            <div className="sm:col-span-2 lg:col-span-3 rounded-2xl macos-shadow bg-background flex flex-col items-center justify-center py-16 text-center">
+   542→   542→   542→              <WarehouseIcon className="size-12 text-muted-foreground/30 mb-3" />
+   543→   543→   543→              <p className="text-[13px] text-muted-foreground">No warehouses found</p>
+   544→   544→   544→            </div>
+   545→   545→   545→          ) : (
+   546→   546→   546→            warehouses.map((wh) => {
+   547→   547→   547→              const inv = wh.inventory || []
+   548→   548→   548→              const totalItems = inv.length
+   549→   549→   549→              const totalQty = inv.reduce((s, i) => s + i.quantity, 0)
+   550→   550→   550→              const totalValue = inv.reduce((s, i) => s + i.quantity * i.costPrice, 0)
+   551→   551→   551→              return (
+   552→   552→   552→                <div key={wh.id} className="rounded-2xl macos-shadow p-4 bg-background">
+   553→   553→   553→                  <div className="flex items-center justify-between mb-3">
+   554→   554→   554→                    <h3 className="text-[13px] font-semibold tracking-tight">{wh.name}</h3>
+   555→   555→   555→                    <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-teal/10 text-macos-teal">{wh.code}</span>
+   556→   556→   556→                  </div>
+   557→   557→   557→                  {wh.branch && (
+   558→   558→   558→                    <p className="text-[11px] text-muted-foreground mb-3 tracking-tight">{wh.branch.name}</p>
+   559→   559→   559→                  )}
+   560→   560→   560→                  <div className="space-y-2">
+   561→   561→   561→                    <div className="flex items-center justify-between text-[13px] tracking-tight">
+   562→   562→   562→                      <span className="text-muted-foreground">Products</span>
+   563→   563→   563→                      <span className="font-medium">{totalItems}</span>
+   564→   564→   564→                    </div>
+   565→   565→   565→                    <div className="flex items-center justify-between text-[13px] tracking-tight">
+   566→   566→   566→                      <span className="text-muted-foreground">Total Quantity</span>
+   567→   567→   567→                      <span className="font-medium">{totalQty}</span>
+   568→   568→   568→                    </div>
+   569→   569→   569→                    <div className="flex items-center justify-between text-[13px] tracking-tight">
+   570→   570→   570→                      <span className="text-muted-foreground">Total Value</span>
+   571→   571→   571→                      <span className="font-medium">${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+   572→   572→   572→                    </div>
+   573→   573→   573→                  </div>
+   574→   574→   574→                </div>
+   575→   575→   575→              )
+   576→   576→   576→            })
+   577→   577→   577→          )}
+   578→   578→   578→        </div>
+   579→   579→   579→      )}
+   580→   580→   580→
+   581→   581→   581→      {/* Transfers Tab */}
+   582→   582→   582→      {activeTab === 'transfers' && (
+   583→   583→   583→        <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+   584→   584→   584→          <div className="p-4 flex items-center justify-between border-b border-border/30">
+   585→   585→   585→            <div>
+   586→   586→   586→              <h3 className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+   587→   587→   587→                <ArrowRightLeft className="size-3.5" />
+   588→   588→   588→                Stock Transfers ({transfers.length})
+   589→   589→   589→              </h3>
+   590→   590→   590→              <p className="text-[11px] text-muted-foreground tracking-tight">Track stock movements between branches</p>
+   591→   591→   591→            </div>
+   592→   592→   592→            <Button size="sm" onClick={() => setTransferDialogOpen(true)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-7">
+   593→   593→   593→              <Plus className="size-3 mr-1" />
+   594→   594→   594→              New Transfer
+   595→   595→   595→            </Button>
+   596→   596→   596→          </div>
+   597→   597→   597→          {transfers.length === 0 ? (
+   598→   598→   598→            <div className="flex flex-col items-center justify-center py-16 text-center">
+   599→   599→   599→              <ArrowRightLeft className="size-12 text-muted-foreground/30 mb-3" />
+   600→   600→   600→              <p className="text-[13px] text-muted-foreground">No transfers recorded</p>
+   601→   601→   601→            </div>
+   602→   602→   602→          ) : (
+   603→   603→   603→            <div className="overflow-x-auto">
+   604→   604→   604→              <Table>
+   605→   605→   605→                <TableHeader>
+   606→   606→   606→                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+   607→   607→   607→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">From</TableHead>
+   608→   608→   608→                    <TableHead className="w-8" />
+   609→   609→   609→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">To</TableHead>
+   610→   610→   610→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+   611→   611→   611→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Date</TableHead>
+   612→   612→   612→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Notes</TableHead>
+   613→   613→   613→                  </TableRow>
+   614→   614→   614→                </TableHeader>
+   615→   615→   615→                <TableBody>
+   616→   616→   616→                  {transfers.map((t) => (
+   617→   617→   617→                    <TableRow key={t.id} className="hover:bg-secondary/50 border-b border-border/30">
+   618→   618→   618→                      <TableCell className="text-[13px] font-medium tracking-tight">{t.fromBranch.name}</TableCell>
+   619→   619→   619→                      <TableCell><ChevronRight className="size-3.5 text-muted-foreground" /></TableCell>
+   620→   620→   620→                      <TableCell className="text-[13px] font-medium tracking-tight">{t.toBranch.name}</TableCell>
+   621→   621→   621→                      <TableCell>{getTransferStatusBadge(t.status)}</TableCell>
+   622→   622→   622→                      <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight">
+   623→   623→   623→                        {new Date(t.createdAt).toLocaleDateString()}
+   624→   624→   624→                      </TableCell>
+   625→   625→   625→                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] max-w-[200px] truncate tracking-tight">
+   626→   626→   626→                        {t.notes || '—'}
+   627→   627→   627→                      </TableCell>
+   628→   628→   628→                    </TableRow>
+   629→   629→   629→                  ))}
+   630→   630→   630→                </TableBody>
+   631→   631→   631→              </Table>
+   632→   632→   632→            </div>
+   633→   633→   633→          )}
+   634→   634→   634→        </div>
+   635→   635→   635→      )}
+   636→   636→   636→
+   637→   637→   637→      {/* Adjust Stock Dialog */}
+   638→   638→   638→      <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
+   639→   639→   639→        <DialogContent className="sm:max-w-[425px] rounded-2xl macos-shadow-elevated">
+   640→   640→   640→          <DialogHeader>
+   641→   641→   641→            <DialogTitle className="text-[13px] font-semibold tracking-tight">Adjust Stock</DialogTitle>
+   642→   642→   642→            <DialogDescription className="text-[11px]">
+   643→   643→   643→              {adjustingItem ? `Adjusting stock for ${getProductName(adjustingItem)}` : ''}
+   644→   644→   644→            </DialogDescription>
+   645→   645→   645→          </DialogHeader>
+   646→   646→   646→          {adjustingItem && (
+   647→   647→   647→            <div className="space-y-4 py-4">
+   648→   648→   648→              <div className="flex items-center justify-between rounded-xl bg-secondary/50 p-3">
+   649→   649→   649→                <span className="text-[13px] text-muted-foreground tracking-tight">Current Quantity</span>
+   650→   650→   650→                <span className="text-lg font-bold tracking-tight">{adjustingItem.quantity}</span>
+   651→   651→   651→              </div>
+   652→   652→   652→              <div className="space-y-1.5">
+   653→   653→   653→                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Operation</Label>
+   654→   654→   654→                <Select value={adjustOperation} onValueChange={setAdjustOperation}>
+   655→   655→   655→                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   656→   656→   656→                    <SelectValue />
+   657→   657→   657→                  </SelectTrigger>
+   658→   658→   658→                  <SelectContent>
+   659→   659→   659→                    <SelectItem value="set">Set to value</SelectItem>
+   660→   660→   660→                    <SelectItem value="add">Add to current</SelectItem>
+   661→   661→   661→                    <SelectItem value="subtract">Subtract from current</SelectItem>
+   662→   662→   662→                  </SelectContent>
+   663→   663→   663→                </Select>
+   664→   664→   664→              </div>
+   665→   665→   665→              <div className="space-y-1.5">
+   666→   666→   666→                <Label htmlFor="adjust-qty" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Quantity</Label>
+   667→   667→   667→                <Input
+   668→   668→   668→                  id="adjust-qty"
+   669→   669→   669→                  type="number"
+   670→   670→   670→                  min="0"
+   671→   671→   671→                  value={adjustQty}
+   672→   672→   672→                  onChange={(e) => setAdjustQty(e.target.value)}
+   673→   673→   673→                  placeholder="Enter quantity"
+   674→   674→   674→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   675→   675→   675→                />
+   676→   676→   676→              </div>
+   677→   677→   677→              {adjustQty && (
+   678→   678→   678→                <div className="rounded-xl bg-secondary/50 p-3 text-[13px] tracking-tight">
+   679→   679→   679→                  <span className="text-muted-foreground">New quantity will be: </span>
+   680→   680→   680→                  <span className="font-bold">
+   681→   681→   681→                    {adjustOperation === 'add'
+   682→   682→   682→                      ? adjustingItem.quantity + parseInt(adjustQty || '0')
+   683→   683→   683→                      : adjustOperation === 'subtract'
+   684→   684→   684→                      ? Math.max(0, adjustingItem.quantity - parseInt(adjustQty || '0'))
+   685→   685→   685→                      : parseInt(adjustQty || '0')}
+   686→   686→   686→                  </span>
+   687→   687→   687→                </div>
+   688→   688→   688→              )}
+   689→   689→   689→            </div>
+   690→   690→   690→          )}
+   691→   691→   691→          <DialogFooter className="gap-2">
+   692→   692→   692→            <Button variant="ghost" onClick={() => setAdjustDialogOpen(false)} disabled={saving} className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8">
+   693→   693→   693→              Cancel
+   694→   694→   694→            </Button>
+   695→   695→   695→            <Button onClick={handleAdjustSave} disabled={saving || !adjustQty} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+   696→   696→   696→              {saving ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : null}
+   697→   697→   697→              Apply Adjustment
+   698→   698→   698→            </Button>
+   699→   699→   699→          </DialogFooter>
+   700→   700→   700→        </DialogContent>
+   701→   701→   701→      </Dialog>
+   702→   702→   702→
+   703→   703→   703→      {/* Create Transfer Dialog */}
+   704→   704→   704→      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+   705→   705→   705→        <DialogContent className="sm:max-w-[425px] rounded-2xl macos-shadow-elevated">
+   706→   706→   706→          <DialogHeader>
+   707→   707→   707→            <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Stock Transfer</DialogTitle>
+   708→   708→   708→            <DialogDescription className="text-[11px]">Transfer stock between branches</DialogDescription>
+   709→   709→   709→          </DialogHeader>
+   710→   710→   710→          <div className="space-y-4 py-4">
+   711→   711→   711→            <div className="space-y-1.5">
+   712→   712→   712→              <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">From Branch</Label>
+   713→   713→   713→              <Select value={transferFrom} onValueChange={setTransferFrom}>
+   714→   714→   714→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   715→   715→   715→                  <SelectValue placeholder="Select source branch" />
+   716→   716→   716→                </SelectTrigger>
+   717→   717→   717→                <SelectContent>
+   718→   718→   718→                  {branches.map((b) => (
+   719→   719→   719→                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+   720→   720→   720→                  ))}
+   721→   721→   721→                </SelectContent>
+   722→   722→   722→              </Select>
+   723→   723→   723→            </div>
+   724→   724→   724→            <div className="space-y-1.5">
+   725→   725→   725→              <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">To Branch</Label>
+   726→   726→   726→              <Select value={transferTo} onValueChange={setTransferTo}>
+   727→   727→   727→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   728→   728→   728→                  <SelectValue placeholder="Select destination branch" />
+   729→   729→   729→                </SelectTrigger>
+   730→   730→   730→                <SelectContent>
+   731→   731→   731→                  {branches.map((b) => (
+   732→   732→   732→                    <SelectItem key={b.id} value={b.id} disabled={b.id === transferFrom}>
+   733→   733→   733→                      {b.name}
+   734→   734→   734→                    </SelectItem>
+   735→   735→   735→                  ))}
+   736→   736→   736→                </SelectContent>
+   737→   737→   737→              </Select>
+   738→   738→   738→            </div>
+   739→   739→   739→            <div className="space-y-1.5">
+   740→   740→   740→              <Label htmlFor="transfer-notes" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Notes</Label>
+   741→   741→   741→              <Textarea
+   742→   742→   742→                id="transfer-notes"
+   743→   743→   743→                value={transferNotes}
+   744→   744→   744→                onChange={(e) => setTransferNotes(e.target.value)}
+   745→   745→   745→                placeholder="Optional notes about this transfer..."
+   746→   746→   746→                rows={3}
+   747→   747→   747→                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+   748→   748→   748→              />
+   749→   749→   749→            </div>
+   750→   750→   750→          </div>
+   751→   751→   751→          <DialogFooter className="gap-2">
+   752→   752→   752→            <Button variant="ghost" onClick={() => setTransferDialogOpen(false)} disabled={saving} className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8">
+   753→   753→   753→              Cancel
+   754→   754→   754→            </Button>
+   755→   755→   755→            <Button onClick={handleTransferCreate} disabled={saving || !transferFrom || !transferTo || transferFrom === transferTo} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+   756→   756→   756→              {saving ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : null}
+   757→   757→   757→              Create Transfer
+   758→   758→   758→            </Button>
+   759→   759→   759→          </DialogFooter>
+   760→   760→   760→        </DialogContent>
+   761→   761→   761→      </Dialog>
+   762→   762→   762→    </div>
+   763→   763→   763→  )
+   764→   764→   764→}
+   765→   765→   765→

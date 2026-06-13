@@ -85,12 +85,12 @@ function AppSidebar() {
               className="hover:bg-sidebar-accent rounded-lg"
               onClick={() => setActiveModule('dashboard')}
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-[10px] macos-gradient text-white shadow-sm">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-[10px] macos-gradient-golden text-white shadow-sm">
                 <BookOpen className="size-4" strokeWidth={2.5} />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold text-[13px] tracking-tight">BookFlow OS</span>
-                <span className="truncate text-[11px] text-sidebar-foreground/50">Enterprise Platform</span>
+                <span className="truncate text-[11px] text-sidebar-foreground/50">Golden Gate Edition</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -158,7 +158,7 @@ function AppSidebar() {
               <Sparkles className="size-3 text-sidebar-primary" />
               <span className="text-[11px] font-semibold text-sidebar-foreground/70">ApexFlow Ecosystem</span>
             </div>
-            <p className="text-[10px] text-sidebar-foreground/40">v27.0 · Retina</p>
+            <p className="text-[10px] text-sidebar-foreground/40">v27.0 · Golden Gate</p>
           </div>
         </div>
       </SidebarFooter>
@@ -343,7 +343,7 @@ function AppFooter() {
             Online
           </span>
           <span className="opacity-30">·</span>
-          <span>v27.0</span>
+          <span>v27.0 · GG</span>
         </div>
       </div>
     </footer>

@@ -2,8 +2,8 @@
 
 import DashboardModule from '@/components/modules/dashboard'
 import BookCatalogModule from '@/components/modules/book-catalog'
-import AuthorsModule from '@/components/modules/authors'
-import PublishersModule from '@/components/modules/publishers'
+import { AuthorsModule } from '@/components/modules/authors'
+import { PublishersModule } from '@/components/modules/publishers'
 import { StationeryModule } from '@/components/modules/stationery'
 import { InventoryModule } from '@/components/modules/inventory'
 import { RetailPOSModule } from '@/components/modules/retail-pos'

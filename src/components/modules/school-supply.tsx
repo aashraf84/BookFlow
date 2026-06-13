@@ -19,12 +19,12 @@ import {
   X,
   DollarSign,
   Eye,
+  Users,
+  School as SchoolIcon,
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useAppStore } from '@/store/app-store'
 
 // ==================== TYPES ====================
 
@@ -122,6 +123,9 @@ interface StationeryProduct {
 // ==================== SCHOOL SUPPLY MODULE ====================
 
 export function SchoolSupplyModule() {
+  const { authUser } = useAppStore()
+  const isViewOnly = authUser?.isViewOnly ?? false
+
   const [activeTab, setActiveTab] = React.useState('schools')
   const tabs = [
     { value: 'schools', label: 'Schools', icon: GraduationCap },
@@ -131,19 +135,16 @@ export function SchoolSupplyModule() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
-          <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
-        </div>
+      {/* Page Header */}
+      <div className="macos-page-header">
         <div>
-          <h2 className="text-[13px] font-semibold tracking-tight">School Supply</h2>
-          <p className="text-[11px] text-muted-foreground">
-            Manage schools, contracts, and academic packages
-          </p>
+          <h2 className="macos-page-title">School Supply</h2>
+          <p className="macos-page-subtitle">Manage schools, contracts & academic packages</p>
         </div>
       </div>
 
-      <div className="macos-segmented inline-flex p-0.5">
+      {/* Filter Bar Tabs */}
+      <div className="macos-filter-bar">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.value
@@ -151,9 +152,7 @@ export function SchoolSupplyModule() {
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`px-3 py-1 text-[12px] font-medium rounded-md flex items-center gap-1.5 transition-none ${
-                isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`macos-filter-item flex items-center gap-1.5 ${isActive ? 'macos-filter-item-active' : ''}`}
             >
               <Icon className="size-3.5" strokeWidth={1.5} />
               {tab.label}
@@ -163,9 +162,9 @@ export function SchoolSupplyModule() {
       </div>
 
       <div className="mt-4">
-        {activeTab === 'schools' && <SchoolsTab />}
-        {activeTab === 'contracts' && <ContractsTab />}
-        {activeTab === 'packages' && <PackagesTab />}
+        {activeTab === 'schools' && <SchoolsTab isViewOnly={isViewOnly} />}
+        {activeTab === 'contracts' && <ContractsTab isViewOnly={isViewOnly} />}
+        {activeTab === 'packages' && <PackagesTab isViewOnly={isViewOnly} />}
       </div>
     </div>
   )
@@ -173,7 +172,7 @@ export function SchoolSupplyModule() {
 
 // ==================== SCHOOLS TAB ====================
 
-function SchoolsTab() {
+function SchoolsTab({ isViewOnly }: { isViewOnly: boolean }) {
   const [schools, setSchools] = React.useState<School[]>([])
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState('')
@@ -207,67 +206,120 @@ function SchoolsTab() {
     }
   }
 
+  const totalContracts = schools.reduce((s, sc) => s + (sc._count?.contracts || 0), 0)
+  const totalPackages = schools.reduce((s, sc) => s + (sc._count?.packages || 0), 0)
+  const activeSchools = schools.filter((s) => s.isActive).length
+
   return (
     <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+              <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Schools</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight">{schools.length}</p>
+            </div>
+          </div>
+        </div>
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
+              <SchoolIcon className="size-4 text-macos-green" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-green">{activeSchools}</p>
+            </div>
+          </div>
+        </div>
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-macos-purple/10 flex items-center justify-center">
+              <FileText className="size-4 text-macos-purple" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Contracts</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight">{totalContracts}</p>
+            </div>
+          </div>
+        </div>
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+              <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Packages</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight">{totalPackages}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search & Add */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="relative flex-1 w-full sm:max-w-sm">
-          <Search className="absolute left-2.5 top-1.5 size-3.5 text-muted-foreground" />
+        <div className="macos-search flex items-center flex-1 w-full sm:max-w-sm">
+          <Search className="size-3.5 text-muted-foreground ml-2.5 shrink-0" />
           <Input
             placeholder="Search schools..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+            className="border-0 bg-transparent text-[13px] h-8 pl-2 focus-visible:ring-0 focus-visible:ring-offset-0"
           />
         </div>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-          <Plus className="size-3.5" strokeWidth={2} /> Add School
-        </Button>
+        {!isViewOnly && (
+          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0">
+            <Plus className="size-3.5" strokeWidth={2} /> Add School
+          </Button>
+        )}
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
-              <CardContent className="p-4">
-                <div className="h-4 bg-muted rounded w-2/3 mb-3" />
-                <div className="h-3 bg-muted rounded w-1/2 mb-2" />
-                <div className="h-3 bg-muted rounded w-3/4" />
-              </CardContent>
-            </Card>
+            <div key={i} className="macos-card macos-shadow-card p-4 animate-pulse">
+              <div className="h-4 bg-muted rounded w-2/3 mb-3" />
+              <div className="h-3 bg-muted rounded w-1/2 mb-2" />
+              <div className="h-3 bg-muted rounded w-3/4" />
+            </div>
           ))}
         </div>
       ) : schools.length === 0 ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <GraduationCap className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] text-muted-foreground">No schools found</p>
-            <p className="text-[11px] text-muted-foreground">Add your first school to get started</p>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card">
+          <div className="macos-empty">
+            <GraduationCap className="size-12 text-muted-foreground/30 mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] font-medium text-muted-foreground">No schools found</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Add your first school to get started</p>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {schools.map((school) => (
-            <Card
+            <div
               key={school.id}
-              className="rounded-2xl macos-shadow border-0 macos-card-hover cursor-pointer group"
+              className="macos-card macos-shadow-card macos-card-hover cursor-pointer group"
               onClick={() => setSelectedSchool(school)}
             >
-              <CardContent className="p-4">
+              <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+                    <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
                       <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-[13px] leading-tight tracking-tight">{school.name}</h3>
                       {school.academicSession && (
-                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
+                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple inline-block mt-0.5">
                           {school.academicSession}
-                        </Badge>
+                        </span>
                       )}
                     </div>
                   </div>
-                  <Badge
+                  <span
                     className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
                       school.isActive
                         ? 'bg-macos-green/10 text-macos-green'
@@ -275,7 +327,7 @@ function SchoolsTab() {
                     }`}
                   >
                     {school.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
+                  </span>
                 </div>
                 <div className="space-y-1.5 text-[11px] text-muted-foreground">
                   {school.address && (
@@ -305,33 +357,35 @@ function SchoolsTab() {
                   <span className="text-muted-foreground">
                     {school._count?.packages || 0} packages
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-[11px] opacity-0 group-hover:opacity-100 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDelete(school.id)
-                    }}
-                  >
-                    <Trash2 className="size-3" strokeWidth={1.5} />
-                  </Button>
+                  {!isViewOnly && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[11px] opacity-0 group-hover:opacity-100 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(school.id)
+                      }}
+                    >
+                      <Trash2 className="size-3" strokeWidth={1.5} />
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}
 
       <AddSchoolDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchSchools} />
-      <SchoolDetailDialog school={selectedSchool} onOpenChange={(open) => !open && setSelectedSchool(null)} onSuccess={fetchSchools} />
+      <SchoolDetailDialog school={selectedSchool} onOpenChange={(open) => !open && setSelectedSchool(null)} onSuccess={fetchSchools} isViewOnly={isViewOnly} />
     </div>
   )
 }
 
 // ==================== CONTRACTS TAB ====================
 
-function ContractsTab() {
+function ContractsTab({ isViewOnly }: { isViewOnly: boolean }) {
   const [contracts, setContracts] = React.useState<SchoolContract[]>([])
   const [schools, setSchools] = React.useState<School[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -387,77 +441,119 @@ function ContractsTab() {
         return 'bg-macos-orange/10 text-macos-orange'
       case 'cancelled':
         return 'bg-macos-red/10 text-macos-red'
+      case 'pending':
+        return 'bg-macos-orange/10 text-macos-orange'
+      case 'confirmed':
+        return 'bg-macos-blue/10 text-macos-blue'
       default:
         return 'bg-secondary text-secondary-foreground'
     }
   }
 
+  const totalValue = contracts.reduce((s, c) => s + c.totalValue, 0)
+  const activeContracts = contracts.filter((c) => c.status === 'active').length
+
   return (
     <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-macos-purple/10 flex items-center justify-center">
+              <FileText className="size-4 text-macos-purple" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Contracts</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight">{contracts.length}</p>
+            </div>
+          </div>
+        </div>
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
+              <Calendar className="size-4 text-macos-green" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-green">{activeContracts}</p>
+            </div>
+          </div>
+        </div>
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-gg-golden/10 flex items-center justify-center">
+              <DollarSign className="size-4 text-gg-golden" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Value</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight">${totalValue.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{contracts.length} contracts</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-          <Plus className="size-3.5" strokeWidth={2} /> Create Contract
-        </Button>
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{contracts.length} contracts</p>
+        {!isViewOnly && (
+          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+            <Plus className="size-3.5" strokeWidth={2} /> Create Contract
+          </Button>
+        )}
       </div>
 
       {loading ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card p-6">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
       ) : contracts.length === 0 ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] text-muted-foreground">No contracts found</p>
-            <p className="text-[11px] text-muted-foreground">Create your first school contract</p>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card">
+          <div className="macos-empty">
+            <FileText className="size-12 text-muted-foreground/30 mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] font-medium text-muted-foreground">No contracts found</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Create your first school contract</p>
+          </div>
+        </div>
       ) : (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="p-0">
-            <ScrollArea className="max-h-[500px]">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">School</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Session</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Value</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Period</TableHead>
+        <div className="macos-card macos-shadow-card overflow-hidden">
+          <ScrollArea className="max-h-[500px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">School</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Session</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Value</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Period</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {contracts.map((contract) => (
+                  <TableRow key={contract.id} className="macos-table-row">
+                    <TableCell className="font-medium text-[13px]">{contract.title}</TableCell>
+                    <TableCell className="text-[13px]">{contract.school?.name || '—'}</TableCell>
+                    <TableCell className="text-[13px]">{contract.academicSession || '—'}</TableCell>
+                    <TableCell className="text-[13px] font-medium">${contract.totalValue.toLocaleString()}</TableCell>
+                    <TableCell>
+                      <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getStatusBadge(contract.status)}`}>
+                        {contract.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-[11px] text-muted-foreground">
+                      {contract.startDate
+                        ? `${new Date(contract.startDate).toLocaleDateString()} - ${contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '...'}`
+                        : '—'}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {contracts.map((contract) => (
-                    <TableRow key={contract.id} className="hover:bg-secondary/50">
-                      <TableCell className="font-medium text-[13px]">{contract.title}</TableCell>
-                      <TableCell className="text-[13px]">{contract.school?.name || '—'}</TableCell>
-                      <TableCell className="text-[13px]">{contract.academicSession || '—'}</TableCell>
-                      <TableCell className="text-[13px]">${contract.totalValue.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getStatusBadge(contract.status)}`}>
-                          {contract.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-[11px] text-muted-foreground">
-                        {contract.startDate
-                          ? `${new Date(contract.startDate).toLocaleDateString()} - ${contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '...'}`
-                          : '—'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
       )}
 
       <CreateContractDialog
@@ -472,7 +568,7 @@ function ContractsTab() {
 
 // ==================== PACKAGES TAB ====================
 
-function PackagesTab() {
+function PackagesTab({ isViewOnly }: { isViewOnly: boolean }) {
   const [packages, setPackages] = React.useState<AcademicPackage[]>([])
   const [schools, setSchools] = React.useState<School[]>([])
   const [books, setBooks] = React.useState<Book[]>([])
@@ -533,55 +629,94 @@ function PackagesTab() {
     fetchReferenceData()
   }, [fetchPackages, fetchReferenceData])
 
+  const totalPackageValue = packages.reduce((s, p) => s + p.totalPrice, 0)
+
   return (
     <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+              <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Packages</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight">{packages.length}</p>
+            </div>
+          </div>
+        </div>
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
+              <BookOpen className="size-4 text-macos-green" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Active</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight text-macos-green">{packages.filter((p) => p.isActive).length}</p>
+            </div>
+          </div>
+        </div>
+        <div className="macos-stat macos-shadow-card">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-xl bg-gg-golden/10 flex items-center justify-center">
+              <DollarSign className="size-4 text-gg-golden" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Value</p>
+              <p className="text-[24px] font-bold tracking-tight leading-tight">${totalPackageValue.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{packages.length} academic packages</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-          <Plus className="size-3.5" strokeWidth={2} /> Create Package
-        </Button>
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{packages.length} academic packages</p>
+        {!isViewOnly && (
+          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+            <Plus className="size-3.5" strokeWidth={2} /> Create Package
+          </Button>
+        )}
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
-              <CardContent className="p-4">
-                <div className="h-4 bg-muted rounded w-2/3 mb-3" />
-                <div className="h-3 bg-muted rounded w-1/2 mb-2" />
-                <div className="h-3 bg-muted rounded w-3/4" />
-              </CardContent>
-            </Card>
+            <div key={i} className="macos-card macos-shadow-card p-4 animate-pulse">
+              <div className="h-4 bg-muted rounded w-2/3 mb-3" />
+              <div className="h-3 bg-muted rounded w-1/2 mb-2" />
+              <div className="h-3 bg-muted rounded w-3/4" />
+            </div>
           ))}
         </div>
       ) : packages.length === 0 ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Package className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] text-muted-foreground">No packages found</p>
-            <p className="text-[11px] text-muted-foreground">Create your first academic package</p>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card">
+          <div className="macos-empty">
+            <Package className="size-12 text-muted-foreground/30 mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] font-medium text-muted-foreground">No packages found</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Create your first academic package</p>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {packages.map((pkg) => (
-            <Card
+            <div
               key={pkg.id}
-              className="rounded-2xl macos-shadow border-0 macos-card-hover cursor-pointer"
+              className="macos-card macos-shadow-card macos-card-hover cursor-pointer"
               onClick={() => setSelectedPackage(pkg)}
             >
-              <CardContent className="p-4">
+              <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2.5">
-                    <div className="size-8 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+                    <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
                       <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-[13px] tracking-tight">{pkg.name}</h3>
                       {pkg.grade && (
-                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-blue/10 text-macos-blue">
+                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-blue/10 text-macos-blue inline-block mt-0.5">
                           Grade {pkg.grade}
-                        </Badge>
+                        </span>
                       )}
                     </div>
                   </div>
@@ -627,8 +762,8 @@ function PackagesTab() {
                     <Eye className="size-3 mr-1" strokeWidth={1.5} /> View
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -699,14 +834,14 @@ function AddSchoolDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-tight">Add School</DialogTitle>
-          <DialogDescription className="text-[11px]">Register a new school for supply programs</DialogDescription>
+          <DialogTitle className="macos-section-title">Add School</DialogTitle>
+          <DialogDescription className="text-[12px]">Register a new school for supply programs</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-medium text-muted-foreground">Name *</Label>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -715,8 +850,8 @@ function AddSchoolDialog({
               required
             />
           </div>
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-medium text-muted-foreground">Address</Label>
             <Input
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -725,8 +860,8 @@ function AddSchoolDialog({
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Phone</Label>
               <Input
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -734,8 +869,8 @@ function AddSchoolDialog({
                 className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Email</Label>
               <Input
                 type="email"
                 value={form.email}
@@ -746,8 +881,8 @@ function AddSchoolDialog({
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contact Person</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Contact Person</Label>
               <Input
                 value={form.contactPerson}
                 onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
@@ -755,8 +890,8 @@ function AddSchoolDialog({
                 className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Academic Session</Label>
               <Input
                 value={form.academicSession}
                 onChange={(e) => setForm({ ...form, academicSession: e.target.value })}
@@ -785,10 +920,12 @@ function SchoolDetailDialog({
   school,
   onOpenChange,
   onSuccess,
+  isViewOnly,
 }: {
   school: School | null
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+  isViewOnly: boolean
 }) {
   const [saving, setSaving] = React.useState(false)
   const [form, setForm] = React.useState({
@@ -842,57 +979,61 @@ function SchoolDetailDialog({
 
   return (
     <Dialog open={!!school} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-tight">Edit School</DialogTitle>
-          <DialogDescription className="text-[11px]">Update school information</DialogDescription>
+          <DialogTitle className="macos-section-title">Edit School</DialogTitle>
+          <DialogDescription className="text-[12px]">Update school information</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-medium text-muted-foreground">Name *</Label>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
               required
+              disabled={isViewOnly}
             />
           </div>
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-medium text-muted-foreground">Address</Label>
             <Input
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+              disabled={isViewOnly}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Phone</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" disabled={isViewOnly} />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
-              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" disabled={isViewOnly} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contact Person</Label>
-              <Input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Contact Person</Label>
+              <Input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" disabled={isViewOnly} />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
-              <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Academic Session</Label>
+              <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" disabled={isViewOnly} />
             </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-              {saving ? 'Saving...' : 'Update School'}
-            </Button>
-          </DialogFooter>
+          {!isViewOnly && (
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+                {saving ? 'Saving...' : 'Update School'}
+              </Button>
+            </DialogFooter>
+          )}
         </form>
       </DialogContent>
     </Dialog>
@@ -959,14 +1100,14 @@ function CreateContractDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Contract</DialogTitle>
-          <DialogDescription className="text-[11px]">Create a new school supply contract</DialogDescription>
+          <DialogTitle className="macos-section-title">Create Contract</DialogTitle>
+          <DialogDescription className="text-[12px]">Create a new school supply contract</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">School *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-medium text-muted-foreground">School *</Label>
             <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
               <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                 <SelectValue placeholder="Select school" />
@@ -978,32 +1119,32 @@ function CreateContractDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contract Title *</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-medium text-muted-foreground">Contract Title *</Label>
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Annual Supply Agreement" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Academic Session</Label>
               <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} placeholder="2025-2026" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Total Value ($)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Total Value ($)</Label>
               <Input type="number" step="0.01" value={form.totalValue} onChange={(e) => setForm({ ...form, totalValue: e.target.value })} placeholder="50000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Start Date</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Start Date</Label>
               <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">End Date</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">End Date</Label>
               <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Notes</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-medium text-muted-foreground">Notes</Label>
             <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional contract details..." rows={3} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
           </div>
           <DialogFooter>
@@ -1142,15 +1283,15 @@ function CreatePackageDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Academic Package</DialogTitle>
-          <DialogDescription className="text-[11px]">Build a grade-wise package with books and stationery</DialogDescription>
+          <DialogTitle className="macos-section-title">Create Academic Package</DialogTitle>
+          <DialogDescription className="text-[12px]">Build a grade-wise package with books and stationery</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">School</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">School</Label>
               <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
                 <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue placeholder="Select school" />
@@ -1162,27 +1303,27 @@ function CreatePackageDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Package Name *</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Package Name *</Label>
               <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Grade 1 Package" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Grade</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Grade</Label>
               <Input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="1" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Level</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Academic Level</Label>
               <Input value={form.academicLevel} onChange={(e) => setForm({ ...form, academicLevel: e.target.value })} placeholder="Primary" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
-            <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Discount (%)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] font-medium text-muted-foreground">Discount (%)</Label>
               <Input type="number" min="0" max="100" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} placeholder="10" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Description</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] font-medium text-muted-foreground">Description</Label>
             <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Package description..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
           </div>
 
@@ -1190,7 +1331,7 @@ function CreatePackageDialog({
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Package Items</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Package Items</Label>
               <Button type="button" variant="ghost" size="sm" onClick={addItem} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
                 <Plus className="size-3" strokeWidth={2} /> Add Item
               </Button>
@@ -1198,7 +1339,7 @@ function CreatePackageDialog({
             {items.map((item) => (
               <div key={item.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
                 <div className="flex-1 space-y-1">
-                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Type</Label>
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Type</Label>
                   <Select
                     value={item.itemType}
                     onValueChange={(v: 'book' | 'stationery') =>
@@ -1215,7 +1356,7 @@ function CreatePackageDialog({
                   </Select>
                 </div>
                 <div className="flex-[2] space-y-1">
-                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Item</Label>
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Item</Label>
                   <Select value={item.itemId} onValueChange={(v) => updateItem(item.key, { itemId: v })}>
                     <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
                       <SelectValue placeholder={`Select ${item.itemType}...`} />
@@ -1230,11 +1371,11 @@ function CreatePackageDialog({
                   </Select>
                 </div>
                 <div className="w-16 space-y-1">
-                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Qty</Label>
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Qty</Label>
                   <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(item.key, { quantity: parseInt(e.target.value) || 1 })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
                 </div>
                 <div className="w-20 space-y-1">
-                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Price</Label>
+                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Price</Label>
                   <Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.key, { unitPrice: parseFloat(e.target.value) || 0 })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
                 </div>
                 <Button
@@ -1281,15 +1422,15 @@ function PackageDetailDialog({
 
   return (
     <Dialog open={!!pkg} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl">
+      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold tracking-tight">
-            <div className="size-7 rounded-lg bg-macos-teal/10 flex items-center justify-center">
+          <DialogTitle className="flex items-center gap-2 macos-section-title">
+            <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
               <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
             </div>
             {pkg.name}
           </DialogTitle>
-          <DialogDescription className="text-[11px]">
+          <DialogDescription className="text-[12px]">
             {pkg.grade && `Grade ${pkg.grade}`}
             {pkg.academicLevel && ` · ${pkg.academicLevel}`}
             {pkg.school && ` · ${pkg.school.name}`}
@@ -1301,7 +1442,7 @@ function PackageDetailDialog({
           )}
 
           <div className="space-y-2">
-            <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Package Items</h4>
+            <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Package Items</h4>
             <div className="space-y-2">
               {pkg.items && pkg.items.length > 0 ? (
                 pkg.items.map((item) => (
@@ -1311,12 +1452,12 @@ function PackageDetailDialog({
                   >
                     <div className="flex items-center gap-3">
                       {item.bookId ? (
-                        <div className="size-7 rounded-lg bg-macos-teal/10 flex items-center justify-center">
-                          <BookOpen className="size-3.5 text-macos-teal" strokeWidth={1.5} />
+                        <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+                          <BookOpen className="size-4 text-macos-teal" strokeWidth={1.5} />
                         </div>
                       ) : (
-                        <div className="size-7 rounded-lg bg-macos-orange/10 flex items-center justify-center">
-                          <PencilRuler className="size-3.5 text-macos-orange" strokeWidth={1.5} />
+                        <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+                          <PencilRuler className="size-4 text-macos-orange" strokeWidth={1.5} />
                         </div>
                       )}
                       <div>
@@ -1348,7 +1489,7 @@ function PackageDetailDialog({
                 <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% discount applied</p>
               )}
             </div>
-            <p className="text-2xl font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
+            <p className="text-[24px] font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
           </div>
         </div>
       </DialogContent>

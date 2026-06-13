@@ -14,6 +14,8 @@ import {
   Globe,
   MapPin,
   FileText,
+  Loader2,
+  BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,9 +34,12 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useAppStore } from '@/store/app-store'
 
 // ── Types ────────────────────────────────────────────────────────
 interface PublisherData {
@@ -85,10 +90,10 @@ const publisherColors = [
   { bg: 'bg-macos-green/10', text: 'text-macos-green' },
   { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
   { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
-  { bg: 'bg-macos-red/10', text: 'text-macos-red' },
+  { bg: 'bg-gg-bridge/10', text: 'text-gg-bridge' },
   { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
-  { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
-  { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
+  { bg: 'bg-gg-bay/10', text: 'text-gg-bay' },
+  { bg: 'bg-gg-sunset/10', text: 'text-gg-sunset' },
 ]
 
 const getPublisherColor = (name: string) => {
@@ -100,7 +105,10 @@ const getPublisherColor = (name: string) => {
 }
 
 // ── Component ────────────────────────────────────────────────────
-export default function PublishersModule() {
+export function PublishersModule() {
+  const authUser = useAppStore((s) => s.authUser)
+  const isViewOnly = authUser?.isViewOnly ?? false
+
   const [publishers, setPublishers] = useState<PublisherData[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -262,7 +270,8 @@ export default function PublishersModule() {
   if (selectedPublisher) {
     const pubColor = getPublisherColor(selectedPublisher.name)
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
+        {/* Back button */}
         <button
           onClick={() => setSelectedPublisher(null)}
           className="flex items-center gap-1.5 text-[13px] font-medium text-macos-blue hover:opacity-80 transition-opacity"
@@ -270,17 +279,18 @@ export default function PublishersModule() {
           <ArrowLeft className="size-4" strokeWidth={1.5} /> Back to Publishers
         </button>
 
-        <div className="rounded-2xl macos-shadow bg-card p-5">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className={`size-14 rounded-2xl ${pubColor.bg} flex items-center justify-center shrink-0`}>
-              <Building2 className={`size-7 ${pubColor.text}`} strokeWidth={1.5} />
+        {/* Publisher Profile Card */}
+        <div className="macos-card macos-shadow-card p-6">
+          <div className="flex flex-col sm:flex-row gap-5">
+            <div className={`size-16 rounded-2xl ${pubColor.bg} flex items-center justify-center shrink-0`}>
+              <Building2 className={`size-8 ${pubColor.text}`} strokeWidth={1.5} />
             </div>
-            <div className="space-y-1 flex-1">
-              <h2 className="text-xl font-bold tracking-tight">{selectedPublisher.name}</h2>
-              <div className="flex flex-wrap gap-3 text-[13px] text-muted-foreground">
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <h2 className="text-[22px] font-bold tracking-[-0.03em]">{selectedPublisher.name}</h2>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-medium text-muted-foreground">
                 {selectedPublisher.contact && (
                   <span className="flex items-center gap-1.5">
-                    <Mail className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.contact}
+                    <Mail className="size-3.5 text-muted-foreground" strokeWidth={1.5} /> {selectedPublisher.contact}
                   </span>
                 )}
                 {selectedPublisher.email && (
@@ -290,86 +300,92 @@ export default function PublishersModule() {
                 )}
                 {selectedPublisher.phone && (
                   <span className="flex items-center gap-1.5">
-                    <Phone className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.phone}
+                    <Phone className="size-3.5 text-muted-foreground" strokeWidth={1.5} /> {selectedPublisher.phone}
                   </span>
                 )}
               </div>
               {selectedPublisher.address && (
-                <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                  <MapPin className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.address}
+                <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1.5">
+                  <MapPin className="size-3.5 shrink-0" strokeWidth={1.5} /> {selectedPublisher.address}
                 </p>
               )}
               {selectedPublisher.website && (
-                <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                  <Globe className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.website}
+                <p className="text-[13px] font-medium text-macos-blue flex items-center gap-1.5">
+                  <Globe className="size-3.5 shrink-0" strokeWidth={1.5} /> {selectedPublisher.website}
                 </p>
               )}
               {selectedPublisher.agreement && (
-                <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                  <FileText className="size-3.5" strokeWidth={1.5} /> Agreement: {selectedPublisher.agreement}
+                <p className="text-[13px] font-medium text-gg-golden flex items-center gap-1.5">
+                  <FileText className="size-3.5 shrink-0" strokeWidth={1.5} /> Agreement: {selectedPublisher.agreement}
                 </p>
               )}
-              <div className="mt-2">
-                <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+              <div className="pt-2">
+                <span className="rounded-md text-[10px] font-semibold tracking-wider px-2.5 py-1 bg-macos-green/10 text-macos-green uppercase">
                   {selectedPublisher._count.books} books
-                </Badge>
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl macos-shadow bg-card p-5">
-          <h3 className="text-[13px] font-semibold tracking-tight mb-3">
-            Books by {selectedPublisher.name}
-          </h3>
+        {/* Books by Publisher */}
+        <div className="macos-card macos-shadow-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/50">
+            <h3 className="text-[13px] font-semibold tracking-[-0.01em]">
+              Books by {selectedPublisher.name}
+            </h3>
+          </div>
           {loadingBooks ? (
-            <div className="space-y-3">
+            <div className="p-5 space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
+                <Skeleton key={i} className="h-10 w-full rounded-lg" />
               ))}
             </div>
           ) : publisherBooks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <Building2 className="size-8 mb-2 opacity-40" strokeWidth={1.5} />
-              <p className="text-[13px]">No books from this publisher yet</p>
+            <div className="macos-empty py-12">
+              <BookOpen className="size-10 text-muted-foreground/30 mb-3" strokeWidth={1.5} />
+              <p className="text-[13px] font-semibold text-muted-foreground">No books from this publisher yet</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Books will appear here when added</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b">
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {publisherBooks.map((book) => (
-                  <TableRow key={book.id} className="hover:bg-secondary/50">
-                    <TableCell className="text-[13px] font-medium">{book.title}</TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">
-                      {book.author?.name || '—'}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground font-mono">
-                      {book.isbn || '—'}
-                    </TableCell>
-                    <TableCell>
-                      {book.category ? (
-                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
-                          {book.category.name}
-                        </Badge>
-                      ) : (
-                        <span className="text-[13px] text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-right font-semibold tracking-tight">
-                      ${book.price.toFixed(2)}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">ISBN</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Category</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {publisherBooks.map((book) => (
+                    <TableRow key={book.id} className="macos-table-row border-b border-border/30">
+                      <TableCell className="text-[13px] font-medium">{book.title}</TableCell>
+                      <TableCell className="text-[13px] text-muted-foreground">
+                        {book.author?.name || '\u2014'}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-[13px] text-muted-foreground font-mono">
+                        {book.isbn || '\u2014'}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {book.category ? (
+                          <span className="rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 bg-macos-purple/10 text-macos-purple uppercase">
+                            {book.category.name}
+                          </span>
+                        ) : (
+                          <span className="text-[13px] text-muted-foreground">{'\u2014'}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-[13px] text-right font-semibold tracking-[-0.01em]">
+                        ${book.price.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
       </div>
@@ -378,56 +394,64 @@ export default function PublishersModule() {
 
   // ── Main Table View ────────────────────────────────────────
   return (
-    <div className="space-y-4">
-      {/* Header + Add */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold tracking-tight">Publishers</h2>
-          <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-orange/10 text-macos-orange">
-            {total} publishers
-          </Badge>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="macos-page-header flex-col gap-3 sm:flex-row">
+        <div>
+          <h2 className="macos-page-title">Publishers</h2>
+          <p className="macos-page-subtitle">{total} publishers in directory</p>
         </div>
-        <Button onClick={openAdd} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
-          <Plus className="size-4 mr-1.5" strokeWidth={1.5} /> Add Publisher
-        </Button>
+        {!isViewOnly && (
+          <Button
+            onClick={openAdd}
+            className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0"
+          >
+            <Plus className="size-3.5 mr-1.5" strokeWidth={1.5} /> Add Publisher
+          </Button>
+        )}
       </div>
 
       {/* Spotlight Search */}
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" strokeWidth={1.5} />
-        <Input
+      <div className="macos-search flex items-center px-3 h-9">
+        <Search className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+        <input
           placeholder="Search by name, contact, email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+          className="flex-1 bg-transparent border-0 text-[13px] font-medium placeholder:text-muted-foreground/60 focus:outline-none ml-2"
         />
       </div>
 
       {/* Publishers Table */}
-      <div className="rounded-2xl macos-shadow bg-card overflow-hidden">
+      <div className="macos-card macos-shadow-card overflow-hidden">
         {loading ? (
-          <div className="p-4 space-y-3">
+          <div className="p-5 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="size-8 rounded-xl shrink-0" />
+                <Skeleton className="h-4 w-full rounded-lg" />
+              </div>
             ))}
           </div>
         ) : publishers.length === 0 ? (
-          <div className="p-8 flex flex-col items-center justify-center text-muted-foreground">
-            <Building2 className="size-10 mb-3 opacity-40" strokeWidth={1.5} />
-            <p className="text-[13px] font-semibold">No publishers found</p>
-            <p className="text-[11px] mt-1">Try adjusting your search or add a new publisher</p>
+          <div className="macos-empty py-16">
+            <Building2 className="size-12 text-muted-foreground/25 mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] font-semibold text-muted-foreground">No publishers found</p>
+            <p className="text-[11px] text-muted-foreground mt-1">Try adjusting your search or add a new publisher</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-b">
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Publisher</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Contact</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Email</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-center">Books</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                <TableRow className="border-b border-border/50 hover:bg-transparent">
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Publisher</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Contact</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Email</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell">Phone</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-center">Books</TableHead>
+                  {!isViewOnly && (
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -436,60 +460,64 @@ export default function PublishersModule() {
                   return (
                     <TableRow
                       key={pub.id}
-                      className="cursor-pointer hover:bg-secondary/50"
+                      className="macos-table-row cursor-pointer border-b border-border/30"
                       onClick={() => openDetail(pub)}
                     >
                       <TableCell>
                         <div className="flex items-center gap-2.5">
-                          <div className={`size-8 rounded-lg ${pubColor.bg} flex items-center justify-center shrink-0`}>
+                          <div className={`size-8 rounded-xl ${pubColor.bg} flex items-center justify-center shrink-0`}>
                             <Building2 className={`size-4 ${pubColor.text}`} strokeWidth={1.5} />
                           </div>
                           <span className="text-[13px] font-medium">{pub.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-[13px] text-muted-foreground">
-                        {pub.contact || '—'}
+                      <TableCell className="hidden sm:table-cell text-[13px] text-muted-foreground">
+                        {pub.contact || '\u2014'}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         {pub.email ? (
                           <span className="text-[13px] text-macos-blue">{pub.email}</span>
                         ) : (
-                          <span className="text-[13px] text-muted-foreground">—</span>
+                          <span className="text-[13px] text-muted-foreground">{'\u2014'}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-[13px] text-muted-foreground">
-                        {pub.phone || '—'}
+                      <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">
+                        {pub.phone || '\u2014'}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+                        <span className="rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 bg-gg-sunset/10 text-gg-sunset uppercase">
                           {pub._count.books}
-                        </Badge>
+                        </span>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 rounded-lg"
-                            onClick={() => openEdit(pub)}
-                          >
-                            <Pencil className="size-3.5" strokeWidth={1.5} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 rounded-lg text-macos-red hover:text-macos-red"
-                            onClick={() => handleDelete(pub.id)}
-                            disabled={deleting === pub.id}
-                          >
-                            {deleting === pub.id ? (
-                              <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
-                            ) : (
-                              <Trash2 className="size-3.5" strokeWidth={1.5} />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
+                      {!isViewOnly && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 rounded-lg hover:bg-secondary"
+                              onClick={() => openEdit(pub)}
+                              aria-label={`Edit ${pub.name}`}
+                            >
+                              <Pencil className="size-3" strokeWidth={1.5} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 rounded-lg text-macos-red hover:bg-macos-red/10 hover:text-macos-red"
+                              onClick={() => handleDelete(pub.id)}
+                              disabled={deleting === pub.id}
+                              aria-label={`Delete ${pub.name}`}
+                            >
+                              {deleting === pub.id ? (
+                                <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="size-3" strokeWidth={1.5} />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 })}
@@ -505,11 +533,11 @@ export default function PublishersModule() {
           <p className="text-[11px] text-muted-foreground">
             Page {page} of {totalPages} · {total} results
           </p>
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             <Button
               variant="secondary"
               size="sm"
-              className="rounded-lg h-7 text-[13px]"
+              className="rounded-lg h-7 text-[13px] font-medium"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
             >
@@ -518,7 +546,7 @@ export default function PublishersModule() {
             <Button
               variant="secondary"
               size="sm"
-              className="rounded-lg h-7 text-[13px]"
+              className="rounded-lg h-7 text-[13px] font-medium"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >
@@ -539,92 +567,95 @@ export default function PublishersModule() {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg macos-shadow-float rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-[13px] font-semibold tracking-tight">
+            <DialogTitle className="text-[13px] font-semibold tracking-[-0.01em]">
               {editing ? 'Edit Publisher' : 'Add New Publisher'}
             </DialogTitle>
+            <DialogDescription className="text-[11px] text-muted-foreground">
+              {editing ? 'Update publisher contact and agreement details.' : 'Add a new publisher to your directory.'}
+            </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 py-2">
-            <div>
-              <Label htmlFor="pub-name" className="text-[11px] font-semibold">Name *</Label>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="pub-name" className="text-[12px] font-medium text-muted-foreground">Name *</Label>
               <Input
                 id="pub-name"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Publisher name"
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="pub-contact" className="text-[11px] font-semibold">Contact Person</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="pub-contact" className="text-[12px] font-medium text-muted-foreground">Contact Person</Label>
                 <Input
                   id="pub-contact"
                   value={form.contact}
                   onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
                   placeholder="Contact name"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
-              <div>
-                <Label htmlFor="pub-email" className="text-[11px] font-semibold">Email</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="pub-email" className="text-[12px] font-medium text-muted-foreground">Email</Label>
                 <Input
                   id="pub-email"
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   placeholder="publisher@example.com"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="pub-phone" className="text-[11px] font-semibold">Phone</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="pub-phone" className="text-[12px] font-medium text-muted-foreground">Phone</Label>
                 <Input
                   id="pub-phone"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                   placeholder="+1-..."
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
-              <div>
-                <Label htmlFor="pub-website" className="text-[11px] font-semibold">Website</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="pub-website" className="text-[12px] font-medium text-muted-foreground">Website</Label>
                 <Input
                   id="pub-website"
                   value={form.website}
                   onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
                   placeholder="https://..."
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor="pub-address" className="text-[11px] font-semibold">Address</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="pub-address" className="text-[12px] font-medium text-muted-foreground">Address</Label>
               <Textarea
                 id="pub-address"
                 value={form.address}
                 onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
                 placeholder="Full address..."
                 rows={2}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="rounded-lg border-border/50 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
-            <div>
-              <Label htmlFor="pub-agreement" className="text-[11px] font-semibold">Agreement</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="pub-agreement" className="text-[12px] font-medium text-muted-foreground">Agreement</Label>
               <Textarea
                 id="pub-agreement"
                 value={form.agreement}
                 onChange={(e) => setForm((f) => ({ ...f, agreement: e.target.value }))}
                 placeholder="Distribution agreement details..."
                 rows={2}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="rounded-lg border-border/50 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+          <DialogFooter className="gap-2">
             <Button
               variant="secondary"
               className="rounded-lg text-[13px] font-medium h-8"
@@ -642,13 +673,20 @@ export default function PublishersModule() {
               className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8"
             >
               {saving ? (
-                <RefreshCw className="size-4 mr-1.5 animate-spin" strokeWidth={1.5} />
+                <>
+                  <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+                  Saving...
+                </>
+              ) : editing ? (
+                'Update Publisher'
               ) : (
-                <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
+                <>
+                  <Plus className="size-3.5 mr-1.5" strokeWidth={1.5} />
+                  Create Publisher
+                </>
               )}
-              {editing ? 'Update Publisher' : 'Create Publisher'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

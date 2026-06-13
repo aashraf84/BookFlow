@@ -1,0 +1,477 @@
+   600→          ) : (
+   601→            <div className="overflow-x-auto">
+   602→              <Table>
+   603→                <TableHeader>
+   604→                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+   605→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+   606→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Type</TableHead>
+   607→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">Contact</TableHead>
+   608→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Spent</TableHead>
+   609→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Outstanding</TableHead>
+   610→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell text-right">Orders</TableHead>
+   611→                  </TableRow>
+   612→                </TableHeader>
+   613→                <TableBody>
+   614→                  {dealers.map((dealer) => (
+   615→                    <TableRow key={dealer.id} className="hover:bg-secondary/50 border-b border-border/30">
+   616→                      <TableCell className="text-[13px] font-medium tracking-tight">{dealer.name}</TableCell>
+   617→                      <TableCell className="hidden sm:table-cell">
+   618→                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple capitalize">{dealer.type}</span>
+   619→                      </TableCell>
+   620→                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] tracking-tight">
+   621→                        {dealer.email || dealer.phone || '—'}
+   622→                      </TableCell>
+   623→                      <TableCell className="text-right text-[13px] font-medium tracking-tight">${dealer.totalSpent.toFixed(2)}</TableCell>
+   624→                      <TableCell className="text-right text-[13px] tracking-tight">
+   625→                        {dealer.outstanding > 0 ? (
+   626→                          <span className="text-macos-red font-medium">${dealer.outstanding.toFixed(2)}</span>
+   627→                        ) : (
+   628→                          <span className="text-muted-foreground">$0.00</span>
+   629→                        )}
+   630→                      </TableCell>
+   631→                      <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-[13px] tracking-tight">
+   632→                        {dealer._count?.wholesaleOrders || 0}
+   633→                      </TableCell>
+   634→                    </TableRow>
+   635→                  ))}
+   636→                </TableBody>
+   637→              </Table>
+   638→            </div>
+   639→          )}
+   640→        </div>
+   641→      )}
+   642→
+   643→      {/* Analytics Tab */}
+   644→      {activeTab === 'analytics' && (
+   645→        <div className="space-y-4">
+   646→          {/* Metrics Cards */}
+   647→          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+   648→            <div className="rounded-2xl macos-shadow p-4 bg-background">
+   649→              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue (Delivered)</p>
+   650→              <p className="text-2xl font-bold tracking-tight">${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+   651→            </div>
+   652→            <div className="rounded-2xl macos-shadow p-4 bg-background">
+   653→              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Amount</p>
+   654→              <p className="text-2xl font-bold tracking-tight text-macos-orange">${pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+   655→            </div>
+   656→            <div className="rounded-2xl macos-shadow p-4 bg-background">
+   657→              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Active Dealers</p>
+   658→              <p className="text-2xl font-bold tracking-tight">{dealers.filter((d) => d.isActive).length}</p>
+   659→            </div>
+   660→            <div className="rounded-2xl macos-shadow p-4 bg-background">
+   661→              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Outstanding</p>
+   662→              <p className="text-2xl font-bold tracking-tight text-macos-red">${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+   663→            </div>
+   664→          </div>
+   665→
+   666→          {/* Top Dealers */}
+   667→          <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+   668→            <div className="p-4 border-b border-border/30">
+   669→              <h3 className="text-[13px] font-semibold tracking-tight">Top Dealers by Revenue</h3>
+   670→              <p className="text-[11px] text-muted-foreground tracking-tight">Highest grossing wholesale partners</p>
+   671→            </div>
+   672→            {topDealers.length === 0 ? (
+   673→              <div className="py-8 text-center text-muted-foreground text-[13px] tracking-tight">No dealer data available</div>
+   674→            ) : (
+   675→              <div className="overflow-x-auto">
+   676→                <Table>
+   677→                  <TableHeader>
+   678→                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+   679→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Rank</TableHead>
+   680→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</TableHead>
+   681→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Total Spent</TableHead>
+   682→                      <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Outstanding</TableHead>
+   683→                    </TableRow>
+   684→                  </TableHeader>
+   685→                  <TableBody>
+   686→                    {topDealers.map((dealer, i) => (
+   687→                      <TableRow key={dealer.id} className="hover:bg-secondary/50 border-b border-border/30">
+   688→                        <TableCell>
+   689→                          <span className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${i === 0 ? 'bg-macos-green/10 text-macos-green' : 'bg-secondary text-secondary-foreground'}`}>
+   690→                            #{i + 1}
+   691→                          </span>
+   692→                        </TableCell>
+   693→                        <TableCell className="text-[13px] font-medium tracking-tight">{dealer.name}</TableCell>
+   694→                        <TableCell className="text-right text-[13px] font-medium tracking-tight">${dealer.totalSpent.toFixed(2)}</TableCell>
+   695→                        <TableCell className="text-right text-[13px] tracking-tight">
+   696→                          {dealer.outstanding > 0 ? (
+   697→                            <span className="text-macos-red">${dealer.outstanding.toFixed(2)}</span>
+   698→                          ) : (
+   699→                            <span className="text-muted-foreground">$0.00</span>
+   700→                          )}
+   701→                        </TableCell>
+   702→                      </TableRow>
+   703→                    ))}
+   704→                  </TableBody>
+   705→                </Table>
+   706→              </div>
+   707→            )}
+   708→          </div>
+   709→
+   710→          {/* Order Status Breakdown */}
+   711→          <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+   712→            <div className="p-4 border-b border-border/30">
+   713→              <h3 className="text-[13px] font-semibold tracking-tight">Order Status Breakdown</h3>
+   714→            </div>
+   715→            <div className="p-4">
+   716→              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+   717→                {['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => {
+   718→                  const count = orders.filter((o) => o.status === status).length
+   719→                  const total = orders.filter((o) => o.status === status).reduce((s, o) => s + o.total, 0)
+   720→                  const colorMap: Record<string, string> = {
+   721→                    pending: 'bg-macos-orange/10 text-macos-orange',
+   722→                    confirmed: 'bg-macos-blue/10 text-macos-blue',
+   723→                    shipped: 'bg-macos-teal/10 text-macos-teal',
+   724→                    delivered: 'bg-macos-green/10 text-macos-green',
+   725→                    cancelled: 'bg-macos-red/10 text-macos-red',
+   726→                  }
+   727→                  return (
+   728→                    <div key={status} className="rounded-xl bg-secondary/50 p-3 text-center space-y-1">
+   729→                      <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{status}</p>
+   730→                      <p className="text-xl font-bold tracking-tight">{count}</p>
+   731→                      <p className="text-[11px] text-muted-foreground tracking-tight">${total.toFixed(2)}</p>
+   732→                    </div>
+   733→                  )
+   734→                })}
+   735→              </div>
+   736→            </div>
+   737→          </div>
+   738→        </div>
+   739→      )}
+   740→
+   741→      {/* New Order Dialog */}
+   742→      <Dialog open={orderDialogOpen} onOpenChange={setOrderDialogOpen}>
+   743→        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-elevated">
+   744→          <DialogHeader>
+   745→            <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+   746→              <ShoppingCart className="size-4" />
+   747→              New Wholesale Order
+   748→            </DialogTitle>
+   749→            <DialogDescription className="text-[11px]">Create a new bulk order for a dealer or distributor</DialogDescription>
+   750→          </DialogHeader>
+   751→          <div className="space-y-4 py-4">
+   752→            {/* Dealer Selection */}
+   753→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   754→              <div className="space-y-1.5">
+   755→                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer / Customer</Label>
+   756→                <Select value={selectedDealerId} onValueChange={(v) => {
+   757→                  setSelectedDealerId(v)
+   758→                  const dealer = dealers.find((d) => d.id === v)
+   759→                  if (dealer) setDealerName(dealer.name)
+   760→                }}>
+   761→                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   762→                    <SelectValue placeholder="Select dealer" />
+   763→                  </SelectTrigger>
+   764→                  <SelectContent>
+   765→                    {dealers.map((d) => (
+   766→                      <SelectItem key={d.id} value={d.id}>{d.name} ({d.type})</SelectItem>
+   767→                    ))}
+   768→                  </SelectContent>
+   769→                </Select>
+   770→              </div>
+   771→              <div className="space-y-1.5">
+   772→                <Label htmlFor="dealer-name" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Or Dealer Name</Label>
+   773→                <Input
+   774→                  id="dealer-name"
+   775→                  value={dealerName}
+   776→                  onChange={(e) => setDealerName(e.target.value)}
+   777→                  placeholder="Enter dealer name"
+   778→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   779→                />
+   780→              </div>
+   781→            </div>
+   782→
+   783→            <div className="space-y-1.5">
+   784→              <Label htmlFor="delivery-addr" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery Address</Label>
+   785→              <Input
+   786→                id="delivery-addr"
+   787→                value={deliveryAddress}
+   788→                onChange={(e) => setDeliveryAddress(e.target.value)}
+   789→                placeholder="Delivery address"
+   790→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   791→              />
+   792→            </div>
+   793→
+   794→            {/* Add Products */}
+   795→            <div className="space-y-1.5">
+   796→              <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Add Products</Label>
+   797→              <div className="relative">
+   798→                <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+   799→                <Input
+   800→                  placeholder="Search books or stationery..."
+   801→                  value={productSearch}
+   802→                  onChange={(e) => setProductSearch(e.target.value)}
+   803→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   804→                />
+   805→              </div>
+   806→              {searchResults.length > 0 && (
+   807→                <div className="rounded-xl bg-secondary/50 max-h-40 overflow-y-auto border border-border/50">
+   808→                  {searchResults.map((product) => (
+   809→                    <button
+   810→                      key={`${product.type}-${product.id}`}
+   811→                      className="w-full flex items-center justify-between p-2.5 hover:bg-secondary/80 transition-colors text-left text-[13px] tracking-tight"
+   812→                      onClick={() => addItemToOrder(product)}
+   813→                    >
+   814→                      <div className="flex items-center gap-2">
+   815→                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple">{product.type}</span>
+   816→                        <span>{product.name}</span>
+   817→                      </div>
+   818→                      <span className="text-muted-foreground">${product.price.toFixed(2)}</span>
+   819→                    </button>
+   820→                  ))}
+   821→                </div>
+   822→              )}
+   823→            </div>
+   824→
+   825→            {/* Order Items */}
+   826→            {orderItems.length > 0 && (
+   827→              <div className="space-y-1.5">
+   828→                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Order Items</Label>
+   829→                <div className="rounded-xl bg-secondary/30 border border-border/50 divide-y divide-border/30">
+   830→                  {orderItems.map((item, index) => (
+   831→                    <div key={index} className="flex items-center gap-2 p-2.5">
+   832→                      <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple shrink-0">{item.productType}</span>
+   833→                      <span className="text-[13px] flex-1 truncate tracking-tight">{item.productName}</span>
+   834→                      <Input
+   835→                        type="number"
+   836→                        min="1"
+   837→                        value={item.quantity}
+   838→                        onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
+   839→                        className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+   840→                      />
+   841→                      <Input
+   842→                        type="number"
+   843→                        step="0.01"
+   844→                        min="0"
+   845→                        value={item.unitPrice}
+   846→                        onChange={(e) => updateOrderItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+   847→                        className="w-20 text-right text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+   848→                      />
+   849→                      <Input
+   850→                        type="number"
+   851→                        min="0"
+   852→                        max="100"
+   853→                        value={item.discount}
+   854→                        onChange={(e) => updateOrderItem(index, 'discount', parseFloat(e.target.value) || 0)}
+   855→                        className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+   856→                        placeholder="%"
+   857→                      />
+   858→                      <Button variant="ghost" size="icon" className="size-6 rounded-md text-macos-red hover:text-macos-red hover:bg-macos-red/10" onClick={() => removeOrderItem(index)}>
+   859→                        <X className="size-3" />
+   860→                      </Button>
+   861→                    </div>
+   862→                  ))}
+   863→                </div>
+   864→              </div>
+   865→            )}
+   866→
+   867→            {/* Discount / Tax */}
+   868→            <div className="grid grid-cols-2 gap-4">
+   869→              <div className="space-y-1.5">
+   870→                <Label htmlFor="order-discount" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Discount ($)</Label>
+   871→                <Input
+   872→                  id="order-discount"
+   873→                  type="number"
+   874→                  step="0.01"
+   875→                  min="0"
+   876→                  value={orderDiscount}
+   877→                  onChange={(e) => setOrderDiscount(e.target.value)}
+   878→                  placeholder="0.00"
+   879→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   880→                />
+   881→              </div>
+   882→              <div className="space-y-1.5">
+   883→                <Label htmlFor="order-tax" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Tax (%)</Label>
+   884→                <Input
+   885→                  id="order-tax"
+   886→                  type="number"
+   887→                  step="0.5"
+   888→                  min="0"
+   889→                  value={orderTax}
+   890→                  onChange={(e) => setOrderTax(e.target.value)}
+   891→                  placeholder="0"
+   892→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   893→                />
+   894→              </div>
+   895→            </div>
+   896→
+   897→            {/* Order Total Preview */}
+   898→            {orderItems.length > 0 && (
+   899→              <div className="rounded-xl bg-secondary/50 p-3 space-y-1 text-[13px] tracking-tight">
+   900→                <div className="flex justify-between">
+   901→                  <span className="text-muted-foreground">Subtotal</span>
+   902→                  <span>${orderSubtotal.toFixed(2)}</span>
+   903→                </div>
+   904→                {orderDiscountAmt > 0 && (
+   905→                  <div className="flex justify-between text-macos-green">
+   906→                    <span>Discount</span>
+   907→                    <span>-${orderDiscountAmt.toFixed(2)}</span>
+   908→                  </div>
+   909→                )}
+   910→                {orderTaxAmt > 0 && (
+   911→                  <div className="flex justify-between">
+   912→                    <span className="text-muted-foreground">Tax</span>
+   913→                    <span>${orderTaxAmt.toFixed(2)}</span>
+   914→                  </div>
+   915→                )}
+   916→                <Separator />
+   917→                <div className="flex justify-between font-bold text-base tracking-tight">
+   918→                  <span>Total</span>
+   919→                  <span>${orderTotal.toFixed(2)}</span>
+   920→                </div>
+   921→              </div>
+   922→            )}
+   923→
+   924→            <div className="space-y-1.5">
+   925→              <Label htmlFor="order-notes" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Notes</Label>
+   926→              <Textarea
+   927→                id="order-notes"
+   928→                value={orderNotes}
+   929→                onChange={(e) => setOrderNotes(e.target.value)}
+   930→                placeholder="Order notes..."
+   931→                rows={2}
+   932→                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+   933→              />
+   934→            </div>
+   935→          </div>
+   936→          <DialogFooter className="gap-2">
+   937→            <Button variant="ghost" onClick={() => setOrderDialogOpen(false)} disabled={saving} className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8">
+   938→              Cancel
+   939→            </Button>
+   940→            <Button onClick={handleCreateOrder} disabled={saving || orderItems.length === 0} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+   941→              {saving ? (
+   942→                <>
+   943→                  <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+   944→                  Creating...
+   945→                </>
+   946→              ) : (
+   947→                'Create Order'
+   948→              )}
+   949→            </Button>
+   950→          </DialogFooter>
+   951→        </DialogContent>
+   952→      </Dialog>
+   953→
+   954→      {/* Order Detail Dialog */}
+   955→      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+   956→        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-elevated">
+   957→          <DialogHeader>
+   958→            <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+   959→              <Eye className="size-4" />
+   960→              Order Details
+   961→            </DialogTitle>
+   962→            <DialogDescription className="text-[11px]">
+   963→              {detailOrder?.orderNumber || ''}
+   964→            </DialogDescription>
+   965→          </DialogHeader>
+   966→          {detailOrder && (
+   967→            <div className="space-y-4 py-4">
+   968→              {/* Order Info */}
+   969→              <div className="grid grid-cols-2 gap-3 text-[13px] tracking-tight">
+   970→                <div>
+   971→                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</p>
+   972→                  <p className="font-medium">{detailOrder.customer?.name || detailOrder.dealerName || '—'}</p>
+   973→                </div>
+   974→                <div>
+   975→                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</p>
+   976→                  <div className="mt-1">{getStatusBadge(detailOrder.status)}</div>
+   977→                </div>
+   978→                <div>
+   979→                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Payment</p>
+   980→                  <div className="mt-1">{getPaymentBadge(detailOrder.paymentStatus)}</div>
+   981→                </div>
+   982→                <div>
+   983→                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Date</p>
+   984→                  <p className="font-medium">{new Date(detailOrder.createdAt).toLocaleDateString()}</p>
+   985→                </div>
+   986→              </div>
+   987→
+   988→              {detailOrder.deliveryAddress && (
+   989→                <div className="text-[13px] tracking-tight">
+   990→                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery Address</p>
+   991→                  <p className="font-medium">{detailOrder.deliveryAddress}</p>
+   992→                </div>
+   993→              )}
+   994→
+   995→              <Separator />
+   996→
+   997→              {/* Items */}
+   998→              <div className="space-y-2">
+   999→                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Items ({detailOrder.items.length})</Label>
+  1000→                <div className="rounded-xl bg-secondary/30 border border-border/50 divide-y divide-border/30">
+  1001→                  {detailOrder.items.map((item) => (
+  1002→                    <div key={item.id} className="flex items-center justify-between p-2.5 text-[13px] tracking-tight">
+  1003→                      <div className="flex-1 min-w-0">
+  1004→                        <p className="font-medium truncate">{getItemName(item)}</p>
+  1005→                        <p className="text-[11px] text-muted-foreground tracking-tight">
+  1006→                          ${item.unitPrice.toFixed(2)} x {item.quantity}
+  1007→                          {item.discount > 0 && <span className="text-macos-green ml-1">-{item.discount}%</span>}
+  1008→                        </p>
+  1009→                      </div>
+  1010→                      <span className="font-medium ml-2">${item.totalPrice.toFixed(2)}</span>
+  1011→                    </div>
+  1012→                  ))}
+  1013→                </div>
+  1014→              </div>
+  1015→
+  1016→              <Separator />
+  1017→
+  1018→              {/* Totals */}
+  1019→              <div className="space-y-1.5 text-[13px] tracking-tight">
+  1020→                <div className="flex justify-between">
+  1021→                  <span className="text-muted-foreground">Subtotal</span>
+  1022→                  <span>${detailOrder.subtotal.toFixed(2)}</span>
+  1023→                </div>
+  1024→                {detailOrder.discount > 0 && (
+  1025→                  <div className="flex justify-between text-macos-green">
+  1026→                    <span>Discount</span>
+  1027→                    <span>-${detailOrder.discount.toFixed(2)}</span>
+  1028→                  </div>
+  1029→                )}
+  1030→                {detailOrder.tax > 0 && (
+  1031→                  <div className="flex justify-between">
+  1032→                    <span className="text-muted-foreground">Tax</span>
+  1033→                    <span>${detailOrder.tax.toFixed(2)}</span>
+  1034→                  </div>
+  1035→                )}
+  1036→                <Separator />
+  1037→                <div className="flex justify-between font-bold text-base tracking-tight">
+  1038→                  <span>Total</span>
+  1039→                  <span>${detailOrder.total.toFixed(2)}</span>
+  1040→                </div>
+  1041→              </div>
+  1042→
+  1043→              {/* Status Actions */}
+  1044→              <div className="flex gap-2 pt-2">
+  1045→                {detailOrder.status === 'pending' && (
+  1046→                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'confirmed')} disabled={updatingStatus === detailOrder.id} className="bg-macos-blue text-white rounded-lg font-medium text-[13px] h-8">
+  1047→                    <CheckCircle2 className="size-3.5 mr-1.5" />
+  1048→                    Confirm Order
+  1049→                  </Button>
+  1050→                )}
+  1051→                {detailOrder.status === 'confirmed' && (
+  1052→                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'shipped')} disabled={updatingStatus === detailOrder.id} className="bg-macos-teal text-white rounded-lg font-medium text-[13px] h-8">
+  1053→                    <Ship className="size-3.5 mr-1.5" />
+  1054→                    Mark as Shipped
+  1055→                  </Button>
+  1056→                )}
+  1057→                {detailOrder.status === 'shipped' && (
+  1058→                  <Button onClick={() => handleStatusUpdate(detailOrder.id, 'delivered')} disabled={updatingStatus === detailOrder.id} className="bg-macos-green text-white rounded-lg font-medium text-[13px] h-8">
+  1059→                    <PackageCheck className="size-3.5 mr-1.5" />
+  1060→                    Mark as Delivered
+  1061→                  </Button>
+  1062→                )}
+  1063→                {(detailOrder.status === 'pending' || detailOrder.status === 'confirmed') && (
+  1064→                  <Button variant="ghost" className="text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg text-[13px] h-8" onClick={() => handleStatusUpdate(detailOrder.id, 'cancelled')} disabled={updatingStatus === detailOrder.id}>
+  1065→                    Cancel Order
+  1066→                  </Button>
+  1067→                )}
+  1068→              </div>
+  1069→            </div>
+  1070→          )}
+  1071→        </DialogContent>
+  1072→      </Dialog>
+  1073→    </div>
+  1074→  )
+  1075→}
+  1076→

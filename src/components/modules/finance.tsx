@@ -21,8 +21,9 @@ import {
   Clock,
   AlertCircle,
   Eye,
+  PieChart,
+  Activity,
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -53,6 +54,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts'
+import { useAppStore } from '@/store/app-store'
 
 // ==================== TYPES ====================
 
@@ -97,12 +114,27 @@ interface Expense {
   createdAt: string
 }
 
+// ==================== CHART COLORS ====================
+
+const CHART_COLORS = {
+  blue: '#007AFF',
+  green: '#34C759',
+  orange: '#FF9500',
+  red: '#FF3B30',
+  purple: '#AF52DE',
+  teal: '#5AC8FA',
+  bridge: '#C0392B',
+  golden: '#D4A853',
+  bay: '#2D5F8A',
+  sunset: '#FF6B35',
+}
+
 // ==================== FINANCE MODULE ====================
 
 export function FinanceModule() {
   const [activeTab, setActiveTab] = React.useState('overview')
   const tabs = [
-    { value: 'overview', label: 'Overview', icon: BarChart3 },
+    { value: 'overview', label: 'Overview', icon: Activity },
     { value: 'accounts', label: 'Accounts', icon: Wallet },
     { value: 'entries', label: 'Journal', icon: BookOpen },
     { value: 'expenses', label: 'Expenses', icon: Receipt },
@@ -110,19 +142,21 @@ export function FinanceModule() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
-          <DollarSign className="size-4 text-macos-green" strokeWidth={1.5} />
-        </div>
-        <div>
-          <h2 className="text-[13px] font-semibold tracking-tight">Finance</h2>
-          <p className="text-[11px] text-muted-foreground">
-            Financial management, accounting, and reporting
-          </p>
+      {/* Page Header */}
+      <div className="macos-page-header">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-macos-green/10 flex items-center justify-center macos-shadow-card">
+            <DollarSign className="size-5 text-macos-green" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h2 className="macos-page-title">Finance</h2>
+            <p className="macos-page-subtitle">Financial management, accounting, and reporting</p>
+          </div>
         </div>
       </div>
 
-      <div className="macos-segmented inline-flex p-0.5">
+      {/* Filter Bar */}
+      <div className="macos-filter-bar">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const isActive = activeTab === tab.value
@@ -130,9 +164,7 @@ export function FinanceModule() {
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`px-3 py-1 text-[12px] font-medium rounded-md flex items-center gap-1.5 transition-none ${
-                isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`macos-filter-item flex items-center gap-1.5 ${isActive ? 'macos-filter-item-active' : ''}`}
             >
               <Icon className="size-3.5" strokeWidth={1.5} />
               {tab.label}
@@ -193,61 +225,100 @@ function OverviewTab() {
     revenue: 'Revenue',
     expense: 'Expenses',
   }
+  const accountTypeColors: Record<string, string> = {
+    asset: CHART_COLORS.green,
+    liability: CHART_COLORS.red,
+    equity: CHART_COLORS.teal,
+    revenue: CHART_COLORS.blue,
+    expense: CHART_COLORS.orange,
+  }
+
+  // Generate mock monthly data for charts
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const revenueExpenseData = months.map((month, i) => ({
+    month,
+    revenue: Math.round(revenue * (0.6 + Math.random() * 0.5 + i * 0.03)),
+    expenses: Math.round(expenseTotal * (0.5 + Math.random() * 0.5 + i * 0.02)),
+  }))
+
+  // Account breakdown for pie chart
+  const accountBreakdown = accountTypes.map((type) => {
+    const balance = accounts.filter((a) => a.type === type).reduce((sum, a) => sum + a.balance, 0)
+    return { name: accountTypeLabels[type], value: Math.abs(balance), color: accountTypeColors[type] }
+  }).filter((d) => d.value > 0)
+
+  // Expense categories for bar chart
+  const expenseByCategory = expenses.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + e.amount
+    return acc
+  }, {} as Record<string, number>)
+
+  const expenseCategoryData = Object.entries(expenseByCategory)
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 8)
+
+  const categoryColors = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.orange, CHART_COLORS.purple, CHART_COLORS.teal, CHART_COLORS.red, CHART_COLORS.golden, CHART_COLORS.sunset]
+
+  // Cash flow area chart data
+  const cashFlowData = months.map((month, i) => ({
+    month,
+    inflow: Math.round(revenue * (0.7 + Math.random() * 0.4 + i * 0.02)),
+    outflow: Math.round(expenseTotal * (0.6 + Math.random() * 0.4 + i * 0.015)),
+  }))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
-              <CardContent className="p-4">
-                <div className="h-4 bg-muted rounded w-2/3 mb-3" />
-                <div className="h-6 bg-muted rounded w-1/2" />
-              </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="macos-card macos-shadow-card p-5 animate-pulse">
+              <div className="h-4 bg-muted/50 rounded w-2/3 mb-3" />
+              <div className="h-8 bg-muted/50 rounded w-1/2" />
+            </div>
           ))}
         </div>
       ) : (
         <>
           {/* P&L Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="rounded-2xl macos-shadow border-0 p-4">
+            <div className="macos-stat macos-shadow-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue</p>
-                  <p className="text-2xl font-bold tracking-tight text-macos-green">${revenue.toLocaleString()}</p>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue</p>
+                  <p className="text-[24px] font-bold text-macos-green" style={{ letterSpacing: '-0.03em' }}>${revenue.toLocaleString()}</p>
                   <div className="flex items-center gap-1 text-[11px] mt-1">
                     <ArrowUpRight className="size-3 text-macos-green" />
                     <span className="text-macos-green font-medium">+8.5%</span>
                     <span className="text-muted-foreground">vs last month</span>
                   </div>
                 </div>
-                <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
+                <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
                   <TrendingUp className="size-4 text-macos-green" strokeWidth={1.5} />
                 </div>
               </div>
-            </Card>
-            <Card className="rounded-2xl macos-shadow border-0 p-4">
+            </div>
+            <div className="macos-stat macos-shadow-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Expenses</p>
-                  <p className="text-2xl font-bold tracking-tight text-macos-red">${expenseTotal.toLocaleString()}</p>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Expenses</p>
+                  <p className="text-[24px] font-bold text-macos-red" style={{ letterSpacing: '-0.03em' }}>${expenseTotal.toLocaleString()}</p>
                   <div className="flex items-center gap-1 text-[11px] mt-1">
                     <ArrowDownRight className="size-3 text-macos-red" />
                     <span className="text-macos-red font-medium">+3.2%</span>
                     <span className="text-muted-foreground">vs last month</span>
                   </div>
                 </div>
-                <div className="size-8 rounded-xl bg-macos-red/10 flex items-center justify-center">
+                <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
                   <TrendingDown className="size-4 text-macos-red" strokeWidth={1.5} />
                 </div>
               </div>
-            </Card>
-            <Card className="rounded-2xl macos-shadow border-0 p-4">
+            </div>
+            <div className="macos-stat macos-shadow-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Net Income</p>
-                  <p className="text-2xl font-bold tracking-tight text-macos-blue">${netIncome.toLocaleString()}</p>
+                  <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Net Income</p>
+                  <p className="text-[24px] font-bold text-macos-blue" style={{ letterSpacing: '-0.03em' }}>${netIncome.toLocaleString()}</p>
                   <div className="flex items-center gap-1 text-[11px] mt-1">
                     {netIncome >= 0 ? (
                       <>
@@ -263,151 +334,305 @@ function OverviewTab() {
                     <span className="text-muted-foreground">vs last month</span>
                   </div>
                 </div>
-                <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+                <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
                   <DollarSign className="size-4 text-macos-blue" strokeWidth={1.5} />
                 </div>
               </div>
-            </Card>
+            </div>
           </div>
 
-          {/* Revenue vs Expenses Bar Chart */}
-          <Card className="rounded-2xl macos-shadow border-0">
-            <CardContent className="p-4">
-              <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-4">Revenue vs Expenses</h3>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-muted-foreground">Revenue</span>
-                    <span className="font-medium text-macos-green">${revenue.toLocaleString()}</span>
-                  </div>
-                  <div className="h-3 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full bg-macos-green rounded-full transition-all"
-                      style={{ width: `${revenue > 0 ? Math.min((revenue / (revenue + expenseTotal || 1)) * 100, 100) : 0}%` }}
-                    />
-                  </div>
+          {/* Revenue vs Expenses Area Chart */}
+          <div className="macos-card macos-shadow-card p-5">
+            <div className="macos-section-header mb-4">
+              <div>
+                <h3 className="macos-section-title">Revenue vs Expenses</h3>
+                <p className="macos-section-desc">Monthly financial performance</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="size-2.5 rounded-full bg-macos-green" />
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Revenue</span>
                 </div>
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-muted-foreground">Expenses</span>
-                    <span className="font-medium text-macos-red">${expenseTotal.toLocaleString()}</span>
-                  </div>
-                  <div className="h-3 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full bg-macos-red rounded-full transition-all"
-                      style={{ width: `${expenseTotal > 0 ? Math.min((expenseTotal / (revenue + expenseTotal || 1)) * 100, 100) : 0}%` }}
+                <div className="flex items-center gap-1.5">
+                  <div className="size-2.5 rounded-full bg-macos-red" />
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Expenses</span>
+                </div>
+              </div>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueExpenseData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHART_COLORS.green} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={CHART_COLORS.green} stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHART_COLORS.red} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={CHART_COLORS.red} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '10px',
+                      border: '0.5px solid rgba(0,0,0,0.06)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                      fontSize: '12px',
+                      padding: '8px 12px',
+                    }}
+                    formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+                  />
+                  <Area type="monotone" dataKey="revenue" stroke={CHART_COLORS.green} strokeWidth={2} fill="url(#revenueGradient)" />
+                  <Area type="monotone" dataKey="expenses" stroke={CHART_COLORS.red} strokeWidth={2} fill="url(#expenseGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Two column: Cash Flow + Account Breakdown Pie */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Cash Flow Area Chart */}
+            <div className="macos-card macos-shadow-card p-5">
+              <div className="macos-section-header mb-4">
+                <div>
+                  <h3 className="macos-section-title">Cash Flow</h3>
+                  <p className="macos-section-desc">Monthly inflow vs outflow</p>
+                </div>
+              </div>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={cashFlowData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="inflowGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={CHART_COLORS.blue} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={CHART_COLORS.blue} stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="outflowGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={CHART_COLORS.orange} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={CHART_COLORS.orange} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                    <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '10px',
+                        border: '0.5px solid rgba(0,0,0,0.06)',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                        fontSize: '12px',
+                        padding: '8px 12px',
+                      }}
+                      formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
                     />
-                  </div>
+                    <Area type="monotone" dataKey="inflow" stroke={CHART_COLORS.blue} strokeWidth={2} fill="url(#inflowGradient)" />
+                    <Area type="monotone" dataKey="outflow" stroke={CHART_COLORS.orange} strokeWidth={2} fill="url(#outflowGradient)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Account Breakdown Pie */}
+            <div className="macos-card macos-shadow-card p-5">
+              <div className="macos-section-header mb-4">
+                <div>
+                  <h3 className="macos-section-title">Account Breakdown</h3>
+                  <p className="macos-section-desc">Distribution by type</p>
+                </div>
+              </div>
+              {accountBreakdown.length > 0 ? (
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPieChart>
+                      <Pie
+                        data={accountBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={80}
+                        paddingAngle={3}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
+                        {accountBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: '10px',
+                          border: '0.5px solid rgba(0,0,0,0.06)',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                          fontSize: '12px',
+                          padding: '8px 12px',
+                        }}
+                        formatter={(value: number) => [`$${value.toLocaleString()}`, undefined]}
+                      />
+                      <Legend
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ fontSize: '11px' }}
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-56 flex items-center justify-center">
+                  <p className="text-[13px] text-muted-foreground">No account data</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Balance Sheet + Expense Categories */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Balance Sheet */}
+            <div className="macos-card macos-shadow-card p-5">
+              <div className="macos-section-header mb-4">
+                <div>
+                  <h3 className="macos-section-title">Balance Sheet</h3>
+                  <p className="macos-section-desc">Financial position summary</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-muted-foreground">Total Assets</span>
+                  <span className="font-medium">${assets.toLocaleString()}</span>
+                </div>
+                <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full bg-macos-green rounded-full transition-all"
+                    style={{ width: `${assets > 0 ? Math.min((assets / (assets + liabilities || 1)) * 100, 100) : 0}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-muted-foreground">Total Liabilities</span>
+                  <span className="font-medium">${liabilities.toLocaleString()}</span>
+                </div>
+                <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full bg-macos-red rounded-full transition-all"
+                    style={{ width: `${liabilities > 0 ? Math.min((liabilities / (assets + liabilities || 1)) * 100, 100) : 0}%` }}
+                  />
                 </div>
                 <Separator className="bg-border/50" />
                 <div className="flex justify-between text-[13px] font-semibold">
-                  <span>Net {netIncome >= 0 ? 'Profit' : 'Loss'}</span>
-                  <span className={netIncome >= 0 ? 'text-macos-green' : 'text-macos-red'}>
-                    ${Math.abs(netIncome).toLocaleString()}
+                  <span>Net Worth</span>
+                  <span className={(assets - liabilities) >= 0 ? 'text-macos-green' : 'text-macos-red'}>
+                    ${(assets - liabilities).toLocaleString()}
                   </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Balance Sheet */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card className="rounded-2xl macos-shadow border-0">
-              <CardContent className="p-4">
-                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-4">Balance Sheet</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-muted-foreground">Total Assets</span>
-                    <span className="font-medium">${assets.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-muted-foreground">Total Liabilities</span>
-                    <span className="font-medium">${liabilities.toLocaleString()}</span>
-                  </div>
-                  <Separator className="bg-border/50" />
-                  <div className="flex justify-between text-[13px] font-semibold">
-                    <span>Net Worth</span>
-                    <span className={(assets - liabilities) >= 0 ? 'text-macos-green' : 'text-macos-red'}>
-                      ${(assets - liabilities).toLocaleString()}
-                    </span>
-                  </div>
+            {/* Expense Categories Bar Chart */}
+            <div className="macos-card macos-shadow-card p-5">
+              <div className="macos-section-header mb-4">
+                <div>
+                  <h3 className="macos-section-title">Expense Categories</h3>
+                  <p className="macos-section-desc">Spending by category</p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-2xl macos-shadow border-0">
-              <CardContent className="p-4">
-                <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-4">Account Breakdown</h3>
-                <div className="space-y-2">
-                  {accountTypes.map((type) => {
-                    const typeBalance = accounts
-                      .filter((a) => a.type === type)
-                      .reduce((sum, a) => sum + a.balance, 0)
-                    return (
-                      <div key={type} className="flex justify-between text-[13px]">
-                        <span className="text-muted-foreground">{accountTypeLabels[type]}</span>
-                        <span>${typeBalance.toLocaleString()}</span>
-                      </div>
-                    )
-                  })}
+              </div>
+              {expenseCategoryData.length > 0 ? (
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={expenseCategoryData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="category" tick={{ fontSize: 10, fill: '#86868B' }} axisLine={false} tickLine={false} width={80} />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: '10px',
+                          border: '0.5px solid rgba(0,0,0,0.06)',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                          fontSize: '12px',
+                          padding: '8px 12px',
+                        }}
+                        formatter={(value: number) => [`$${value.toLocaleString()}`, 'Amount']}
+                      />
+                      <Bar dataKey="amount" radius={[0, 4, 4, 0]} maxBarSize={24}>
+                        {expenseCategoryData.map((_, index) => (
+                          <Cell key={`bar-${index}`} fill={categoryColors[index % categoryColors.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-              </CardContent>
-            </Card>
+              ) : (
+                <div className="h-56 flex items-center justify-center">
+                  <p className="text-[13px] text-muted-foreground">No expense data</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Pending Payments */}
           {pendingExpenses > 0 && (
-            <Card className="rounded-2xl macos-shadow border-0 p-4">
+            <div className="macos-stat macos-shadow-card">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="size-8 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+                  <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
                     <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Payments</p>
-                    <p className="text-2xl font-bold tracking-tight text-macos-orange">${pendingExpenses.toLocaleString()}</p>
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending Payments</p>
+                    <p className="text-[24px] font-bold text-macos-orange" style={{ letterSpacing: '-0.03em' }}>${pendingExpenses.toLocaleString()}</p>
                   </div>
                 </div>
+                <Badge className="rounded-md bg-macos-orange/10 text-macos-orange border-0 text-[10px] font-semibold px-2.5 py-1">
+                  Requires Attention
+                </Badge>
               </div>
-            </Card>
+            </div>
           )}
 
           {/* Recent Expenses */}
-          <Card className="rounded-2xl macos-shadow border-0">
-            <CardContent className="p-4">
-              <h3 className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground mb-3">Recent Expenses</h3>
-              {expenses.length === 0 ? (
-                <p className="text-[13px] text-muted-foreground text-center py-4">No expenses recorded</p>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-                  {expenses.slice(0, 5).map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/50 text-[13px]">
+          <div className="macos-card macos-shadow-card p-5">
+            <div className="macos-section-header mb-4">
+              <div>
+                <h3 className="macos-section-title">Recent Expenses</h3>
+                <p className="macos-section-desc">Latest expense records</p>
+              </div>
+            </div>
+            {expenses.length === 0 ? (
+              <p className="text-[13px] text-muted-foreground text-center py-4">No expenses recorded</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+                {expenses.slice(0, 5).map((expense) => (
+                  <div key={expense.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+                    <div className="flex items-center gap-3">
+                      <div className="size-8 rounded-lg bg-macos-red/10 flex items-center justify-center">
+                        <Receipt className="size-3.5 text-macos-red" strokeWidth={1.5} />
+                      </div>
                       <div>
                         <p className="font-medium">{expense.category}</p>
                         <p className="text-[11px] text-muted-foreground">
                           {expense.description || 'No description'} · {new Date(expense.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-macos-red">${expense.amount.toLocaleString()}</p>
-                        <Badge
-                          className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
-                            expense.status === 'paid'
-                              ? 'bg-macos-green/10 text-macos-green'
-                              : expense.status === 'approved'
-                              ? 'bg-macos-blue/10 text-macos-blue'
-                              : 'bg-macos-orange/10 text-macos-orange'
-                          }`}
-                        >
-                          {expense.status}
-                        </Badge>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    <div className="text-right">
+                      <p className="font-semibold text-macos-red">${expense.amount.toLocaleString()}</p>
+                      <Badge
+                        className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
+                          expense.status === 'paid'
+                            ? 'bg-macos-green/10 text-macos-green'
+                            : expense.status === 'approved'
+                            ? 'bg-macos-blue/10 text-macos-blue'
+                            : 'bg-macos-orange/10 text-macos-orange'
+                        }`}
+                      >
+                        {expense.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
@@ -417,6 +642,8 @@ function OverviewTab() {
 // ==================== ACCOUNTS TAB ====================
 
 function AccountsTab() {
+  const { authUser } = useAppStore()
+  const isViewOnly = authUser?.isViewOnly ?? false
   const [accounts, setAccounts] = React.useState<Account[]>([])
   const [loading, setLoading] = React.useState(true)
   const [showCreateDialog, setShowCreateDialog] = React.useState(false)
@@ -447,9 +674,9 @@ function AccountsTab() {
       case 'equity':
         return 'bg-macos-teal/10 text-macos-teal'
       case 'revenue':
-        return 'bg-macos-orange/10 text-macos-orange'
+        return 'bg-macos-blue/10 text-macos-blue'
       case 'expense':
-        return 'bg-macos-purple/10 text-macos-purple'
+        return 'bg-macos-orange/10 text-macos-orange'
       default:
         return 'bg-secondary text-secondary-foreground'
     }
@@ -465,90 +692,86 @@ function AccountsTab() {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{accounts.length} accounts</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-          <Plus className="size-3.5" strokeWidth={2} /> Create Account
-        </Button>
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{accounts.length} accounts</p>
+        {!isViewOnly && (
+          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+            <Plus className="size-3.5" strokeWidth={2} /> Create Account
+          </Button>
+        )}
       </div>
 
       {loading ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card p-6">
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
       ) : accounts.length === 0 ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Wallet className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] text-muted-foreground">No accounts found</p>
-            <p className="text-[11px] text-muted-foreground">Create your chart of accounts</p>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card macos-empty">
+          <Wallet className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
+          <p className="text-[13px] font-medium text-muted-foreground">No accounts found</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Create your chart of accounts</p>
+        </div>
       ) : (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="p-0">
-            <ScrollArea className="max-h-[500px]">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Code</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Parent</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Balance</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(groupedAccounts).map(([type, typeAccounts]) => (
-                    <React.Fragment key={type}>
-                      <TableRow className="bg-secondary/30 hover:bg-secondary/30">
-                        <TableCell colSpan={6} className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground py-2">
-                          {type} ({typeAccounts.length})
+        <div className="macos-card macos-shadow-card overflow-hidden">
+          <ScrollArea className="max-h-[500px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-border/50">
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Code</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Type</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Parent</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Balance</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Object.entries(groupedAccounts).map(([type, typeAccounts]) => (
+                  <React.Fragment key={type}>
+                    <TableRow className="bg-secondary/30 hover:bg-secondary/30 border-border/50">
+                      <TableCell colSpan={6} className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground py-2">
+                        {type} ({typeAccounts.length})
+                      </TableCell>
+                    </TableRow>
+                    {typeAccounts.map((account) => (
+                      <TableRow key={account.id} className="macos-table-row">
+                        <TableCell className="font-mono text-[11px] text-muted-foreground">{account.code}</TableCell>
+                        <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{account.name}</TableCell>
+                        <TableCell>
+                          <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getTypeBadge(account.type)}`}>
+                            {account.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-[11px] text-muted-foreground">
+                          {account.parentCode || '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-[13px]">
+                          ${account.balance.toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
+                              account.isActive
+                                ? 'bg-macos-green/10 text-macos-green'
+                                : 'bg-macos-red/10 text-macos-red'
+                            }`}
+                          >
+                            {account.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
                         </TableCell>
                       </TableRow>
-                      {typeAccounts.map((account) => (
-                        <TableRow key={account.id} className="hover:bg-secondary/50">
-                          <TableCell className="font-mono text-[11px]">{account.code}</TableCell>
-                          <TableCell className="font-medium text-[13px]">{account.name}</TableCell>
-                          <TableCell>
-                            <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getTypeBadge(account.type)}`}>
-                              {account.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-[11px] text-muted-foreground">
-                            {account.parentCode || '—'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-[13px]">
-                            ${account.balance.toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
-                                account.isActive
-                                  ? 'bg-macos-green/10 text-macos-green'
-                                  : 'bg-macos-red/10 text-macos-red'
-                              }`}
-                            >
-                              {account.isActive ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
       )}
 
       <CreateAccountDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSuccess={fetchAccounts} />
@@ -559,6 +782,8 @@ function AccountsTab() {
 // ==================== JOURNAL ENTRIES TAB ====================
 
 function JournalEntriesTab() {
+  const { authUser } = useAppStore()
+  const isViewOnly = authUser?.isViewOnly ?? false
   const [entries, setEntries] = React.useState<JournalEntry[]>([])
   const [accounts, setAccounts] = React.useState<Account[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -594,91 +819,87 @@ function JournalEntriesTab() {
   }, [fetchEntries, fetchAccounts])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{entries.length} entries</p>
-        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-          <Plus className="size-3.5" strokeWidth={2} /> Create Entry
-        </Button>
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{entries.length} entries</p>
+        {!isViewOnly && (
+          <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+            <Plus className="size-3.5" strokeWidth={2} /> Create Entry
+          </Button>
+        )}
       </div>
 
       {loading ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card p-6">
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 bg-muted/50 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
       ) : entries.length === 0 ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <BookOpen className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] text-muted-foreground">No journal entries found</p>
-            <p className="text-[11px] text-muted-foreground">Record your first journal entry</p>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card macos-empty">
+          <BookOpen className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
+          <p className="text-[13px] font-medium text-muted-foreground">No journal entries found</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Record your first journal entry</p>
+        </div>
       ) : (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="p-0">
-            <ScrollArea className="max-h-[500px]">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Debit</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Credit</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {entries.map((entry) => {
-                    const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
-                    const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
-                    return (
-                      <TableRow key={entry.id} className="cursor-pointer hover:bg-secondary/50" onClick={() => setSelectedEntry(entry)}>
-                        <TableCell className="text-[11px]">
-                          {new Date(entry.date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="font-medium text-[13px] max-w-48 truncate">
-                          {entry.description}
-                        </TableCell>
-                        <TableCell className="text-[11px] text-muted-foreground">
-                          {entry.reference || '—'}
-                        </TableCell>
-                        <TableCell className="text-right text-[13px] font-medium">
-                          ${totalDebit.toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right text-[13px] font-medium">
-                          ${totalCredit.toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
-                              entry.isPosted
-                                ? 'bg-macos-green/10 text-macos-green'
-                                : 'bg-macos-orange/10 text-macos-orange'
-                            }`}
-                          >
-                            {entry.isPosted ? 'Posted' : 'Draft'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Eye className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card overflow-hidden">
+          <ScrollArea className="max-h-[500px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-border/50">
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Debit</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Credit</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                  <TableHead className="w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entries.map((entry) => {
+                  const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+                  const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
+                  return (
+                    <TableRow key={entry.id} className="macos-table-row cursor-pointer" onClick={() => setSelectedEntry(entry)}>
+                      <TableCell className="text-[11px] text-muted-foreground">
+                        {new Date(entry.date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="font-medium text-[13px] max-w-48 truncate" style={{ fontWeight: 500 }}>
+                        {entry.description}
+                      </TableCell>
+                      <TableCell className="text-[11px] text-muted-foreground">
+                        {entry.reference || '—'}
+                      </TableCell>
+                      <TableCell className="text-right text-[13px] font-medium">
+                        ${totalDebit.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right text-[13px] font-medium">
+                        ${totalCredit.toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
+                            entry.isPosted
+                              ? 'bg-macos-green/10 text-macos-green'
+                              : 'bg-macos-orange/10 text-macos-orange'
+                          }`}
+                        >
+                          {entry.isPosted ? 'Posted' : 'Draft'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Eye className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
       )}
 
       <CreateJournalEntryDialog
@@ -699,6 +920,8 @@ function JournalEntriesTab() {
 // ==================== EXPENSES TAB ====================
 
 function ExpensesTab() {
+  const { authUser } = useAppStore()
+  const isViewOnly = authUser?.isViewOnly ?? false
   const [expenses, setExpenses] = React.useState<Expense[]>([])
   const [loading, setLoading] = React.useState(true)
   const [showAddDialog, setShowAddDialog] = React.useState(false)
@@ -738,112 +961,108 @@ function ExpensesTab() {
   const paidAmount = expenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <Card className="rounded-2xl macos-shadow border-0 p-4">
+        <div className="macos-stat macos-shadow-card">
           <div className="flex items-center gap-3">
-            <div className="size-8 rounded-xl bg-macos-red/10 flex items-center justify-center">
+            <div className="size-9 rounded-xl bg-macos-red/10 flex items-center justify-center">
               <Receipt className="size-4 text-macos-red" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold tracking-tight">${totalExpenses.toLocaleString()}</p>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Expenses</p>
+              <p className="text-[24px] font-bold leading-tight" style={{ letterSpacing: '-0.03em' }}>${totalExpenses.toLocaleString()}</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Expenses</p>
             </div>
           </div>
-        </Card>
-        <Card className="rounded-2xl macos-shadow border-0 p-4">
+        </div>
+        <div className="macos-stat macos-shadow-card">
           <div className="flex items-center gap-3">
-            <div className="size-8 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+            <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
               <Clock className="size-4 text-macos-orange" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold tracking-tight text-macos-orange">${pendingAmount.toLocaleString()}</p>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
+              <p className="text-[24px] font-bold leading-tight text-macos-orange" style={{ letterSpacing: '-0.03em' }}>${pendingAmount.toLocaleString()}</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Pending</p>
             </div>
           </div>
-        </Card>
-        <Card className="rounded-2xl macos-shadow border-0 p-4">
+        </div>
+        <div className="macos-stat macos-shadow-card">
           <div className="flex items-center gap-3">
-            <div className="size-8 rounded-xl bg-macos-green/10 flex items-center justify-center">
+            <div className="size-9 rounded-xl bg-macos-green/10 flex items-center justify-center">
               <CheckCircle2 className="size-4 text-macos-green" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-2xl font-bold tracking-tight text-macos-green">${paidAmount.toLocaleString()}</p>
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Paid</p>
+              <p className="text-[24px] font-bold leading-tight text-macos-green" style={{ letterSpacing: '-0.03em' }}>${paidAmount.toLocaleString()}</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid</p>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
 
       <div className="flex items-center justify-between">
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{expenses.length} expense records</p>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
-          <Plus className="size-3.5" strokeWidth={2} /> Add Expense
-        </Button>
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{expenses.length} expense records</p>
+        {!isViewOnly && (
+          <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+            <Plus className="size-3.5" strokeWidth={2} /> Add Expense
+          </Button>
+        )}
       </div>
 
       {loading ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card p-6">
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
       ) : expenses.length === 0 ? (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Receipt className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
-            <p className="text-[13px] text-muted-foreground">No expenses found</p>
-            <p className="text-[11px] text-muted-foreground">Record your first expense</p>
-          </CardContent>
-        </Card>
+        <div className="macos-card macos-shadow-card macos-empty">
+          <Receipt className="size-12 text-muted-foreground/40 mb-3" strokeWidth={1} />
+          <p className="text-[13px] font-medium text-muted-foreground">No expenses found</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Record your first expense</p>
+        </div>
       ) : (
-        <Card className="rounded-2xl macos-shadow border-0">
-          <CardContent className="p-0">
-            <ScrollArea className="max-h-[400px]">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Amount</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</TableHead>
-                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+        <div className="macos-card macos-shadow-card overflow-hidden">
+          <ScrollArea className="max-h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-border/50">
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Amount</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {expenses.map((expense) => (
+                  <TableRow key={expense.id} className="macos-table-row">
+                    <TableCell className="font-medium text-[13px]" style={{ fontWeight: 500 }}>{expense.category}</TableCell>
+                    <TableCell className="text-[11px] text-muted-foreground max-w-32 truncate">
+                      {expense.description || '—'}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-macos-red text-[13px]">
+                      ${expense.amount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-[11px] text-muted-foreground">
+                      {new Date(expense.date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-[11px] text-muted-foreground">
+                      {expense.paidBy || '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${getStatusBadge(expense.status)}`}>
+                        {expense.status}
+                      </Badge>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {expenses.map((expense) => (
-                    <TableRow key={expense.id} className="hover:bg-secondary/50">
-                      <TableCell className="font-medium text-[13px]">{expense.category}</TableCell>
-                      <TableCell className="text-[11px] text-muted-foreground max-w-32 truncate">
-                        {expense.description || '—'}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-macos-red text-[13px]">
-                        ${expense.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-[11px]">
-                        {new Date(expense.date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-[11px] text-muted-foreground">
-                        {expense.paidBy || '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getStatusBadge(expense.status)}`}>
-                          {expense.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
       )}
 
       <AddExpenseDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchExpenses} />
@@ -901,19 +1120,19 @@ function CreateAccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Account</DialogTitle>
+          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Account</DialogTitle>
           <DialogDescription className="text-[11px]">Add a new account to your chart of accounts</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Account Code *</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Code *</Label>
               <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="1000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Account Type *</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Type *</Label>
               <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                 <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue />
@@ -929,11 +1148,11 @@ function CreateAccountDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Account Name *</Label>
+            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Account Name *</Label>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cash on Hand" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
           </div>
           <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Parent Code</Label>
+            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Parent Code</Label>
             <Input value={form.parentCode} onChange={(e) => setForm({ ...form, parentCode: e.target.value })} placeholder="1000 (optional)" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
           </div>
           <DialogFooter>
@@ -1041,24 +1260,24 @@ function CreateJournalEntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Journal Entry</DialogTitle>
+          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Create Journal Entry</DialogTitle>
           <DialogDescription className="text-[11px]">Record a double-entry journal transaction</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Date *</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date *</Label>
               <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Reference</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Reference</Label>
               <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="JE-001" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Description *</Label>
+            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description *</Label>
             <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Monthly rent payment" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
           </div>
 
@@ -1066,7 +1285,7 @@ function CreateJournalEntryDialog({
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Entry Lines</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Entry Lines</Label>
               <Button type="button" variant="ghost" size="sm" onClick={addLine} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
                 <Plus className="size-3" strokeWidth={2} /> Add Line
               </Button>
@@ -1074,7 +1293,7 @@ function CreateJournalEntryDialog({
             {lines.map((line) => (
               <div key={line.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
                 <div className="flex-[2] space-y-1">
-                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Account</Label>
+                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Account</Label>
                   <Select value={line.accountId} onValueChange={(v) => updateLine(line.key, { accountId: v })}>
                     <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
                       <SelectValue placeholder="Select account..." />
@@ -1089,15 +1308,15 @@ function CreateJournalEntryDialog({
                   </Select>
                 </div>
                 <div className="w-24 space-y-1">
-                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Debit</Label>
+                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Debit</Label>
                   <Input type="number" step="0.01" min="0" value={line.debit} onChange={(e) => updateLine(line.key, { debit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
                 </div>
                 <div className="w-24 space-y-1">
-                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Credit</Label>
+                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Credit</Label>
                   <Input type="number" step="0.01" min="0" value={line.credit} onChange={(e) => updateLine(line.key, { credit: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
                 </div>
                 <div className="flex-[1] space-y-1">
-                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Note</Label>
+                  <Label className="text-[10px] font-semibold tracking-wider text-muted-foreground">Note</Label>
                   <Input value={line.description} onChange={(e) => updateLine(line.key, { description: e.target.value })} className="h-7 text-[11px] rounded-lg border-0 bg-background" placeholder="Optional" />
                 </div>
                 <Button
@@ -1127,7 +1346,7 @@ function CreateJournalEntryDialog({
                 Credit: <strong>${totalCredit.toLocaleString()}</strong>
               </span>
             </div>
-            <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${isBalanced ? 'bg-macos-green/10 text-macos-green' : 'bg-macos-orange/10 text-macos-orange'}`}>
+            <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${isBalanced ? 'bg-macos-green/10 text-macos-green' : 'bg-macos-orange/10 text-macos-orange'}`}>
               {isBalanced ? 'Balanced' : 'Unbalanced'}
             </Badge>
           </div>
@@ -1171,10 +1390,10 @@ function JournalEntryDetailDialog({
 
   return (
     <Dialog open={!!entry} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl">
+      <DialogContent className="sm:max-w-lg rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold tracking-tight">
-            <div className="size-7 rounded-lg bg-macos-green/10 flex items-center justify-center">
+          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>
+            <div className="size-8 rounded-lg bg-macos-green/10 flex items-center justify-center">
               <BookOpen className="size-4 text-macos-green" strokeWidth={1.5} />
             </div>
             Journal Entry
@@ -1185,16 +1404,16 @@ function JournalEntryDetailDialog({
           <div className="flex items-center gap-4">
             <div className="grid grid-cols-2 gap-3 text-[13px] flex-1">
               <div>
-                <span className="text-[11px] font-semibold tracking-wide text-muted-foreground">Date: </span>
+                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Date: </span>
                 <span className="font-medium">{new Date(entry.date).toLocaleDateString()}</span>
               </div>
               <div>
-                <span className="text-[11px] font-semibold tracking-wide text-muted-foreground">Reference: </span>
+                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground">Reference: </span>
                 <span className="font-medium">{entry.reference || '—'}</span>
               </div>
             </div>
             <Badge
-              className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
+              className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 border-0 ${
                 entry.isPosted
                   ? 'bg-macos-green/10 text-macos-green'
                   : 'bg-macos-orange/10 text-macos-orange'
@@ -1207,7 +1426,7 @@ function JournalEntryDetailDialog({
           <Separator className="bg-border/50" />
 
           <div className="space-y-2">
-            <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Entry Lines</h4>
+            <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Entry Lines</h4>
             {entry.lines.map((line) => (
               <div key={line.id} className="flex items-center justify-between p-3 rounded-xl bg-secondary/50">
                 <div>
@@ -1230,12 +1449,12 @@ function JournalEntryDetailDialog({
           <Separator className="bg-border/50" />
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl bg-macos-blue/10 text-center">
-              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Total Debit</p>
+            <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Debit</p>
               <p className="text-[13px] font-bold text-macos-blue">${totalDebit.toLocaleString()}</p>
             </div>
-            <div className="p-3 rounded-xl bg-macos-green/10 text-center">
-              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Total Credit</p>
+            <div className="macos-stat macos-shadow-card text-center" style={{ padding: '12px' }}>
+              <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Total Credit</p>
               <p className="text-[13px] font-bold text-macos-green">${totalCredit.toLocaleString()}</p>
             </div>
           </div>
@@ -1301,15 +1520,15 @@ function AddExpenseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-2xl macos-shadow-float">
         <DialogHeader>
-          <DialogTitle className="text-[13px] font-semibold tracking-tight">Add Expense</DialogTitle>
+          <DialogTitle className="text-[13px] font-semibold" style={{ letterSpacing: '-0.01em' }}>Add Expense</DialogTitle>
           <DialogDescription className="text-[11px]">Record a new expense</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Category *</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category *</Label>
               <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
                 <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue placeholder="Select category" />
@@ -1328,17 +1547,17 @@ function AddExpenseDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Amount ($) *</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Amount ($) *</Label>
               <Input type="number" step="0.01" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} placeholder="500" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Date *</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date *</Label>
               <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Status</Label>
+              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</Label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                 <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
                   <SelectValue />
@@ -1352,11 +1571,11 @@ function AddExpenseDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Description</Label>
+            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Description</Label>
             <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Expense details..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
           </div>
           <div className="space-y-2">
-            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Paid By</Label>
+            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Paid By</Label>
             <Input value={form.paidBy} onChange={(e) => setForm({ ...form, paidBy: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
           </div>
           <DialogFooter>

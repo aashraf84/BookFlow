@@ -1,0 +1,634 @@
+     1→   200→      setBooks([])
+     2→   201→    } finally {
+     3→   202→      setLoading(false)
+     4→   203→    }
+     5→   204→  }, [page, search, filterCategory, filterAuthor, filterPublisher])
+     6→   205→
+     7→   206→  useEffect(() => {
+     8→   207→    fetchBooks()
+     9→   208→  }, [fetchBooks])
+    10→   209→
+    11→   210→  // Reset to page 1 when filters change
+    12→   211→  useEffect(() => {
+    13→   212→    setPage(1)
+    14→   213→  }, [search, filterCategory, filterAuthor, filterPublisher])
+    15→   214→
+    16→   215→  // ── Save book (create or update) ───────────────────────────
+    17→   216→  const handleSave = async () => {
+    18→   217→    if (!form.title.trim()) return
+    19→   218→    setSaving(true)
+    20→   219→    try {
+    21→   220→      const payload: Record<string, unknown> = {
+    22→   221→        title: form.title.trim(),
+    23→   222→        subtitle: form.subtitle || null,
+    24→   223→        isbn: form.isbn || null,
+    25→   224→        authorId: form.authorId || null,
+    26→   225→        publisherId: form.publisherId || null,
+    27→   226→        categoryId: form.categoryId || null,
+    28→   227→        edition: form.edition || null,
+    29→   228→        language: form.language || 'English',
+    30→   229→        pages: form.pages ? parseInt(form.pages) : null,
+    31→   230→        publishYear: form.publishYear ? parseInt(form.publishYear) : null,
+    32→   231→        description: form.description || null,
+    33→   232→        price: form.price ? parseFloat(form.price) : 0,
+    34→   233→        costPrice: form.costPrice ? parseFloat(form.costPrice) : 0,
+    35→   234→        discount: form.discount ? parseFloat(form.discount) : 0,
+    36→   235→        academicLevel: form.academicLevel || null,
+    37→   236→        subject: form.subject || null,
+    38→   237→        barcode: form.barcode || null,
+    39→   238→      }
+    40→   239→
+    41→   240→      let res: Response
+    42→   241→      if (editing) {
+    43→   242→        payload.id = editing.id
+    44→   243→        res = await fetch('/api/books', {
+    45→   244→          method: 'PUT',
+    46→   245→          headers: { 'Content-Type': 'application/json' },
+    47→   246→          body: JSON.stringify(payload),
+    48→   247→        })
+    49→   248→      } else {
+    50→   249→        res = await fetch('/api/books', {
+    51→   250→          method: 'POST',
+    52→   251→          headers: { 'Content-Type': 'application/json' },
+    53→   252→          body: JSON.stringify(payload),
+    54→   253→        })
+    55→   254→      }
+    56→   255→
+    57→   256→      if (!res.ok) {
+    58→   257→        const err = await res.json()
+    59→   258→        throw new Error(err.error || 'Failed to save book')
+    60→   259→      }
+    61→   260→
+    62→   261→      setDialogOpen(false)
+    63→   262→      setEditing(null)
+    64→   263→      setForm(emptyForm)
+    65→   264→      fetchBooks()
+    66→   265→    } catch (err) {
+    67→   266→      alert(err instanceof Error ? err.message : 'Failed to save book')
+    68→   267→    } finally {
+    69→   268→      setSaving(false)
+    70→   269→    }
+    71→   270→  }
+    72→   271→
+    73→   272→  // ── Delete book ────────────────────────────────────────────
+    74→   273→  const handleDelete = async (id: string) => {
+    75→   274→    if (!confirm('Are you sure you want to delete this book?')) return
+    76→   275→    setDeleting(id)
+    77→   276→    try {
+    78→   277→      const res = await fetch(`/api/books?id=${id}`, { method: 'DELETE' })
+    79→   278→      if (!res.ok) {
+    80→   279→        const err = await res.json()
+    81→   280→        throw new Error(err.error || 'Failed to delete')
+    82→   281→      }
+    83→   282→      fetchBooks()
+    84→   283→    } catch (err) {
+    85→   284→      alert(err instanceof Error ? err.message : 'Failed to delete book')
+    86→   285→    } finally {
+    87→   286→      setDeleting(null)
+    88→   287→    }
+    89→   288→  }
+    90→   289→
+    91→   290→  // ── Open dialog for edit ───────────────────────────────────
+    92→   291→  const openEdit = (book: Book) => {
+    93→   292→    setEditing(book)
+    94→   293→    setForm({
+    95→   294→      title: book.title,
+    96→   295→      subtitle: book.subtitle || '',
+    97→   296→      isbn: book.isbn || '',
+    98→   297→      authorId: book.authorId || '',
+    99→   298→      publisherId: book.publisherId || '',
+   100→   299→      categoryId: book.categoryId || '',
+   101→   300→      edition: book.edition || '',
+   102→   301→      language: book.language || 'English',
+   103→   302→      pages: book.pages?.toString() || '',
+   104→   303→      publishYear: book.publishYear?.toString() || '',
+   105→   304→      description: book.description || '',
+   106→   305→      price: book.price?.toString() || '',
+   107→   306→      costPrice: book.costPrice?.toString() || '',
+   108→   307→      discount: book.discount?.toString() || '',
+   109→   308→      academicLevel: book.academicLevel || '',
+   110→   309→      subject: book.subject || '',
+   111→   310→      barcode: book.barcode || '',
+   112→   311→    })
+   113→   312→    setDialogOpen(true)
+   114→   313→  }
+   115→   314→
+   116→   315→  // ── Open dialog for add ────────────────────────────────────
+   117→   316→  const openAdd = () => {
+   118→   317→    setEditing(null)
+   119→   318→    setForm(emptyForm)
+   120→   319→    setDialogOpen(true)
+   121→   320→  }
+   122→   321→
+   123→   322→  const formatCurrency = (value: number) =>
+   124→   323→    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+   125→   324→
+   126→   325→  const hasActiveFilters = search || (filterCategory && filterCategory !== 'all') || (filterAuthor && filterAuthor !== 'all') || (filterPublisher && filterPublisher !== 'all')
+   127→   326→
+   128→   327→  return (
+   129→   328→    <div className="space-y-4">
+   130→   329→      {/* ── Header ──────────────────────────────────────────── */}
+   131→   330→      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   132→   331→        <div className="flex items-center gap-3">
+   133→   332→          <h2 className="text-xl font-bold tracking-tight">Book Catalog</h2>
+   134→   333→          <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-blue/10 text-macos-blue">
+   135→   334→            {total} books
+   136→   335→          </Badge>
+   137→   336→        </div>
+   138→   337→        <Button onClick={openAdd} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+   139→   338→          <Plus className="size-4 mr-1.5" strokeWidth={1.5} /> Add Book
+   140→   339→        </Button>
+   141→   340→      </div>
+   142→   341→
+   143→   342→      {/* ── Search & Filters ────────────────────────────────── */}
+   144→   343→      <div className="rounded-2xl macos-shadow bg-card p-4">
+   145→   344→        {/* Spotlight-style search */}
+   146→   345→        <div className="relative mb-3">
+   147→   346→          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" strokeWidth={1.5} />
+   148→   347→          <Input
+   149→   348→            placeholder="Search by title, ISBN, author..."
+   150→   349→            value={search}
+   151→   350→            onChange={(e) => setSearch(e.target.value)}
+   152→   351→            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   153→   352→          />
+   154→   353→        </div>
+   155→   354→        {/* Filter pills */}
+   156→   355→        <div className="flex flex-wrap gap-2">
+   157→   356→          <Select value={filterCategory} onValueChange={setFilterCategory}>
+   158→   357→            <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-auto min-w-[130px] focus-visible:ring-1 focus-visible:ring-primary/30">
+   159→   358→              <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+   160→   359→              <SelectValue placeholder="All Categories" />
+   161→   360→            </SelectTrigger>
+   162→   361→            <SelectContent>
+   163→   362→              <SelectItem value="all">All Categories</SelectItem>
+   164→   363→              {categories.map((cat) => (
+   165→   364→                <SelectItem key={cat.id} value={cat.id}>
+   166→   365→                  {cat.name}
+   167→   366→                </SelectItem>
+   168→   367→              ))}
+   169→   368→            </SelectContent>
+   170→   369→          </Select>
+   171→   370→          <Select value={filterAuthor} onValueChange={setFilterAuthor}>
+   172→   371→            <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-auto min-w-[130px] focus-visible:ring-1 focus-visible:ring-primary/30">
+   173→   372→              <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+   174→   373→              <SelectValue placeholder="All Authors" />
+   175→   374→            </SelectTrigger>
+   176→   375→            <SelectContent>
+   177→   376→              <SelectItem value="all">All Authors</SelectItem>
+   178→   377→              {authors.map((a) => (
+   179→   378→                <SelectItem key={a.id} value={a.id}>
+   180→   379→                  {a.name}
+   181→   380→                </SelectItem>
+   182→   381→              ))}
+   183→   382→            </SelectContent>
+   184→   383→          </Select>
+   185→   384→          <Select value={filterPublisher} onValueChange={setFilterPublisher}>
+   186→   385→            <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-auto min-w-[130px] focus-visible:ring-1 focus-visible:ring-primary/30">
+   187→   386→              <Filter className="size-3 mr-1 text-muted-foreground" strokeWidth={1.5} />
+   188→   387→              <SelectValue placeholder="All Publishers" />
+   189→   388→            </SelectTrigger>
+   190→   389→            <SelectContent>
+   191→   390→              <SelectItem value="all">All Publishers</SelectItem>
+   192→   391→              {publishers.map((p) => (
+   193→   392→                <SelectItem key={p.id} value={p.id}>
+   194→   393→                  {p.name}
+   195→   394→                </SelectItem>
+   196→   395→              ))}
+   197→   396→            </SelectContent>
+   198→   397→          </Select>
+   199→   398→          {hasActiveFilters && (
+   200→   399→            <button
+   201→   400→              onClick={() => {
+   202→   401→                setSearch('')
+   203→   402→                setFilterCategory('')
+   204→   403→                setFilterAuthor('')
+   205→   404→                setFilterPublisher('')
+   206→   405→              }}
+   207→   406→              className="macos-pill flex items-center gap-1 bg-secondary/80 px-3 py-1 text-[11px] font-medium text-muted-foreground hover:bg-secondary"
+   208→   407→            >
+   209→   408→              <X className="size-3" strokeWidth={1.5} /> Clear
+   210→   409→            </button>
+   211→   410→          )}
+   212→   411→        </div>
+   213→   412→      </div>
+   214→   413→
+   215→   414→      {/* ── Books Table ─────────────────────────────────────── */}
+   216→   415→      <div className="rounded-2xl macos-shadow bg-card overflow-hidden">
+   217→   416→        {loading ? (
+   218→   417→          <div className="p-4 space-y-3">
+   219→   418→            {Array.from({ length: 5 }).map((_, i) => (
+   220→   419→              <Skeleton key={i} className="h-12 w-full" />
+   221→   420→            ))}
+   222→   421→          </div>
+   223→   422→        ) : books.length === 0 ? (
+   224→   423→          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+   225→   424→            <BookOpen className="size-10 mb-3 opacity-40" strokeWidth={1.5} />
+   226→   425→            <p className="text-[13px] font-semibold">No books found</p>
+   227→   426→            <p className="text-[11px] mt-1">Try adjusting your search or filters</p>
+   228→   427→          </div>
+   229→   428→        ) : (
+   230→   429→          <div className="overflow-x-auto">
+   231→   430→            <Table>
+   232→   431→              <TableHeader>
+   233→   432→                <TableRow className="border-b">
+   234→   433→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground min-w-[220px]">Title</TableHead>
+   235→   434→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
+   236→   435→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
+   237→   436→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+   238→   437→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
+   239→   438→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Stock</TableHead>
+   240→   439→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   241→   440→                </TableRow>
+   242→   441→              </TableHeader>
+   243→   442→              <TableBody>
+   244→   443→                {books.map((book) => {
+   245→   444→                  const colorClass = getCoverColor(book.title)
+   246→   445→                  const initial = book.title.charAt(0).toUpperCase()
+   247→   446→                  return (
+   248→   447→                    <TableRow key={book.id} className="hover:bg-secondary/50">
+   249→   448→                      <TableCell>
+   250→   449→                        <div className="flex items-center gap-3">
+   251→   450→                          <div className={`size-8 rounded-lg ${colorClass} flex items-center justify-center shrink-0`}>
+   252→   451→                            <span className="text-white text-[11px] font-bold">{initial}</span>
+   253→   452→                          </div>
+   254→   453→                          <div className="min-w-0">
+   255→   454→                            <p className="text-[13px] font-medium truncate max-w-[200px]">{book.title}</p>
+   256→   455→                            {book.subtitle && (
+   257→   456→                              <p className="text-[11px] text-muted-foreground truncate max-w-[200px]">
+   258→   457→                                {book.subtitle}
+   259→   458→                              </p>
+   260→   459→                            )}
+   261→   460→                          </div>
+   262→   461→                        </div>
+   263→   462→                      </TableCell>
+   264→   463→                      <TableCell className="text-[13px] text-muted-foreground">
+   265→   464→                        {book.author?.name || '—'}
+   266→   465→                      </TableCell>
+   267→   466→                      <TableCell className="text-[13px] text-muted-foreground font-mono">
+   268→   467→                        {book.isbn || '—'}
+   269→   468→                      </TableCell>
+   270→   469→                      <TableCell>
+   271→   470→                        {book.category ? (
+   272→   471→                          <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
+   273→   472→                            {book.category.name}
+   274→   473→                          </Badge>
+   275→   474→                        ) : (
+   276→   475→                          <span className="text-[13px] text-muted-foreground">—</span>
+   277→   476→                        )}
+   278→   477→                      </TableCell>
+   279→   478→                      <TableCell className="text-[13px] text-right font-semibold tracking-tight">
+   280→   479→                        {formatCurrency(book.price)}
+   281→   480→                      </TableCell>
+   282→   481→                      <TableCell>
+   283→   482→                        <div className="flex items-center gap-1.5">
+   284→   483→                          <div className={`size-2 rounded-full ${
+   285→   484→                            book.isActive ? 'bg-macos-green' : 'bg-macos-red'
+   286→   485→                          }`} />
+   287→   486→                          <span className="text-[11px] text-muted-foreground">
+   288→   487→                            {book.isActive ? 'In Stock' : 'Out'}
+   289→   488→                          </span>
+   290→   489→                        </div>
+   291→   490→                      </TableCell>
+   292→   491→                      <TableCell className="text-right">
+   293→   492→                        <div className="flex justify-end gap-1">
+   294→   493→                          <Button
+   295→   494→                            variant="ghost"
+   296→   495→                            size="icon"
+   297→   496→                            className="size-7 rounded-lg"
+   298→   497→                            onClick={() => openEdit(book)}
+   299→   498→                          >
+   300→   499→                            <Pencil className="size-3.5" strokeWidth={1.5} />
+   301→   500→                          </Button>
+   302→   501→                          <Button
+   303→   502→                            variant="ghost"
+   304→   503→                            size="icon"
+   305→   504→                            className="size-7 rounded-lg text-macos-red hover:text-macos-red"
+   306→   505→                            onClick={() => handleDelete(book.id)}
+   307→   506→                            disabled={deleting === book.id}
+   308→   507→                          >
+   309→   508→                            {deleting === book.id ? (
+   310→   509→                              <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
+   311→   510→                            ) : (
+   312→   511→                              <Trash2 className="size-3.5" strokeWidth={1.5} />
+   313→   512→                            )}
+   314→   513→                          </Button>
+   315→   514→                        </div>
+   316→   515→                      </TableCell>
+   317→   516→                    </TableRow>
+   318→   517→                  )
+   319→   518→                })}
+   320→   519→              </TableBody>
+   321→   520→            </Table>
+   322→   521→          </div>
+   323→   522→        )}
+   324→   523→      </div>
+   325→   524→
+   326→   525→      {/* ── Pagination ──────────────────────────────────────── */}
+   327→   526→      {totalPages > 1 && (
+   328→   527→        <div className="flex items-center justify-between">
+   329→   528→          <p className="text-[11px] text-muted-foreground">
+   330→   529→            Page {page} of {totalPages} · {total} results
+   331→   530→          </p>
+   332→   531→          <div className="flex gap-1">
+   333→   532→            <Button
+   334→   533→              variant="secondary"
+   335→   534→              size="sm"
+   336→   535→              className="rounded-lg h-7 text-[13px]"
+   337→   536→              onClick={() => setPage((p) => Math.max(1, p - 1))}
+   338→   537→              disabled={page <= 1}
+   339→   538→            >
+   340→   539→              <ChevronLeft className="size-4" strokeWidth={1.5} />
+   341→   540→            </Button>
+   342→   541→            <Button
+   343→   542→              variant="secondary"
+   344→   543→              size="sm"
+   345→   544→              className="rounded-lg h-7 text-[13px]"
+   346→   545→              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+   347→   546→              disabled={page >= totalPages}
+   348→   547→            >
+   349→   548→              <ChevronRight className="size-4" strokeWidth={1.5} />
+   350→   549→            </Button>
+   351→   550→          </div>
+   352→   551→        </div>
+   353→   552→      )}
+   354→   553→
+   355→   554→      {/* ── Add/Edit Dialog ─────────────────────────────────── */}
+   356→   555→      <Dialog open={dialogOpen} onOpenChange={(open) => {
+   357→   556→        setDialogOpen(open)
+   358→   557→        if (!open) {
+   359→   558→          setEditing(null)
+   360→   559→          setForm(emptyForm)
+   361→   560→        }
+   362→   561→      }}>
+   363→   562→        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+   364→   563→          <DialogHeader>
+   365→   564→            <DialogTitle className="text-[13px] font-semibold tracking-tight">
+   366→   565→              {editing ? 'Edit Book' : 'Add New Book'}
+   367→   566→            </DialogTitle>
+   368→   567→          </DialogHeader>
+   369→   568→          <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
+   370→   569→            {/* Title */}
+   371→   570→            <div className="sm:col-span-2">
+   372→   571→              <Label htmlFor="title" className="text-[11px] font-semibold">Title *</Label>
+   373→   572→              <Input
+   374→   573→                id="title"
+   375→   574→                value={form.title}
+   376→   575→                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+   377→   576→                placeholder="Book title"
+   378→   577→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   379→   578→              />
+   380→   579→            </div>
+   381→   580→
+   382→   581→            {/* Subtitle */}
+   383→   582→            <div className="sm:col-span-2">
+   384→   583→              <Label htmlFor="subtitle" className="text-[11px] font-semibold">Subtitle</Label>
+   385→   584→              <Input
+   386→   585→                id="subtitle"
+   387→   586→                value={form.subtitle}
+   388→   587→                onChange={(e) => setForm((f) => ({ ...f, subtitle: e.target.value }))}
+   389→   588→                placeholder="Subtitle (optional)"
+   390→   589→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   391→   590→              />
+   392→   591→            </div>
+   393→   592→
+   394→   593→            {/* ISBN */}
+   395→   594→            <div>
+   396→   595→              <Label htmlFor="isbn" className="text-[11px] font-semibold">ISBN</Label>
+   397→   596→              <Input
+   398→   597→                id="isbn"
+   399→   598→                value={form.isbn}
+   400→   599→                onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))}
+   401→   600→                placeholder="978-..."
+   402→   601→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   403→   602→              />
+   404→   603→            </div>
+   405→   604→
+   406→   605→            {/* Barcode */}
+   407→   606→            <div>
+   408→   607→              <Label htmlFor="barcode" className="text-[11px] font-semibold">Barcode</Label>
+   409→   608→              <Input
+   410→   609→                id="barcode"
+   411→   610→                value={form.barcode}
+   412→   611→                onChange={(e) => setForm((f) => ({ ...f, barcode: e.target.value }))}
+   413→   612→                placeholder="Barcode"
+   414→   613→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   415→   614→              />
+   416→   615→            </div>
+   417→   616→
+   418→   617→            {/* Author */}
+   419→   618→            <div>
+   420→   619→              <Label className="text-[11px] font-semibold">Author</Label>
+   421→   620→              <Select value={form.authorId} onValueChange={(v) => setForm((f) => ({ ...f, authorId: v === '__none__' ? '' : v }))}>
+   422→   621→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30">
+   423→   622→                  <SelectValue placeholder="Select author" />
+   424→   623→                </SelectTrigger>
+   425→   624→                <SelectContent>
+   426→   625→                  <SelectItem value="__none__">None</SelectItem>
+   427→   626→                  {authors.map((a) => (
+   428→   627→                    <SelectItem key={a.id} value={a.id}>
+   429→   628→                      {a.name}
+   430→   629→                    </SelectItem>
+   431→   630→                  ))}
+   432→   631→                </SelectContent>
+   433→   632→              </Select>
+   434→   633→            </div>
+   435→   634→
+   436→   635→            {/* Publisher */}
+   437→   636→            <div>
+   438→   637→              <Label className="text-[11px] font-semibold">Publisher</Label>
+   439→   638→              <Select value={form.publisherId} onValueChange={(v) => setForm((f) => ({ ...f, publisherId: v === '__none__' ? '' : v }))}>
+   440→   639→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30">
+   441→   640→                  <SelectValue placeholder="Select publisher" />
+   442→   641→                </SelectTrigger>
+   443→   642→                <SelectContent>
+   444→   643→                  <SelectItem value="__none__">None</SelectItem>
+   445→   644→                  {publishers.map((p) => (
+   446→   645→                    <SelectItem key={p.id} value={p.id}>
+   447→   646→                      {p.name}
+   448→   647→                    </SelectItem>
+   449→   648→                  ))}
+   450→   649→                </SelectContent>
+   451→   650→              </Select>
+   452→   651→            </div>
+   453→   652→
+   454→   653→            {/* Category */}
+   455→   654→            <div>
+   456→   655→              <Label className="text-[11px] font-semibold">Category</Label>
+   457→   656→              <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v === '__none__' ? '' : v }))}>
+   458→   657→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30">
+   459→   658→                  <SelectValue placeholder="Select category" />
+   460→   659→                </SelectTrigger>
+   461→   660→                <SelectContent>
+   462→   661→                  <SelectItem value="__none__">None</SelectItem>
+   463→   662→                  {categories.map((c) => (
+   464→   663→                    <SelectItem key={c.id} value={c.id}>
+   465→   664→                      {c.name}
+   466→   665→                    </SelectItem>
+   467→   666→                  ))}
+   468→   667→                </SelectContent>
+   469→   668→              </Select>
+   470→   669→            </div>
+   471→   670→
+   472→   671→            {/* Edition */}
+   473→   672→            <div>
+   474→   673→              <Label htmlFor="edition" className="text-[11px] font-semibold">Edition</Label>
+   475→   674→              <Input
+   476→   675→                id="edition"
+   477→   676→                value={form.edition}
+   478→   677→                onChange={(e) => setForm((f) => ({ ...f, edition: e.target.value }))}
+   479→   678→                placeholder="e.g. 3rd"
+   480→   679→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   481→   680→              />
+   482→   681→            </div>
+   483→   682→
+   484→   683→            {/* Language */}
+   485→   684→            <div>
+   486→   685→              <Label htmlFor="language" className="text-[11px] font-semibold">Language</Label>
+   487→   686→              <Input
+   488→   687→                id="language"
+   489→   688→                value={form.language}
+   490→   689→                onChange={(e) => setForm((f) => ({ ...f, language: e.target.value }))}
+   491→   690→                placeholder="English"
+   492→   691→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   493→   692→              />
+   494→   693→            </div>
+   495→   694→
+   496→   695→            {/* Pages */}
+   497→   696→            <div>
+   498→   697→              <Label htmlFor="pages" className="text-[11px] font-semibold">Pages</Label>
+   499→   698→              <Input
+   500→   699→                id="pages"
+   501→   700→                type="number"
+   502→   701→                value={form.pages}
+   503→   702→                onChange={(e) => setForm((f) => ({ ...f, pages: e.target.value }))}
+   504→   703→                placeholder="0"
+   505→   704→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   506→   705→              />
+   507→   706→            </div>
+   508→   707→
+   509→   708→            {/* Publish Year */}
+   510→   709→            <div>
+   511→   710→              <Label htmlFor="publishYear" className="text-[11px] font-semibold">Publish Year</Label>
+   512→   711→              <Input
+   513→   712→                id="publishYear"
+   514→   713→                type="number"
+   515→   714→                value={form.publishYear}
+   516→   715→                onChange={(e) => setForm((f) => ({ ...f, publishYear: e.target.value }))}
+   517→   716→                placeholder="2024"
+   518→   717→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   519→   718→              />
+   520→   719→            </div>
+   521→   720→
+   522→   721→            <Separator className="sm:col-span-2" />
+   523→   722→
+   524→   723→            {/* Price */}
+   525→   724→            <div>
+   526→   725→              <Label htmlFor="price" className="text-[11px] font-semibold">Price ($)</Label>
+   527→   726→              <Input
+   528→   727→                id="price"
+   529→   728→                type="number"
+   530→   729→                step="0.01"
+   531→   730→                value={form.price}
+   532→   731→                onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+   533→   732→                placeholder="0.00"
+   534→   733→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   535→   734→              />
+   536→   735→            </div>
+   537→   736→
+   538→   737→            {/* Cost Price */}
+   539→   738→            <div>
+   540→   739→              <Label htmlFor="costPrice" className="text-[11px] font-semibold">Cost Price ($)</Label>
+   541→   740→              <Input
+   542→   741→                id="costPrice"
+   543→   742→                type="number"
+   544→   743→                step="0.01"
+   545→   744→                value={form.costPrice}
+   546→   745→                onChange={(e) => setForm((f) => ({ ...f, costPrice: e.target.value }))}
+   547→   746→                placeholder="0.00"
+   548→   747→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   549→   748→              />
+   550→   749→            </div>
+   551→   750→
+   552→   751→            {/* Discount */}
+   553→   752→            <div>
+   554→   753→              <Label htmlFor="discount" className="text-[11px] font-semibold">Discount (%)</Label>
+   555→   754→              <Input
+   556→   755→                id="discount"
+   557→   756→                type="number"
+   558→   757→                step="0.1"
+   559→   758→                value={form.discount}
+   560→   759→                onChange={(e) => setForm((f) => ({ ...f, discount: e.target.value }))}
+   561→   760→                placeholder="0"
+   562→   761→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   563→   762→              />
+   564→   763→            </div>
+   565→   764→
+   566→   765→            {/* Academic Level */}
+   567→   766→            <div>
+   568→   767→              <Label htmlFor="academicLevel" className="text-[11px] font-semibold">Academic Level</Label>
+   569→   768→              <Input
+   570→   769→                id="academicLevel"
+   571→   770→                value={form.academicLevel}
+   572→   771→                onChange={(e) => setForm((f) => ({ ...f, academicLevel: e.target.value }))}
+   573→   772→                placeholder="e.g. University, High School"
+   574→   773→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   575→   774→              />
+   576→   775→            </div>
+   577→   776→
+   578→   777→            {/* Subject */}
+   579→   778→            <div className="sm:col-span-2">
+   580→   779→              <Label htmlFor="subject" className="text-[11px] font-semibold">Subject</Label>
+   581→   780→              <Input
+   582→   781→                id="subject"
+   583→   782→                value={form.subject}
+   584→   783→                onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+   585→   784→                placeholder="e.g. Mathematics, History"
+   586→   785→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   587→   786→              />
+   588→   787→            </div>
+   589→   788→
+   590→   789→            {/* Description */}
+   591→   790→            <div className="sm:col-span-2">
+   592→   791→              <Label htmlFor="description" className="text-[11px] font-semibold">Description</Label>
+   593→   792→              <Textarea
+   594→   793→                id="description"
+   595→   794→                value={form.description}
+   596→   795→                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+   597→   796→                placeholder="Book description..."
+   598→   797→                rows={3}
+   599→   798→                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+   600→   799→              />
+   601→   800→            </div>
+   602→   801→          </div>
+   603→   802→
+   604→   803→          <div className="flex justify-end gap-2 pt-2">
+   605→   804→            <Button
+   606→   805→              variant="secondary"
+   607→   806→              className="rounded-lg text-[13px] font-medium h-8"
+   608→   807→              onClick={() => {
+   609→   808→                setDialogOpen(false)
+   610→   809→                setEditing(null)
+   611→   810→                setForm(emptyForm)
+   612→   811→              }}
+   613→   812→            >
+   614→   813→              Cancel
+   615→   814→            </Button>
+   616→   815→            <Button
+   617→   816→              onClick={handleSave}
+   618→   817→              disabled={saving || !form.title.trim()}
+   619→   818→              className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8"
+   620→   819→            >
+   621→   820→              {saving ? (
+   622→   821→                <RefreshCw className="size-4 mr-1.5 animate-spin" strokeWidth={1.5} />
+   623→   822→              ) : (
+   624→   823→                <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
+   625→   824→              )}
+   626→   825→              {editing ? 'Update Book' : 'Create Book'}
+   627→   826→            </Button>
+   628→   827→          </div>
+   629→   828→        </DialogContent>
+   630→   829→      </Dialog>
+   631→   830→    </div>
+   632→   831→  )
+   633→   832→}
+   634→   833→

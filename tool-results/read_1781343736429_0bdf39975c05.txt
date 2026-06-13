@@ -1,0 +1,1358 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import * as React from 'react'
+     4→     4→import {
+     5→     5→  GraduationCap,
+     6→     6→  Search,
+     7→     7→  Plus,
+     8→     8→  Phone,
+     9→     9→  Mail,
+    10→    10→  MapPin,
+    11→    11→  User,
+    12→    12→  Calendar,
+    13→    13→  FileText,
+    14→    14→  Package,
+    15→    15→  BookOpen,
+    16→    16→  PencilRuler,
+    17→    17→  Trash2,
+    18→    18→  ChevronRight,
+    19→    19→  X,
+    20→    20→  DollarSign,
+    21→    21→  Eye,
+    22→    22→} from 'lucide-react'
+    23→    23→import { Card, CardContent } from '@/components/ui/card'
+    24→    24→import { Button } from '@/components/ui/button'
+    25→    25→import { Input } from '@/components/ui/input'
+    26→    26→import { Label } from '@/components/ui/label'
+    27→    27→import { Badge } from '@/components/ui/badge'
+    28→    28→import {
+    29→    29→  Dialog,
+    30→    30→  DialogContent,
+    31→    31→  DialogDescription,
+    32→    32→  DialogFooter,
+    33→    33→  DialogHeader,
+    34→    34→  DialogTitle,
+    35→    35→} from '@/components/ui/dialog'
+    36→    36→import {
+    37→    37→  Select,
+    38→    38→  SelectContent,
+    39→    39→  SelectItem,
+    40→    40→  SelectTrigger,
+    41→    41→  SelectValue,
+    42→    42→} from '@/components/ui/select'
+    43→    43→import { Textarea } from '@/components/ui/textarea'
+    44→    44→import { Separator } from '@/components/ui/separator'
+    45→    45→import { ScrollArea } from '@/components/ui/scroll-area'
+    46→    46→import {
+    47→    47→  Table,
+    48→    48→  TableBody,
+    49→    49→  TableCell,
+    50→    50→  TableHead,
+    51→    51→  TableHeader,
+    52→    52→  TableRow,
+    53→    53→} from '@/components/ui/table'
+    54→    54→
+    55→    55→// ==================== TYPES ====================
+    56→    56→
+    57→    57→interface School {
+    58→    58→  id: string
+    59→    59→  name: string
+    60→    60→  address?: string | null
+    61→    61→  phone?: string | null
+    62→    62→  email?: string | null
+    63→    63→  contactPerson?: string | null
+    64→    64→  academicSession?: string | null
+    65→    65→  isActive: boolean
+    66→    66→  createdAt: string
+    67→    67→  customer?: { id: string; name: string } | null
+    68→    68→  _count?: { contracts: number; packages: number }
+    69→    69→}
+    70→    70→
+    71→    71→interface SchoolContract {
+    72→    72→  id: string
+    73→    73→  schoolId: string
+    74→    74→  title: string
+    75→    75→  academicSession?: string | null
+    76→    76→  totalValue: number
+    77→    77→  status: string
+    78→    78→  startDate?: string | null
+    79→    79→  endDate?: string | null
+    80→    80→  notes?: string | null
+    81→    81→  createdAt: string
+    82→    82→  school?: { id: string; name: string }
+    83→    83→}
+    84→    84→
+    85→    85→interface AcademicPackage {
+    86→    86→  id: string
+    87→    87→  name: string
+    88→    88→  schoolId?: string | null
+    89→    89→  grade?: string | null
+    90→    90→  academicLevel?: string | null
+    91→    91→  description?: string | null
+    92→    92→  totalPrice: number
+    93→    93→  discount: number
+    94→    94→  isActive: boolean
+    95→    95→  createdAt: string
+    96→    96→  school?: { id: string; name: string } | null
+    97→    97→  items: AcademicPackageItem[]
+    98→    98→}
+    99→    99→
+   100→   100→interface AcademicPackageItem {
+   101→   101→  id: string
+   102→   102→  bookId?: string | null
+   103→   103→  stationeryId?: string | null
+   104→   104→  quantity: number
+   105→   105→  unitPrice: number
+   106→   106→  book?: { id: string; title: string } | null
+   107→   107→  stationery?: { id: string; name: string } | null
+   108→   108→}
+   109→   109→
+   110→   110→interface Book {
+   111→   111→  id: string
+   112→   112→  title: string
+   113→   113→  price: number
+   114→   114→}
+   115→   115→
+   116→   116→interface StationeryProduct {
+   117→   117→  id: string
+   118→   118→  name: string
+   119→   119→  price: number
+   120→   120→}
+   121→   121→
+   122→   122→// ==================== SCHOOL SUPPLY MODULE ====================
+   123→   123→
+   124→   124→export function SchoolSupplyModule() {
+   125→   125→  const [activeTab, setActiveTab] = React.useState('schools')
+   126→   126→  const tabs = [
+   127→   127→    { value: 'schools', label: 'Schools', icon: GraduationCap },
+   128→   128→    { value: 'contracts', label: 'Contracts', icon: FileText },
+   129→   129→    { value: 'packages', label: 'Packages', icon: Package },
+   130→   130→  ]
+   131→   131→
+   132→   132→  return (
+   133→   133→    <div className="space-y-5">
+   134→   134→      <div className="flex items-center gap-3">
+   135→   135→        <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+   136→   136→          <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
+   137→   137→        </div>
+   138→   138→        <div>
+   139→   139→          <h2 className="text-[13px] font-semibold tracking-tight">School Supply</h2>
+   140→   140→          <p className="text-[11px] text-muted-foreground">
+   141→   141→            Manage schools, contracts, and academic packages
+   142→   142→          </p>
+   143→   143→        </div>
+   144→   144→      </div>
+   145→   145→
+   146→   146→      <div className="macos-segmented inline-flex p-0.5">
+   147→   147→        {tabs.map((tab) => {
+   148→   148→          const Icon = tab.icon
+   149→   149→          const isActive = activeTab === tab.value
+   150→   150→          return (
+   151→   151→            <button
+   152→   152→              key={tab.value}
+   153→   153→              onClick={() => setActiveTab(tab.value)}
+   154→   154→              className={`px-3 py-1 text-[12px] font-medium rounded-md flex items-center gap-1.5 transition-none ${
+   155→   155→                isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'
+   156→   156→              }`}
+   157→   157→            >
+   158→   158→              <Icon className="size-3.5" strokeWidth={1.5} />
+   159→   159→              {tab.label}
+   160→   160→            </button>
+   161→   161→          )
+   162→   162→        })}
+   163→   163→      </div>
+   164→   164→
+   165→   165→      <div className="mt-4">
+   166→   166→        {activeTab === 'schools' && <SchoolsTab />}
+   167→   167→        {activeTab === 'contracts' && <ContractsTab />}
+   168→   168→        {activeTab === 'packages' && <PackagesTab />}
+   169→   169→      </div>
+   170→   170→    </div>
+   171→   171→  )
+   172→   172→}
+   173→   173→
+   174→   174→// ==================== SCHOOLS TAB ====================
+   175→   175→
+   176→   176→function SchoolsTab() {
+   177→   177→  const [schools, setSchools] = React.useState<School[]>([])
+   178→   178→  const [loading, setLoading] = React.useState(true)
+   179→   179→  const [search, setSearch] = React.useState('')
+   180→   180→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   181→   181→  const [selectedSchool, setSelectedSchool] = React.useState<School | null>(null)
+   182→   182→
+   183→   183→  const fetchSchools = React.useCallback(async () => {
+   184→   184→    setLoading(true)
+   185→   185→    try {
+   186→   186→      const res = await fetch(`/api/schools?search=${encodeURIComponent(search)}&limit=50`)
+   187→   187→      const json = await res.json()
+   188→   188→      if (json.data) setSchools(json.data)
+   189→   189→    } catch (err) {
+   190→   190→      console.error('Failed to fetch schools:', err)
+   191→   191→    } finally {
+   192→   192→      setLoading(false)
+   193→   193→    }
+   194→   194→  }, [search])
+   195→   195→
+   196→   196→  React.useEffect(() => {
+   197→   197→    fetchSchools()
+   198→   198→  }, [fetchSchools])
+   199→   199→
+   200→   200→  const handleDelete = async (id: string) => {
+   201→   201→    if (!confirm('Are you sure you want to deactivate this school?')) return
+   202→   202→    try {
+   203→   203→      await fetch(`/api/schools?id=${id}`, { method: 'DELETE' })
+   204→   204→      fetchSchools()
+   205→   205→    } catch (err) {
+   206→   206→      console.error('Failed to delete school:', err)
+   207→   207→    }
+   208→   208→  }
+   209→   209→
+   210→   210→  return (
+   211→   211→    <div className="space-y-4">
+   212→   212→      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+   213→   213→        <div className="relative flex-1 w-full sm:max-w-sm">
+   214→   214→          <Search className="absolute left-2.5 top-1.5 size-3.5 text-muted-foreground" />
+   215→   215→          <Input
+   216→   216→            placeholder="Search schools..."
+   217→   217→            value={search}
+   218→   218→            onChange={(e) => setSearch(e.target.value)}
+   219→   219→            className="pl-8 rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   220→   220→          />
+   221→   221→        </div>
+   222→   222→        <Button onClick={() => setShowAddDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   223→   223→          <Plus className="size-3.5" strokeWidth={2} /> Add School
+   224→   224→        </Button>
+   225→   225→      </div>
+   226→   226→
+   227→   227→      {loading ? (
+   228→   228→        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+   229→   229→          {[1, 2, 3].map((i) => (
+   230→   230→            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
+   231→   231→              <CardContent className="p-4">
+   232→   232→                <div className="h-4 bg-muted rounded w-2/3 mb-3" />
+   233→   233→                <div className="h-3 bg-muted rounded w-1/2 mb-2" />
+   234→   234→                <div className="h-3 bg-muted rounded w-3/4" />
+   235→   235→              </CardContent>
+   236→   236→            </Card>
+   237→   237→          ))}
+   238→   238→        </div>
+   239→   239→      ) : schools.length === 0 ? (
+   240→   240→        <Card className="rounded-2xl macos-shadow border-0">
+   241→   241→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   242→   242→            <GraduationCap className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+   243→   243→            <p className="text-[13px] text-muted-foreground">No schools found</p>
+   244→   244→            <p className="text-[11px] text-muted-foreground">Add your first school to get started</p>
+   245→   245→          </CardContent>
+   246→   246→        </Card>
+   247→   247→      ) : (
+   248→   248→        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+   249→   249→          {schools.map((school) => (
+   250→   250→            <Card
+   251→   251→              key={school.id}
+   252→   252→              className="rounded-2xl macos-shadow border-0 macos-card-hover cursor-pointer group"
+   253→   253→              onClick={() => setSelectedSchool(school)}
+   254→   254→            >
+   255→   255→              <CardContent className="p-4">
+   256→   256→                <div className="flex items-start justify-between mb-3">
+   257→   257→                  <div className="flex items-center gap-2.5">
+   258→   258→                    <div className="size-8 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+   259→   259→                      <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.5} />
+   260→   260→                    </div>
+   261→   261→                    <div>
+   262→   262→                      <h3 className="font-semibold text-[13px] leading-tight tracking-tight">{school.name}</h3>
+   263→   263→                      {school.academicSession && (
+   264→   264→                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
+   265→   265→                          {school.academicSession}
+   266→   266→                        </Badge>
+   267→   267→                      )}
+   268→   268→                    </div>
+   269→   269→                  </div>
+   270→   270→                  <Badge
+   271→   271→                    className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
+   272→   272→                      school.isActive
+   273→   273→                        ? 'bg-macos-green/10 text-macos-green'
+   274→   274→                        : 'bg-macos-red/10 text-macos-red'
+   275→   275→                    }`}
+   276→   276→                  >
+   277→   277→                    {school.isActive ? 'Active' : 'Inactive'}
+   278→   278→                  </Badge>
+   279→   279→                </div>
+   280→   280→                <div className="space-y-1.5 text-[11px] text-muted-foreground">
+   281→   281→                  {school.address && (
+   282→   282→                    <div className="flex items-center gap-1.5">
+   283→   283→                      <MapPin className="size-3 shrink-0" strokeWidth={1.5} />
+   284→   284→                      <span className="truncate">{school.address}</span>
+   285→   285→                    </div>
+   286→   286→                  )}
+   287→   287→                  {school.phone && (
+   288→   288→                    <div className="flex items-center gap-1.5">
+   289→   289→                      <Phone className="size-3 shrink-0" strokeWidth={1.5} />
+   290→   290→                      {school.phone}
+   291→   291→                    </div>
+   292→   292→                  )}
+   293→   293→                  {school.contactPerson && (
+   294→   294→                    <div className="flex items-center gap-1.5">
+   295→   295→                      <User className="size-3 shrink-0" strokeWidth={1.5} />
+   296→   296→                      {school.contactPerson}
+   297→   297→                    </div>
+   298→   298→                  )}
+   299→   299→                </div>
+   300→   300→                <Separator className="my-3 bg-border/50" />
+   301→   301→                <div className="flex items-center justify-between text-[11px]">
+   302→   302→                  <span className="text-muted-foreground">
+   303→   303→                    {school._count?.contracts || 0} contracts
+   304→   304→                  </span>
+   305→   305→                  <span className="text-muted-foreground">
+   306→   306→                    {school._count?.packages || 0} packages
+   307→   307→                  </span>
+   308→   308→                  <Button
+   309→   309→                    variant="ghost"
+   310→   310→                    size="sm"
+   311→   311→                    className="h-6 px-2 text-[11px] opacity-0 group-hover:opacity-100 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+   312→   312→                    onClick={(e) => {
+   313→   313→                      e.stopPropagation()
+   314→   314→                      handleDelete(school.id)
+   315→   315→                    }}
+   316→   316→                  >
+   317→   317→                    <Trash2 className="size-3" strokeWidth={1.5} />
+   318→   318→                  </Button>
+   319→   319→                </div>
+   320→   320→              </CardContent>
+   321→   321→            </Card>
+   322→   322→          ))}
+   323→   323→        </div>
+   324→   324→      )}
+   325→   325→
+   326→   326→      <AddSchoolDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchSchools} />
+   327→   327→      <SchoolDetailDialog school={selectedSchool} onOpenChange={(open) => !open && setSelectedSchool(null)} onSuccess={fetchSchools} />
+   328→   328→    </div>
+   329→   329→  )
+   330→   330→}
+   331→   331→
+   332→   332→// ==================== CONTRACTS TAB ====================
+   333→   333→
+   334→   334→function ContractsTab() {
+   335→   335→  const [contracts, setContracts] = React.useState<SchoolContract[]>([])
+   336→   336→  const [schools, setSchools] = React.useState<School[]>([])
+   337→   337→  const [loading, setLoading] = React.useState(true)
+   338→   338→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   339→   339→
+   340→   340→  const fetchContracts = React.useCallback(async () => {
+   341→   341→    setLoading(true)
+   342→   342→    try {
+   343→   343→      const res = await fetch('/api/schools/contracts')
+   344→   344→      if (res.ok) {
+   345→   345→        const json = await res.json()
+   346→   346→        if (json.data) setContracts(json.data)
+   347→   347→      } else {
+   348→   348→        const schoolRes = await fetch('/api/schools?limit=50')
+   349→   349→        const schoolJson = await schoolRes.json()
+   350→   350→        if (schoolJson.data) {
+   351→   351→          const allContracts: SchoolContract[] = []
+   352→   352→          schoolJson.data.forEach((s: School & { contracts?: SchoolContract[] }) => {
+   353→   353→            if (s.contracts) {
+   354→   354→              s.contracts.forEach((c) => allContracts.push({ ...c, school: { id: s.id, name: s.name } }))
+   355→   355→            }
+   356→   356→          })
+   357→   357→          setContracts(allContracts)
+   358→   358→        }
+   359→   359→      }
+   360→   360→    } catch (err) {
+   361→   361→      console.error('Failed to fetch contracts:', err)
+   362→   362→    } finally {
+   363→   363→      setLoading(false)
+   364→   364→    }
+   365→   365→  }, [])
+   366→   366→
+   367→   367→  const fetchSchools = React.useCallback(async () => {
+   368→   368→    try {
+   369→   369→      const res = await fetch('/api/schools?limit=50')
+   370→   370→      const json = await res.json()
+   371→   371→      if (json.data) setSchools(json.data)
+   372→   372→    } catch (err) {
+   373→   373→      console.error('Failed to fetch schools:', err)
+   374→   374→    }
+   375→   375→  }, [])
+   376→   376→
+   377→   377→  React.useEffect(() => {
+   378→   378→    fetchContracts()
+   379→   379→    fetchSchools()
+   380→   380→  }, [fetchContracts, fetchSchools])
+   381→   381→
+   382→   382→  const getStatusBadge = (status: string) => {
+   383→   383→    switch (status) {
+   384→   384→      case 'active':
+   385→   385→        return 'bg-macos-green/10 text-macos-green'
+   386→   386→      case 'expired':
+   387→   387→        return 'bg-macos-orange/10 text-macos-orange'
+   388→   388→      case 'cancelled':
+   389→   389→        return 'bg-macos-red/10 text-macos-red'
+   390→   390→      default:
+   391→   391→        return 'bg-secondary text-secondary-foreground'
+   392→   392→    }
+   393→   393→  }
+   394→   394→
+   395→   395→  return (
+   396→   396→    <div className="space-y-4">
+   397→   397→      <div className="flex items-center justify-between">
+   398→   398→        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{contracts.length} contracts</p>
+   399→   399→        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   400→   400→          <Plus className="size-3.5" strokeWidth={2} /> Create Contract
+   401→   401→        </Button>
+   402→   402→      </div>
+   403→   403→
+   404→   404→      {loading ? (
+   405→   405→        <Card className="rounded-2xl macos-shadow border-0">
+   406→   406→          <CardContent className="p-6">
+   407→   407→            <div className="space-y-3">
+   408→   408→              {[1, 2, 3].map((i) => (
+   409→   409→                <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+   410→   410→              ))}
+   411→   411→            </div>
+   412→   412→          </CardContent>
+   413→   413→        </Card>
+   414→   414→      ) : contracts.length === 0 ? (
+   415→   415→        <Card className="rounded-2xl macos-shadow border-0">
+   416→   416→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   417→   417→            <FileText className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+   418→   418→            <p className="text-[13px] text-muted-foreground">No contracts found</p>
+   419→   419→            <p className="text-[11px] text-muted-foreground">Create your first school contract</p>
+   420→   420→          </CardContent>
+   421→   421→        </Card>
+   422→   422→      ) : (
+   423→   423→        <Card className="rounded-2xl macos-shadow border-0">
+   424→   424→          <CardContent className="p-0">
+   425→   425→            <ScrollArea className="max-h-[500px]">
+   426→   426→              <Table>
+   427→   427→                <TableHeader>
+   428→   428→                  <TableRow className="hover:bg-transparent">
+   429→   429→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+   430→   430→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">School</TableHead>
+   431→   431→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Session</TableHead>
+   432→   432→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Value</TableHead>
+   433→   433→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Status</TableHead>
+   434→   434→                    <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Period</TableHead>
+   435→   435→                  </TableRow>
+   436→   436→                </TableHeader>
+   437→   437→                <TableBody>
+   438→   438→                  {contracts.map((contract) => (
+   439→   439→                    <TableRow key={contract.id} className="hover:bg-secondary/50">
+   440→   440→                      <TableCell className="font-medium text-[13px]">{contract.title}</TableCell>
+   441→   441→                      <TableCell className="text-[13px]">{contract.school?.name || '—'}</TableCell>
+   442→   442→                      <TableCell className="text-[13px]">{contract.academicSession || '—'}</TableCell>
+   443→   443→                      <TableCell className="text-[13px]">${contract.totalValue.toLocaleString()}</TableCell>
+   444→   444→                      <TableCell>
+   445→   445→                        <Badge className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${getStatusBadge(contract.status)}`}>
+   446→   446→                          {contract.status}
+   447→   447→                        </Badge>
+   448→   448→                      </TableCell>
+   449→   449→                      <TableCell className="text-[11px] text-muted-foreground">
+   450→   450→                        {contract.startDate
+   451→   451→                          ? `${new Date(contract.startDate).toLocaleDateString()} - ${contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '...'}`
+   452→   452→                          : '—'}
+   453→   453→                      </TableCell>
+   454→   454→                    </TableRow>
+   455→   455→                  ))}
+   456→   456→                </TableBody>
+   457→   457→              </Table>
+   458→   458→            </ScrollArea>
+   459→   459→          </CardContent>
+   460→   460→        </Card>
+   461→   461→      )}
+   462→   462→
+   463→   463→      <CreateContractDialog
+   464→   464→        open={showCreateDialog}
+   465→   465→        onOpenChange={setShowCreateDialog}
+   466→   466→        schools={schools}
+   467→   467→        onSuccess={fetchContracts}
+   468→   468→      />
+   469→   469→    </div>
+   470→   470→  )
+   471→   471→}
+   472→   472→
+   473→   473→// ==================== PACKAGES TAB ====================
+   474→   474→
+   475→   475→function PackagesTab() {
+   476→   476→  const [packages, setPackages] = React.useState<AcademicPackage[]>([])
+   477→   477→  const [schools, setSchools] = React.useState<School[]>([])
+   478→   478→  const [books, setBooks] = React.useState<Book[]>([])
+   479→   479→  const [stationery, setStationery] = React.useState<StationeryProduct[]>([])
+   480→   480→  const [loading, setLoading] = React.useState(true)
+   481→   481→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   482→   482→  const [selectedPackage, setSelectedPackage] = React.useState<AcademicPackage | null>(null)
+   483→   483→
+   484→   484→  const fetchPackages = React.useCallback(async () => {
+   485→   485→    setLoading(true)
+   486→   486→    try {
+   487→   487→      const res = await fetch('/api/schools/packages')
+   488→   488→      if (res.ok) {
+   489→   489→        const json = await res.json()
+   490→   490→        if (json.data) setPackages(json.data)
+   491→   491→      } else {
+   492→   492→        const schoolRes = await fetch('/api/schools?limit=50')
+   493→   493→        const schoolJson = await schoolRes.json()
+   494→   494→        if (schoolJson.data) {
+   495→   495→          const allPackages: AcademicPackage[] = []
+   496→   496→          schoolJson.data.forEach((s: School & { packages?: AcademicPackage[] }) => {
+   497→   497→            if (s.packages) {
+   498→   498→              s.packages.forEach((p) => allPackages.push({ ...p, school: { id: s.id, name: s.name } }))
+   499→   499→            }
+   500→   500→          })
+   501→   501→          setPackages(allPackages)
+   502→   502→        }
+   503→   503→      }
+   504→   504→    } catch (err) {
+   505→   505→      console.error('Failed to fetch packages:', err)
+   506→   506→    } finally {
+   507→   507→      setLoading(false)
+   508→   508→    }
+   509→   509→  }, [])
+   510→   510→
+   511→   511→  const fetchReferenceData = React.useCallback(async () => {
+   512→   512→    try {
+   513→   513→      const [schoolsRes, booksRes, stationeryRes] = await Promise.all([
+   514→   514→        fetch('/api/schools?limit=50'),
+   515→   515→        fetch('/api/books?limit=100'),
+   516→   516→        fetch('/api/stationery?limit=100'),
+   517→   517→      ])
+   518→   518→      const [schoolsJson, booksJson, stationeryJson] = await Promise.all([
+   519→   519→        schoolsRes.json(),
+   520→   520→        booksRes.json(),
+   521→   521→        stationeryRes.json(),
+   522→   522→      ])
+   523→   523→      if (schoolsJson.data) setSchools(schoolsJson.data)
+   524→   524→      if (booksJson.data) setBooks(booksJson.data)
+   525→   525→      if (stationeryJson.data) setStationery(stationeryJson.data)
+   526→   526→    } catch (err) {
+   527→   527→      console.error('Failed to fetch reference data:', err)
+   528→   528→    }
+   529→   529→  }, [])
+   530→   530→
+   531→   531→  React.useEffect(() => {
+   532→   532→    fetchPackages()
+   533→   533→    fetchReferenceData()
+   534→   534→  }, [fetchPackages, fetchReferenceData])
+   535→   535→
+   536→   536→  return (
+   537→   537→    <div className="space-y-4">
+   538→   538→      <div className="flex items-center justify-between">
+   539→   539→        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">{packages.length} academic packages</p>
+   540→   540→        <Button onClick={() => setShowCreateDialog(true)} className="gap-1.5 bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   541→   541→          <Plus className="size-3.5" strokeWidth={2} /> Create Package
+   542→   542→        </Button>
+   543→   543→      </div>
+   544→   544→
+   545→   545→      {loading ? (
+   546→   546→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   547→   547→          {[1, 2, 3, 4].map((i) => (
+   548→   548→            <Card key={i} className="rounded-2xl macos-shadow border-0 animate-pulse">
+   549→   549→              <CardContent className="p-4">
+   550→   550→                <div className="h-4 bg-muted rounded w-2/3 mb-3" />
+   551→   551→                <div className="h-3 bg-muted rounded w-1/2 mb-2" />
+   552→   552→                <div className="h-3 bg-muted rounded w-3/4" />
+   553→   553→              </CardContent>
+   554→   554→            </Card>
+   555→   555→          ))}
+   556→   556→        </div>
+   557→   557→      ) : packages.length === 0 ? (
+   558→   558→        <Card className="rounded-2xl macos-shadow border-0">
+   559→   559→          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+   560→   560→            <Package className="size-10 text-muted-foreground mb-3" strokeWidth={1.5} />
+   561→   561→            <p className="text-[13px] text-muted-foreground">No packages found</p>
+   562→   562→            <p className="text-[11px] text-muted-foreground">Create your first academic package</p>
+   563→   563→          </CardContent>
+   564→   564→        </Card>
+   565→   565→      ) : (
+   566→   566→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   567→   567→          {packages.map((pkg) => (
+   568→   568→            <Card
+   569→   569→              key={pkg.id}
+   570→   570→              className="rounded-2xl macos-shadow border-0 macos-card-hover cursor-pointer"
+   571→   571→              onClick={() => setSelectedPackage(pkg)}
+   572→   572→            >
+   573→   573→              <CardContent className="p-4">
+   574→   574→                <div className="flex items-start justify-between mb-3">
+   575→   575→                  <div className="flex items-center gap-2.5">
+   576→   576→                    <div className="size-8 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+   577→   577→                      <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+   578→   578→                    </div>
+   579→   579→                    <div>
+   580→   580→                      <h3 className="font-semibold text-[13px] tracking-tight">{pkg.name}</h3>
+   581→   581→                      {pkg.grade && (
+   582→   582→                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-blue/10 text-macos-blue">
+   583→   583→                          Grade {pkg.grade}
+   584→   584→                        </Badge>
+   585→   585→                      )}
+   586→   586→                    </div>
+   587→   587→                  </div>
+   588→   588→                  <div className="text-right">
+   589→   589→                    <p className="text-[13px] font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
+   590→   590→                    {pkg.discount > 0 && (
+   591→   591→                      <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% off</p>
+   592→   592→                    )}
+   593→   593→                  </div>
+   594→   594→                </div>
+   595→   595→                {pkg.school && (
+   596→   596→                  <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1">
+   597→   597→                    <GraduationCap className="size-3" strokeWidth={1.5} />
+   598→   598→                    {pkg.school.name}
+   599→   599→                  </p>
+   600→   600→                )}
+   601→   601→                {pkg.items && pkg.items.length > 0 && (
+   602→   602→                  <div className="space-y-1.5 mb-3">
+   603→   603→                    {pkg.items.slice(0, 4).map((item) => (
+   604→   604→                      <div key={item.id} className="flex items-center justify-between text-[11px]">
+   605→   605→                        <span className="flex items-center gap-1.5 text-muted-foreground">
+   606→   606→                          {item.bookId ? (
+   607→   607→                            <BookOpen className="size-3 text-macos-teal" strokeWidth={1.5} />
+   608→   608→                          ) : (
+   609→   609→                            <PencilRuler className="size-3 text-macos-orange" strokeWidth={1.5} />
+   610→   610→                          )}
+   611→   611→                          {item.book?.title || item.stationery?.name || 'Item'}
+   612→   612→                        </span>
+   613→   613→                        <span className="text-muted-foreground">×{item.quantity} · ${item.unitPrice}</span>
+   614→   614→                      </div>
+   615→   615→                    ))}
+   616→   616→                    {pkg.items.length > 4 && (
+   617→   617→                      <p className="text-[10px] text-muted-foreground">+{pkg.items.length - 4} more items</p>
+   618→   618→                    )}
+   619→   619→                  </div>
+   620→   620→                )}
+   621→   621→                <Separator className="bg-border/50" />
+   622→   622→                <div className="flex items-center justify-between mt-3">
+   623→   623→                  <span className="text-[11px] text-muted-foreground">
+   624→   624→                    {pkg.items?.length || 0} items
+   625→   625→                  </span>
+   626→   626→                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px] text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10 rounded-lg">
+   627→   627→                    <Eye className="size-3 mr-1" strokeWidth={1.5} /> View
+   628→   628→                  </Button>
+   629→   629→                </div>
+   630→   630→              </CardContent>
+   631→   631→            </Card>
+   632→   632→          ))}
+   633→   633→        </div>
+   634→   634→      )}
+   635→   635→
+   636→   636→      <CreatePackageDialog
+   637→   637→        open={showCreateDialog}
+   638→   638→        onOpenChange={setShowCreateDialog}
+   639→   639→        schools={schools}
+   640→   640→        books={books}
+   641→   641→        stationery={stationery}
+   642→   642→        onSuccess={fetchPackages}
+   643→   643→      />
+   644→   644→
+   645→   645→      <PackageDetailDialog
+   646→   646→        pkg={selectedPackage}
+   647→   647→        onOpenChange={(open) => !open && setSelectedPackage(null)}
+   648→   648→      />
+   649→   649→    </div>
+   650→   650→  )
+   651→   651→}
+   652→   652→
+   653→   653→// ==================== ADD SCHOOL DIALOG ====================
+   654→   654→
+   655→   655→function AddSchoolDialog({
+   656→   656→  open,
+   657→   657→  onOpenChange,
+   658→   658→  onSuccess,
+   659→   659→}: {
+   660→   660→  open: boolean
+   661→   661→  onOpenChange: (open: boolean) => void
+   662→   662→  onSuccess: () => void
+   663→   663→}) {
+   664→   664→  const [saving, setSaving] = React.useState(false)
+   665→   665→  const [form, setForm] = React.useState({
+   666→   666→    name: '',
+   667→   667→    address: '',
+   668→   668→    phone: '',
+   669→   669→    email: '',
+   670→   670→    contactPerson: '',
+   671→   671→    academicSession: '',
+   672→   672→  })
+   673→   673→
+   674→   674→  const handleSubmit = async (e: React.FormEvent) => {
+   675→   675→    e.preventDefault()
+   676→   676→    if (!form.name.trim()) return
+   677→   677→    setSaving(true)
+   678→   678→    try {
+   679→   679→      const res = await fetch('/api/schools', {
+   680→   680→        method: 'POST',
+   681→   681→        headers: { 'Content-Type': 'application/json' },
+   682→   682→        body: JSON.stringify(form),
+   683→   683→      })
+   684→   684→      if (res.ok) {
+   685→   685→        setForm({ name: '', address: '', phone: '', email: '', contactPerson: '', academicSession: '' })
+   686→   686→        onOpenChange(false)
+   687→   687→        onSuccess()
+   688→   688→      } else {
+   689→   689→        const json = await res.json()
+   690→   690→        alert(json.error || 'Failed to create school')
+   691→   691→      }
+   692→   692→    } catch (err) {
+   693→   693→      console.error('Failed to create school:', err)
+   694→   694→      alert('Failed to create school')
+   695→   695→    } finally {
+   696→   696→      setSaving(false)
+   697→   697→    }
+   698→   698→  }
+   699→   699→
+   700→   700→  return (
+   701→   701→    <Dialog open={open} onOpenChange={onOpenChange}>
+   702→   702→      <DialogContent className="sm:max-w-md rounded-2xl">
+   703→   703→        <DialogHeader>
+   704→   704→          <DialogTitle className="text-[13px] font-semibold tracking-tight">Add School</DialogTitle>
+   705→   705→          <DialogDescription className="text-[11px]">Register a new school for supply programs</DialogDescription>
+   706→   706→        </DialogHeader>
+   707→   707→        <form onSubmit={handleSubmit} className="space-y-4">
+   708→   708→          <div className="space-y-2">
+   709→   709→            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
+   710→   710→            <Input
+   711→   711→              value={form.name}
+   712→   712→              onChange={(e) => setForm({ ...form, name: e.target.value })}
+   713→   713→              placeholder="Springfield Academy"
+   714→   714→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   715→   715→              required
+   716→   716→            />
+   717→   717→          </div>
+   718→   718→          <div className="space-y-2">
+   719→   719→            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
+   720→   720→            <Input
+   721→   721→              value={form.address}
+   722→   722→              onChange={(e) => setForm({ ...form, address: e.target.value })}
+   723→   723→              placeholder="123 Education Street"
+   724→   724→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   725→   725→            />
+   726→   726→          </div>
+   727→   727→          <div className="grid grid-cols-2 gap-3">
+   728→   728→            <div className="space-y-2">
+   729→   729→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
+   730→   730→              <Input
+   731→   731→                value={form.phone}
+   732→   732→                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+   733→   733→                placeholder="+1-555-0100"
+   734→   734→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   735→   735→              />
+   736→   736→            </div>
+   737→   737→            <div className="space-y-2">
+   738→   738→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
+   739→   739→              <Input
+   740→   740→                type="email"
+   741→   741→                value={form.email}
+   742→   742→                onChange={(e) => setForm({ ...form, email: e.target.value })}
+   743→   743→                placeholder="school@example.com"
+   744→   744→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   745→   745→              />
+   746→   746→            </div>
+   747→   747→          </div>
+   748→   748→          <div className="grid grid-cols-2 gap-3">
+   749→   749→            <div className="space-y-2">
+   750→   750→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contact Person</Label>
+   751→   751→              <Input
+   752→   752→                value={form.contactPerson}
+   753→   753→                onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
+   754→   754→                placeholder="John Smith"
+   755→   755→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   756→   756→              />
+   757→   757→            </div>
+   758→   758→            <div className="space-y-2">
+   759→   759→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
+   760→   760→              <Input
+   761→   761→                value={form.academicSession}
+   762→   762→                onChange={(e) => setForm({ ...form, academicSession: e.target.value })}
+   763→   763→                placeholder="2025-2026"
+   764→   764→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   765→   765→              />
+   766→   766→            </div>
+   767→   767→          </div>
+   768→   768→          <DialogFooter>
+   769→   769→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">
+   770→   770→              Cancel
+   771→   771→            </Button>
+   772→   772→            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   773→   773→              {saving ? 'Saving...' : 'Add School'}
+   774→   774→            </Button>
+   775→   775→          </DialogFooter>
+   776→   776→        </form>
+   777→   777→      </DialogContent>
+   778→   778→    </Dialog>
+   779→   779→  )
+   780→   780→}
+   781→   781→
+   782→   782→// ==================== SCHOOL DETAIL DIALOG ====================
+   783→   783→
+   784→   784→function SchoolDetailDialog({
+   785→   785→  school,
+   786→   786→  onOpenChange,
+   787→   787→  onSuccess,
+   788→   788→}: {
+   789→   789→  school: School | null
+   790→   790→  onOpenChange: (open: boolean) => void
+   791→   791→  onSuccess: () => void
+   792→   792→}) {
+   793→   793→  const [saving, setSaving] = React.useState(false)
+   794→   794→  const [form, setForm] = React.useState({
+   795→   795→    name: '',
+   796→   796→    address: '',
+   797→   797→    phone: '',
+   798→   798→    email: '',
+   799→   799→    contactPerson: '',
+   800→   800→    academicSession: '',
+   801→   801→  })
+   802→   802→
+   803→   803→  React.useEffect(() => {
+   804→   804→    if (school) {
+   805→   805→      setForm({
+   806→   806→        name: school.name || '',
+   807→   807→        address: school.address || '',
+   808→   808→        phone: school.phone || '',
+   809→   809→        email: school.email || '',
+   810→   810→        contactPerson: school.contactPerson || '',
+   811→   811→        academicSession: school.academicSession || '',
+   812→   812→      })
+   813→   813→    }
+   814→   814→  }, [school])
+   815→   815→
+   816→   816→  const handleSubmit = async (e: React.FormEvent) => {
+   817→   817→    e.preventDefault()
+   818→   818→    if (!school) return
+   819→   819→    setSaving(true)
+   820→   820→    try {
+   821→   821→      const res = await fetch('/api/schools', {
+   822→   822→        method: 'PUT',
+   823→   823→        headers: { 'Content-Type': 'application/json' },
+   824→   824→        body: JSON.stringify({ id: school.id, ...form }),
+   825→   825→      })
+   826→   826→      if (res.ok) {
+   827→   827→        onOpenChange(false)
+   828→   828→        onSuccess()
+   829→   829→      } else {
+   830→   830→        const json = await res.json()
+   831→   831→        alert(json.error || 'Failed to update school')
+   832→   832→      }
+   833→   833→    } catch (err) {
+   834→   834→      console.error('Failed to update school:', err)
+   835→   835→      alert('Failed to update school')
+   836→   836→    } finally {
+   837→   837→      setSaving(false)
+   838→   838→    }
+   839→   839→  }
+   840→   840→
+   841→   841→  if (!school) return null
+   842→   842→
+   843→   843→  return (
+   844→   844→    <Dialog open={!!school} onOpenChange={onOpenChange}>
+   845→   845→      <DialogContent className="sm:max-w-md rounded-2xl">
+   846→   846→        <DialogHeader>
+   847→   847→          <DialogTitle className="text-[13px] font-semibold tracking-tight">Edit School</DialogTitle>
+   848→   848→          <DialogDescription className="text-[11px]">Update school information</DialogDescription>
+   849→   849→        </DialogHeader>
+   850→   850→        <form onSubmit={handleSubmit} className="space-y-4">
+   851→   851→          <div className="space-y-2">
+   852→   852→            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
+   853→   853→            <Input
+   854→   854→              value={form.name}
+   855→   855→              onChange={(e) => setForm({ ...form, name: e.target.value })}
+   856→   856→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   857→   857→              required
+   858→   858→            />
+   859→   859→          </div>
+   860→   860→          <div className="space-y-2">
+   861→   861→            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
+   862→   862→            <Input
+   863→   863→              value={form.address}
+   864→   864→              onChange={(e) => setForm({ ...form, address: e.target.value })}
+   865→   865→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   866→   866→            />
+   867→   867→          </div>
+   868→   868→          <div className="grid grid-cols-2 gap-3">
+   869→   869→            <div className="space-y-2">
+   870→   870→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
+   871→   871→              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   872→   872→            </div>
+   873→   873→            <div className="space-y-2">
+   874→   874→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
+   875→   875→              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   876→   876→            </div>
+   877→   877→          </div>
+   878→   878→          <div className="grid grid-cols-2 gap-3">
+   879→   879→            <div className="space-y-2">
+   880→   880→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contact Person</Label>
+   881→   881→              <Input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   882→   882→            </div>
+   883→   883→            <div className="space-y-2">
+   884→   884→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
+   885→   885→              <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   886→   886→            </div>
+   887→   887→          </div>
+   888→   888→          <DialogFooter>
+   889→   889→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">
+   890→   890→              Cancel
+   891→   891→            </Button>
+   892→   892→            <Button type="submit" disabled={saving} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   893→   893→              {saving ? 'Saving...' : 'Update School'}
+   894→   894→            </Button>
+   895→   895→          </DialogFooter>
+   896→   896→        </form>
+   897→   897→      </DialogContent>
+   898→   898→    </Dialog>
+   899→   899→  )
+   900→   900→}
+   901→   901→
+   902→   902→// ==================== CREATE CONTRACT DIALOG ====================
+   903→   903→
+   904→   904→function CreateContractDialog({
+   905→   905→  open,
+   906→   906→  onOpenChange,
+   907→   907→  schools,
+   908→   908→  onSuccess,
+   909→   909→}: {
+   910→   910→  open: boolean
+   911→   911→  onOpenChange: (open: boolean) => void
+   912→   912→  schools: School[]
+   913→   913→  onSuccess: () => void
+   914→   914→}) {
+   915→   915→  const [saving, setSaving] = React.useState(false)
+   916→   916→  const [form, setForm] = React.useState({
+   917→   917→    schoolId: '',
+   918→   918→    title: '',
+   919→   919→    academicSession: '',
+   920→   920→    totalValue: '',
+   921→   921→    startDate: '',
+   922→   922→    endDate: '',
+   923→   923→    notes: '',
+   924→   924→  })
+   925→   925→
+   926→   926→  const handleSubmit = async (e: React.FormEvent) => {
+   927→   927→    e.preventDefault()
+   928→   928→    if (!form.schoolId || !form.title.trim()) return
+   929→   929→    setSaving(true)
+   930→   930→    try {
+   931→   931→      const res = await fetch('/api/schools/contracts', {
+   932→   932→        method: 'POST',
+   933→   933→        headers: { 'Content-Type': 'application/json' },
+   934→   934→        body: JSON.stringify({
+   935→   935→          schoolId: form.schoolId,
+   936→   936→          title: form.title,
+   937→   937→          academicSession: form.academicSession,
+   938→   938→          totalValue: parseFloat(form.totalValue) || 0,
+   939→   939→          startDate: form.startDate || null,
+   940→   940→          endDate: form.endDate || null,
+   941→   941→          notes: form.notes,
+   942→   942→        }),
+   943→   943→      })
+   944→   944→      if (res.ok) {
+   945→   945→        setForm({ schoolId: '', title: '', academicSession: '', totalValue: '', startDate: '', endDate: '', notes: '' })
+   946→   946→        onOpenChange(false)
+   947→   947→        onSuccess()
+   948→   948→      } else {
+   949→   949→        const json = await res.json()
+   950→   950→        alert(json.error || 'Failed to create contract')
+   951→   951→      }
+   952→   952→    } catch (err) {
+   953→   953→      console.error('Failed to create contract:', err)
+   954→   954→      alert('Failed to create contract')
+   955→   955→    } finally {
+   956→   956→      setSaving(false)
+   957→   957→    }
+   958→   958→  }
+   959→   959→
+   960→   960→  return (
+   961→   961→    <Dialog open={open} onOpenChange={onOpenChange}>
+   962→   962→      <DialogContent className="sm:max-w-md rounded-2xl">
+   963→   963→        <DialogHeader>
+   964→   964→          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Contract</DialogTitle>
+   965→   965→          <DialogDescription className="text-[11px]">Create a new school supply contract</DialogDescription>
+   966→   966→        </DialogHeader>
+   967→   967→        <form onSubmit={handleSubmit} className="space-y-4">
+   968→   968→          <div className="space-y-2">
+   969→   969→            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">School *</Label>
+   970→   970→            <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
+   971→   971→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   972→   972→                <SelectValue placeholder="Select school" />
+   973→   973→              </SelectTrigger>
+   974→   974→              <SelectContent>
+   975→   975→                {schools.map((s) => (
+   976→   976→                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+   977→   977→                ))}
+   978→   978→              </SelectContent>
+   979→   979→            </Select>
+   980→   980→          </div>
+   981→   981→          <div className="space-y-2">
+   982→   982→            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Contract Title *</Label>
+   983→   983→            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Annual Supply Agreement" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+   984→   984→          </div>
+   985→   985→          <div className="grid grid-cols-2 gap-3">
+   986→   986→            <div className="space-y-2">
+   987→   987→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Session</Label>
+   988→   988→              <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} placeholder="2025-2026" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   989→   989→            </div>
+   990→   990→            <div className="space-y-2">
+   991→   991→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Total Value ($)</Label>
+   992→   992→              <Input type="number" step="0.01" value={form.totalValue} onChange={(e) => setForm({ ...form, totalValue: e.target.value })} placeholder="50000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   993→   993→            </div>
+   994→   994→          </div>
+   995→   995→          <div className="grid grid-cols-2 gap-3">
+   996→   996→            <div className="space-y-2">
+   997→   997→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Start Date</Label>
+   998→   998→              <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+   999→   999→            </div>
+  1000→  1000→            <div className="space-y-2">
+  1001→  1001→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">End Date</Label>
+  1002→  1002→              <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1003→  1003→            </div>
+  1004→  1004→          </div>
+  1005→  1005→          <div className="space-y-2">
+  1006→  1006→            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Notes</Label>
+  1007→  1007→            <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional contract details..." rows={3} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+  1008→  1008→          </div>
+  1009→  1009→          <DialogFooter>
+  1010→  1010→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1011→  1011→            <Button type="submit" disabled={saving || !form.schoolId || !form.title.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1012→  1012→              {saving ? 'Creating...' : 'Create Contract'}
+  1013→  1013→            </Button>
+  1014→  1014→          </DialogFooter>
+  1015→  1015→        </form>
+  1016→  1016→      </DialogContent>
+  1017→  1017→    </Dialog>
+  1018→  1018→  )
+  1019→  1019→}
+  1020→  1020→
+  1021→  1021→// ==================== CREATE PACKAGE DIALOG ====================
+  1022→  1022→
+  1023→  1023→interface PackageItemForm {
+  1024→  1024→  key: string
+  1025→  1025→  itemType: 'book' | 'stationery'
+  1026→  1026→  itemId: string
+  1027→  1027→  quantity: number
+  1028→  1028→  unitPrice: number
+  1029→  1029→  name: string
+  1030→  1030→}
+  1031→  1031→
+  1032→  1032→function CreatePackageDialog({
+  1033→  1033→  open,
+  1034→  1034→  onOpenChange,
+  1035→  1035→  schools,
+  1036→  1036→  books,
+  1037→  1037→  stationery,
+  1038→  1038→  onSuccess,
+  1039→  1039→}: {
+  1040→  1040→  open: boolean
+  1041→  1041→  onOpenChange: (open: boolean) => void
+  1042→  1042→  schools: School[]
+  1043→  1043→  books: Book[]
+  1044→  1044→  stationery: StationeryProduct[]
+  1045→  1045→  onSuccess: () => void
+  1046→  1046→}) {
+  1047→  1047→  const [saving, setSaving] = React.useState(false)
+  1048→  1048→  const [form, setForm] = React.useState({
+  1049→  1049→    schoolId: '',
+  1050→  1050→    name: '',
+  1051→  1051→    grade: '',
+  1052→  1052→    academicLevel: '',
+  1053→  1053→    description: '',
+  1054→  1054→    discount: '',
+  1055→  1055→  })
+  1056→  1056→  const [items, setItems] = React.useState<PackageItemForm[]>([
+  1057→  1057→    { key: crypto.randomUUID(), itemType: 'book', itemId: '', quantity: 1, unitPrice: 0, name: '' },
+  1058→  1058→  ])
+  1059→  1059→
+  1060→  1060→  const totalPrice = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+  1061→  1061→
+  1062→  1062→  const addItem = () => {
+  1063→  1063→    setItems([
+  1064→  1064→      ...items,
+  1065→  1065→      { key: crypto.randomUUID(), itemType: 'book', itemId: '', quantity: 1, unitPrice: 0, name: '' },
+  1066→  1066→    ])
+  1067→  1067→  }
+  1068→  1068→
+  1069→  1069→  const removeItem = (key: string) => {
+  1070→  1070→    if (items.length > 1) {
+  1071→  1071→      setItems(items.filter((i) => i.key !== key))
+  1072→  1072→    }
+  1073→  1073→  }
+  1074→  1074→
+  1075→  1075→  const updateItem = (key: string, updates: Partial<PackageItemForm>) => {
+  1076→  1076→    setItems(
+  1077→  1077→      items.map((item) => {
+  1078→  1078→        if (item.key !== key) return item
+  1079→  1079→        const updated = { ...item, ...updates }
+  1080→  1080→        if (updates.itemId) {
+  1081→  1081→          if (updated.itemType === 'book') {
+  1082→  1082→            const book = books.find((b) => b.id === updates.itemId)
+  1083→  1083→            if (book) {
+  1084→  1084→              updated.unitPrice = book.price
+  1085→  1085→              updated.name = book.title
+  1086→  1086→            }
+  1087→  1087→          } else {
+  1088→  1088→            const product = stationery.find((s) => s.id === updates.itemId)
+  1089→  1089→            if (product) {
+  1090→  1090→              updated.unitPrice = product.price
+  1091→  1091→              updated.name = product.name
+  1092→  1092→            }
+  1093→  1093→          }
+  1094→  1094→        }
+  1095→  1095→        return updated
+  1096→  1096→      })
+  1097→  1097→    )
+  1098→  1098→  }
+  1099→  1099→
+  1100→  1100→  const handleSubmit = async (e: React.FormEvent) => {
+  1101→  1101→    e.preventDefault()
+  1102→  1102→    if (!form.name.trim()) return
+  1103→  1103→    setSaving(true)
+  1104→  1104→    try {
+  1105→  1105→      const res = await fetch('/api/schools/packages', {
+  1106→  1106→        method: 'POST',
+  1107→  1107→        headers: { 'Content-Type': 'application/json' },
+  1108→  1108→        body: JSON.stringify({
+  1109→  1109→          schoolId: form.schoolId || null,
+  1110→  1110→          name: form.name,
+  1111→  1111→          grade: form.grade,
+  1112→  1112→          academicLevel: form.academicLevel,
+  1113→  1113→          description: form.description,
+  1114→  1114→          totalPrice,
+  1115→  1115→          discount: parseFloat(form.discount) || 0,
+  1116→  1116→          items: items
+  1117→  1117→            .filter((i) => i.itemId)
+  1118→  1118→            .map((i) => ({
+  1119→  1119→              bookId: i.itemType === 'book' ? i.itemId : null,
+  1120→  1120→              stationeryId: i.itemType === 'stationery' ? i.itemId : null,
+  1121→  1121→              quantity: i.quantity,
+  1122→  1122→              unitPrice: i.unitPrice,
+  1123→  1123→            })),
+  1124→  1124→        }),
+  1125→  1125→      })
+  1126→  1126→      if (res.ok) {
+  1127→  1127→        setForm({ schoolId: '', name: '', grade: '', academicLevel: '', description: '', discount: '' })
+  1128→  1128→        setItems([{ key: crypto.randomUUID(), itemType: 'book', itemId: '', quantity: 1, unitPrice: 0, name: '' }])
+  1129→  1129→        onOpenChange(false)
+  1130→  1130→        onSuccess()
+  1131→  1131→      } else {
+  1132→  1132→        const json = await res.json()
+  1133→  1133→        alert(json.error || 'Failed to create package')
+  1134→  1134→      }
+  1135→  1135→    } catch (err) {
+  1136→  1136→      console.error('Failed to create package:', err)
+  1137→  1137→      alert('Failed to create package')
+  1138→  1138→    } finally {
+  1139→  1139→      setSaving(false)
+  1140→  1140→    }
+  1141→  1141→  }
+  1142→  1142→
+  1143→  1143→  return (
+  1144→  1144→    <Dialog open={open} onOpenChange={onOpenChange}>
+  1145→  1145→      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
+  1146→  1146→        <DialogHeader>
+  1147→  1147→          <DialogTitle className="text-[13px] font-semibold tracking-tight">Create Academic Package</DialogTitle>
+  1148→  1148→          <DialogDescription className="text-[11px]">Build a grade-wise package with books and stationery</DialogDescription>
+  1149→  1149→        </DialogHeader>
+  1150→  1150→        <form onSubmit={handleSubmit} className="space-y-4">
+  1151→  1151→          <div className="grid grid-cols-2 gap-3">
+  1152→  1152→            <div className="space-y-2">
+  1153→  1153→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">School</Label>
+  1154→  1154→              <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
+  1155→  1155→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1156→  1156→                  <SelectValue placeholder="Select school" />
+  1157→  1157→                </SelectTrigger>
+  1158→  1158→                <SelectContent>
+  1159→  1159→                  {schools.map((s) => (
+  1160→  1160→                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+  1161→  1161→                  ))}
+  1162→  1162→                </SelectContent>
+  1163→  1163→              </Select>
+  1164→  1164→            </div>
+  1165→  1165→            <div className="space-y-2">
+  1166→  1166→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Package Name *</Label>
+  1167→  1167→              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Grade 1 Package" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" required />
+  1168→  1168→            </div>
+  1169→  1169→          </div>
+  1170→  1170→          <div className="grid grid-cols-3 gap-3">
+  1171→  1171→            <div className="space-y-2">
+  1172→  1172→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Grade</Label>
+  1173→  1173→              <Input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="1" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1174→  1174→            </div>
+  1175→  1175→            <div className="space-y-2">
+  1176→  1176→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Academic Level</Label>
+  1177→  1177→              <Input value={form.academicLevel} onChange={(e) => setForm({ ...form, academicLevel: e.target.value })} placeholder="Primary" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1178→  1178→            </div>
+  1179→  1179→            <div className="space-y-2">
+  1180→  1180→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Discount (%)</Label>
+  1181→  1181→              <Input type="number" min="0" max="100" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} placeholder="10" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8" />
+  1182→  1182→            </div>
+  1183→  1183→          </div>
+  1184→  1184→          <div className="space-y-2">
+  1185→  1185→            <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Description</Label>
+  1186→  1186→            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Package description..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+  1187→  1187→          </div>
+  1188→  1188→
+  1189→  1189→          <Separator className="bg-border/50" />
+  1190→  1190→
+  1191→  1191→          <div className="space-y-3">
+  1192→  1192→            <div className="flex items-center justify-between">
+  1193→  1193→              <Label className="text-[11px] font-semibold tracking-wide text-muted-foreground">Package Items</Label>
+  1194→  1194→              <Button type="button" variant="ghost" size="sm" onClick={addItem} className="gap-1 text-[11px] text-macos-blue hover:text-macos-blue rounded-lg">
+  1195→  1195→                <Plus className="size-3" strokeWidth={2} /> Add Item
+  1196→  1196→              </Button>
+  1197→  1197→            </div>
+  1198→  1198→            {items.map((item) => (
+  1199→  1199→              <div key={item.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
+  1200→  1200→                <div className="flex-1 space-y-1">
+  1201→  1201→                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Type</Label>
+  1202→  1202→                  <Select
+  1203→  1203→                    value={item.itemType}
+  1204→  1204→                    onValueChange={(v: 'book' | 'stationery') =>
+  1205→  1205→                      updateItem(item.key, { itemType: v, itemId: '', unitPrice: 0, name: '' })
+  1206→  1206→                    }
+  1207→  1207→                  >
+  1208→  1208→                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
+  1209→  1209→                      <SelectValue />
+  1210→  1210→                    </SelectTrigger>
+  1211→  1211→                    <SelectContent>
+  1212→  1212→                      <SelectItem value="book"><span className="flex items-center gap-1"><BookOpen className="size-3" /> Book</span></SelectItem>
+  1213→  1213→                      <SelectItem value="stationery"><span className="flex items-center gap-1"><PencilRuler className="size-3" /> Stationery</span></SelectItem>
+  1214→  1214→                    </SelectContent>
+  1215→  1215→                  </Select>
+  1216→  1216→                </div>
+  1217→  1217→                <div className="flex-[2] space-y-1">
+  1218→  1218→                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Item</Label>
+  1219→  1219→                  <Select value={item.itemId} onValueChange={(v) => updateItem(item.key, { itemId: v })}>
+  1220→  1220→                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
+  1221→  1221→                      <SelectValue placeholder={`Select ${item.itemType}...`} />
+  1222→  1222→                    </SelectTrigger>
+  1223→  1223→                    <SelectContent>
+  1224→  1224→                      {(item.itemType === 'book' ? books : stationery).map((b) => (
+  1225→  1225→                        <SelectItem key={b.id} value={b.id}>
+  1226→  1226→                          {b.name || b.title} — ${b.price}
+  1227→  1227→                        </SelectItem>
+  1228→  1228→                      ))}
+  1229→  1229→                    </SelectContent>
+  1230→  1230→                  </Select>
+  1231→  1231→                </div>
+  1232→  1232→                <div className="w-16 space-y-1">
+  1233→  1233→                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Qty</Label>
+  1234→  1234→                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(item.key, { quantity: parseInt(e.target.value) || 1 })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1235→  1235→                </div>
+  1236→  1236→                <div className="w-20 space-y-1">
+  1237→  1237→                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground">Price</Label>
+  1238→  1238→                  <Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.key, { unitPrice: parseFloat(e.target.value) || 0 })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1239→  1239→                </div>
+  1240→  1240→                <Button
+  1241→  1241→                  type="button"
+  1242→  1242→                  variant="ghost"
+  1243→  1243→                  size="sm"
+  1244→  1244→                  className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+  1245→  1245→                  onClick={() => removeItem(item.key)}
+  1246→  1246→                  disabled={items.length <= 1}
+  1247→  1247→                >
+  1248→  1248→                  <X className="size-3" />
+  1249→  1249→                </Button>
+  1250→  1250→              </div>
+  1251→  1251→            ))}
+  1252→  1252→          </div>
+  1253→  1253→
+  1254→  1254→          <div className="flex items-center justify-between p-3 rounded-xl bg-macos-green/10">
+  1255→  1255→            <span className="text-[13px] font-medium">Total Package Price</span>
+  1256→  1256→            <span className="text-[13px] font-bold tracking-tight text-macos-green">${totalPrice.toLocaleString()}</span>
+  1257→  1257→          </div>
+  1258→  1258→
+  1259→  1259→          <DialogFooter>
+  1260→  1260→            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="rounded-lg text-[13px]">Cancel</Button>
+  1261→  1261→            <Button type="submit" disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+  1262→  1262→              {saving ? 'Creating...' : 'Create Package'}
+  1263→  1263→            </Button>
+  1264→  1264→          </DialogFooter>
+  1265→  1265→        </form>
+  1266→  1266→      </DialogContent>
+  1267→  1267→    </Dialog>
+  1268→  1268→  )
+  1269→  1269→}
+  1270→  1270→
+  1271→  1271→// ==================== PACKAGE DETAIL DIALOG ====================
+  1272→  1272→
+  1273→  1273→function PackageDetailDialog({
+  1274→  1274→  pkg,
+  1275→  1275→  onOpenChange,
+  1276→  1276→}: {
+  1277→  1277→  pkg: AcademicPackage | null
+  1278→  1278→  onOpenChange: (open: boolean) => void
+  1279→  1279→}) {
+  1280→  1280→  if (!pkg) return null
+  1281→  1281→
+  1282→  1282→  return (
+  1283→  1283→    <Dialog open={!!pkg} onOpenChange={onOpenChange}>
+  1284→  1284→      <DialogContent className="sm:max-w-lg rounded-2xl">
+  1285→  1285→        <DialogHeader>
+  1286→  1286→          <DialogTitle className="flex items-center gap-2 text-[13px] font-semibold tracking-tight">
+  1287→  1287→            <div className="size-7 rounded-lg bg-macos-teal/10 flex items-center justify-center">
+  1288→  1288→              <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+  1289→  1289→            </div>
+  1290→  1290→            {pkg.name}
+  1291→  1291→          </DialogTitle>
+  1292→  1292→          <DialogDescription className="text-[11px]">
+  1293→  1293→            {pkg.grade && `Grade ${pkg.grade}`}
+  1294→  1294→            {pkg.academicLevel && ` · ${pkg.academicLevel}`}
+  1295→  1295→            {pkg.school && ` · ${pkg.school.name}`}
+  1296→  1296→          </DialogDescription>
+  1297→  1297→        </DialogHeader>
+  1298→  1298→        <div className="space-y-4">
+  1299→  1299→          {pkg.description && (
+  1300→  1300→            <p className="text-[13px] text-muted-foreground">{pkg.description}</p>
+  1301→  1301→          )}
+  1302→  1302→
+  1303→  1303→          <div className="space-y-2">
+  1304→  1304→            <h4 className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Package Items</h4>
+  1305→  1305→            <div className="space-y-2">
+  1306→  1306→              {pkg.items && pkg.items.length > 0 ? (
+  1307→  1307→                pkg.items.map((item) => (
+  1308→  1308→                  <div
+  1309→  1309→                    key={item.id}
+  1310→  1310→                    className="flex items-center justify-between p-3 rounded-xl bg-secondary/50"
+  1311→  1311→                  >
+  1312→  1312→                    <div className="flex items-center gap-3">
+  1313→  1313→                      {item.bookId ? (
+  1314→  1314→                        <div className="size-7 rounded-lg bg-macos-teal/10 flex items-center justify-center">
+  1315→  1315→                          <BookOpen className="size-3.5 text-macos-teal" strokeWidth={1.5} />
+  1316→  1316→                        </div>
+  1317→  1317→                      ) : (
+  1318→  1318→                        <div className="size-7 rounded-lg bg-macos-orange/10 flex items-center justify-center">
+  1319→  1319→                          <PencilRuler className="size-3.5 text-macos-orange" strokeWidth={1.5} />
+  1320→  1320→                        </div>
+  1321→  1321→                      )}
+  1322→  1322→                      <div>
+  1323→  1323→                        <p className="text-[13px] font-medium">
+  1324→  1324→                          {item.book?.title || item.stationery?.name || 'Unknown Item'}
+  1325→  1325→                        </p>
+  1326→  1326→                        <p className="text-[11px] text-muted-foreground">
+  1327→  1327→                          {item.bookId ? 'Book' : 'Stationery'} · Qty: {item.quantity} × ${item.unitPrice}
+  1328→  1328→                        </p>
+  1329→  1329→                      </div>
+  1330→  1330→                    </div>
+  1331→  1331→                    <p className="font-semibold text-[13px]">
+  1332→  1332→                      ${(item.quantity * item.unitPrice).toLocaleString()}
+  1333→  1333→                    </p>
+  1334→  1334→                  </div>
+  1335→  1335→                ))
+  1336→  1336→              ) : (
+  1337→  1337→                <p className="text-[13px] text-muted-foreground text-center py-4">No items in this package</p>
+  1338→  1338→              )}
+  1339→  1339→            </div>
+  1340→  1340→          </div>
+  1341→  1341→
+  1342→  1342→          <Separator className="bg-border/50" />
+  1343→  1343→
+  1344→  1344→          <div className="flex items-center justify-between">
+  1345→  1345→            <div>
+  1346→  1346→              <p className="text-[11px] text-muted-foreground">Total Price</p>
+  1347→  1347→              {pkg.discount > 0 && (
+  1348→  1348→                <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% discount applied</p>
+  1349→  1349→              )}
+  1350→  1350→            </div>
+  1351→  1351→            <p className="text-2xl font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
+  1352→  1352→          </div>
+  1353→  1353→        </div>
+  1354→  1354→      </DialogContent>
+  1355→  1355→    </Dialog>
+  1356→  1356→  )
+  1357→  1357→}
+  1358→  1358→

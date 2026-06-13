@@ -1,0 +1,808 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Search,
+     6→  ShoppingCart,
+     7→  Plus,
+     8→  Minus,
+     9→  Trash2,
+    10→  CreditCard,
+    11→  Banknote,
+    12→  Building,
+    13→  Smartphone,
+    14→  Loader2,
+    15→  AlertCircle,
+    16→  X,
+    17→  Check,
+    18→  Receipt,
+    19→  UserCircle,
+    20→  Package,
+    21→  BookOpen,
+    22→  PencilRuler,
+    23→  GraduationCap,
+    24→  Tag,
+    25→} from 'lucide-react'
+    26→
+    27→import { Button } from '@/components/ui/button'
+    28→import { Input } from '@/components/ui/input'
+    29→import { Label } from '@/components/ui/label'
+    30→import {
+    31→  Dialog,
+    32→  DialogContent,
+    33→  DialogDescription,
+    34→  DialogFooter,
+    35→  DialogHeader,
+    36→  DialogTitle,
+    37→} from '@/components/ui/dialog'
+    38→import {
+    39→  Select,
+    40→  SelectContent,
+    41→  SelectItem,
+    42→  SelectTrigger,
+    43→  SelectValue,
+    44→} from '@/components/ui/select'
+    45→import { Badge } from '@/components/ui/badge'
+    46→import { Separator } from '@/components/ui/separator'
+    47→import { ScrollArea } from '@/components/ui/scroll-area'
+    48→import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+    49→
+    50→// ─── Types ────────────────────────────────────────────────────────
+    51→type ProductType = 'book' | 'stationery'
+    52→
+    53→interface POSProduct {
+    54→  id: string
+    55→  type: ProductType
+    56→  name: string
+    57→  sku: string | null
+    58→  isbn: string | null
+    59→  barcode: string | null
+    60→  price: number
+    61→  costPrice: number
+    62→  discount: number
+    63→  author?: string | null
+    64→  brand?: string | null
+    65→  category?: string | null
+    66→}
+    67→
+    68→interface CartItem {
+    69→  product: POSProduct
+    70→  quantity: number
+    71→  unitPrice: number
+    72→  discount: number
+    73→  totalPrice: number
+    74→}
+    75→
+    76→interface Customer {
+    77→  id: string
+    78→  name: string
+    79→  email?: string | null
+    80→  phone?: string | null
+    81→  loyaltyPoints: number
+    82→}
+    83→
+    84→interface CompletedSale {
+    85→  invoiceNumber: string
+    86→  total: number
+    87→  subtotal: number
+    88→  discount: number
+    89→  tax: number
+    90→  paymentMethod: string
+    91→  customerName: string | null
+    92→  items: Array<{ name: string; quantity: number; unitPrice: number; totalPrice: number }>
+    93→}
+    94→
+    95→// ─── Component ────────────────────────────────────────────────────
+    96→export function RetailPOSModule() {
+    97→  // Products
+    98→  const [products, setProducts] = React.useState<POSProduct[]>([])
+    99→  const [searchTerm, setSearchTerm] = React.useState('')
+   100→  const [categoryFilter, setCategoryFilter] = React.useState<'all' | 'books' | 'stationery' | 'school'>('all')
+   101→  const [searchLoading, setSearchLoading] = React.useState(false)
+   102→
+   103→  // Cart
+   104→  const [cart, setCart] = React.useState<CartItem[]>([])
+   105→  const [cartDiscount, setCartDiscount] = React.useState(0)
+   106→  const [discountType, setDiscountType] = React.useState<'percentage' | 'fixed'>('percentage')
+   107→  const [taxRate, setTaxRate] = React.useState(0)
+   108→
+   109→  // Customer
+   110→  const [customerSearch, setCustomerSearch] = React.useState('')
+   111→  const [customers, setCustomers] = React.useState<Customer[]>([])
+   112→  const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null)
+   113→  const [customerLookupOpen, setCustomerLookupOpen] = React.useState(false)
+   114→
+   115→  // Payment
+   116→  const [paymentMethod, setPaymentMethod] = React.useState('cash')
+   117→
+   118→  // Sale
+   119→  const [completing, setCompleting] = React.useState(false)
+   120→  const [completedSale, setCompletedSale] = React.useState<CompletedSale | null>(null)
+   121→  const [error, setError] = React.useState<string | null>(null)
+   122→
+   123→  // Search products
+   124→  React.useEffect(() => {
+   125→    const searchProducts = async () => {
+   126→      setSearchLoading(true)
+   127→      try {
+   128→        const params = new URLSearchParams()
+   129→        params.set('limit', '30')
+   130→        if (searchTerm) params.set('search', searchTerm)
+   131→
+   132→        const [booksRes, stationeryRes] = await Promise.all([
+   133→          fetch(`/api/books?${params.toString()}`),
+   134→          fetch(`/api/stationery?${params.toString()}`),
+   135→        ])
+   136→
+   137→        const bookData = booksRes.ok ? await booksRes.json() : { data: [] }
+   138→        const stationeryData = stationeryRes.ok ? await stationeryRes.json() : { data: [] }
+   139→
+   140→        const bookProducts: POSProduct[] = (bookData.data || []).map((b: Record<string, unknown>) => ({
+   141→          id: b.id as string,
+   142→          type: 'book' as ProductType,
+   143→          name: b.title as string,
+   144→          sku: null,
+   145→          isbn: (b.isbn as string) || null,
+   146→          barcode: (b.barcode as string) || null,
+   147→          price: (b.price as number) || 0,
+   148→          costPrice: (b.costPrice as number) || 0,
+   149→          discount: (b.discount as number) || 0,
+   150→          author: (b.author as { name: string } | null)?.name || null,
+   151→          category: (b.category as { name: string } | null)?.name || null,
+   152→        }))
+   153→
+   154→        const stationeryProducts: POSProduct[] = (stationeryData.data || []).map((s: Record<string, unknown>) => ({
+   155→          id: s.id as string,
+   156→          type: 'stationery' as ProductType,
+   157→          name: s.name as string,
+   158→          sku: (s.sku as string) || null,
+   159→          isbn: null,
+   160→          barcode: (s.barcode as string) || null,
+   161→          price: (s.price as number) || 0,
+   162→          costPrice: (s.costPrice as number) || 0,
+   163→          discount: (s.discount as number) || 0,
+   164→          brand: (s.brand as string) || null,
+   165→          category: (s.category as { name: string } | null)?.name || null,
+   166→        }))
+   167→
+   168→        let all = [...bookProducts, ...stationeryProducts]
+   169→
+   170→        // Apply category filter
+   171→        if (categoryFilter === 'books') {
+   172→          all = all.filter((p) => p.type === 'book')
+   173→        } else if (categoryFilter === 'stationery') {
+   174→          all = all.filter((p) => p.type === 'stationery')
+   175→        } else if (categoryFilter === 'school') {
+   176→          all = all.filter((p) => p.category?.toLowerCase().includes('school') || p.category?.toLowerCase().includes('educational'))
+   177→        }
+   178→
+   179→        setProducts(all)
+   180→      } catch {
+   181→        // silent
+   182→      } finally {
+   183→        setSearchLoading(false)
+   184→      }
+   185→    }
+   186→
+   187→    const debounce = setTimeout(searchProducts, 300)
+   188→    return () => clearTimeout(debounce)
+   189→  }, [searchTerm, categoryFilter])
+   190→
+   191→  // Search customers
+   192→  React.useEffect(() => {
+   193→    if (!customerSearch) {
+   194→      setCustomers([])
+   195→      return
+   196→    }
+   197→    const searchCustomers = async () => {
+   198→      try {
+   199→        const res = await fetch(`/api/customers?search=${encodeURIComponent(customerSearch)}&type=retail&limit=10`)
+   200→        if (res.ok) {
+   201→          const json = await res.json()
+   202→          setCustomers(json.data || [])
+   203→        }
+   204→      } catch {
+   205→        // silent
+   206→      }
+   207→    }
+   208→    const debounce = setTimeout(searchCustomers, 300)
+   209→    return () => clearTimeout(debounce)
+   210→  }, [customerSearch])
+   211→
+   212→  // Add to cart
+   213→  const addToCart = (product: POSProduct) => {
+   214→    setCart((prev) => {
+   215→      const existing = prev.find((item) => item.product.id === product.id && item.product.type === product.type)
+   216→      if (existing) {
+   217→        return prev.map((item) =>
+   218→          item.product.id === product.id && item.product.type === product.type
+   219→            ? {
+   220→                ...item,
+   221→                quantity: item.quantity + 1,
+   222→                totalPrice: (item.quantity + 1) * item.unitPrice * (1 - item.discount / 100),
+   223→              }
+   224→            : item
+   225→        )
+   226→      }
+   227→      const unitPrice = product.price * (1 - product.discount / 100)
+   228→      return [
+   229→        ...prev,
+   230→        {
+   231→          product,
+   232→          quantity: 1,
+   233→          unitPrice: product.price,
+   234→          discount: product.discount,
+   235→          totalPrice: unitPrice,
+   236→        },
+   237→      ]
+   238→    })
+   239→  }
+   240→
+   241→  // Update cart quantity
+   242→  const updateQuantity = (index: number, newQty: number) => {
+   243→    if (newQty < 1) {
+   244→      removeFromCart(index)
+   245→      return
+   246→    }
+   247→    setCart((prev) =>
+   248→      prev.map((item, i) =>
+   249→        i === index
+   250→          ? { ...item, quantity: newQty, totalPrice: newQty * item.unitPrice * (1 - item.discount / 100) }
+   251→          : item
+   252→      )
+   253→    )
+   254→  }
+   255→
+   256→  // Remove from cart
+   257→  const removeFromCart = (index: number) => {
+   258→    setCart((prev) => prev.filter((_, i) => i !== index))
+   259→  }
+   260→
+   261→  // Clear cart
+   262→  const clearCart = () => {
+   263→    setCart([])
+   264→    setCartDiscount(0)
+   265→    setSelectedCustomer(null)
+   266→    setCompletedSale(null)
+   267→  }
+   268→
+   269→  // Compute totals
+   270→  const subtotal = cart.reduce((s, item) => s + item.totalPrice, 0)
+   271→  const discountAmount = discountType === 'percentage' ? subtotal * (cartDiscount / 100) : cartDiscount
+   272→  const afterDiscount = Math.max(0, subtotal - discountAmount)
+   273→  const taxAmount = afterDiscount * (taxRate / 100)
+   274→  const total = afterDiscount + taxAmount
+   275→
+   276→  // Complete sale
+   277→  const handleCompleteSale = async () => {
+   278→    if (cart.length === 0) return
+   279→    setCompleting(true)
+   280→    setError(null)
+   281→    try {
+   282→      const saleItems = cart.map((item) => ({
+   283→        bookId: item.product.type === 'book' ? item.product.id : undefined,
+   284→        stationeryId: item.product.type === 'stationery' ? item.product.id : undefined,
+   285→        quantity: item.quantity,
+   286→        unitPrice: item.unitPrice,
+   287→        discount: item.discount,
+   288→      }))
+   289→
+   290→      const res = await fetch('/api/sales', {
+   291→        method: 'POST',
+   292→        headers: { 'Content-Type': 'application/json' },
+   293→        body: JSON.stringify({
+   294→          customerId: selectedCustomer?.id || null,
+   295→          discount: discountAmount,
+   296→          tax: taxRate,
+   297→          paymentMethod,
+   298→          paymentStatus: 'paid',
+   299→          saleType: 'retail',
+   300→          items: saleItems,
+   301→        }),
+   302→      })
+   303→
+   304→      if (!res.ok) {
+   305→        const errData = await res.json()
+   306→        throw new Error(errData.error || 'Failed to complete sale')
+   307→      }
+   308→
+   309→      const json = await res.json()
+   310→      const sale = json.data
+   311→
+   312→      setCompletedSale({
+   313→        invoiceNumber: sale.invoiceNumber,
+   314→        total: sale.total,
+   315→        subtotal: sale.subtotal,
+   316→        discount: sale.discount,
+   317→        tax: sale.tax,
+   318→        paymentMethod: sale.paymentMethod,
+   319→        customerName: selectedCustomer?.name || null,
+   320→        items: cart.map((item) => ({
+   321→          name: item.product.name,
+   322→          quantity: item.quantity,
+   323→          unitPrice: item.unitPrice,
+   324→          totalPrice: item.totalPrice,
+   325→        })),
+   326→      })
+   327→
+   328→      // Clear cart
+   329→      setCart([])
+   330→      setCartDiscount(0)
+   331→      setSelectedCustomer(null)
+   332→    } catch (err) {
+   333→      setError(err instanceof Error ? err.message : 'Failed to complete sale')
+   334→    } finally {
+   335→      setCompleting(false)
+   336→    }
+   337→  }
+   338→
+   339→  // Payment method icons
+   340→  const paymentMethods = [
+   341→    { value: 'cash', label: 'Cash', icon: Banknote },
+   342→    { value: 'card', label: 'Card', icon: CreditCard },
+   343→    { value: 'bank', label: 'Bank', icon: Building },
+   344→    { value: 'wallet', label: 'Wallet', icon: Smartphone },
+   345→  ]
+   346→
+   347→  // Category filters
+   348→  const categoryFilters = [
+   349→    { value: 'all' as const, label: 'All', icon: Package },
+   350→    { value: 'books' as const, label: 'Books', icon: BookOpen },
+   351→    { value: 'stationery' as const, label: 'Stationery', icon: PencilRuler },
+   352→    { value: 'school' as const, label: 'School', icon: GraduationCap },
+   353→  ]
+   354→
+   355→  return (
+   356→    <div className="space-y-4">
+   357→      {/* Header */}
+   358→      <div>
+   359→        <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Point of Sale</h2>
+   360→        <p className="text-[11px] text-muted-foreground tracking-tight">Process retail sales quickly and efficiently</p>
+   361→      </div>
+   362→
+   363→      {/* Error Alert */}
+   364→      {error && (
+   365→        <div className="flex items-center gap-2 rounded-xl bg-macos-red/10 p-3 text-[13px] text-macos-red macos-shadow">
+   366→          <AlertCircle className="size-3.5 shrink-0" />
+   367→          {error}
+   368→          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[11px] text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
+   369→            Dismiss
+   370→          </Button>
+   371→        </div>
+   372→      )}
+   373→
+   374→      {/* Receipt Dialog */}
+   375→      <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
+   376→        <DialogContent className="sm:max-w-[450px] rounded-2xl macos-shadow-elevated">
+   377→          <DialogHeader>
+   378→            <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+   379→              <Receipt className="size-4 text-macos-green" />
+   380→              Sale Completed
+   381→            </DialogTitle>
+   382→            <DialogDescription className="text-[11px]">Your transaction has been processed successfully</DialogDescription>
+   383→          </DialogHeader>
+   384→          {completedSale && (
+   385→            <div className="space-y-4 py-4">
+   386→              <div className="text-center space-y-1">
+   387→                <p className="text-[13px] font-semibold tracking-tight">BookFlow OS</p>
+   388→                <p className="text-[11px] text-muted-foreground">Invoice: {completedSale.invoiceNumber}</p>
+   389→                <p className="text-[11px] text-muted-foreground">{new Date().toLocaleString()}</p>
+   390→              </div>
+   391→              <Separator />
+   392→              <div className="space-y-2">
+   393→                {completedSale.items.map((item, i) => (
+   394→                  <div key={i} className="flex justify-between text-[13px] tracking-tight">
+   395→                    <span className="flex-1 truncate mr-2">{item.name} x{item.quantity}</span>
+   396→                    <span className="font-medium">${item.totalPrice.toFixed(2)}</span>
+   397→                  </div>
+   398→                ))}
+   399→              </div>
+   400→              <Separator />
+   401→              <div className="space-y-1.5 text-[13px] tracking-tight">
+   402→                <div className="flex justify-between">
+   403→                  <span className="text-muted-foreground">Subtotal</span>
+   404→                  <span>${completedSale.subtotal.toFixed(2)}</span>
+   405→                </div>
+   406→                {completedSale.discount > 0 && (
+   407→                  <div className="flex justify-between text-macos-green">
+   408→                    <span>Discount</span>
+   409→                    <span>-${completedSale.discount.toFixed(2)}</span>
+   410→                  </div>
+   411→                )}
+   412→                {completedSale.tax > 0 && (
+   413→                  <div className="flex justify-between">
+   414→                    <span className="text-muted-foreground">Tax</span>
+   415→                    <span>${completedSale.tax.toFixed(2)}</span>
+   416→                  </div>
+   417→                )}
+   418→                <Separator />
+   419→                <div className="flex justify-between font-bold text-base tracking-tight">
+   420→                  <span>Total</span>
+   421→                  <span>${completedSale.total.toFixed(2)}</span>
+   422→                </div>
+   423→              </div>
+   424→              <div className="flex justify-between text-[11px] text-muted-foreground">
+   425→                <span>Payment: {completedSale.paymentMethod}</span>
+   426→                {completedSale.customerName && <span>Customer: {completedSale.customerName}</span>}
+   427→              </div>
+   428→            </div>
+   429→          )}
+   430→          <DialogFooter>
+   431→            <Button onClick={() => setCompletedSale(null)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+   432→              <Check className="size-3.5 mr-1.5" />
+   433→              Done
+   434→            </Button>
+   435→          </DialogFooter>
+   436→        </DialogContent>
+   437→      </Dialog>
+   438→
+   439→      {/* Main POS Layout */}
+   440→      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+   441→        {/* Left: Products */}
+   442→        <div className="lg:col-span-3 space-y-4">
+   443→          {/* Search + Category Filter */}
+   444→          <div className="rounded-2xl macos-shadow p-4 space-y-3 bg-background">
+   445→            <div className="relative">
+   446→              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+   447→              <Input
+   448→                placeholder="Search by name, ISBN, or barcode..."
+   449→                value={searchTerm}
+   450→                onChange={(e) => setSearchTerm(e.target.value)}
+   451→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   452→              />
+   453→            </div>
+   454→            <div className="flex gap-2 flex-wrap">
+   455→              {categoryFilters.map((cat) => {
+   456→                const Icon = cat.icon
+   457→                const isActive = categoryFilter === cat.value
+   458→                return (
+   459→                  <button
+   460→                    key={cat.value}
+   461→                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-md transition-all ${isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground bg-secondary/50'}`}
+   462→                    onClick={() => setCategoryFilter(cat.value)}
+   463→                  >
+   464→                    <Icon className="size-3" />
+   465→                    {cat.label}
+   466→                  </button>
+   467→                )
+   468→              })}
+   469→            </div>
+   470→          </div>
+   471→
+   472→          {/* Product Grid */}
+   473→          {searchLoading ? (
+   474→            <div className="grid grid-cols-2 gap-3">
+   475→              {Array.from({ length: 6 }).map((_, i) => (
+   476→                <div key={i} className="rounded-2xl macos-shadow p-3 bg-background animate-pulse">
+   477→                  <div className="h-3.5 bg-secondary rounded w-3/4 mb-2" />
+   478→                  <div className="h-3 bg-secondary rounded w-1/2 mb-2" />
+   479→                  <div className="h-4 bg-secondary rounded w-1/3" />
+   480→                </div>
+   481→              ))}
+   482→            </div>
+   483→          ) : products.length === 0 ? (
+   484→            <div className="rounded-2xl macos-shadow bg-background flex flex-col items-center justify-center py-16 text-center">
+   485→              <Package className="size-12 text-muted-foreground/30 mb-3" />
+   486→              <p className="text-[13px] text-muted-foreground">No products found</p>
+   487→              <p className="text-[11px] text-muted-foreground mt-1">Try a different search or category</p>
+   488→            </div>
+   489→          ) : (
+   490→            <div className="grid grid-cols-2 gap-3">
+   491→              {products.map((product) => {
+   492→                const inCart = cart.find((c) => c.product.id === product.id && c.product.type === product.type)
+   493→                return (
+   494→                  <div
+   495→                    key={`${product.type}-${product.id}`}
+   496→                    className={`rounded-2xl macos-shadow p-3 bg-background cursor-pointer transition-all hover:shadow-lg ${inCart ? 'ring-1 ring-macos-green/40' : ''}`}
+   497→                    onClick={() => addToCart(product)}
+   498→                  >
+   499→                    <div className="space-y-1.5">
+   500→                      <div className="flex items-start justify-between gap-1">
+   501→                        <p className="text-[13px] font-medium leading-tight line-clamp-2 tracking-tight">{product.name}</p>
+   502→                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple shrink-0">
+   503→                          {product.type === 'book' ? 'Book' : 'Item'}
+   504→                        </span>
+   505→                      </div>
+   506→                      {product.author && (
+   507→                        <p className="text-[11px] text-muted-foreground truncate tracking-tight">by {product.author}</p>
+   508→                      )}
+   509→                      {product.brand && (
+   510→                        <p className="text-[11px] text-muted-foreground truncate tracking-tight">{product.brand}</p>
+   511→                      )}
+   512→                      <div className="flex items-center justify-between">
+   513→                        <div>
+   514→                          {product.discount > 0 ? (
+   515→                            <div className="flex items-center gap-1">
+   516→                              <span className="text-[11px] text-muted-foreground line-through tracking-tight">${product.price.toFixed(2)}</span>
+   517→                              <span className="text-[13px] font-bold text-macos-green tracking-tight">${(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
+   518→                            </div>
+   519→                          ) : (
+   520→                            <span className="text-[13px] font-bold tracking-tight">${product.price.toFixed(2)}</span>
+   521→                          )}
+   522→                        </div>
+   523→                        {inCart ? (
+   524→                          <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+   525→                            x{inCart.quantity}
+   526→                          </span>
+   527→                        ) : (
+   528→                          <Plus className="size-4 text-macos-green" />
+   529→                        )}
+   530→                      </div>
+   531→                    </div>
+   532→                  </div>
+   533→                )
+   534→              })}
+   535→            </div>
+   536→          )}
+   537→        </div>
+   538→
+   539→        {/* Right: Cart */}
+   540→        <div className="lg:col-span-2">
+   541→          <div className="rounded-2xl macos-shadow bg-background sticky top-4">
+   542→            {/* Cart Header */}
+   543→            <div className="p-4 pb-3 flex items-center justify-between border-b border-border/30">
+   544→              <h3 className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
+   545→                <ShoppingCart className="size-3.5" />
+   546→                Cart ({cart.length})
+   547→              </h3>
+   548→              {cart.length > 0 && (
+   549→                <Button variant="ghost" size="sm" className="h-6 text-[11px] text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-md" onClick={clearCart}>
+   550→                  <Trash2 className="size-3 mr-1" />
+   551→                  Clear
+   552→                </Button>
+   553→              )}
+   554→            </div>
+   555→
+   556→            <div className="p-4 space-y-4">
+   557→              {/* Customer Selection */}
+   558→              <div className="space-y-1.5">
+   559→                <div className="flex items-center justify-between">
+   560→                  <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Customer</Label>
+   561→                  <Button variant="ghost" size="sm" className="h-5 text-[11px] rounded-md" onClick={() => setCustomerLookupOpen(true)}>
+   562→                    <UserCircle className="size-3 mr-1" />
+   563→                    {selectedCustomer ? 'Change' : 'Select'}
+   564→                  </Button>
+   565→                </div>
+   566→                {selectedCustomer ? (
+   567→                  <div className="flex items-center justify-between rounded-xl bg-secondary/50 p-2.5">
+   568→                    <div>
+   569→                      <p className="text-[13px] font-medium tracking-tight">{selectedCustomer.name}</p>
+   570→                      <p className="text-[11px] text-muted-foreground tracking-tight">{selectedCustomer.loyaltyPoints} pts</p>
+   571→                    </div>
+   572→                    <Button variant="ghost" size="icon" className="size-5 rounded-md" onClick={() => setSelectedCustomer(null)}>
+   573→                      <X className="size-3" />
+   574→                    </Button>
+   575→                  </div>
+   576→                ) : (
+   577→                  <p className="text-[11px] text-muted-foreground tracking-tight">Walk-in customer</p>
+   578→                )}
+   579→              </div>
+   580→
+   581→              <Separator />
+   582→
+   583→              {/* Cart Items */}
+   584→              <ScrollArea className="max-h-64">
+   585→                {cart.length === 0 ? (
+   586→                  <div className="flex flex-col items-center justify-center py-8 text-center">
+   587→                    <ShoppingCart className="size-8 text-muted-foreground/30 mb-2" />
+   588→                    <p className="text-[13px] text-muted-foreground tracking-tight">Cart is empty</p>
+   589→                  </div>
+   590→                ) : (
+   591→                  <div className="space-y-2 pr-1">
+   592→                    {cart.map((item, index) => (
+   593→                      <div key={`${item.product.type}-${item.product.id}`} className="flex items-start gap-2 rounded-xl bg-secondary/30 p-2.5">
+   594→                        <div className="flex-1 min-w-0">
+   595→                          <p className="text-[13px] font-medium truncate tracking-tight">{item.product.name}</p>
+   596→                          <div className="flex items-center gap-2 mt-0.5">
+   597→                            <span className="text-[11px] text-muted-foreground tracking-tight">${item.unitPrice.toFixed(2)}</span>
+   598→                            {item.discount > 0 && (
+   599→                              <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0 bg-macos-green/10 text-macos-green">
+   600→                                -{item.discount}%
+   601→                              </span>
+   602→                            )}
+   603→                          </div>
+   604→                        </div>
+   605→                        <div className="flex items-center gap-0.5">
+   606→                          <button
+   607→                            className="size-6 rounded-md bg-secondary/80 flex items-center justify-center hover:bg-secondary transition-colors"
+   608→                            onClick={() => updateQuantity(index, item.quantity - 1)}
+   609→                          >
+   610→                            <Minus className="size-2.5" />
+   611→                          </button>
+   612→                          <span className="w-7 text-center text-[13px] font-medium tracking-tight">{item.quantity}</span>
+   613→                          <button
+   614→                            className="size-6 rounded-md bg-secondary/80 flex items-center justify-center hover:bg-secondary transition-colors"
+   615→                            onClick={() => updateQuantity(index, item.quantity + 1)}
+   616→                          >
+   617→                            <Plus className="size-2.5" />
+   618→                          </button>
+   619→                        </div>
+   620→                        <div className="text-right min-w-[50px]">
+   621→                          <p className="text-[13px] font-medium tracking-tight">${item.totalPrice.toFixed(2)}</p>
+   622→                          <button
+   623→                            className="size-4 text-macos-red hover:text-macos-red/80 mt-0.5 inline-flex items-center justify-center"
+   624→                            onClick={() => removeFromCart(index)}
+   625→                          >
+   626→                            <X className="size-2.5" />
+   627→                          </button>
+   628→                        </div>
+   629→                      </div>
+   630→                    ))}
+   631→                  </div>
+   632→                )}
+   633→              </ScrollArea>
+   634→
+   635→              <Separator />
+   636→
+   637→              {/* Discount */}
+   638→              <div className="space-y-1.5">
+   639→                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1">
+   640→                  <Tag className="size-2.5" />
+   641→                  Cart Discount
+   642→                </Label>
+   643→                <div className="flex gap-2">
+   644→                  <Select value={discountType} onValueChange={(v: 'percentage' | 'fixed') => setDiscountType(v)}>
+   645→                    <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-[100px]">
+   646→                      <SelectValue />
+   647→                    </SelectTrigger>
+   648→                    <SelectContent>
+   649→                      <SelectItem value="percentage">Percent %</SelectItem>
+   650→                      <SelectItem value="fixed">Fixed $</SelectItem>
+   651→                    </SelectContent>
+   652→                  </Select>
+   653→                  <Input
+   654→                    type="number"
+   655→                    min="0"
+   656→                    step={discountType === 'percentage' ? '1' : '0.01'}
+   657→                    value={cartDiscount || ''}
+   658→                    onChange={(e) => setCartDiscount(parseFloat(e.target.value) || 0)}
+   659→                    placeholder="0"
+   660→                    className="w-20 rounded-lg bg-secondary/80 border-0 text-[13px] h-7 focus-visible:ring-1 focus-visible:ring-primary/30"
+   661→                  />
+   662→                </div>
+   663→              </div>
+   664→
+   665→              {/* Tax */}
+   666→              <div className="flex items-center justify-between">
+   667→                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Tax Rate (%)</Label>
+   668→                <Input
+   669→                  type="number"
+   670→                  min="0"
+   671→                  step="0.5"
+   672→                  value={taxRate || ''}
+   673→                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+   674→                  placeholder="0"
+   675→                  className="w-16 text-right rounded-lg bg-secondary/80 border-0 text-[13px] h-7 focus-visible:ring-1 focus-visible:ring-primary/30"
+   676→                />
+   677→              </div>
+   678→
+   679→              <Separator />
+   680→
+   681→              {/* Totals */}
+   682→              <div className="space-y-1.5 text-[13px] tracking-tight">
+   683→                <div className="flex justify-between">
+   684→                  <span className="text-muted-foreground">Subtotal</span>
+   685→                  <span>${subtotal.toFixed(2)}</span>
+   686→                </div>
+   687→                {discountAmount > 0 && (
+   688→                  <div className="flex justify-between text-macos-green">
+   689→                    <span>Discount</span>
+   690→                    <span>-${discountAmount.toFixed(2)}</span>
+   691→                  </div>
+   692→                )}
+   693→                {taxAmount > 0 && (
+   694→                  <div className="flex justify-between">
+   695→                    <span className="text-muted-foreground">Tax ({taxRate}%)</span>
+   696→                    <span>${taxAmount.toFixed(2)}</span>
+   697→                  </div>
+   698→                )}
+   699→                <Separator />
+   700→                <div className="flex justify-between font-bold text-base tracking-tight">
+   701→                  <span>Total</span>
+   702→                  <span>${total.toFixed(2)}</span>
+   703→                </div>
+   704→              </div>
+   705→
+   706→              {/* Payment Method */}
+   707→              <div className="space-y-2">
+   708→                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Payment Method</Label>
+   709→                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-2 gap-2">
+   710→                  {paymentMethods.map((pm) => {
+   711→                    const Icon = pm.icon
+   712→                    return (
+   713→                      <Label
+   714→                        key={pm.value}
+   715→                        className={`flex items-center gap-2 rounded-xl p-2.5 cursor-pointer transition-all ${paymentMethod === pm.value ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-secondary/50 hover:bg-secondary/80'}`}
+   716→                      >
+   717→                        <RadioGroupItem value={pm.value} className="sr-only" />
+   718→                        <Icon className="size-3.5" />
+   719→                        <span className="text-[12px] font-medium">{pm.label}</span>
+   720→                      </Label>
+   721→                    )
+   722→                  })}
+   723→                </RadioGroup>
+   724→              </div>
+   725→
+   726→              {/* Complete Sale */}
+   727→              <Button
+   728→                className="w-full bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-11"
+   729→                onClick={handleCompleteSale}
+   730→                disabled={cart.length === 0 || completing}
+   731→              >
+   732→                {completing ? (
+   733→                  <>
+   734→                    <Loader2 className="size-4 mr-2 animate-spin" />
+   735→                    Processing...
+   736→                  </>
+   737→                ) : (
+   738→                  <>
+   739→                    <Check className="size-4 mr-2" />
+   740→                    Complete Sale — ${total.toFixed(2)}
+   741→                  </>
+   742→                )}
+   743→              </Button>
+   744→            </div>
+   745→          </div>
+   746→        </div>
+   747→      </div>
+   748→
+   749→      {/* Customer Lookup Dialog */}
+   750→      <Dialog open={customerLookupOpen} onOpenChange={setCustomerLookupOpen}>
+   751→        <DialogContent className="sm:max-w-[425px] rounded-2xl macos-shadow-elevated">
+   752→          <DialogHeader>
+   753→            <DialogTitle className="text-[13px] font-semibold tracking-tight">Select Customer</DialogTitle>
+   754→            <DialogDescription className="text-[11px]">Search for an existing customer</DialogDescription>
+   755→          </DialogHeader>
+   756→          <div className="space-y-4 py-4">
+   757→            <div className="relative">
+   758→              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+   759→              <Input
+   760→                placeholder="Search by name, email, or phone..."
+   761→                value={customerSearch}
+   762→                onChange={(e) => setCustomerSearch(e.target.value)}
+   763→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   764→              />
+   765→            </div>
+   766→            <div className="max-h-64 overflow-y-auto space-y-1">
+   767→              {customers.length === 0 && customerSearch ? (
+   768→                <p className="text-[13px] text-muted-foreground text-center py-4 tracking-tight">No customers found</p>
+   769→              ) : (
+   770→                customers.map((c) => (
+   771→                  <button
+   772→                    key={c.id}
+   773→                    className="w-full flex items-center justify-between rounded-xl p-3 hover:bg-secondary/50 transition-colors text-left"
+   774→                    onClick={() => {
+   775→                      setSelectedCustomer(c)
+   776→                      setCustomerLookupOpen(false)
+   777→                      setCustomerSearch('')
+   778→                    }}
+   779→                  >
+   780→                    <div>
+   781→                      <p className="text-[13px] font-medium tracking-tight">{c.name}</p>
+   782→                      <p className="text-[11px] text-muted-foreground tracking-tight">{c.email || c.phone || 'No contact info'}</p>
+   783→                    </div>
+   784→                    <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-teal/10 text-macos-teal">{c.loyaltyPoints} pts</span>
+   785→                  </button>
+   786→                ))
+   787→              )}
+   788→            </div>
+   789→          </div>
+   790→          <DialogFooter>
+   791→            <Button
+   792→              variant="ghost"
+   793→              className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8"
+   794→              onClick={() => {
+   795→                setCustomerLookupOpen(false)
+   796→                setCustomerSearch('')
+   797→                setSelectedCustomer(null)
+   798→              }}
+   799→            >
+   800→              Walk-in Customer
+   801→            </Button>
+   802→          </DialogFooter>
+   803→        </DialogContent>
+   804→      </Dialog>
+   805→    </div>
+   806→  )
+   807→}
+   808→

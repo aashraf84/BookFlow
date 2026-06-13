@@ -13,6 +13,10 @@ import {
   Mail,
   Phone,
   PenTool,
+  Users,
+  X,
+  ExternalLink,
+  MapPin,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useAppStore } from '@/store/app-store'
 
 // ── Types ────────────────────────────────────────────────────────
 interface AuthorData {
@@ -75,16 +80,18 @@ const emptyForm: AuthorFormData = {
   phone: '',
 }
 
-// ── Avatar colors ──────────────────────────────────────────────
+// ── Avatar color palette (macOS Retina + Golden Gate) ──────────
 const avatarColors = [
-  { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
-  { bg: 'bg-macos-green/10', text: 'text-macos-green' },
-  { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
-  { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
-  { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
-  { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
-  { bg: 'bg-macos-red/10', text: 'text-macos-red' },
-  { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
+  { bg: 'bg-macos-blue/10', text: 'text-macos-blue', ring: 'ring-macos-blue/20' },
+  { bg: 'bg-macos-green/10', text: 'text-macos-green', ring: 'ring-macos-green/20' },
+  { bg: 'bg-macos-purple/10', text: 'text-macos-purple', ring: 'ring-macos-purple/20' },
+  { bg: 'bg-macos-orange/10', text: 'text-macos-orange', ring: 'ring-macos-orange/20' },
+  { bg: 'bg-macos-pink/10', text: 'text-macos-pink', ring: 'ring-macos-pink/20' },
+  { bg: 'bg-macos-teal/10', text: 'text-macos-teal', ring: 'ring-macos-teal/20' },
+  { bg: 'bg-gg-bay/10', text: 'text-gg-bay', ring: 'ring-gg-bay/20' },
+  { bg: 'bg-gg-sunset/10', text: 'text-gg-sunset', ring: 'ring-gg-sunset/20' },
+  { bg: 'bg-macos-red/10', text: 'text-macos-red', ring: 'ring-macos-red/20' },
+  { bg: 'bg-gg-golden/10', text: 'text-gg-golden', ring: 'ring-gg-golden/20' },
 ]
 
 const getAvatarColor = (name: string) => {
@@ -114,8 +121,29 @@ const getFlag = (nationality: string | null) => {
   return nationalityFlags[nationality] || '🌍'
 }
 
+// ── Category badge color for book detail table ────────────────
+const categoryColorMap: Record<string, { bg: string; text: string }> = {
+  'Fiction': { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
+  'Non-Fiction': { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
+  'Science': { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
+  'Technology': { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
+  'History': { bg: 'bg-gg-bridge/10', text: 'text-gg-bridge' },
+  'Art': { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
+  'Business': { bg: 'bg-macos-green/10', text: 'text-macos-green' },
+  'Education': { bg: 'bg-gg-bay/10', text: 'text-gg-bay' },
+  'Literature': { bg: 'bg-gg-golden/10', text: 'text-gg-golden' },
+  'Philosophy': { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
+}
+
+const getCategoryColor = (name: string) => {
+  return categoryColorMap[name] || { bg: 'bg-macos-purple/10', text: 'text-macos-purple' }
+}
+
 // ── Component ────────────────────────────────────────────────────
-export default function AuthorsModule() {
+export function AuthorsModule() {
+  const { authUser } = useAppStore()
+  const isViewOnly = authUser?.isViewOnly ?? false
+
   const [authors, setAuthors] = useState<AuthorData[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -283,104 +311,147 @@ export default function AuthorsModule() {
   if (selectedAuthor) {
     const avatarColor = getAvatarColor(selectedAuthor.name)
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
+        {/* Back button */}
         <button
           onClick={() => setSelectedAuthor(null)}
-          className="flex items-center gap-1.5 text-[13px] font-medium text-macos-blue hover:opacity-80 transition-opacity"
+          className="flex items-center gap-1.5 text-[13px] font-medium text-macos-blue hover:text-macos-blue/80 transition-colors"
         >
           <ArrowLeft className="size-4" strokeWidth={1.5} /> Back to Authors
         </button>
 
-        <div className="rounded-2xl macos-shadow bg-card p-5">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className={`size-14 rounded-2xl ${avatarColor.bg} flex items-center justify-center shrink-0`}>
-              <span className={`text-lg font-bold ${avatarColor.text}`}>
+        {/* Author Profile Card */}
+        <div className="macos-card macos-shadow-card p-6">
+          <div className="flex flex-col sm:flex-row gap-5">
+            <div className={`size-16 rounded-2xl ${avatarColor.bg} flex items-center justify-center shrink-0 ring-2 ${avatarColor.ring} ring-offset-2 ring-offset-card`}>
+              <span className={`text-xl font-bold ${avatarColor.text}`}>
                 {getInitials(selectedAuthor.name)}
               </span>
             </div>
-            <div className="space-y-1 flex-1">
-              <h2 className="text-xl font-bold tracking-tight">{selectedAuthor.name}</h2>
-              {selectedAuthor.nationality && (
-                <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
-                  <Globe className="size-3.5" strokeWidth={1.5} /> {getFlag(selectedAuthor.nationality)} {selectedAuthor.nationality}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-3 text-[13px] text-muted-foreground mt-1">
-                {selectedAuthor.email && (
-                  <span className="flex items-center gap-1">
-                    <Mail className="size-3.5" strokeWidth={1.5} /> {selectedAuthor.email}
+            <div className="flex-1 min-w-0">
+              <h1 className="macos-page-title text-[20px]">{selectedAuthor.name}</h1>
+              <div className="flex flex-wrap items-center gap-3 mt-2">
+                {selectedAuthor.nationality && (
+                  <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-medium">
+                    <MapPin className="size-3" strokeWidth={1.5} />
+                    {getFlag(selectedAuthor.nationality)} {selectedAuthor.nationality}
                   </span>
                 )}
+                <span className={`macos-badge bg-macos-green/10 text-macos-green`}>
+                  {selectedAuthor._count.books} {selectedAuthor._count.books === 1 ? 'book' : 'books'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-4 mt-3">
+                {selectedAuthor.email && (
+                  <a
+                    href={`mailto:${selectedAuthor.email}`}
+                    className="flex items-center gap-1.5 text-[12px] font-medium text-macos-blue hover:text-macos-blue/80 transition-colors"
+                  >
+                    <Mail className="size-3" strokeWidth={1.5} /> {selectedAuthor.email}
+                  </a>
+                )}
                 {selectedAuthor.phone && (
-                  <span className="flex items-center gap-1">
-                    <Phone className="size-3.5" strokeWidth={1.5} /> {selectedAuthor.phone}
+                  <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-medium">
+                    <Phone className="size-3" strokeWidth={1.5} /> {selectedAuthor.phone}
                   </span>
+                )}
+                {selectedAuthor.website && (
+                  <a
+                    href={selectedAuthor.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-[12px] font-medium text-macos-blue hover:text-macos-blue/80 transition-colors"
+                  >
+                    <ExternalLink className="size-3" strokeWidth={1.5} /> Website
+                  </a>
                 )}
               </div>
               {selectedAuthor.bio && (
-                <p className="text-[13px] text-muted-foreground mt-2">{selectedAuthor.bio}</p>
+                <p className="text-[13px] text-muted-foreground mt-3 leading-relaxed max-w-2xl">
+                  {selectedAuthor.bio}
+                </p>
               )}
-              <div className="mt-2">
-                <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
-                  {selectedAuthor._count.books} {selectedAuthor._count.books === 1 ? 'book' : 'books'}
-                </Badge>
-              </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl macos-shadow bg-card p-5">
-          <h3 className="text-[13px] font-semibold tracking-tight mb-3">
-            Books by {selectedAuthor.name}
-          </h3>
+        {/* Books by Author Card */}
+        <div className="macos-card macos-shadow-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/30">
+            <div className="flex items-center gap-2">
+              <BookOpen className="size-4 text-macos-purple" strokeWidth={1.5} />
+              <h3 className="macos-section-title">
+                Books by {selectedAuthor.name}
+              </h3>
+              <span className="macos-badge bg-macos-purple/10 text-macos-purple ml-1">
+                {authorBooks.length}
+              </span>
+            </div>
+          </div>
           {loadingBooks ? (
-            <div className="space-y-3">
+            <div className="p-5 space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="size-8 rounded-lg" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : authorBooks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <BookOpen className="size-8 mb-2 opacity-40" strokeWidth={1.5} />
-              <p className="text-[13px]">No books by this author yet</p>
+            <div className="macos-empty py-12">
+              <div className="size-12 rounded-2xl bg-macos-orange/10 flex items-center justify-center mb-3">
+                <BookOpen className="size-6 text-macos-orange" strokeWidth={1.5} />
+              </div>
+              <p className="text-[13px] font-semibold text-foreground">No books yet</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                This author hasn&apos;t been linked to any books
+              </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b">
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Publisher</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {authorBooks.map((book) => (
-                  <TableRow key={book.id} className="hover:bg-secondary/50">
-                    <TableCell className="text-[13px] font-medium">{book.title}</TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground font-mono">
-                      {book.isbn || '—'}
-                    </TableCell>
-                    <TableCell>
-                      {book.category ? (
-                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
-                          {book.category.name}
-                        </Badge>
-                      ) : (
-                        <span className="text-[13px] text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">
-                      {book.publisher?.name || '—'}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-right font-semibold tracking-tight">
-                      ${book.price.toFixed(2)}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Publisher</TableHead>
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {authorBooks.map((book) => {
+                    const catColor = book.category ? getCategoryColor(book.category.name) : null
+                    return (
+                      <TableRow key={book.id} className="macos-table-row border-b border-border/30">
+                        <TableCell className="text-[13px] font-medium">{book.title}</TableCell>
+                        <TableCell className="text-[11px] text-muted-foreground font-mono">
+                          {book.isbn || <span className="text-muted-foreground/50">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          {book.category && catColor ? (
+                            <span className={`macos-badge ${catColor.bg} ${catColor.text}`}>
+                              {book.category.name}
+                            </span>
+                          ) : (
+                            <span className="text-[13px] text-muted-foreground/50">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-[13px] text-muted-foreground font-medium">
+                          {book.publisher?.name || <span className="text-muted-foreground/50">—</span>}
+                        </TableCell>
+                        <TableCell className="text-[13px] text-right font-semibold tracking-tight">
+                          ${book.price.toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </div>
       </div>
@@ -389,36 +460,57 @@ export default function AuthorsModule() {
 
   // ── Main List View ─────────────────────────────────────────
   return (
-    <div className="space-y-4">
-      {/* Header + Add */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-5">
+      {/* macOS Page Header */}
+      <div className="macos-page-header flex-col gap-3 sm:flex-row">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold tracking-tight">Authors</h2>
-          <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
-            {total} authors
-          </Badge>
+          <div className="flex items-center justify-center size-9 rounded-xl bg-gg-sunset/10">
+            <Users className="size-[18px] text-gg-sunset" strokeWidth={1.5} />
+          </div>
+          <div>
+            <h1 className="macos-page-title">Authors</h1>
+            <p className="macos-page-subtitle">
+              {total} {total === 1 ? 'author' : 'authors'} in your catalog
+            </p>
+          </div>
         </div>
-        <Button onClick={openAdd} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
-          <Plus className="size-4 mr-1.5" strokeWidth={1.5} /> Add Author
-        </Button>
+        {!isViewOnly && (
+          <Button
+            onClick={openAdd}
+            className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 gap-1.5"
+          >
+            <Plus className="size-4" strokeWidth={1.5} /> Add Author
+          </Button>
+        )}
       </div>
 
       {/* Spotlight Search */}
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" strokeWidth={1.5} />
-        <Input
-          placeholder="Search by name, nationality, email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
-        />
+      <div className="macos-card macos-shadow-card p-4">
+        <div className="macos-search flex items-center gap-2 px-3 py-1.5">
+          <Search className="size-[14px] text-muted-foreground shrink-0" strokeWidth={1.5} />
+          <input
+            type="text"
+            placeholder="Search by name, nationality, email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-transparent border-0 outline-none text-[13px] font-medium placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="size-4 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-muted-foreground/30 transition-colors"
+            >
+              <X className="size-2.5 text-background" strokeWidth={2} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Authors Grid */}
       {loading ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="rounded-2xl macos-shadow bg-card p-4 space-y-3">
+            <div key={i} className="macos-card macos-shadow-card p-4 space-y-3">
               <div className="flex items-center gap-3">
                 <Skeleton className="size-10 rounded-xl" />
                 <div className="space-y-1.5 flex-1">
@@ -432,10 +524,16 @@ export default function AuthorsModule() {
           ))}
         </div>
       ) : authors.length === 0 ? (
-        <div className="rounded-2xl macos-shadow bg-card p-8 flex flex-col items-center justify-center text-muted-foreground">
-          <PenTool className="size-10 mb-3 opacity-40" strokeWidth={1.5} />
-          <p className="text-[13px] font-semibold">No authors found</p>
-          <p className="text-[11px] mt-1">Try adjusting your search or add a new author</p>
+        <div className="macos-card macos-shadow-card">
+          <div className="macos-empty py-16">
+            <div className="size-14 rounded-2xl bg-gg-golden/10 flex items-center justify-center mb-4">
+              <PenTool className="size-7 text-gg-golden" strokeWidth={1.5} />
+            </div>
+            <p className="text-[13px] font-semibold text-foreground">No authors found</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Try adjusting your search or add a new author
+            </p>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -444,7 +542,7 @@ export default function AuthorsModule() {
             return (
               <div
                 key={author.id}
-                className="rounded-2xl macos-shadow macos-card-hover bg-card p-4 cursor-pointer"
+                className="macos-card macos-shadow-card macos-card-hover p-4 cursor-pointer group"
                 onClick={() => openDetail(author)}
               >
                 <div className="flex items-start gap-3">
@@ -454,45 +552,60 @@ export default function AuthorsModule() {
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-[13px] font-semibold truncate">{author.name}</h3>
+                    <h3 className="text-[13px] font-semibold truncate group-hover:text-macos-blue transition-colors">{author.name}</h3>
                     {author.nationality && (
-                      <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5 font-medium">
+                        <Globe className="size-3" strokeWidth={1.5} />
                         {getFlag(author.nationality)} {author.nationality}
                       </p>
                     )}
-                    <Badge className="mt-1.5 rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+                    <span className="macos-badge bg-macos-green/10 text-macos-green mt-2 inline-block">
                       {author._count.books} {author._count.books === 1 ? 'book' : 'books'}
-                    </Badge>
+                    </span>
                   </div>
                 </div>
                 {author.bio && (
-                  <p className="text-[13px] text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
+                  <p className="text-[13px] text-muted-foreground mt-3 line-clamp-2 leading-relaxed font-medium">
                     {author.bio}
                   </p>
                 )}
-                <div className="mt-3 flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="size-7 rounded-lg"
-                    onClick={() => openEdit(author)}
-                  >
-                    <Pencil className="size-3.5" strokeWidth={1.5} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="size-7 rounded-lg text-macos-red hover:text-macos-red"
-                    onClick={() => handleDelete(author.id)}
-                    disabled={deleting === author.id}
-                  >
-                    {deleting === author.id ? (
-                      <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
-                    ) : (
-                      <Trash2 className="size-3.5" strokeWidth={1.5} />
+                {/* Contact info row */}
+                {(author.email || author.website) && (
+                  <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/30">
+                    {author.email && (
+                      <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium truncate">
+                        <Mail className="size-3 shrink-0" strokeWidth={1.5} />
+                        <span className="truncate">{author.email}</span>
+                      </span>
                     )}
-                  </Button>
-                </div>
+                  </div>
+                )}
+                {/* Actions */}
+                {!isViewOnly && (
+                  <div className="mt-3 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="size-7 rounded-lg hover:bg-macos-blue/10 hover:text-macos-blue"
+                      onClick={() => openEdit(author)}
+                    >
+                      <Pencil className="size-3.5" strokeWidth={1.5} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="size-7 rounded-lg hover:bg-macos-red/10 hover:text-macos-red"
+                      onClick={() => handleDelete(author.id)}
+                      disabled={deleting === author.id}
+                    >
+                      {deleting === author.id ? (
+                        <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
+                      ) : (
+                        <Trash2 className="size-3.5" strokeWidth={1.5} />
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
             )
           })}
@@ -501,28 +614,28 @@ export default function AuthorsModule() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] text-muted-foreground">
-            Page {page} of {totalPages} · {total} results
+        <div className="flex items-center justify-between px-1">
+          <p className="text-[11px] text-muted-foreground font-medium">
+            Page {page} of {totalPages} &middot; {total} results
           </p>
           <div className="flex gap-1">
             <Button
-              variant="secondary"
+              variant="ghost"
               size="sm"
-              className="rounded-lg h-7 text-[13px]"
+              className="rounded-lg h-7 text-[12px] font-medium gap-1 hover:bg-macos-blue/10 hover:text-macos-blue"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
             >
-              Prev
+              <ArrowLeft className="size-3.5" strokeWidth={1.5} /> Prev
             </Button>
             <Button
-              variant="secondary"
+              variant="ghost"
               size="sm"
-              className="rounded-lg h-7 text-[13px]"
+              className="rounded-lg h-7 text-[12px] font-medium gap-1 hover:bg-macos-blue/10 hover:text-macos-blue"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >
-              Next
+              Next <ArrowLeft className="size-3.5 rotate-180" strokeWidth={1.5} />
             </Button>
           </div>
         </div>
@@ -539,83 +652,124 @@ export default function AuthorsModule() {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-[13px] font-semibold tracking-tight">
-              {editing ? 'Edit Author' : 'Add New Author'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3 py-2">
+        <DialogContent className="max-w-lg rounded-2xl macos-shadow-float border-border/50 p-0 overflow-hidden">
+          {/* macOS Dialog Header */}
+          <div className="bg-card/95 backdrop-blur-xl border-b border-border/50 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center size-8 rounded-lg bg-gg-sunset/10">
+                  <PenTool className="size-4 text-gg-sunset" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <DialogTitle className="text-[15px] font-semibold tracking-tight">
+                    {editing ? 'Edit Author' : 'Add New Author'}
+                  </DialogTitle>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {editing ? 'Update author information' : 'Fill in the author details'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setDialogOpen(false)
+                  setEditing(null)
+                  setForm(emptyForm)
+                }}
+                className="size-6 rounded-md hover:bg-secondary flex items-center justify-center transition-colors"
+              >
+                <X className="size-3.5 text-muted-foreground" strokeWidth={1.5} />
+              </button>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 space-y-4">
+            {/* Name */}
             <div>
-              <Label htmlFor="author-name" className="text-[11px] font-semibold">Name *</Label>
+              <Label htmlFor="author-name" className="text-[12px] font-medium text-muted-foreground">Name *</Label>
               <Input
                 id="author-name"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="Author name"
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
               />
             </div>
+
+            {/* Bio */}
             <div>
-              <Label htmlFor="author-bio" className="text-[11px] font-semibold">Bio</Label>
+              <Label htmlFor="author-bio" className="text-[12px] font-medium text-muted-foreground">Bio</Label>
               <Textarea
                 id="author-bio"
                 value={form.bio}
                 onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
                 placeholder="Author biography..."
                 rows={3}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="rounded-lg border-border/50 text-[13px] mt-1 focus:ring-primary/20"
               />
             </div>
+
+            {/* Nationality + Website */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="author-nationality" className="text-[11px] font-semibold">Nationality</Label>
+                <Label htmlFor="author-nationality" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1">
+                  <Globe className="size-3" strokeWidth={1.5} /> Nationality
+                </Label>
                 <Input
                   id="author-nationality"
                   value={form.nationality}
                   onChange={(e) => setForm((f) => ({ ...f, nationality: e.target.value }))}
                   placeholder="e.g. American"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
                 />
               </div>
               <div>
-                <Label htmlFor="author-website" className="text-[11px] font-semibold">Website</Label>
+                <Label htmlFor="author-website" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1">
+                  <ExternalLink className="size-3" strokeWidth={1.5} /> Website
+                </Label>
                 <Input
                   id="author-website"
                   value={form.website}
                   onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
                   placeholder="https://..."
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
                 />
               </div>
             </div>
+
+            {/* Email + Phone */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="author-email" className="text-[11px] font-semibold">Email</Label>
+                <Label htmlFor="author-email" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1">
+                  <Mail className="size-3" strokeWidth={1.5} /> Email
+                </Label>
                 <Input
                   id="author-email"
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                   placeholder="author@example.com"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
                 />
               </div>
               <div>
-                <Label htmlFor="author-phone" className="text-[11px] font-semibold">Phone</Label>
+                <Label htmlFor="author-phone" className="text-[12px] font-medium text-muted-foreground flex items-center gap-1">
+                  <Phone className="size-3" strokeWidth={1.5} /> Phone
+                </Label>
                 <Input
                   id="author-phone"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                   placeholder="+1-..."
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
                 />
               </div>
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+
+          {/* Dialog Footer */}
+          <div className="border-t border-border/50 px-6 py-3 flex justify-end gap-2">
             <Button
-              variant="secondary"
+              variant="ghost"
               className="rounded-lg text-[13px] font-medium h-8"
               onClick={() => {
                 setDialogOpen(false)
@@ -628,12 +782,12 @@ export default function AuthorsModule() {
             <Button
               onClick={handleSave}
               disabled={saving || !form.name.trim()}
-              className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8"
+              className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8 gap-1.5"
             >
               {saving ? (
-                <RefreshCw className="size-4 mr-1.5 animate-spin" strokeWidth={1.5} />
+                <RefreshCw className="size-4 animate-spin" strokeWidth={1.5} />
               ) : (
-                <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
+                <Plus className="size-4" strokeWidth={1.5} />
               )}
               {editing ? 'Update Author' : 'Create Author'}
             </Button>

@@ -10,6 +10,10 @@ import {
   Loader2,
   AlertCircle,
   Filter,
+  Tag,
+  DollarSign,
+  Archive,
+  CheckCircle2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -41,6 +45,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAppStore } from '@/store/app-store'
 
 // ─── Types ────────────────────────────────────────────────────────
 interface StationeryCategory {
@@ -97,8 +102,19 @@ const emptyForm: ProductFormData = {
   minOrderQty: '1',
 }
 
+// ─── Stat Card Colors ─────────────────────────────────────────
+const statColors = [
+  { icon: Package, bg: 'bg-macos-blue/10', text: 'text-macos-blue', label: 'Total Products' },
+  { icon: Archive, bg: 'bg-macos-green/10', text: 'text-macos-green', label: 'In Stock' },
+  { icon: AlertCircle, bg: 'bg-macos-orange/10', text: 'text-macos-orange', label: 'Low Stock' },
+  { icon: Tag, bg: 'bg-gg-sunset/10', text: 'text-gg-sunset', label: 'Categories' },
+]
+
 // ─── Component ────────────────────────────────────────────────────
 export function StationeryModule() {
+  const authUser = useAppStore((s) => s.authUser)
+  const isViewOnly = authUser?.isViewOnly ?? false
+
   const [products, setProducts] = React.useState<StationeryProduct[]>([])
   const [categories, setCategories] = React.useState<StationeryCategory[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -152,17 +168,36 @@ export function StationeryModule() {
   }, [fetchCategories])
 
   // Stock status helper
-  const getStockStatus = (product: StationeryProduct): { label: string; dotClass: string; textClass: string } => {
+  const getStockStatus = (product: StationeryProduct): { label: string; dotClass: string; textClass: string; badgeClass: string } => {
     const inv = product.inventory
     if (!inv || inv.length === 0) {
-      return { label: 'No Stock', dotClass: 'bg-macos-red', textClass: 'text-macos-red' }
+      return { label: 'No Stock', dotClass: 'bg-macos-red', textClass: 'text-macos-red', badgeClass: 'bg-macos-red/10 text-macos-red' }
     }
     const totalQty = inv.reduce((s, i) => s + i.quantity, 0)
     const reorder = inv[0]?.reorderLevel || 10
-    if (totalQty === 0) return { label: 'Out of Stock', dotClass: 'bg-macos-red', textClass: 'text-macos-red' }
-    if (totalQty <= reorder) return { label: 'Low Stock', dotClass: 'bg-macos-orange', textClass: 'text-macos-orange' }
-    return { label: 'In Stock', dotClass: 'bg-macos-green', textClass: 'text-macos-green' }
+    if (totalQty === 0) return { label: 'Out of Stock', dotClass: 'bg-macos-red', textClass: 'text-macos-red', badgeClass: 'bg-macos-red/10 text-macos-red' }
+    if (totalQty <= reorder) return { label: 'Low Stock', dotClass: 'bg-macos-orange', textClass: 'text-macos-orange', badgeClass: 'bg-macos-orange/10 text-macos-orange' }
+    return { label: 'In Stock', dotClass: 'bg-macos-green', textClass: 'text-macos-green', badgeClass: 'bg-macos-green/10 text-macos-green' }
   }
+
+  // Computed stats
+  const inStockCount = products.filter((p) => {
+    const inv = p.inventory
+    if (!inv || inv.length === 0) return false
+    const qty = inv.reduce((s, i) => s + i.quantity, 0)
+    const reorder = inv[0]?.reorderLevel || 10
+    return qty > reorder
+  }).length
+
+  const lowStockCount = products.filter((p) => {
+    const inv = p.inventory
+    if (!inv || inv.length === 0) return false
+    const qty = inv.reduce((s, i) => s + i.quantity, 0)
+    const reorder = inv[0]?.reorderLevel || 10
+    return qty > 0 && qty <= reorder
+  }).length
+
+  const statValues = [products.length, inStockCount, lowStockCount, categories.length]
 
   // Open add dialog
   const handleAdd = () => {
@@ -250,44 +285,67 @@ export function StationeryModule() {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Category tabs for segmented control
+  // Category tabs for filter bar
   const categoryTabs = [
     { id: 'all', label: 'All' },
     ...categories.map((c) => ({ id: c.name, label: c.name })),
   ]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="macos-page-header flex-col gap-3 sm:flex-row">
         <div>
-          <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Stationery Products</h2>
-          <p className="text-[11px] text-muted-foreground tracking-tight">{products.length} products in catalog</p>
+          <h2 className="macos-page-title">Stationery</h2>
+          <p className="macos-page-subtitle">{products.length} products in catalog</p>
         </div>
-        <Button onClick={handleAdd} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0">
-          <Plus className="size-3.5 mr-1.5" />
-          Add Product
-        </Button>
+        {!isViewOnly && (
+          <Button
+            onClick={handleAdd}
+            className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8 shrink-0"
+          >
+            <Plus className="size-3.5 mr-1.5" strokeWidth={1.5} />
+            Add Product
+          </Button>
+        )}
       </div>
 
-      {/* Search + Category Segmented Control */}
-      <div className="rounded-2xl macos-shadow p-4 space-y-3 bg-background">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-          <Input
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {statColors.map((stat, i) => {
+          const Icon = stat.icon
+          return (
+            <div key={stat.label} className="macos-card macos-shadow-card p-4 flex items-center gap-3">
+              <div className={`size-9 rounded-xl ${stat.bg} flex items-center justify-center shrink-0`}>
+                <Icon className={`size-4 ${stat.text}`} strokeWidth={1.5} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[22px] font-bold tracking-[-0.03em] leading-tight">{statValues[i]}</p>
+                <p className="text-[11px] text-muted-foreground font-medium truncate">{stat.label}</p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Search + Filter Bar */}
+      <div className="macos-card macos-shadow-card p-4 space-y-3">
+        <div className="macos-search flex items-center px-3 h-9">
+          <Search className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+          <input
             placeholder="Search by name, SKU, brand, or barcode..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+            className="flex-1 bg-transparent border-0 text-[13px] font-medium placeholder:text-muted-foreground/60 focus:outline-none ml-2"
           />
         </div>
         <div className="flex items-center gap-3">
-          <Filter className="size-3.5 text-muted-foreground shrink-0" />
-          <div className="macos-segmented inline-flex p-0.5 overflow-x-auto">
+          <Filter className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+          <div className="macos-filter-bar overflow-x-auto">
             {categoryTabs.slice(0, 7).map((tab) => (
               <button
                 key={tab.id}
-                className={`px-3 py-1 text-[12px] font-medium rounded-md transition-all whitespace-nowrap ${categoryFilter === tab.id ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`macos-filter-item whitespace-nowrap ${categoryFilter === tab.id ? 'macos-filter-item-active' : ''}`}
                 onClick={() => setCategoryFilter(tab.id)}
               >
                 {tab.label}
@@ -311,27 +369,37 @@ export function StationeryModule() {
 
       {/* Error Alert */}
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-macos-red/10 p-3 text-[13px] text-macos-red macos-shadow">
-          <AlertCircle className="size-3.5 shrink-0" />
-          {error}
-          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[11px] text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
+        <div className="flex items-center gap-2.5 macos-card macos-shadow-card p-4 bg-macos-red/5 border-macos-red/20">
+          <div className="size-7 rounded-lg bg-macos-red/10 flex items-center justify-center shrink-0">
+            <AlertCircle className="size-3.5 text-macos-red" />
+          </div>
+          <span className="text-[13px] font-medium text-macos-red flex-1">{error}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-[11px] text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+            onClick={() => setError(null)}
+          >
             Dismiss
           </Button>
         </div>
       )}
 
       {/* Products Table */}
-      <div className="rounded-2xl macos-shadow bg-background overflow-hidden">
+      <div className="macos-card macos-shadow-card overflow-hidden">
         {loading ? (
-          <div className="p-4 space-y-3">
+          <div className="p-5 space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-10 w-full" />
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="size-8 rounded-xl shrink-0" />
+                <Skeleton className="h-4 flex-1 rounded-lg" />
+              </div>
             ))}
           </div>
         ) : products.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Package className="size-12 text-muted-foreground/30 mb-3" />
-            <p className="text-[13px] text-muted-foreground">No stationery products found</p>
+          <div className="macos-empty py-16">
+            <Package className="size-12 text-muted-foreground/25 mb-3" strokeWidth={1.5} />
+            <p className="text-[13px] font-semibold text-muted-foreground">No stationery products found</p>
             <p className="text-[11px] text-muted-foreground mt-1">Add your first product to get started</p>
           </div>
         ) : (
@@ -339,77 +407,96 @@ export function StationeryModule() {
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-border/50 hover:bg-transparent">
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">SKU</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Category</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell">Brand</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Stock</TableHead>
-                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Product</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden md:table-cell">SKU</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Category</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden lg:table-cell">Brand</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
+                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground hidden sm:table-cell">Stock</TableHead>
+                  {!isViewOnly && (
+                    <TableHead className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {products.map((product) => {
                   const stock = getStockStatus(product)
                   return (
-                    <TableRow key={product.id} className="hover:bg-secondary/50 border-b border-border/30">
-                      <TableCell className="text-[13px] font-medium max-w-[200px] truncate tracking-tight">
-                        {product.name}
+                    <TableRow key={product.id} className="macos-table-row border-b border-border/30">
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <div className="size-8 rounded-xl bg-macos-teal/10 flex items-center justify-center shrink-0">
+                            <Package className="size-4 text-macos-teal" strokeWidth={1.5} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[13px] font-medium truncate max-w-[180px]">{product.name}</p>
+                            {product.brand && (
+                              <p className="text-[11px] text-muted-foreground truncate">{product.brand}</p>
+                            )}
+                          </div>
+                        </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] font-mono tracking-tight">
-                        {product.sku || '—'}
+                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] font-mono">
+                        {product.sku || '\u2014'}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {product.category ? (
-                          <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
+                          <span className="rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 bg-macos-purple/10 text-macos-purple uppercase">
                             {product.category.name}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-[13px] text-muted-foreground">{'\u2014'}</span>
                         )}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-muted-foreground text-[13px] tracking-tight">
-                        {product.brand || '—'}
+                      <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">
+                        {product.brand || '\u2014'}
                       </TableCell>
-                      <TableCell className="text-right text-[13px] font-medium tracking-tight">
-                        ${product.price.toFixed(2)}
-                        {product.discount > 0 && (
-                          <span className="ml-1 text-[10px] text-macos-green">-{product.discount}%</span>
-                        )}
+                      <TableCell className="text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="text-[13px] font-semibold tracking-[-0.01em]">
+                            ${product.price.toFixed(2)}
+                          </span>
+                          {product.discount > 0 && (
+                            <span className="text-[10px] font-semibold text-macos-green tracking-wide">
+                              -{product.discount}%
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
-                        <span className={`inline-flex items-center gap-1.5 text-[13px] font-medium ${stock.textClass}`}>
-                          <span className={`inline-block size-2 rounded-full ${stock.dotClass}`} />
+                        <span className={`rounded-md text-[10px] font-semibold tracking-wider px-2 py-0.5 uppercase ${stock.badgeClass}`}>
                           {stock.label}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-0.5">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 rounded-md hover:bg-secondary"
-                            onClick={() => handleEdit(product)}
-                            aria-label={`Edit ${product.name}`}
-                          >
-                            <Pencil className="size-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 rounded-md text-macos-red hover:bg-macos-red/10 hover:text-macos-red"
-                            onClick={() => handleDelete(product.id)}
-                            disabled={deleting === product.id}
-                            aria-label={`Delete ${product.name}`}
-                          >
-                            {deleting === product.id ? (
-                              <Loader2 className="size-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="size-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
+                      {!isViewOnly && (
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 rounded-lg hover:bg-secondary"
+                              onClick={() => handleEdit(product)}
+                              aria-label={`Edit ${product.name}`}
+                            >
+                              <Pencil className="size-3" strokeWidth={1.5} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 rounded-lg text-macos-red hover:bg-macos-red/10 hover:text-macos-red"
+                              onClick={() => handleDelete(product.id)}
+                              disabled={deleting === product.id}
+                              aria-label={`Delete ${product.name}`}
+                            >
+                              {deleting === product.id ? (
+                                <Loader2 className="size-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="size-3" strokeWidth={1.5} />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 })}
@@ -421,39 +508,41 @@ export function StationeryModule() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl macos-shadow-elevated">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto macos-shadow-float rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-[13px] font-semibold tracking-tight">{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-            <DialogDescription className="text-[11px]">
+            <DialogTitle className="text-[13px] font-semibold tracking-[-0.01em]">
+              {editingProduct ? 'Edit Product' : 'Add New Product'}
+            </DialogTitle>
+            <DialogDescription className="text-[11px] text-muted-foreground">
               {editingProduct ? 'Update stationery product details.' : 'Add a new stationery product to your catalog.'}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="name" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Product Name *</Label>
+                <Label htmlFor="name" className="text-[12px] font-medium text-muted-foreground">Product Name *</Label>
                 <Input
                   id="name"
                   value={form.name}
                   onChange={(e) => updateField('name', e.target.value)}
                   placeholder="e.g., Premium Notebook A5"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="sku" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">SKU</Label>
+                <Label htmlFor="sku" className="text-[12px] font-medium text-muted-foreground">SKU</Label>
                 <Input
                   id="sku"
                   value={form.sku}
                   onChange={(e) => updateField('sku', e.target.value)}
                   placeholder="e.g., STA-NB-001"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 font-mono focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 font-mono focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="category" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</Label>
+                <Label htmlFor="category" className="text-[12px] font-medium text-muted-foreground">Category</Label>
                 <Select value={form.categoryId} onValueChange={(v) => updateField('categoryId', v)}>
-                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                  <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -466,38 +555,38 @@ export function StationeryModule() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="brand" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Brand</Label>
+                <Label htmlFor="brand" className="text-[12px] font-medium text-muted-foreground">Brand</Label>
                 <Input
                   id="brand"
                   value={form.brand}
                   onChange={(e) => updateField('brand', e.target.value)}
                   placeholder="e.g., Moleskine"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="barcode" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Barcode</Label>
+                <Label htmlFor="barcode" className="text-[12px] font-medium text-muted-foreground">Barcode</Label>
                 <Input
                   id="barcode"
                   value={form.barcode}
                   onChange={(e) => updateField('barcode', e.target.value)}
                   placeholder="e.g., 8901234567890"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="description" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Description</Label>
+                <Label htmlFor="description" className="text-[12px] font-medium text-muted-foreground">Description</Label>
                 <Textarea
                   id="description"
                   value={form.description}
                   onChange={(e) => updateField('description', e.target.value)}
                   placeholder="Product description..."
                   rows={3}
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="price" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Selling Price ($)</Label>
+                <Label htmlFor="price" className="text-[12px] font-medium text-muted-foreground">Selling Price ($)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -506,11 +595,11 @@ export function StationeryModule() {
                   value={form.price}
                   onChange={(e) => updateField('price', e.target.value)}
                   placeholder="0.00"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="costPrice" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Cost Price ($)</Label>
+                <Label htmlFor="costPrice" className="text-[12px] font-medium text-muted-foreground">Cost Price ($)</Label>
                 <Input
                   id="costPrice"
                   type="number"
@@ -519,11 +608,11 @@ export function StationeryModule() {
                   value={form.costPrice}
                   onChange={(e) => updateField('costPrice', e.target.value)}
                   placeholder="0.00"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="discount" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Discount (%)</Label>
+                <Label htmlFor="discount" className="text-[12px] font-medium text-muted-foreground">Discount (%)</Label>
                 <Input
                   id="discount"
                   type="number"
@@ -533,13 +622,13 @@ export function StationeryModule() {
                   value={form.discount}
                   onChange={(e) => updateField('discount', e.target.value)}
                   placeholder="0"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="unit" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Unit</Label>
+                <Label htmlFor="unit" className="text-[12px] font-medium text-muted-foreground">Unit</Label>
                 <Select value={form.unit} onValueChange={(v) => updateField('unit', v)}>
-                  <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+                  <SelectTrigger className="rounded-lg border-border/50 text-[13px] h-8">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -552,7 +641,7 @@ export function StationeryModule() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="minOrderQty" className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Min Order Qty</Label>
+                <Label htmlFor="minOrderQty" className="text-[12px] font-medium text-muted-foreground">Min Order Qty</Label>
                 <Input
                   id="minOrderQty"
                   type="number"
@@ -560,16 +649,25 @@ export function StationeryModule() {
                   value={form.minOrderQty}
                   onChange={(e) => updateField('minOrderQty', e.target.value)}
                   placeholder="1"
-                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="rounded-lg border-border/50 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
                 />
               </div>
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={saving} className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8">
+            <Button
+              variant="secondary"
+              onClick={() => setDialogOpen(false)}
+              disabled={saving}
+              className="rounded-lg text-[13px] font-medium h-8"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={saving || !form.name.trim()} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+            <Button
+              onClick={handleSave}
+              disabled={saving || !form.name.trim()}
+              className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8"
+            >
               {saving ? (
                 <>
                   <Loader2 className="size-3.5 mr-1.5 animate-spin" />
@@ -578,7 +676,10 @@ export function StationeryModule() {
               ) : editingProduct ? (
                 'Update Product'
               ) : (
-                'Create Product'
+                <>
+                  <Plus className="size-3.5 mr-1.5" strokeWidth={1.5} />
+                  Create Product
+                </>
               )}
             </Button>
           </DialogFooter>

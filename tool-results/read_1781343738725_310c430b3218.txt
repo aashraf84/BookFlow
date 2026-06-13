@@ -1,0 +1,657 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import React, { useState, useEffect, useCallback } from 'react'
+     4→     4→import {
+     5→     5→  Search,
+     6→     6→  Plus,
+     7→     7→  Pencil,
+     8→     8→  Trash2,
+     9→     9→  ArrowLeft,
+    10→    10→  Building2,
+    11→    11→  RefreshCw,
+    12→    12→  Mail,
+    13→    13→  Phone,
+    14→    14→  Globe,
+    15→    15→  MapPin,
+    16→    16→  FileText,
+    17→    17→} from 'lucide-react'
+    18→    18→import { Button } from '@/components/ui/button'
+    19→    19→import { Input } from '@/components/ui/input'
+    20→    20→import { Label } from '@/components/ui/label'
+    21→    21→import { Textarea } from '@/components/ui/textarea'
+    22→    22→import { Badge } from '@/components/ui/badge'
+    23→    23→import { Skeleton } from '@/components/ui/skeleton'
+    24→    24→import {
+    25→    25→  Table,
+    26→    26→  TableBody,
+    27→    27→  TableCell,
+    28→    28→  TableHead,
+    29→    29→  TableHeader,
+    30→    30→  TableRow,
+    31→    31→} from '@/components/ui/table'
+    32→    32→import {
+    33→    33→  Dialog,
+    34→    34→  DialogContent,
+    35→    35→  DialogHeader,
+    36→    36→  DialogTitle,
+    37→    37→} from '@/components/ui/dialog'
+    38→    38→
+    39→    39→// ── Types ────────────────────────────────────────────────────────
+    40→    40→interface PublisherData {
+    41→    41→  id: string
+    42→    42→  name: string
+    43→    43→  contact: string | null
+    44→    44→  email: string | null
+    45→    45→  phone: string | null
+    46→    46→  address: string | null
+    47→    47→  website: string | null
+    48→    48→  agreement: string | null
+    49→    49→  createdAt: string
+    50→    50→  _count: { books: number }
+    51→    51→}
+    52→    52→
+    53→    53→interface BookData {
+    54→    54→  id: string
+    55→    55→  title: string
+    56→    56→  isbn: string | null
+    57→    57→  price: number
+    58→    58→  category: { id: string; name: string; type: string | null } | null
+    59→    59→  author: { id: string; name: string } | null
+    60→    60→}
+    61→    61→
+    62→    62→interface PublisherFormData {
+    63→    63→  name: string
+    64→    64→  contact: string
+    65→    65→  email: string
+    66→    66→  phone: string
+    67→    67→  address: string
+    68→    68→  website: string
+    69→    69→  agreement: string
+    70→    70→}
+    71→    71→
+    72→    72→const emptyForm: PublisherFormData = {
+    73→    73→  name: '',
+    74→    74→  contact: '',
+    75→    75→  email: '',
+    76→    76→  phone: '',
+    77→    77→  address: '',
+    78→    78→  website: '',
+    79→    79→  agreement: '',
+    80→    80→}
+    81→    81→
+    82→    82→// ── Publisher icon colors ─────────────────────────────────────
+    83→    83→const publisherColors = [
+    84→    84→  { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
+    85→    85→  { bg: 'bg-macos-green/10', text: 'text-macos-green' },
+    86→    86→  { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
+    87→    87→  { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
+    88→    88→  { bg: 'bg-macos-red/10', text: 'text-macos-red' },
+    89→    89→  { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
+    90→    90→  { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
+    91→    91→  { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
+    92→    92→]
+    93→    93→
+    94→    94→const getPublisherColor = (name: string) => {
+    95→    95→  let hash = 0
+    96→    96→  for (let i = 0; i < name.length; i++) {
+    97→    97→    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    98→    98→  }
+    99→    99→  return publisherColors[Math.abs(hash) % publisherColors.length]
+   100→   100→}
+   101→   101→
+   102→   102→// ── Component ────────────────────────────────────────────────────
+   103→   103→export default function PublishersModule() {
+   104→   104→  const [publishers, setPublishers] = useState<PublisherData[]>([])
+   105→   105→  const [total, setTotal] = useState(0)
+   106→   106→  const [page, setPage] = useState(1)
+   107→   107→  const [totalPages, setTotalPages] = useState(1)
+   108→   108→  const [loading, setLoading] = useState(true)
+   109→   109→  const [search, setSearch] = useState('')
+   110→   110→  const [dialogOpen, setDialogOpen] = useState(false)
+   111→   111→  const [editing, setEditing] = useState<PublisherData | null>(null)
+   112→   112→  const [form, setForm] = useState<PublisherFormData>(emptyForm)
+   113→   113→  const [saving, setSaving] = useState(false)
+   114→   114→  const [deleting, setDeleting] = useState<string | null>(null)
+   115→   115→
+   116→   116→  // Detail view
+   117→   117→  const [selectedPublisher, setSelectedPublisher] = useState<PublisherData | null>(null)
+   118→   118→  const [publisherBooks, setPublisherBooks] = useState<BookData[]>([])
+   119→   119→  const [loadingBooks, setLoadingBooks] = useState(false)
+   120→   120→
+   121→   121→  const limit = 10
+   122→   122→
+   123→   123→  // ── Fetch publishers ───────────────────────────────────────
+   124→   124→  const fetchPublishers = useCallback(async () => {
+   125→   125→    setLoading(true)
+   126→   126→    try {
+   127→   127→      const params = new URLSearchParams({
+   128→   128→        page: String(page),
+   129→   129→        limit: String(limit),
+   130→   130→      })
+   131→   131→      if (search) params.set('search', search)
+   132→   132→
+   133→   133→      const res = await fetch(`/api/publishers?${params}`)
+   134→   134→      if (!res.ok) throw new Error('Failed to fetch publishers')
+   135→   135→      const json = await res.json()
+   136→   136→      setPublishers(json.data || [])
+   137→   137→      setTotal(json.pagination?.total || 0)
+   138→   138→      setTotalPages(json.pagination?.totalPages || 1)
+   139→   139→    } catch {
+   140→   140→      setPublishers([])
+   141→   141→    } finally {
+   142→   142→      setLoading(false)
+   143→   143→    }
+   144→   144→  }, [page, search])
+   145→   145→
+   146→   146→  useEffect(() => {
+   147→   147→    fetchPublishers()
+   148→   148→  }, [fetchPublishers])
+   149→   149→
+   150→   150→  useEffect(() => {
+   151→   151→    setPage(1)
+   152→   152→  }, [search])
+   153→   153→
+   154→   154→  // ── Fetch publisher books ──────────────────────────────────
+   155→   155→  const fetchPublisherBooks = async (publisherId: string) => {
+   156→   156→    setLoadingBooks(true)
+   157→   157→    try {
+   158→   158→      const res = await fetch(`/api/books?publisherId=${publisherId}&limit=50`)
+   159→   159→      if (!res.ok) throw new Error('Failed to fetch books')
+   160→   160→      const json = await res.json()
+   161→   161→      setPublisherBooks(json.data || [])
+   162→   162→    } catch {
+   163→   163→      setPublisherBooks([])
+   164→   164→    } finally {
+   165→   165→      setLoadingBooks(false)
+   166→   166→    }
+   167→   167→  }
+   168→   168→
+   169→   169→  // ── Open detail view ───────────────────────────────────────
+   170→   170→  const openDetail = (publisher: PublisherData) => {
+   171→   171→    setSelectedPublisher(publisher)
+   172→   172→    fetchPublisherBooks(publisher.id)
+   173→   173→  }
+   174→   174→
+   175→   175→  // ── Save publisher ─────────────────────────────────────────
+   176→   176→  const handleSave = async () => {
+   177→   177→    if (!form.name.trim()) return
+   178→   178→    setSaving(true)
+   179→   179→    try {
+   180→   180→      const payload = {
+   181→   181→        name: form.name.trim(),
+   182→   182→        contact: form.contact || null,
+   183→   183→        email: form.email || null,
+   184→   184→        phone: form.phone || null,
+   185→   185→        address: form.address || null,
+   186→   186→        website: form.website || null,
+   187→   187→        agreement: form.agreement || null,
+   188→   188→      }
+   189→   189→
+   190→   190→      let res: Response
+   191→   191→      if (editing) {
+   192→   192→        res = await fetch('/api/publishers', {
+   193→   193→          method: 'PUT',
+   194→   194→          headers: { 'Content-Type': 'application/json' },
+   195→   195→          body: JSON.stringify({ id: editing.id, ...payload }),
+   196→   196→        })
+   197→   197→      } else {
+   198→   198→        res = await fetch('/api/publishers', {
+   199→   199→          method: 'POST',
+   200→   200→          headers: { 'Content-Type': 'application/json' },
+   201→   201→          body: JSON.stringify(payload),
+   202→   202→        })
+   203→   203→      }
+   204→   204→
+   205→   205→      if (!res.ok) {
+   206→   206→        const err = await res.json()
+   207→   207→        throw new Error(err.error || 'Failed to save publisher')
+   208→   208→      }
+   209→   209→
+   210→   210→      setDialogOpen(false)
+   211→   211→      setEditing(null)
+   212→   212→      setForm(emptyForm)
+   213→   213→      fetchPublishers()
+   214→   214→    } catch (err) {
+   215→   215→      alert(err instanceof Error ? err.message : 'Failed to save publisher')
+   216→   216→    } finally {
+   217→   217→      setSaving(false)
+   218→   218→    }
+   219→   219→  }
+   220→   220→
+   221→   221→  // ── Delete publisher ───────────────────────────────────────
+   222→   222→  const handleDelete = async (id: string) => {
+   223→   223→    if (!confirm('Are you sure you want to delete this publisher?')) return
+   224→   224→    setDeleting(id)
+   225→   225→    try {
+   226→   226→      const res = await fetch(`/api/publishers?id=${id}`, { method: 'DELETE' })
+   227→   227→      if (!res.ok) {
+   228→   228→        const err = await res.json()
+   229→   229→        throw new Error(err.error || 'Failed to delete')
+   230→   230→      }
+   231→   231→      fetchPublishers()
+   232→   232→    } catch (err) {
+   233→   233→      alert(err instanceof Error ? err.message : 'Failed to delete publisher')
+   234→   234→    } finally {
+   235→   235→      setDeleting(null)
+   236→   236→    }
+   237→   237→  }
+   238→   238→
+   239→   239→  // ── Open dialog for edit ───────────────────────────────────
+   240→   240→  const openEdit = (publisher: PublisherData) => {
+   241→   241→    setEditing(publisher)
+   242→   242→    setForm({
+   243→   243→      name: publisher.name,
+   244→   244→      contact: publisher.contact || '',
+   245→   245→      email: publisher.email || '',
+   246→   246→      phone: publisher.phone || '',
+   247→   247→      address: publisher.address || '',
+   248→   248→      website: publisher.website || '',
+   249→   249→      agreement: publisher.agreement || '',
+   250→   250→    })
+   251→   251→    setDialogOpen(true)
+   252→   252→  }
+   253→   253→
+   254→   254→  // ── Open dialog for add ────────────────────────────────────
+   255→   255→  const openAdd = () => {
+   256→   256→    setEditing(null)
+   257→   257→    setForm(emptyForm)
+   258→   258→    setDialogOpen(true)
+   259→   259→  }
+   260→   260→
+   261→   261→  // ── Detail View ────────────────────────────────────────────
+   262→   262→  if (selectedPublisher) {
+   263→   263→    const pubColor = getPublisherColor(selectedPublisher.name)
+   264→   264→    return (
+   265→   265→      <div className="space-y-4">
+   266→   266→        <button
+   267→   267→          onClick={() => setSelectedPublisher(null)}
+   268→   268→          className="flex items-center gap-1.5 text-[13px] font-medium text-macos-blue hover:opacity-80 transition-opacity"
+   269→   269→        >
+   270→   270→          <ArrowLeft className="size-4" strokeWidth={1.5} /> Back to Publishers
+   271→   271→        </button>
+   272→   272→
+   273→   273→        <div className="rounded-2xl macos-shadow bg-card p-5">
+   274→   274→          <div className="flex flex-col sm:flex-row gap-4">
+   275→   275→            <div className={`size-14 rounded-2xl ${pubColor.bg} flex items-center justify-center shrink-0`}>
+   276→   276→              <Building2 className={`size-7 ${pubColor.text}`} strokeWidth={1.5} />
+   277→   277→            </div>
+   278→   278→            <div className="space-y-1 flex-1">
+   279→   279→              <h2 className="text-xl font-bold tracking-tight">{selectedPublisher.name}</h2>
+   280→   280→              <div className="flex flex-wrap gap-3 text-[13px] text-muted-foreground">
+   281→   281→                {selectedPublisher.contact && (
+   282→   282→                  <span className="flex items-center gap-1.5">
+   283→   283→                    <Mail className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.contact}
+   284→   284→                  </span>
+   285→   285→                )}
+   286→   286→                {selectedPublisher.email && (
+   287→   287→                  <span className="flex items-center gap-1.5 text-macos-blue">
+   288→   288→                    <Mail className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.email}
+   289→   289→                  </span>
+   290→   290→                )}
+   291→   291→                {selectedPublisher.phone && (
+   292→   292→                  <span className="flex items-center gap-1.5">
+   293→   293→                    <Phone className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.phone}
+   294→   294→                  </span>
+   295→   295→                )}
+   296→   296→              </div>
+   297→   297→              {selectedPublisher.address && (
+   298→   298→                <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
+   299→   299→                  <MapPin className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.address}
+   300→   300→                </p>
+   301→   301→              )}
+   302→   302→              {selectedPublisher.website && (
+   303→   303→                <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
+   304→   304→                  <Globe className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.website}
+   305→   305→                </p>
+   306→   306→              )}
+   307→   307→              {selectedPublisher.agreement && (
+   308→   308→                <p className="text-[13px] text-muted-foreground flex items-center gap-1.5">
+   309→   309→                  <FileText className="size-3.5" strokeWidth={1.5} /> Agreement: {selectedPublisher.agreement}
+   310→   310→                </p>
+   311→   311→              )}
+   312→   312→              <div className="mt-2">
+   313→   313→                <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+   314→   314→                  {selectedPublisher._count.books} books
+   315→   315→                </Badge>
+   316→   316→              </div>
+   317→   317→            </div>
+   318→   318→          </div>
+   319→   319→        </div>
+   320→   320→
+   321→   321→        <div className="rounded-2xl macos-shadow bg-card p-5">
+   322→   322→          <h3 className="text-[13px] font-semibold tracking-tight mb-3">
+   323→   323→            Books by {selectedPublisher.name}
+   324→   324→          </h3>
+   325→   325→          {loadingBooks ? (
+   326→   326→            <div className="space-y-3">
+   327→   327→              {Array.from({ length: 3 }).map((_, i) => (
+   328→   328→                <Skeleton key={i} className="h-10 w-full" />
+   329→   329→              ))}
+   330→   330→            </div>
+   331→   331→          ) : publisherBooks.length === 0 ? (
+   332→   332→            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+   333→   333→              <Building2 className="size-8 mb-2 opacity-40" strokeWidth={1.5} />
+   334→   334→              <p className="text-[13px]">No books from this publisher yet</p>
+   335→   335→            </div>
+   336→   336→          ) : (
+   337→   337→            <Table>
+   338→   338→              <TableHeader>
+   339→   339→                <TableRow className="border-b">
+   340→   340→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Title</TableHead>
+   341→   341→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Author</TableHead>
+   342→   342→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">ISBN</TableHead>
+   343→   343→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Category</TableHead>
+   344→   344→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Price</TableHead>
+   345→   345→                </TableRow>
+   346→   346→              </TableHeader>
+   347→   347→              <TableBody>
+   348→   348→                {publisherBooks.map((book) => (
+   349→   349→                  <TableRow key={book.id} className="hover:bg-secondary/50">
+   350→   350→                    <TableCell className="text-[13px] font-medium">{book.title}</TableCell>
+   351→   351→                    <TableCell className="text-[13px] text-muted-foreground">
+   352→   352→                      {book.author?.name || '—'}
+   353→   353→                    </TableCell>
+   354→   354→                    <TableCell className="text-[13px] text-muted-foreground font-mono">
+   355→   355→                      {book.isbn || '—'}
+   356→   356→                    </TableCell>
+   357→   357→                    <TableCell>
+   358→   358→                      {book.category ? (
+   359→   359→                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-purple/10 text-macos-purple">
+   360→   360→                          {book.category.name}
+   361→   361→                        </Badge>
+   362→   362→                      ) : (
+   363→   363→                        <span className="text-[13px] text-muted-foreground">—</span>
+   364→   364→                      )}
+   365→   365→                    </TableCell>
+   366→   366→                    <TableCell className="text-[13px] text-right font-semibold tracking-tight">
+   367→   367→                      ${book.price.toFixed(2)}
+   368→   368→                    </TableCell>
+   369→   369→                  </TableRow>
+   370→   370→                ))}
+   371→   371→              </TableBody>
+   372→   372→            </Table>
+   373→   373→          )}
+   374→   374→        </div>
+   375→   375→      </div>
+   376→   376→    )
+   377→   377→  }
+   378→   378→
+   379→   379→  // ── Main Table View ────────────────────────────────────────
+   380→   380→  return (
+   381→   381→    <div className="space-y-4">
+   382→   382→      {/* Header + Add */}
+   383→   383→      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+   384→   384→        <div className="flex items-center gap-3">
+   385→   385→          <h2 className="text-xl font-bold tracking-tight">Publishers</h2>
+   386→   386→          <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-orange/10 text-macos-orange">
+   387→   387→            {total} publishers
+   388→   388→          </Badge>
+   389→   389→        </div>
+   390→   390→        <Button onClick={openAdd} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
+   391→   391→          <Plus className="size-4 mr-1.5" strokeWidth={1.5} /> Add Publisher
+   392→   392→        </Button>
+   393→   393→      </div>
+   394→   394→
+   395→   395→      {/* Spotlight Search */}
+   396→   396→      <div className="relative">
+   397→   397→        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" strokeWidth={1.5} />
+   398→   398→        <Input
+   399→   399→          placeholder="Search by name, contact, email..."
+   400→   400→          value={search}
+   401→   401→          onChange={(e) => setSearch(e.target.value)}
+   402→   402→          className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   403→   403→        />
+   404→   404→      </div>
+   405→   405→
+   406→   406→      {/* Publishers Table */}
+   407→   407→      <div className="rounded-2xl macos-shadow bg-card overflow-hidden">
+   408→   408→        {loading ? (
+   409→   409→          <div className="p-4 space-y-3">
+   410→   410→            {Array.from({ length: 5 }).map((_, i) => (
+   411→   411→              <Skeleton key={i} className="h-12 w-full" />
+   412→   412→            ))}
+   413→   413→          </div>
+   414→   414→        ) : publishers.length === 0 ? (
+   415→   415→          <div className="p-8 flex flex-col items-center justify-center text-muted-foreground">
+   416→   416→            <Building2 className="size-10 mb-3 opacity-40" strokeWidth={1.5} />
+   417→   417→            <p className="text-[13px] font-semibold">No publishers found</p>
+   418→   418→            <p className="text-[11px] mt-1">Try adjusting your search or add a new publisher</p>
+   419→   419→          </div>
+   420→   420→        ) : (
+   421→   421→          <div className="overflow-x-auto">
+   422→   422→            <Table>
+   423→   423→              <TableHeader>
+   424→   424→                <TableRow className="border-b">
+   425→   425→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Publisher</TableHead>
+   426→   426→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Contact</TableHead>
+   427→   427→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Email</TableHead>
+   428→   428→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</TableHead>
+   429→   429→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-center">Books</TableHead>
+   430→   430→                  <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   431→   431→                </TableRow>
+   432→   432→              </TableHeader>
+   433→   433→              <TableBody>
+   434→   434→                {publishers.map((pub) => {
+   435→   435→                  const pubColor = getPublisherColor(pub.name)
+   436→   436→                  return (
+   437→   437→                    <TableRow
+   438→   438→                      key={pub.id}
+   439→   439→                      className="cursor-pointer hover:bg-secondary/50"
+   440→   440→                      onClick={() => openDetail(pub)}
+   441→   441→                    >
+   442→   442→                      <TableCell>
+   443→   443→                        <div className="flex items-center gap-2.5">
+   444→   444→                          <div className={`size-8 rounded-lg ${pubColor.bg} flex items-center justify-center shrink-0`}>
+   445→   445→                            <Building2 className={`size-4 ${pubColor.text}`} strokeWidth={1.5} />
+   446→   446→                          </div>
+   447→   447→                          <span className="text-[13px] font-medium">{pub.name}</span>
+   448→   448→                        </div>
+   449→   449→                      </TableCell>
+   450→   450→                      <TableCell className="text-[13px] text-muted-foreground">
+   451→   451→                        {pub.contact || '—'}
+   452→   452→                      </TableCell>
+   453→   453→                      <TableCell>
+   454→   454→                        {pub.email ? (
+   455→   455→                          <span className="text-[13px] text-macos-blue">{pub.email}</span>
+   456→   456→                        ) : (
+   457→   457→                          <span className="text-[13px] text-muted-foreground">—</span>
+   458→   458→                        )}
+   459→   459→                      </TableCell>
+   460→   460→                      <TableCell className="text-[13px] text-muted-foreground">
+   461→   461→                        {pub.phone || '—'}
+   462→   462→                      </TableCell>
+   463→   463→                      <TableCell className="text-center">
+   464→   464→                        <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+   465→   465→                          {pub._count.books}
+   466→   466→                        </Badge>
+   467→   467→                      </TableCell>
+   468→   468→                      <TableCell className="text-right">
+   469→   469→                        <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+   470→   470→                          <Button
+   471→   471→                            variant="ghost"
+   472→   472→                            size="icon"
+   473→   473→                            className="size-7 rounded-lg"
+   474→   474→                            onClick={() => openEdit(pub)}
+   475→   475→                          >
+   476→   476→                            <Pencil className="size-3.5" strokeWidth={1.5} />
+   477→   477→                          </Button>
+   478→   478→                          <Button
+   479→   479→                            variant="ghost"
+   480→   480→                            size="icon"
+   481→   481→                            className="size-7 rounded-lg text-macos-red hover:text-macos-red"
+   482→   482→                            onClick={() => handleDelete(pub.id)}
+   483→   483→                            disabled={deleting === pub.id}
+   484→   484→                          >
+   485→   485→                            {deleting === pub.id ? (
+   486→   486→                              <RefreshCw className="size-3.5 animate-spin" strokeWidth={1.5} />
+   487→   487→                            ) : (
+   488→   488→                              <Trash2 className="size-3.5" strokeWidth={1.5} />
+   489→   489→                            )}
+   490→   490→                          </Button>
+   491→   491→                        </div>
+   492→   492→                      </TableCell>
+   493→   493→                    </TableRow>
+   494→   494→                  )
+   495→   495→                })}
+   496→   496→              </TableBody>
+   497→   497→            </Table>
+   498→   498→          </div>
+   499→   499→        )}
+   500→   500→      </div>
+   501→   501→
+   502→   502→      {/* Pagination */}
+   503→   503→      {totalPages > 1 && (
+   504→   504→        <div className="flex items-center justify-between">
+   505→   505→          <p className="text-[11px] text-muted-foreground">
+   506→   506→            Page {page} of {totalPages} · {total} results
+   507→   507→          </p>
+   508→   508→          <div className="flex gap-1">
+   509→   509→            <Button
+   510→   510→              variant="secondary"
+   511→   511→              size="sm"
+   512→   512→              className="rounded-lg h-7 text-[13px]"
+   513→   513→              onClick={() => setPage((p) => Math.max(1, p - 1))}
+   514→   514→              disabled={page <= 1}
+   515→   515→            >
+   516→   516→              Prev
+   517→   517→            </Button>
+   518→   518→            <Button
+   519→   519→              variant="secondary"
+   520→   520→              size="sm"
+   521→   521→              className="rounded-lg h-7 text-[13px]"
+   522→   522→              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+   523→   523→              disabled={page >= totalPages}
+   524→   524→            >
+   525→   525→              Next
+   526→   526→            </Button>
+   527→   527→          </div>
+   528→   528→        </div>
+   529→   529→      )}
+   530→   530→
+   531→   531→      {/* Add/Edit Dialog */}
+   532→   532→      <Dialog
+   533→   533→        open={dialogOpen}
+   534→   534→        onOpenChange={(open) => {
+   535→   535→          setDialogOpen(open)
+   536→   536→          if (!open) {
+   537→   537→            setEditing(null)
+   538→   538→            setForm(emptyForm)
+   539→   539→          }
+   540→   540→        }}
+   541→   541→      >
+   542→   542→        <DialogContent className="max-w-lg">
+   543→   543→          <DialogHeader>
+   544→   544→            <DialogTitle className="text-[13px] font-semibold tracking-tight">
+   545→   545→              {editing ? 'Edit Publisher' : 'Add New Publisher'}
+   546→   546→            </DialogTitle>
+   547→   547→          </DialogHeader>
+   548→   548→          <div className="grid gap-3 py-2">
+   549→   549→            <div>
+   550→   550→              <Label htmlFor="pub-name" className="text-[11px] font-semibold">Name *</Label>
+   551→   551→              <Input
+   552→   552→                id="pub-name"
+   553→   553→                value={form.name}
+   554→   554→                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+   555→   555→                placeholder="Publisher name"
+   556→   556→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   557→   557→              />
+   558→   558→            </div>
+   559→   559→            <div className="grid grid-cols-2 gap-3">
+   560→   560→              <div>
+   561→   561→                <Label htmlFor="pub-contact" className="text-[11px] font-semibold">Contact Person</Label>
+   562→   562→                <Input
+   563→   563→                  id="pub-contact"
+   564→   564→                  value={form.contact}
+   565→   565→                  onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
+   566→   566→                  placeholder="Contact name"
+   567→   567→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   568→   568→                />
+   569→   569→              </div>
+   570→   570→              <div>
+   571→   571→                <Label htmlFor="pub-email" className="text-[11px] font-semibold">Email</Label>
+   572→   572→                <Input
+   573→   573→                  id="pub-email"
+   574→   574→                  type="email"
+   575→   575→                  value={form.email}
+   576→   576→                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+   577→   577→                  placeholder="publisher@example.com"
+   578→   578→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   579→   579→                />
+   580→   580→              </div>
+   581→   581→            </div>
+   582→   582→            <div className="grid grid-cols-2 gap-3">
+   583→   583→              <div>
+   584→   584→                <Label htmlFor="pub-phone" className="text-[11px] font-semibold">Phone</Label>
+   585→   585→                <Input
+   586→   586→                  id="pub-phone"
+   587→   587→                  value={form.phone}
+   588→   588→                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+   589→   589→                  placeholder="+1-..."
+   590→   590→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   591→   591→                />
+   592→   592→              </div>
+   593→   593→              <div>
+   594→   594→                <Label htmlFor="pub-website" className="text-[11px] font-semibold">Website</Label>
+   595→   595→                <Input
+   596→   596→                  id="pub-website"
+   597→   597→                  value={form.website}
+   598→   598→                  onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+   599→   599→                  placeholder="https://..."
+   600→   600→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   601→   601→                />
+   602→   602→              </div>
+   603→   603→            </div>
+   604→   604→            <div>
+   605→   605→              <Label htmlFor="pub-address" className="text-[11px] font-semibold">Address</Label>
+   606→   606→              <Textarea
+   607→   607→                id="pub-address"
+   608→   608→                value={form.address}
+   609→   609→                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+   610→   610→                placeholder="Full address..."
+   611→   611→                rows={2}
+   612→   612→                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+   613→   613→              />
+   614→   614→            </div>
+   615→   615→            <div>
+   616→   616→              <Label htmlFor="pub-agreement" className="text-[11px] font-semibold">Agreement</Label>
+   617→   617→              <Textarea
+   618→   618→                id="pub-agreement"
+   619→   619→                value={form.agreement}
+   620→   620→                onChange={(e) => setForm((f) => ({ ...f, agreement: e.target.value }))}
+   621→   621→                placeholder="Distribution agreement details..."
+   622→   622→                rows={2}
+   623→   623→                className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+   624→   624→              />
+   625→   625→            </div>
+   626→   626→          </div>
+   627→   627→          <div className="flex justify-end gap-2 pt-2">
+   628→   628→            <Button
+   629→   629→              variant="secondary"
+   630→   630→              className="rounded-lg text-[13px] font-medium h-8"
+   631→   631→              onClick={() => {
+   632→   632→                setDialogOpen(false)
+   633→   633→                setEditing(null)
+   634→   634→                setForm(emptyForm)
+   635→   635→              }}
+   636→   636→            >
+   637→   637→              Cancel
+   638→   638→            </Button>
+   639→   639→            <Button
+   640→   640→              onClick={handleSave}
+   641→   641→              disabled={saving || !form.name.trim()}
+   642→   642→              className="bg-primary text-primary-foreground rounded-lg text-[13px] font-medium h-8"
+   643→   643→            >
+   644→   644→              {saving ? (
+   645→   645→                <RefreshCw className="size-4 mr-1.5 animate-spin" strokeWidth={1.5} />
+   646→   646→              ) : (
+   647→   647→                <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
+   648→   648→              )}
+   649→   649→              {editing ? 'Update Publisher' : 'Create Publisher'}
+   650→   650→            </Button>
+   651→   651→          </div>
+   652→   652→        </DialogContent>
+   653→   653→      </Dialog>
+   654→   654→    </div>
+   655→   655→  )
+   656→   656→}
+   657→   657→

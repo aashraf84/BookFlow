@@ -22,6 +22,8 @@ import {
   PencilRuler,
   GraduationCap,
   Tag,
+  Eye,
+  Sparkles,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -42,10 +44,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { useAppStore } from '@/store/app-store'
 
 // ─── Types ────────────────────────────────────────────────────────
 type ProductType = 'book' | 'stationery'
@@ -94,6 +96,9 @@ interface CompletedSale {
 
 // ─── Component ────────────────────────────────────────────────────
 export function RetailPOSModule() {
+  const { authUser } = useAppStore()
+  const isViewOnly = authUser?.isViewOnly ?? false
+
   // Products
   const [products, setProducts] = React.useState<POSProduct[]>([])
   const [searchTerm, setSearchTerm] = React.useState('')
@@ -211,6 +216,7 @@ export function RetailPOSModule() {
 
   // Add to cart
   const addToCart = (product: POSProduct) => {
+    if (isViewOnly) return
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id && item.product.type === product.type)
       if (existing) {
@@ -240,6 +246,7 @@ export function RetailPOSModule() {
 
   // Update cart quantity
   const updateQuantity = (index: number, newQty: number) => {
+    if (isViewOnly) return
     if (newQty < 1) {
       removeFromCart(index)
       return
@@ -255,11 +262,13 @@ export function RetailPOSModule() {
 
   // Remove from cart
   const removeFromCart = (index: number) => {
+    if (isViewOnly) return
     setCart((prev) => prev.filter((_, i) => i !== index))
   }
 
   // Clear cart
   const clearCart = () => {
+    if (isViewOnly) return
     setCart([])
     setCartDiscount(0)
     setSelectedCustomer(null)
@@ -275,7 +284,7 @@ export function RetailPOSModule() {
 
   // Complete sale
   const handleCompleteSale = async () => {
-    if (cart.length === 0) return
+    if (isViewOnly || cart.length === 0) return
     setCompleting(true)
     setError(null)
     try {
@@ -338,10 +347,10 @@ export function RetailPOSModule() {
 
   // Payment method icons
   const paymentMethods = [
-    { value: 'cash', label: 'Cash', icon: Banknote },
-    { value: 'card', label: 'Card', icon: CreditCard },
-    { value: 'bank', label: 'Bank', icon: Building },
-    { value: 'wallet', label: 'Wallet', icon: Smartphone },
+    { value: 'cash', label: 'Cash', icon: Banknote, color: 'macos-green' as const },
+    { value: 'card', label: 'Card', icon: CreditCard, color: 'macos-blue' as const },
+    { value: 'bank', label: 'Bank', icon: Building, color: 'macos-purple' as const },
+    { value: 'wallet', label: 'Wallet', icon: Smartphone, color: 'macos-orange' as const },
   ]
 
   // Category filters
@@ -353,112 +362,149 @@ export function RetailPOSModule() {
   ]
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div>
-        <h2 className="text-[13px] font-semibold tracking-tight text-foreground">Point of Sale</h2>
-        <p className="text-[11px] text-muted-foreground tracking-tight">Process retail sales quickly and efficiently</p>
+    <div className="flex flex-col h-full min-h-0">
+      {/* ─── Page Header ─── */}
+      <div className="macos-page-header flex-shrink-0">
+        <div>
+          <h1 className="macos-page-title flex items-center gap-2.5">
+            <div className="size-8 rounded-lg bg-gg-bridge/10 flex items-center justify-center">
+              <ShoppingCart className="size-4 text-gg-bridge" />
+            </div>
+            Point of Sale
+          </h1>
+          <p className="macos-page-subtitle">Process retail transactions — select products, add to cart, and complete sales</p>
+        </div>
+        {isViewOnly && (
+          <div className="flex items-center gap-1.5 rounded-lg bg-macos-orange/10 px-3 py-1.5 text-macos-orange">
+            <Eye className="size-3.5" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider">View Only</span>
+          </div>
+        )}
       </div>
 
-      {/* Error Alert */}
+      {/* ─── Error Alert ─── */}
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-macos-red/10 p-3 text-[13px] text-macos-red macos-shadow">
-          <AlertCircle className="size-3.5 shrink-0" />
-          {error}
-          <Button variant="ghost" size="sm" className="ml-auto h-6 text-[11px] text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
-            Dismiss
-          </Button>
+        <div className="macos-card macos-shadow-card flex items-center gap-2.5 p-3 mb-4 border-macos-red/20 bg-macos-red/5 flex-shrink-0">
+          <div className="size-6 rounded-md bg-macos-red/10 flex items-center justify-center flex-shrink-0">
+            <AlertCircle className="size-3.5 text-macos-red" />
+          </div>
+          <span className="text-[13px] font-medium text-macos-red flex-1">{error}</span>
+          <button
+            className="size-6 rounded-md hover:bg-macos-red/10 flex items-center justify-center transition-colors"
+            onClick={() => setError(null)}
+          >
+            <X className="size-3.5 text-macos-red" />
+          </button>
         </div>
       )}
 
-      {/* Receipt Dialog */}
+      {/* ─── Receipt Dialog ─── */}
       <Dialog open={!!completedSale} onOpenChange={(open) => !open && setCompletedSale(null)}>
-        <DialogContent className="sm:max-w-[450px] rounded-2xl macos-shadow-elevated">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[460px] rounded-xl macos-shadow-float border-0 bg-card p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
-              <Receipt className="size-4 text-macos-green" />
+              <div className="size-6 rounded-md bg-macos-green/10 flex items-center justify-center">
+                <Receipt className="size-3.5 text-macos-green" />
+              </div>
               Sale Completed
             </DialogTitle>
-            <DialogDescription className="text-[11px]">Your transaction has been processed successfully</DialogDescription>
+            <DialogDescription className="text-[11px] text-muted-foreground">Transaction processed successfully</DialogDescription>
           </DialogHeader>
           {completedSale && (
-            <div className="space-y-4 py-4">
-              <div className="text-center space-y-1">
-                <p className="text-[13px] font-semibold tracking-tight">BookFlow OS</p>
-                <p className="text-[11px] text-muted-foreground">Invoice: {completedSale.invoiceNumber}</p>
-                <p className="text-[11px] text-muted-foreground">{new Date().toLocaleString()}</p>
+            <div className="p-6 pt-4 space-y-4">
+              <div className="text-center space-y-1.5 py-3">
+                <div className="flex items-center justify-center gap-1.5">
+                  <Sparkles className="size-3.5 text-gg-golden" />
+                  <p className="text-[15px] font-bold tracking-tight">BookFlow OS</p>
+                  <Sparkles className="size-3.5 text-gg-golden" />
+                </div>
+                <p className="text-[11px] text-muted-foreground font-medium">Invoice {completedSale.invoiceNumber}</p>
+                <p className="text-[10px] text-muted-foreground">{new Date().toLocaleString()}</p>
               </div>
-              <Separator />
-              <div className="space-y-2">
+
+              <div className="rounded-lg bg-secondary/50 p-3 space-y-2">
                 {completedSale.items.map((item, i) => (
                   <div key={i} className="flex justify-between text-[13px] tracking-tight">
-                    <span className="flex-1 truncate mr-2">{item.name} x{item.quantity}</span>
-                    <span className="font-medium">${item.totalPrice.toFixed(2)}</span>
+                    <span className="flex-1 truncate mr-3 font-medium">{item.name} <span className="text-muted-foreground">×{item.quantity}</span></span>
+                    <span className="font-semibold tabular-nums">${item.totalPrice.toFixed(2)}</span>
                   </div>
                 ))}
               </div>
-              <Separator />
-              <div className="space-y-1.5 text-[13px] tracking-tight">
+
+              <Separator className="opacity-50" />
+
+              <div className="space-y-2 text-[13px] tracking-tight">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${completedSale.subtotal.toFixed(2)}</span>
+                  <span className="tabular-nums">${completedSale.subtotal.toFixed(2)}</span>
                 </div>
                 {completedSale.discount > 0 && (
                   <div className="flex justify-between text-macos-green">
                     <span>Discount</span>
-                    <span>-${completedSale.discount.toFixed(2)}</span>
+                    <span className="tabular-nums">-${completedSale.discount.toFixed(2)}</span>
                   </div>
                 )}
                 {completedSale.tax > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tax</span>
-                    <span>${completedSale.tax.toFixed(2)}</span>
+                    <span className="tabular-nums">${completedSale.tax.toFixed(2)}</span>
                   </div>
                 )}
-                <Separator />
-                <div className="flex justify-between font-bold text-base tracking-tight">
+                <Separator className="opacity-50" />
+                <div className="flex justify-between font-bold text-[15px] tracking-tight">
                   <span>Total</span>
-                  <span>${completedSale.total.toFixed(2)}</span>
+                  <span className="tabular-nums">${completedSale.total.toFixed(2)}</span>
                 </div>
               </div>
-              <div className="flex justify-between text-[11px] text-muted-foreground">
-                <span>Payment: {completedSale.paymentMethod}</span>
+
+              <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                <span>Paid: {completedSale.paymentMethod}</span>
                 {completedSale.customerName && <span>Customer: {completedSale.customerName}</span>}
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button onClick={() => setCompletedSale(null)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-8">
-              <Check className="size-3.5 mr-1.5" />
+          <DialogFooter className="p-6 pt-0">
+            <Button
+              onClick={() => setCompletedSale(null)}
+              className="w-full bg-macos-green text-white rounded-lg font-semibold text-[13px] h-10 hover:bg-macos-green/90"
+            >
+              <Check className="size-4 mr-1.5" />
               Done
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Main POS Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Left: Products */}
-        <div className="lg:col-span-3 space-y-4">
-          {/* Search + Category Filter */}
-          <div className="rounded-2xl macos-shadow p-4 space-y-3 bg-background">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, ISBN, or barcode..."
+      {/* ─── Main POS Split Layout ─── */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-0 overflow-hidden">
+        {/* ─── Left: Products ─── */}
+        <div className="lg:col-span-3 flex flex-col min-h-0 gap-4">
+          {/* Search + Category Filter Bar */}
+          <div className="macos-card macos-shadow-card p-4 flex-shrink-0">
+            <div className="macos-search flex items-center gap-2 px-3 h-9">
+              <Search className="size-3.5 text-muted-foreground flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Search by name, ISBN, or barcode…"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="flex-1 bg-transparent text-[13px] font-medium placeholder:text-muted-foreground/60 outline-none"
               />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="size-4 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-muted-foreground/30">
+                  <X className="size-2.5 text-background" />
+                </button>
+              )}
             </div>
-            <div className="flex gap-2 flex-wrap">
+
+            <div className="macos-filter-bar mt-3">
               {categoryFilters.map((cat) => {
                 const Icon = cat.icon
                 const isActive = categoryFilter === cat.value
                 return (
                   <button
                     key={cat.value}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium rounded-md transition-all ${isActive ? 'macos-segmented-active' : 'text-muted-foreground hover:text-foreground bg-secondary/50'}`}
+                    className={`macos-filter-item inline-flex items-center gap-1.5 ${isActive ? 'macos-filter-item-active' : ''}`}
                     onClick={() => setCategoryFilter(cat.value)}
                   >
                     <Icon className="size-3" />
@@ -470,179 +516,225 @@ export function RetailPOSModule() {
           </div>
 
           {/* Product Grid */}
-          {searchLoading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-2xl macos-shadow p-3 bg-background animate-pulse">
-                  <div className="h-3.5 bg-secondary rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-secondary rounded w-1/2 mb-2" />
-                  <div className="h-4 bg-secondary rounded w-1/3" />
-                </div>
-              ))}
-            </div>
-          ) : products.length === 0 ? (
-            <div className="rounded-2xl macos-shadow bg-background flex flex-col items-center justify-center py-16 text-center">
-              <Package className="size-12 text-muted-foreground/30 mb-3" />
-              <p className="text-[13px] text-muted-foreground">No products found</p>
-              <p className="text-[11px] text-muted-foreground mt-1">Try a different search or category</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {products.map((product) => {
-                const inCart = cart.find((c) => c.product.id === product.id && c.product.type === product.type)
-                return (
-                  <div
-                    key={`${product.type}-${product.id}`}
-                    className={`rounded-2xl macos-shadow p-3 bg-background cursor-pointer transition-all hover:shadow-lg ${inCart ? 'ring-1 ring-macos-green/40' : ''}`}
-                    onClick={() => addToCart(product)}
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-start justify-between gap-1">
-                        <p className="text-[13px] font-medium leading-tight line-clamp-2 tracking-tight">{product.name}</p>
-                        <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-macos-purple/10 text-macos-purple shrink-0">
-                          {product.type === 'book' ? 'Book' : 'Item'}
-                        </span>
-                      </div>
-                      {product.author && (
-                        <p className="text-[11px] text-muted-foreground truncate tracking-tight">by {product.author}</p>
-                      )}
-                      {product.brand && (
-                        <p className="text-[11px] text-muted-foreground truncate tracking-tight">{product.brand}</p>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          {product.discount > 0 ? (
-                            <div className="flex items-center gap-1">
-                              <span className="text-[11px] text-muted-foreground line-through tracking-tight">${product.price.toFixed(2)}</span>
-                              <span className="text-[13px] font-bold text-macos-green tracking-tight">${(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
-                            </div>
-                          ) : (
-                            <span className="text-[13px] font-bold tracking-tight">${product.price.toFixed(2)}</span>
-                          )}
-                        </div>
-                        {inCart ? (
-                          <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
-                            x{inCart.quantity}
-                          </span>
-                        ) : (
-                          <Plus className="size-4 text-macos-green" />
-                        )}
-                      </div>
-                    </div>
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+            {searchLoading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="macos-card macos-shadow-card p-4 animate-pulse">
+                    <div className="h-3 bg-secondary rounded-md w-3/4 mb-3" />
+                    <div className="h-2.5 bg-secondary rounded-md w-1/2 mb-3" />
+                    <div className="h-4 bg-secondary rounded-md w-1/3" />
                   </div>
-                )
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            ) : products.length === 0 ? (
+              <div className="macos-card macos-shadow-card macos-empty py-20">
+                <div className="size-14 rounded-2xl bg-gg-bay/10 flex items-center justify-center mb-4">
+                  <Package className="size-7 text-gg-bay" />
+                </div>
+                <p className="text-[13px] font-semibold text-foreground">No products found</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Try a different search or category</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {products.map((product) => {
+                  const inCart = cart.find((c) => c.product.id === product.id && c.product.type === product.type)
+                  const typeColor = product.type === 'book' ? 'gg-bridge' : 'gg-sunset'
+                  return (
+                    <button
+                      key={`${product.type}-${product.id}`}
+                      className={`macos-card macos-shadow-card macos-card-hover p-4 text-left w-full cursor-pointer group ${inCart ? 'ring-1 ring-macos-green/30 bg-macos-green/[0.02]' : 'bg-card'} ${isViewOnly ? 'cursor-default' : ''}`}
+                      onClick={() => addToCart(product)}
+                      disabled={isViewOnly}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-1.5">
+                          <p className="text-[13px] font-semibold leading-snug line-clamp-2 tracking-tight group-hover:text-macos-blue transition-colors">{product.name}</p>
+                          <span className={`rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-${typeColor}/10 text-${typeColor} shrink-0 uppercase`}>
+                            {product.type === 'book' ? 'Book' : 'Item'}
+                          </span>
+                        </div>
+                        {product.author && (
+                          <p className="text-[11px] text-muted-foreground truncate tracking-tight">by {product.author}</p>
+                        )}
+                        {product.brand && (
+                          <p className="text-[11px] text-muted-foreground truncate tracking-tight">{product.brand}</p>
+                        )}
+                        {product.category && (
+                          <span className="inline-block rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0.5 bg-secondary text-muted-foreground">
+                            {product.category}
+                          </span>
+                        )}
+                        <div className="flex items-center justify-between pt-1">
+                          <div>
+                            {product.discount > 0 ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-muted-foreground line-through tracking-tight">${product.price.toFixed(2)}</span>
+                                <span className="text-[14px] font-bold text-macos-green tracking-tight">${(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[14px] font-bold tracking-tight">${product.price.toFixed(2)}</span>
+                            )}
+                          </div>
+                          {inCart ? (
+                            <span className="rounded-md text-[10px] font-bold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+                              ×{inCart.quantity}
+                            </span>
+                          ) : !isViewOnly ? (
+                            <div className="size-6 rounded-lg bg-macos-blue/10 flex items-center justify-center group-hover:bg-macos-blue/20 transition-colors">
+                              <Plus className="size-3 text-macos-blue" />
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Right: Cart */}
-        <div className="lg:col-span-2">
-          <div className="rounded-2xl macos-shadow bg-background sticky top-4">
+        {/* ─── Right: Cart Panel ─── */}
+        <div className="lg:col-span-2 flex flex-col min-h-0">
+          <div className="macos-card macos-shadow flex-1 flex flex-col min-h-0 sticky top-4 max-h-[calc(100vh-10rem)]">
             {/* Cart Header */}
-            <div className="p-4 pb-3 flex items-center justify-between border-b border-border/30">
+            <div className="p-4 pb-3 flex items-center justify-between border-b border-border/40 flex-shrink-0">
               <h3 className="text-[13px] font-semibold tracking-tight flex items-center gap-2">
-                <ShoppingCart className="size-3.5" />
-                Cart ({cart.length})
+                <div className="size-5 rounded-md bg-gg-bridge/10 flex items-center justify-center">
+                  <ShoppingCart className="size-3 text-gg-bridge" />
+                </div>
+                Cart
+                {cart.length > 0 && (
+                  <span className="rounded-md text-[10px] font-bold tracking-wide px-1.5 py-0.5 bg-gg-bridge/10 text-gg-bridge">
+                    {cart.length}
+                  </span>
+                )}
               </h3>
-              {cart.length > 0 && (
-                <Button variant="ghost" size="sm" className="h-6 text-[11px] text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-md" onClick={clearCart}>
-                  <Trash2 className="size-3 mr-1" />
+              {cart.length > 0 && !isViewOnly && (
+                <button
+                  className="text-[11px] font-medium text-macos-red hover:text-macos-red/80 flex items-center gap-1 rounded-md px-2 py-1 hover:bg-macos-red/10 transition-colors"
+                  onClick={clearCart}
+                >
+                  <Trash2 className="size-3" />
                   Clear
-                </Button>
+                </button>
               )}
             </div>
 
-            <div className="p-4 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4">
               {/* Customer Selection */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Customer</Label>
-                  <Button variant="ghost" size="sm" className="h-5 text-[11px] rounded-md" onClick={() => setCustomerLookupOpen(true)}>
-                    <UserCircle className="size-3 mr-1" />
+                  <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Customer</Label>
+                  <button
+                    className="text-[11px] font-medium text-macos-blue hover:text-macos-blue/80 flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-macos-blue/10 transition-colors"
+                    onClick={() => setCustomerLookupOpen(true)}
+                  >
+                    <UserCircle className="size-3" />
                     {selectedCustomer ? 'Change' : 'Select'}
-                  </Button>
+                  </button>
                 </div>
                 {selectedCustomer ? (
-                  <div className="flex items-center justify-between rounded-xl bg-secondary/50 p-2.5">
+                  <div className="flex items-center justify-between rounded-lg bg-gg-bay/5 border border-gg-bay/10 p-2.5">
                     <div>
-                      <p className="text-[13px] font-medium tracking-tight">{selectedCustomer.name}</p>
-                      <p className="text-[11px] text-muted-foreground tracking-tight">{selectedCustomer.loyaltyPoints} pts</p>
+                      <p className="text-[13px] font-semibold tracking-tight">{selectedCustomer.name}</p>
+                      <p className="text-[10px] text-muted-foreground tracking-tight font-medium">{selectedCustomer.loyaltyPoints} loyalty pts</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="size-5 rounded-md" onClick={() => setSelectedCustomer(null)}>
-                      <X className="size-3" />
-                    </Button>
+                    {!isViewOnly && (
+                      <button
+                        className="size-5 rounded-md hover:bg-macos-red/10 flex items-center justify-center transition-colors"
+                        onClick={() => setSelectedCustomer(null)}
+                      >
+                        <X className="size-3 text-macos-red" />
+                      </button>
+                    )}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-muted-foreground tracking-tight">Walk-in customer</p>
+                  <p className="text-[11px] text-muted-foreground tracking-tight font-medium">Walk-in customer</p>
                 )}
               </div>
 
-              <Separator />
+              <Separator className="opacity-40" />
 
               {/* Cart Items */}
-              <ScrollArea className="max-h-64">
+              <div className="space-y-0">
                 {cart.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <ShoppingCart className="size-8 text-muted-foreground/30 mb-2" />
-                    <p className="text-[13px] text-muted-foreground tracking-tight">Cart is empty</p>
+                  <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="size-12 rounded-2xl bg-secondary/60 flex items-center justify-center mb-3">
+                      <ShoppingCart className="size-5 text-muted-foreground/40" />
+                    </div>
+                    <p className="text-[13px] font-medium text-muted-foreground tracking-tight">Cart is empty</p>
+                    <p className="text-[11px] text-muted-foreground/60 mt-1">Click products to add them</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 pr-1">
-                    {cart.map((item, index) => (
-                      <div key={`${item.product.type}-${item.product.id}`} className="flex items-start gap-2 rounded-xl bg-secondary/30 p-2.5">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] font-medium truncate tracking-tight">{item.product.name}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[11px] text-muted-foreground tracking-tight">${item.unitPrice.toFixed(2)}</span>
-                            {item.discount > 0 && (
-                              <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0 bg-macos-green/10 text-macos-green">
-                                -{item.discount}%
-                              </span>
+                  <ScrollArea className="max-h-52">
+                    <div className="space-y-0.5 pr-1">
+                      {cart.map((item, index) => (
+                        <div key={`${item.product.type}-${item.product.id}`} className="flex items-center gap-2.5 rounded-lg p-2.5 hover:bg-secondary/30 transition-colors group/item">
+                          {/* Type indicator */}
+                          <div className={`size-2 rounded-full flex-shrink-0 ${item.product.type === 'book' ? 'bg-gg-bridge' : 'bg-gg-sunset'}`} />
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[13px] font-medium truncate tracking-tight">{item.product.name}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] text-muted-foreground tracking-tight tabular-nums">${item.unitPrice.toFixed(2)}</span>
+                              {item.discount > 0 && (
+                                <span className="rounded-md text-[10px] font-semibold tracking-wide px-1.5 py-0 bg-macos-green/10 text-macos-green">
+                                  -{item.discount}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Quantity controls */}
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              className="size-6 rounded-md bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
+                              onClick={() => updateQuantity(index, item.quantity - 1)}
+                              disabled={isViewOnly}
+                            >
+                              <Minus className="size-2.5" />
+                            </button>
+                            <span className="w-7 text-center text-[13px] font-semibold tabular-nums tracking-tight">{item.quantity}</span>
+                            <button
+                              className="size-6 rounded-md bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
+                              onClick={() => updateQuantity(index, item.quantity + 1)}
+                              disabled={isViewOnly}
+                            >
+                              <Plus className="size-2.5" />
+                            </button>
+                          </div>
+
+                          <div className="text-right min-w-[52px]">
+                            <p className="text-[13px] font-semibold tabular-nums tracking-tight">${item.totalPrice.toFixed(2)}</p>
+                            {!isViewOnly && (
+                              <button
+                                className="size-4 text-muted-foreground/50 hover:text-macos-red mt-0.5 inline-flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity"
+                                onClick={() => removeFromCart(index)}
+                              >
+                                <X className="size-2.5" />
+                              </button>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-0.5">
-                          <button
-                            className="size-6 rounded-md bg-secondary/80 flex items-center justify-center hover:bg-secondary transition-colors"
-                            onClick={() => updateQuantity(index, item.quantity - 1)}
-                          >
-                            <Minus className="size-2.5" />
-                          </button>
-                          <span className="w-7 text-center text-[13px] font-medium tracking-tight">{item.quantity}</span>
-                          <button
-                            className="size-6 rounded-md bg-secondary/80 flex items-center justify-center hover:bg-secondary transition-colors"
-                            onClick={() => updateQuantity(index, item.quantity + 1)}
-                          >
-                            <Plus className="size-2.5" />
-                          </button>
-                        </div>
-                        <div className="text-right min-w-[50px]">
-                          <p className="text-[13px] font-medium tracking-tight">${item.totalPrice.toFixed(2)}</p>
-                          <button
-                            className="size-4 text-macos-red hover:text-macos-red/80 mt-0.5 inline-flex items-center justify-center"
-                            onClick={() => removeFromCart(index)}
-                          >
-                            <X className="size-2.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 )}
-              </ScrollArea>
+              </div>
 
-              <Separator />
+              <Separator className="opacity-40" />
 
               {/* Discount */}
-              <div className="space-y-1.5">
-                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1">
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-1">
                   <Tag className="size-2.5" />
                   Cart Discount
                 </Label>
                 <div className="flex gap-2">
-                  <Select value={discountType} onValueChange={(v: 'percentage' | 'fixed') => setDiscountType(v)}>
-                    <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-7 w-[100px]">
+                  <Select value={discountType} onValueChange={(v: 'percentage' | 'fixed') => setDiscountType(v)} disabled={isViewOnly}>
+                    <SelectTrigger className="rounded-lg bg-secondary/60 border-0 text-[13px] h-7 w-[100px] font-medium focus:ring-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -657,14 +749,15 @@ export function RetailPOSModule() {
                     value={cartDiscount || ''}
                     onChange={(e) => setCartDiscount(parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="w-20 rounded-lg bg-secondary/80 border-0 text-[13px] h-7 focus-visible:ring-1 focus-visible:ring-primary/30"
+                    disabled={isViewOnly}
+                    className="w-20 rounded-lg bg-secondary/60 border-0 text-[13px] h-7 font-medium focus-visible:ring-1 focus-visible:ring-macos-blue/30"
                   />
                 </div>
               </div>
 
               {/* Tax */}
               <div className="flex items-center justify-between">
-                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Tax Rate (%)</Label>
+                <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Tax Rate (%)</Label>
                 <Input
                   type="number"
                   min="0"
@@ -672,51 +765,59 @@ export function RetailPOSModule() {
                   value={taxRate || ''}
                   onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
                   placeholder="0"
-                  className="w-16 text-right rounded-lg bg-secondary/80 border-0 text-[13px] h-7 focus-visible:ring-1 focus-visible:ring-primary/30"
+                  disabled={isViewOnly}
+                  className="w-16 text-right rounded-lg bg-secondary/60 border-0 text-[13px] h-7 font-medium focus-visible:ring-1 focus-visible:ring-macos-blue/30"
                 />
               </div>
 
-              <Separator />
+              <Separator className="opacity-40" />
 
               {/* Totals */}
-              <div className="space-y-1.5 text-[13px] tracking-tight">
+              <div className="space-y-2 text-[13px] tracking-tight">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span className="text-muted-foreground font-medium">Subtotal</span>
+                  <span className="tabular-nums font-medium">${subtotal.toFixed(2)}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-macos-green">
-                    <span>Discount</span>
-                    <span>-${discountAmount.toFixed(2)}</span>
+                    <span className="font-medium">Discount</span>
+                    <span className="tabular-nums font-medium">-${discountAmount.toFixed(2)}</span>
                   </div>
                 )}
                 {taxAmount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax ({taxRate}%)</span>
-                    <span>${taxAmount.toFixed(2)}</span>
+                    <span className="text-muted-foreground font-medium">Tax ({taxRate}%)</span>
+                    <span className="tabular-nums font-medium">${taxAmount.toFixed(2)}</span>
                   </div>
                 )}
-                <Separator />
-                <div className="flex justify-between font-bold text-base tracking-tight">
-                  <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                <Separator className="opacity-40" />
+                <div className="flex justify-between items-baseline">
+                  <span className="font-bold text-[15px] tracking-tight">Total</span>
+                  <span className="font-bold text-[20px] tracking-tight tabular-nums">${total.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Payment Method */}
-              <div className="space-y-2">
-                <Label className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Payment Method</Label>
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-2 gap-2">
+              <div className="space-y-2.5">
+                <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Payment Method</Label>
+                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-4 gap-2">
                   {paymentMethods.map((pm) => {
                     const Icon = pm.icon
+                    const isSelected = paymentMethod === pm.value
+                    const colorMap: Record<string, string> = {
+                      'macos-green': 'text-macos-green bg-macos-green/10 ring-macos-green/20',
+                      'macos-blue': 'text-macos-blue bg-macos-blue/10 ring-macos-blue/20',
+                      'macos-purple': 'text-macos-purple bg-macos-purple/10 ring-macos-purple/20',
+                      'macos-orange': 'text-macos-orange bg-macos-orange/10 ring-macos-orange/20',
+                    }
                     return (
                       <Label
                         key={pm.value}
-                        className={`flex items-center gap-2 rounded-xl p-2.5 cursor-pointer transition-all ${paymentMethod === pm.value ? 'bg-primary/10 ring-1 ring-primary/30' : 'bg-secondary/50 hover:bg-secondary/80'}`}
+                        className={`flex flex-col items-center gap-1.5 rounded-xl p-3 cursor-pointer transition-all ${isSelected ? `ring-1 ${colorMap[pm.color]}` : 'bg-secondary/40 hover:bg-secondary/60 ring-0'}`}
                       >
                         <RadioGroupItem value={pm.value} className="sr-only" />
-                        <Icon className="size-3.5" />
-                        <span className="text-[12px] font-medium">{pm.label}</span>
+                        <Icon className={`size-4 ${isSelected ? '' : 'text-muted-foreground'}`} />
+                        <span className="text-[10px] font-semibold tracking-wide">{pm.label}</span>
                       </Label>
                     )
                   })}
@@ -725,14 +826,19 @@ export function RetailPOSModule() {
 
               {/* Complete Sale */}
               <Button
-                className="w-full bg-primary text-primary-foreground rounded-lg font-medium text-[13px] h-11"
+                className="w-full bg-gg-bridge hover:bg-gg-bridge/90 text-white rounded-lg font-semibold text-[13px] h-11 shadow-sm disabled:opacity-50"
                 onClick={handleCompleteSale}
-                disabled={cart.length === 0 || completing}
+                disabled={cart.length === 0 || completing || isViewOnly}
               >
                 {completing ? (
                   <>
                     <Loader2 className="size-4 mr-2 animate-spin" />
-                    Processing...
+                    Processing…
+                  </>
+                ) : isViewOnly ? (
+                  <>
+                    <Eye className="size-4 mr-2" />
+                    View Only — Checkout Disabled
                   </>
                 ) : (
                   <>
@@ -746,31 +852,39 @@ export function RetailPOSModule() {
         </div>
       </div>
 
-      {/* Customer Lookup Dialog */}
+      {/* ─── Customer Lookup Dialog ─── */}
       <Dialog open={customerLookupOpen} onOpenChange={setCustomerLookupOpen}>
-        <DialogContent className="sm:max-w-[425px] rounded-2xl macos-shadow-elevated">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[420px] rounded-xl macos-shadow-float border-0 bg-card p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-0">
             <DialogTitle className="text-[13px] font-semibold tracking-tight">Select Customer</DialogTitle>
-            <DialogDescription className="text-[11px]">Search for an existing customer</DialogDescription>
+            <DialogDescription className="text-[11px] text-muted-foreground">Search for an existing customer</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, or phone..."
+          <div className="p-6 pt-4 space-y-4">
+            <div className="macos-search flex items-center gap-2 px-3 h-9">
+              <Search className="size-3.5 text-muted-foreground flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Search by name, email, or phone…"
                 value={customerSearch}
                 onChange={(e) => setCustomerSearch(e.target.value)}
-                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+                className="flex-1 bg-transparent text-[13px] font-medium placeholder:text-muted-foreground/60 outline-none"
               />
+              {customerSearch && (
+                <button onClick={() => setCustomerSearch('')} className="size-4 rounded-full bg-muted-foreground/20 flex items-center justify-center hover:bg-muted-foreground/30">
+                  <X className="size-2.5 text-background" />
+                </button>
+              )}
             </div>
-            <div className="max-h-64 overflow-y-auto space-y-1">
+            <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
               {customers.length === 0 && customerSearch ? (
-                <p className="text-[13px] text-muted-foreground text-center py-4 tracking-tight">No customers found</p>
+                <div className="macos-empty py-10">
+                  <p className="text-[13px] text-muted-foreground font-medium tracking-tight">No customers found</p>
+                </div>
               ) : (
                 customers.map((c) => (
                   <button
                     key={c.id}
-                    className="w-full flex items-center justify-between rounded-xl p-3 hover:bg-secondary/50 transition-colors text-left"
+                    className="w-full flex items-center justify-between rounded-lg p-3 hover:bg-secondary/50 transition-colors text-left group"
                     onClick={() => {
                       setSelectedCustomer(c)
                       setCustomerLookupOpen(false)
@@ -778,19 +892,19 @@ export function RetailPOSModule() {
                     }}
                   >
                     <div>
-                      <p className="text-[13px] font-medium tracking-tight">{c.name}</p>
+                      <p className="text-[13px] font-semibold tracking-tight">{c.name}</p>
                       <p className="text-[11px] text-muted-foreground tracking-tight">{c.email || c.phone || 'No contact info'}</p>
                     </div>
-                    <span className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-teal/10 text-macos-teal">{c.loyaltyPoints} pts</span>
+                    <span className="rounded-md text-[10px] font-bold tracking-wide px-2 py-0.5 bg-gg-golden/10 text-gg-golden">{c.loyaltyPoints} pts</span>
                   </button>
                 ))
               )}
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-0">
             <Button
               variant="ghost"
-              className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-8"
+              className="bg-secondary text-secondary-foreground rounded-lg text-[13px] h-9 font-medium hover:bg-secondary/80"
               onClick={() => {
                 setCustomerLookupOpen(false)
                 setCustomerSearch('')

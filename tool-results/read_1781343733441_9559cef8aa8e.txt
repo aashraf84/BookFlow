@@ -1,0 +1,616 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Building,
+     6→  Plus,
+     7→  MapPin,
+     8→  Phone,
+     9→  Mail,
+    10→  User,
+    11→  MoreVertical,
+    12→  Pencil,
+    13→  Power,
+    14→  PowerOff,
+    15→  TrendingUp,
+    16→  Users,
+    17→  ShoppingCart,
+    18→  Package,
+    19→} from 'lucide-react'
+    20→import { Button } from '@/components/ui/button'
+    21→import { Input } from '@/components/ui/input'
+    22→import { Label } from '@/components/ui/label'
+    23→import { Badge } from '@/components/ui/badge'
+    24→import {
+    25→  Dialog,
+    26→  DialogContent,
+    27→  DialogDescription,
+    28→  DialogFooter,
+    29→  DialogHeader,
+    30→  DialogTitle,
+    31→} from '@/components/ui/dialog'
+    32→import {
+    33→  DropdownMenu,
+    34→  DropdownMenuContent,
+    35→  DropdownMenuItem,
+    36→  DropdownMenuTrigger,
+    37→} from '@/components/ui/dropdown-menu'
+    38→import {
+    39→  Table,
+    40→  TableBody,
+    41→  TableCell,
+    42→  TableHead,
+    43→  TableHeader,
+    44→  TableRow,
+    45→} from '@/components/ui/table'
+    46→import { useToast } from '@/hooks/use-toast'
+    47→
+    48→// Types
+    49→interface Branch {
+    50→  id: string
+    51→  name: string
+    52→  code: string
+    53→  address: string | null
+    54→  phone: string | null
+    55→  email: string | null
+    56→  manager: string | null
+    57→  isActive: boolean
+    58→  createdAt: string
+    59→  updatedAt: string
+    60→  _count?: {
+    61→    employees: number
+    62→    sales: number
+    63→    warehouses: number
+    64→  }
+    65→}
+    66→
+    67→interface BranchFormData {
+    68→  name: string
+    69→  code: string
+    70→  address: string
+    71→  phone: string
+    72→  email: string
+    73→  manager: string
+    74→}
+    75→
+    76→const defaultFormData: BranchFormData = {
+    77→  name: '',
+    78→  code: '',
+    79→  address: '',
+    80→  phone: '',
+    81→  email: '',
+    82→  manager: '',
+    83→}
+    84→
+    85→export function BranchesModule() {
+    86→  const { toast } = useToast()
+    87→  const [branches, setBranches] = React.useState<Branch[]>([])
+    88→  const [loading, setLoading] = React.useState(true)
+    89→  const [addDialogOpen, setAddDialogOpen] = React.useState(false)
+    90→  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+    91→  const [formData, setFormData] = React.useState<BranchFormData>(defaultFormData)
+    92→  const [editingBranch, setEditingBranch] = React.useState<Branch | null>(null)
+    93→  const [submitting, setSubmitting] = React.useState(false)
+    94→
+    95→  const fetchBranches = React.useCallback(async () => {
+    96→    try {
+    97→      setLoading(true)
+    98→      const res = await fetch('/api/branches')
+    99→      if (!res.ok) throw new Error('Failed to fetch branches')
+   100→      const json = await res.json()
+   101→      setBranches(json.data || [])
+   102→    } catch {
+   103→      toast({ title: 'Error', description: 'Failed to fetch branches', variant: 'destructive' })
+   104→    } finally {
+   105→      setLoading(false)
+   106→    }
+   107→  }, [toast])
+   108→
+   109→  React.useEffect(() => {
+   110→    fetchBranches()
+   111→  }, [fetchBranches])
+   112→
+   113→  const handleAddBranch = async () => {
+   114→    if (!formData.name || !formData.code) {
+   115→      toast({ title: 'Validation Error', description: 'Name and code are required', variant: 'destructive' })
+   116→      return
+   117→    }
+   118→    try {
+   119→      setSubmitting(true)
+   120→      const res = await fetch('/api/branches', {
+   121→        method: 'POST',
+   122→        headers: { 'Content-Type': 'application/json' },
+   123→        body: JSON.stringify(formData),
+   124→      })
+   125→      if (!res.ok) {
+   126→        const err = await res.json()
+   127→        throw new Error(err.error || 'Failed to create branch')
+   128→      }
+   129→      toast({ title: 'Success', description: 'Branch created successfully' })
+   130→      setAddDialogOpen(false)
+   131→      setFormData(defaultFormData)
+   132→      fetchBranches()
+   133→    } catch (err) {
+   134→      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to create branch', variant: 'destructive' })
+   135→    } finally {
+   136→      setSubmitting(false)
+   137→    }
+   138→  }
+   139→
+   140→  const handleEditBranch = async () => {
+   141→    if (!editingBranch) return
+   142→    try {
+   143→      setSubmitting(true)
+   144→      const res = await fetch('/api/branches', {
+   145→        method: 'PUT',
+   146→        headers: { 'Content-Type': 'application/json' },
+   147→        body: JSON.stringify({ id: editingBranch.id, ...formData }),
+   148→      })
+   149→      if (!res.ok) {
+   150→        const err = await res.json()
+   151→        throw new Error(err.error || 'Failed to update branch')
+   152→      }
+   153→      toast({ title: 'Success', description: 'Branch updated successfully' })
+   154→      setEditDialogOpen(false)
+   155→      setEditingBranch(null)
+   156→      setFormData(defaultFormData)
+   157→      fetchBranches()
+   158→    } catch (err) {
+   159→      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to update branch', variant: 'destructive' })
+   160→    } finally {
+   161→      setSubmitting(false)
+   162→    }
+   163→  }
+   164→
+   165→  const handleToggleStatus = async (branch: Branch) => {
+   166→    try {
+   167→      const res = await fetch('/api/branches', {
+   168→        method: 'PUT',
+   169→        headers: { 'Content-Type': 'application/json' },
+   170→        body: JSON.stringify({ id: branch.id, isActive: !branch.isActive }),
+   171→      })
+   172→      if (!res.ok) throw new Error('Failed to update branch status')
+   173→      toast({
+   174→        title: 'Success',
+   175→        description: `Branch ${branch.isActive ? 'deactivated' : 'activated'} successfully`,
+   176→      })
+   177→      fetchBranches()
+   178→    } catch {
+   179→      toast({ title: 'Error', description: 'Failed to update branch status', variant: 'destructive' })
+   180→    }
+   181→  }
+   182→
+   183→  const openEditDialog = (branch: Branch) => {
+   184→    setEditingBranch(branch)
+   185→    setFormData({
+   186→      name: branch.name,
+   187→      code: branch.code,
+   188→      address: branch.address || '',
+   189→      phone: branch.phone || '',
+   190→      email: branch.email || '',
+   191→      manager: branch.manager || '',
+   192→    })
+   193→    setEditDialogOpen(true)
+   194→  }
+   195→
+   196→  const activeBranches = branches.filter((b) => b.isActive)
+   197→  const inactiveBranches = branches.filter((b) => !b.isActive)
+   198→
+   199→  const totalEmployees = branches.reduce((sum, b) => sum + (b._count?.employees || 0), 0)
+   200→  const totalSales = branches.reduce((sum, b) => sum + (b._count?.sales || 0), 0)
+   201→  const totalWarehouses = branches.reduce((sum, b) => sum + (b._count?.warehouses || 0), 0)
+   202→
+   203→  return (
+   204→    <div className="space-y-6">
+   205→      {/* Performance Metrics */}
+   206→      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+   207→        <div className="rounded-2xl macos-shadow p-4 bg-card">
+   208→          <div className="flex items-center justify-between">
+   209→            <div>
+   210→              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Branches</p>
+   211→              <p className="text-2xl font-bold tracking-tight">{branches.length}</p>
+   212→            </div>
+   213→            <div className="rounded-lg bg-macos-green/10 p-2.5">
+   214→              <Building className="size-5 text-macos-green" />
+   215→            </div>
+   216→          </div>
+   217→        </div>
+   218→        <div className="rounded-2xl macos-shadow p-4 bg-card">
+   219→          <div className="flex items-center justify-between">
+   220→            <div>
+   221→              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Active Branches</p>
+   222→              <p className="text-2xl font-bold tracking-tight">{activeBranches.length}</p>
+   223→            </div>
+   224→            <div className="rounded-lg bg-macos-teal/10 p-2.5">
+   225→              <TrendingUp className="size-5 text-macos-teal" />
+   226→            </div>
+   227→          </div>
+   228→        </div>
+   229→        <div className="rounded-2xl macos-shadow p-4 bg-card">
+   230→          <div className="flex items-center justify-between">
+   231→            <div>
+   232→              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Employees</p>
+   233→              <p className="text-2xl font-bold tracking-tight">{totalEmployees}</p>
+   234→            </div>
+   235→            <div className="rounded-lg bg-macos-orange/10 p-2.5">
+   236→              <Users className="size-5 text-macos-orange" />
+   237→            </div>
+   238→          </div>
+   239→        </div>
+   240→        <div className="rounded-2xl macos-shadow p-4 bg-card">
+   241→          <div className="flex items-center justify-between">
+   242→            <div>
+   243→              <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Total Sales</p>
+   244→              <p className="text-2xl font-bold tracking-tight">{totalSales}</p>
+   245→            </div>
+   246→            <div className="rounded-lg bg-macos-purple/10 p-2.5">
+   247→              <ShoppingCart className="size-5 text-macos-purple" />
+   248→            </div>
+   249→          </div>
+   250→        </div>
+   251→      </div>
+   252→
+   253→      {/* Header */}
+   254→      <div className="flex items-center justify-between mb-6">
+   255→        <div>
+   256→          <h2 className="text-xl font-bold tracking-tight">Branch Management</h2>
+   257→          <p className="text-[13px] text-muted-foreground mt-0.5">Manage your bookstore locations and branch operations</p>
+   258→        </div>
+   259→        <Button onClick={() => { setFormData(defaultFormData); setAddDialogOpen(true) }} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   260→          <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
+   261→          Add Branch
+   262→        </Button>
+   263→      </div>
+   264→
+   265→      {/* Branch Performance Comparison */}
+   266→      {activeBranches.length > 0 && (
+   267→        <div className="rounded-2xl macos-shadow p-5 bg-card">
+   268→          <div className="mb-4">
+   269→            <h3 className="text-[13px] font-semibold tracking-tight">Branch Performance Comparison</h3>
+   270→            <p className="text-[11px] text-muted-foreground mt-0.5">Key metrics across active locations</p>
+   271→          </div>
+   272→          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   273→            {activeBranches.map((branch) => (
+   274→              <div key={branch.id} className="rounded-xl bg-secondary/50 p-4 space-y-3">
+   275→                <div className="flex items-center justify-between">
+   276→                  <p className="font-semibold text-[13px] tracking-tight">{branch.name}</p>
+   277→                  <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-macos-green/10 text-macos-green">
+   278→                    {branch.code}
+   279→                  </Badge>
+   280→                </div>
+   281→                <div className="grid grid-cols-3 gap-2 text-center">
+   282→                  <div className="space-y-0.5">
+   283→                    <p className="text-lg font-bold tracking-tight text-macos-blue">{branch._count?.employees || 0}</p>
+   284→                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Staff</p>
+   285→                  </div>
+   286→                  <div className="space-y-0.5">
+   287→                    <p className="text-lg font-bold tracking-tight text-macos-green">{branch._count?.sales || 0}</p>
+   288→                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Sales</p>
+   289→                  </div>
+   290→                  <div className="space-y-0.5">
+   291→                    <p className="text-lg font-bold tracking-tight text-macos-orange">{branch._count?.warehouses || 0}</p>
+   292→                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Warehouses</p>
+   293→                  </div>
+   294→                </div>
+   295→              </div>
+   296→            ))}
+   297→          </div>
+   298→        </div>
+   299→      )}
+   300→
+   301→      {/* Branch Cards */}
+   302→      {loading ? (
+   303→        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   304→          {[1, 2, 3].map((i) => (
+   305→            <div key={i} className="rounded-2xl macos-shadow p-5 bg-card animate-pulse">
+   306→              <div className="h-5 bg-muted rounded w-1/2 mb-4" />
+   307→              <div className="space-y-2">
+   308→                <div className="h-4 bg-muted rounded w-3/4" />
+   309→                <div className="h-4 bg-muted rounded w-2/3" />
+   310→                <div className="h-4 bg-muted rounded w-1/2" />
+   311→              </div>
+   312→            </div>
+   313→          ))}
+   314→        </div>
+   315→      ) : branches.length === 0 ? (
+   316→        <div className="rounded-2xl macos-shadow p-5 bg-card text-center py-16">
+   317→          <Building className="size-12 text-muted-foreground mx-auto mb-4" />
+   318→          <h3 className="text-xl font-semibold tracking-tight mb-1">No branches yet</h3>
+   319→          <p className="text-[13px] text-muted-foreground mb-4">Add your first branch to get started</p>
+   320→          <Button onClick={() => setAddDialogOpen(true)} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   321→            <Plus className="size-3.5 mr-1.5" strokeWidth={2} />
+   322→            Add Branch
+   323→          </Button>
+   324→        </div>
+   325→      ) : (
+   326→        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+   327→          {branches.map((branch) => (
+   328→            <div key={branch.id} className={`rounded-2xl macos-shadow p-5 bg-card macos-card-hover ${!branch.isActive ? 'opacity-60' : ''}`}>
+   329→              <div className="flex items-start justify-between mb-3">
+   330→                <div className="flex items-center gap-2.5">
+   331→                  <div className="rounded-lg bg-macos-blue/10 p-2">
+   332→                    <Building className="size-4 text-macos-blue" />
+   333→                  </div>
+   334→                  <div>
+   335→                    <h3 className="font-semibold text-[13px] tracking-tight">{branch.name}</h3>
+   336→                    <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-secondary text-secondary-foreground mt-0.5">
+   337→                      {branch.code}
+   338→                    </Badge>
+   339→                  </div>
+   340→                </div>
+   341→                <div className="flex items-center gap-2">
+   342→                  <Badge
+   343→                    className={`rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 ${
+   344→                      branch.isActive
+   345→                        ? 'bg-macos-green/10 text-macos-green'
+   346→                        : 'bg-macos-red/10 text-macos-red'
+   347→                    }`}
+   348→                  >
+   349→                    {branch.isActive ? 'Active' : 'Inactive'}
+   350→                  </Badge>
+   351→                  <DropdownMenu>
+   352→                    <DropdownMenuTrigger asChild>
+   353→                      <Button variant="ghost" size="icon" className="size-7">
+   354→                        <MoreVertical className="size-3.5" />
+   355→                      </Button>
+   356→                    </DropdownMenuTrigger>
+   357→                    <DropdownMenuContent align="end">
+   358→                      <DropdownMenuItem onClick={() => openEditDialog(branch)}>
+   359→                        <Pencil className="size-3.5 mr-2" />
+   360→                        Edit Branch
+   361→                      </DropdownMenuItem>
+   362→                      <DropdownMenuItem onClick={() => handleToggleStatus(branch)}>
+   363→                        {branch.isActive ? (
+   364→                          <>
+   365→                            <PowerOff className="size-3.5 mr-2" />
+   366→                            Deactivate
+   367→                          </>
+   368→                        ) : (
+   369→                          <>
+   370→                            <Power className="size-3.5 mr-2" />
+   371→                            Activate
+   372→                          </>
+   373→                        )}
+   374→                      </DropdownMenuItem>
+   375→                    </DropdownMenuContent>
+   376→                  </DropdownMenu>
+   377→                </div>
+   378→              </div>
+   379→              <div className="space-y-2 text-[13px]">
+   380→                {branch.address && (
+   381→                  <div className="flex items-center gap-2 text-muted-foreground">
+   382→                    <MapPin className="size-3.5 shrink-0" />
+   383→                    <span className="truncate">{branch.address}</span>
+   384→                  </div>
+   385→                )}
+   386→                {branch.phone && (
+   387→                  <div className="flex items-center gap-2 text-muted-foreground">
+   388→                    <Phone className="size-3.5 shrink-0" />
+   389→                    <span>{branch.phone}</span>
+   390→                  </div>
+   391→                )}
+   392→                {branch.email && (
+   393→                  <div className="flex items-center gap-2 text-muted-foreground">
+   394→                    <Mail className="size-3.5 shrink-0" />
+   395→                    <span className="truncate">{branch.email}</span>
+   396→                  </div>
+   397→                )}
+   398→                {branch.manager && (
+   399→                  <div className="flex items-center gap-2 text-muted-foreground">
+   400→                    <User className="size-3.5 shrink-0" />
+   401→                    <span>{branch.manager}</span>
+   402→                  </div>
+   403→                )}
+   404→              </div>
+   405→              <div className="mt-3 pt-3 border-t border-border flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
+   406→                <span className="flex items-center gap-1"><Users className="size-3" />{branch._count?.employees || 0} staff</span>
+   407→                <span className="flex items-center gap-1"><ShoppingCart className="size-3" />{branch._count?.sales || 0} sales</span>
+   408→                <span className="flex items-center gap-1"><Package className="size-3" />{branch._count?.warehouses || 0} warehouses</span>
+   409→              </div>
+   410→            </div>
+   411→          ))}
+   412→        </div>
+   413→      )}
+   414→
+   415→      {/* Inactive Branches Table */}
+   416→      {inactiveBranches.length > 0 && (
+   417→        <div className="rounded-2xl macos-shadow p-5 bg-card">
+   418→          <div className="mb-4">
+   419→            <h3 className="text-[13px] font-semibold tracking-tight">Inactive Branches</h3>
+   420→            <p className="text-[11px] text-muted-foreground mt-0.5">Deactivated branch locations</p>
+   421→          </div>
+   422→          <Table>
+   423→            <TableHeader>
+   424→              <TableRow className="hover:bg-transparent">
+   425→                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Name</TableHead>
+   426→                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Code</TableHead>
+   427→                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Address</TableHead>
+   428→                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Manager</TableHead>
+   429→                <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground text-right">Actions</TableHead>
+   430→              </TableRow>
+   431→            </TableHeader>
+   432→            <TableBody>
+   433→              {inactiveBranches.map((branch) => (
+   434→                <TableRow key={branch.id} className="hover:bg-secondary/50">
+   435→                  <TableCell className="text-[13px] font-medium">{branch.name}</TableCell>
+   436→                  <TableCell className="text-[13px]">
+   437→                    <Badge className="rounded-md text-[10px] font-semibold tracking-wide px-2 py-0.5 bg-secondary text-secondary-foreground">
+   438→                      {branch.code}
+   439→                    </Badge>
+   440→                  </TableCell>
+   441→                  <TableCell className="text-[13px] text-muted-foreground">{branch.address || '—'}</TableCell>
+   442→                  <TableCell className="text-[13px] text-muted-foreground">{branch.manager || '—'}</TableCell>
+   443→                  <TableCell className="text-right">
+   444→                    <Button size="sm" variant="outline" onClick={() => handleToggleStatus(branch)} className="rounded-lg text-[13px] text-macos-green">
+   445→                      <Power className="size-3.5 mr-1" />
+   446→                      Reactivate
+   447→                    </Button>
+   448→                  </TableCell>
+   449→                </TableRow>
+   450→              ))}
+   451→            </TableBody>
+   452→          </Table>
+   453→        </div>
+   454→      )}
+   455→
+   456→      {/* Add Branch Dialog */}
+   457→      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+   458→        <DialogContent className="sm:max-w-md rounded-2xl">
+   459→          <DialogHeader>
+   460→            <DialogTitle className="text-[13px] font-semibold tracking-tight">Add New Branch</DialogTitle>
+   461→            <DialogDescription className="text-[13px]">Create a new branch location for your bookstore</DialogDescription>
+   462→          </DialogHeader>
+   463→          <div className="grid gap-4 py-4">
+   464→            <div className="grid grid-cols-2 gap-4">
+   465→              <div className="space-y-2">
+   466→                <Label htmlFor="add-name" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
+   467→                <Input
+   468→                  id="add-name"
+   469→                  placeholder="Downtown Store"
+   470→                  value={formData.name}
+   471→                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+   472→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   473→                />
+   474→              </div>
+   475→              <div className="space-y-2">
+   476→                <Label htmlFor="add-code" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Code *</Label>
+   477→                <Input
+   478→                  id="add-code"
+   479→                  placeholder="DT-001"
+   480→                  value={formData.code}
+   481→                  onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
+   482→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   483→                />
+   484→              </div>
+   485→            </div>
+   486→            <div className="space-y-2">
+   487→              <Label htmlFor="add-address" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
+   488→              <Input
+   489→                id="add-address"
+   490→                placeholder="123 Main Street, City"
+   491→                value={formData.address}
+   492→                onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+   493→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   494→              />
+   495→            </div>
+   496→            <div className="grid grid-cols-2 gap-4">
+   497→              <div className="space-y-2">
+   498→                <Label htmlFor="add-phone" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
+   499→                <Input
+   500→                  id="add-phone"
+   501→                  placeholder="+1 555-0100"
+   502→                  value={formData.phone}
+   503→                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+   504→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   505→                />
+   506→              </div>
+   507→              <div className="space-y-2">
+   508→                <Label htmlFor="add-email" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
+   509→                <Input
+   510→                  id="add-email"
+   511→                  placeholder="branch@bookflow.com"
+   512→                  value={formData.email}
+   513→                  onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+   514→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   515→                />
+   516→              </div>
+   517→            </div>
+   518→            <div className="space-y-2">
+   519→              <Label htmlFor="add-manager" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Manager</Label>
+   520→              <Input
+   521→                id="add-manager"
+   522→                placeholder="John Smith"
+   523→                value={formData.manager}
+   524→                onChange={(e) => setFormData((prev) => ({ ...prev, manager: e.target.value }))}
+   525→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   526→              />
+   527→            </div>
+   528→          </div>
+   529→          <DialogFooter>
+   530→            <Button variant="outline" onClick={() => setAddDialogOpen(false)} className="bg-secondary text-secondary-foreground rounded-lg font-medium text-[13px]">Cancel</Button>
+   531→            <Button onClick={handleAddBranch} disabled={submitting} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   532→              {submitting ? 'Creating...' : 'Create Branch'}
+   533→            </Button>
+   534→          </DialogFooter>
+   535→        </DialogContent>
+   536→      </Dialog>
+   537→
+   538→      {/* Edit Branch Dialog */}
+   539→      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+   540→        <DialogContent className="sm:max-w-md rounded-2xl">
+   541→          <DialogHeader>
+   542→            <DialogTitle className="text-[13px] font-semibold tracking-tight">Edit Branch</DialogTitle>
+   543→            <DialogDescription className="text-[13px]">Update branch information</DialogDescription>
+   544→          </DialogHeader>
+   545→          <div className="grid gap-4 py-4">
+   546→            <div className="grid grid-cols-2 gap-4">
+   547→              <div className="space-y-2">
+   548→                <Label htmlFor="edit-name" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Name *</Label>
+   549→                <Input
+   550→                  id="edit-name"
+   551→                  value={formData.name}
+   552→                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+   553→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   554→                />
+   555→              </div>
+   556→              <div className="space-y-2">
+   557→                <Label htmlFor="edit-code" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Code *</Label>
+   558→                <Input
+   559→                  id="edit-code"
+   560→                  value={formData.code}
+   561→                  onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
+   562→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   563→                />
+   564→              </div>
+   565→            </div>
+   566→            <div className="space-y-2">
+   567→              <Label htmlFor="edit-address" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Address</Label>
+   568→              <Input
+   569→                id="edit-address"
+   570→                value={formData.address}
+   571→                onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+   572→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   573→              />
+   574→            </div>
+   575→            <div className="grid grid-cols-2 gap-4">
+   576→              <div className="space-y-2">
+   577→                <Label htmlFor="edit-phone" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Phone</Label>
+   578→                <Input
+   579→                  id="edit-phone"
+   580→                  value={formData.phone}
+   581→                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+   582→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   583→                />
+   584→              </div>
+   585→              <div className="space-y-2">
+   586→                <Label htmlFor="edit-email" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Email</Label>
+   587→                <Input
+   588→                  id="edit-email"
+   589→                  value={formData.email}
+   590→                  onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+   591→                  className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   592→                />
+   593→              </div>
+   594→            </div>
+   595→            <div className="space-y-2">
+   596→              <Label htmlFor="edit-manager" className="text-[11px] font-semibold tracking-wide text-muted-foreground">Manager</Label>
+   597→              <Input
+   598→                id="edit-manager"
+   599→                value={formData.manager}
+   600→                onChange={(e) => setFormData((prev) => ({ ...prev, manager: e.target.value }))}
+   601→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8"
+   602→              />
+   603→            </div>
+   604→          </div>
+   605→          <DialogFooter>
+   606→            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="bg-secondary text-secondary-foreground rounded-lg font-medium text-[13px]">Cancel</Button>
+   607→            <Button onClick={handleEditBranch} disabled={submitting} className="bg-primary text-primary-foreground rounded-lg font-medium text-[13px]">
+   608→              {submitting ? 'Saving...' : 'Save Changes'}
+   609→            </Button>
+   610→          </DialogFooter>
+   611→        </DialogContent>
+   612→      </Dialog>
+   613→    </div>
+   614→  )
+   615→}
+   616→
