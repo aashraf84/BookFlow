@@ -7,6 +7,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== AUTH & LICENSING ====================
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password      String
+  role          String   @default("user") // admin, manager, user, demo
+  avatar        String?
+  isActive      Boolean  @default(true)
+  isViewOnly    Boolean  @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions      Session[]
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String   @unique
+  deviceInfo  String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+model SerialKey {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  plan          String   @default("standard") // trial, standard, professional, enterprise
+  maxDevices    Int      @default(3)
+  activatedAt   DateTime?
+  expiresAt     DateTime?
+  isActive      Boolean  @default(true)
+  deviceFingerprint String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 // ==================== CORE MODELS ====================
 
 model Branch {

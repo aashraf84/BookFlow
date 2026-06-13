@@ -14,6 +14,9 @@ import {
   Minus,
   X,
   Sparkles,
+  Eye,
+  LogOut,
+  Shield,
 } from 'lucide-react'
 
 import { useAppStore } from '@/store/app-store'
@@ -66,7 +69,11 @@ function TrafficLights({ onClose, onMinimize, onMaximize }: { onClose?: () => vo
 
 // ─── Sidebar ─────────────────────────────────────────────────
 function AppSidebar() {
-  const { activeModule, setActiveModule } = useAppStore()
+  const { activeModule, setActiveModule, authUser } = useAppStore()
+
+  const initials = authUser?.name
+    ? authUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'BF'
 
   return (
     <Sidebar collapsible="icon" className="border-r-0 glass-sidebar macos-shadow">
@@ -132,6 +139,19 @@ function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="px-2 pb-3">
+        {/* View Only Banner */}
+        {authUser?.isViewOnly && (
+          <div className="group-data-[collapsible=icon]:hidden mb-2">
+            <div className="rounded-lg bg-[#AF52DE]/10 border border-[#AF52DE]/20 p-2.5 flex items-center gap-2">
+              <Eye className="size-3.5 text-[#AF52DE]" strokeWidth={2} />
+              <div>
+                <p className="text-[11px] font-semibold text-[#AF52DE]">View Only Mode</p>
+                <p className="text-[10px] text-sidebar-foreground/40">Actions are disabled</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="group-data-[collapsible=icon]:hidden">
           <div className="rounded-lg bg-sidebar-accent/50 p-2.5 text-center">
             <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -150,7 +170,7 @@ function AppSidebar() {
 
 // ─── Titlebar / Header ───────────────────────────────────────
 function AppHeader() {
-  const { activeModule, sidebarOpen, setSidebarOpen } = useAppStore()
+  const { activeModule, sidebarOpen, setSidebarOpen, authUser, logout, authToken } = useAppStore()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
 
@@ -160,6 +180,24 @@ function AppHeader() {
 
   const currentModule = getModuleById(activeModule)
   const moduleName = currentModule?.label || 'Dashboard'
+
+  const initials = authUser?.name
+    ? authUser.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    : 'BF'
+
+  const handleLogout = async () => {
+    if (authToken) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${authToken}` },
+        })
+      } catch {}
+    }
+    localStorage.removeItem('bf_auth_token')
+    localStorage.removeItem('bf_auth_user')
+    logout()
+  }
 
   return (
     <header className="macos-titlebar flex h-[52px] shrink-0 items-center gap-3 border-b border-border/50 bg-background/80 glass-thin px-4">
@@ -184,6 +222,14 @@ function AppHeader() {
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* View Only Badge */}
+      {authUser?.isViewOnly && (
+        <Badge variant="outline" className="hidden sm:flex items-center gap-1 h-6 px-2 text-[10px] font-semibold border-[#AF52DE]/30 text-[#AF52DE] bg-[#AF52DE]/5">
+          <Eye className="size-3" strokeWidth={2} />
+          VIEW ONLY
+        </Badge>
+      )}
 
       {/* Search Bar - macOS Spotlight Style */}
       <div className="hidden md:flex items-center relative max-w-[240px] w-full">
@@ -239,24 +285,57 @@ function AppHeader() {
         </Tooltip>
       </TooltipProvider>
 
-      {/* User Avatar */}
-      <Avatar className="size-7 cursor-default ring-1 ring-border/50">
-        <AvatarFallback className="bg-macos-blue/10 text-macos-blue text-[10px] font-bold tracking-tight">
-          AD
-        </AvatarFallback>
-      </Avatar>
+      {/* User Avatar + Dropdown */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 cursor-default"
+            >
+              <Avatar className="size-7 cursor-pointer ring-1 ring-border/50 hover:ring-primary/30 transition-all">
+                <AvatarFallback className={`text-[10px] font-bold tracking-tight ${
+                  authUser?.isViewOnly
+                    ? 'bg-[#AF52DE]/10 text-[#AF52DE]'
+                    : 'bg-macos-blue/10 text-macos-blue'
+                }`}>
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">
+            <div className="text-center">
+              <p>{authUser?.name || 'User'}</p>
+              <p className="text-muted-foreground text-[10px]">{authUser?.email}</p>
+              <p className="text-muted-foreground text-[10px] mt-0.5">Click to sign out</p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </header>
   )
 }
 
 // ─── Footer ──────────────────────────────────────────────────
 function AppFooter() {
+  const { authUser } = useAppStore()
+
   return (
     <footer className="mt-auto border-t border-border/30 bg-background/60 glass-thin">
       <div className="flex items-center justify-between px-4 h-8 text-[11px] text-muted-foreground/60 font-medium tracking-tight">
         <span>
           BookFlow OS <span className="mx-0.5 opacity-30">·</span>{' '}
           <span className="text-primary/70">ApexFlow</span> Ecosystem
+          {authUser?.isViewOnly && (
+            <>
+              <span className="mx-0.5 opacity-30">·</span>
+              <span className="text-[#AF52DE]/70 flex items-center gap-0.5 inline-flex">
+                <Eye className="size-2.5" />
+                Demo
+              </span>
+            </>
+          )}
         </span>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1">
@@ -273,7 +352,7 @@ function AppFooter() {
 
 // ─── Main Shell ──────────────────────────────────────────────
 export function AppShell() {
-  const { activeModule, sidebarOpen, setSidebarOpen } = useAppStore()
+  const { activeModule, sidebarOpen, setSidebarOpen, authUser } = useAppStore()
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
