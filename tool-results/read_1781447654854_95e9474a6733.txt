@@ -1,0 +1,1027 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  BarChart3,
+     6→  Download,
+     7→  DollarSign,
+     8→  Package,
+     9→  TrendingUp,
+    10→  ShoppingCart,
+    11→  BookOpen,
+    12→  Truck,
+    13→  GraduationCap,
+    14→  Users,
+    15→  FileText,
+    16→  Activity,
+    17→  Eye,
+    18→  Loader2,
+    19→} from 'lucide-react'
+    20→import {
+    21→  Table,
+    22→  TableBody,
+    23→  TableCell,
+    24→  TableHead,
+    25→  TableHeader,
+    26→  TableRow,
+    27→} from '@/components/ui/table'
+    28→import {
+    29→  BarChart,
+    30→  Bar,
+    31→  AreaChart,
+    32→  Area,
+    33→  PieChart,
+    34→  Pie,
+    35→  Cell,
+    36→  XAxis,
+    37→  YAxis,
+    38→  CartesianGrid,
+    39→} from 'recharts'
+    40→import {
+    41→  ChartContainer,
+    42→  ChartTooltip,
+    43→  ChartTooltipContent,
+    44→  ChartLegend,
+    45→  ChartLegendContent,
+    46→  type ChartConfig,
+    47→} from '@/components/ui/chart'
+    48→import { useAppStore } from '@/store/app-store'
+    49→import {
+    50→  MacosPageHeader,
+    51→  MacosStatCard,
+    52→  MacosStatGrid,
+    53→  MacosCard,
+    54→  MacosFilterBar,
+    55→  MacosButton,
+    56→  MacosBadge,
+    57→  MacosSection,
+    58→} from '@/components/macos-ui'
+    59→
+    60→// Report categories
+    61→const reportCategories = [
+    62→  { id: 'sales', label: 'Sales', icon: DollarSign },
+    63→  { id: 'inventory', label: 'Inventory', icon: Package },
+    64→  { id: 'publisher', label: 'Publisher', icon: BookOpen },
+    65→  { id: 'author', label: 'Author', icon: Users },
+    66→  { id: 'wholesale', label: 'Wholesale', icon: Truck },
+    67→  { id: 'school', label: 'School', icon: GraduationCap },
+    68→  { id: 'financial', label: 'Financial', icon: TrendingUp },
+    69→] as const
+    70→
+    71→type ReportCategory = typeof reportCategories[number]['id']
+    72→
+    73→// macOS chart colors
+    74→const CHART_COLORS = ['#007AFF', '#34C759', '#FF9500', '#AF52DE', '#5AC8FA', '#FF2D55', '#32ADE6']
+    75→
+    76→// Chart configs for recharts shadcn integration
+    77→const revenueChartConfig: ChartConfig = {
+    78→  revenue: { label: 'Revenue', color: '#007AFF' },
+    79→  profit: { label: 'Profit', color: '#34C759' },
+    80→}
+    81→
+    82→const stockChartConfig: ChartConfig = {
+    83→  inStock: { label: 'In Stock', color: '#007AFF' },
+    84→  low: { label: 'Low Stock', color: '#FF9500' },
+    85→  out: { label: 'Out of Stock', color: '#FF3B30' },
+    86→}
+    87→
+    88→const publisherChartConfig: ChartConfig = {
+    89→  revenue: { label: 'Revenue', color: '#007AFF' },
+    90→}
+    91→
+    92→const authorChartConfig: ChartConfig = {
+    93→  sold: { label: 'Books Sold', color: '#007AFF' },
+    94→  royalties: { label: 'Royalties', color: '#34C759' },
+    95→}
+    96→
+    97→const financialChartConfig: ChartConfig = {
+    98→  income: { label: 'Income', color: '#007AFF' },
+    99→  expense: { label: 'Expenses', color: '#FF3B30' },
+   100→  net: { label: 'Net Profit', color: '#34C759' },
+   101→}
+   102→
+   103→const schoolChartConfig: ChartConfig = {
+   104→  value: { label: 'Contract Value', color: '#AF52DE' },
+   105→}
+   106→
+   107→const paymentChartConfig: ChartConfig = {
+   108→  Cash: { label: 'Cash', color: '#007AFF' },
+   109→  Card: { label: 'Card', color: '#34C759' },
+   110→  'Bank Transfer': { label: 'Bank Transfer', color: '#FF9500' },
+   111→  Wallet: { label: 'Wallet', color: '#AF52DE' },
+   112→}
+   113→
+   114→const dateRanges = [
+   115→  { value: '7d', label: 'Last 7 days' },
+   116→  { value: '30d', label: 'Last 30 days' },
+   117→  { value: '90d', label: 'Last 90 days' },
+   118→  { value: '12m', label: 'Last 12 months' },
+   119→  { value: 'ytd', label: 'Year to date' },
+   120→]
+   121→
+   122→// ─── Data Types ───
+   123→
+   124→interface ReportData {
+   125→  monthlyRevenue: { month: string; revenue: number; orders: number; profit: number }[]
+   126→  topProducts: { name: string; category: string; sold: number; revenue: number }[]
+   127→  salesByPayment: { method: string; value: number; amount: number }[]
+   128→  salesStats: { totalRevenue: number; totalOrders: number; avgOrderValue: number; profitMargin: number }
+   129→  stockLevels: { name: string; inStock: number; low: number; out: number }[]
+   130→  movingItems: { name: string; type: 'Fast' | 'Slow' | 'Dead'; sold: number; stock: number }[]
+   131→  inventoryStats: { totalSKUs: number; lowStockCount: number; outOfStockCount: number; deadStockCount: number }
+   132→  publisherData: { name: string; titles: number; revenue: number; orders: number }[]
+   133→  publisherStats: { totalPublishers: number; totalTitles: number; publisherRevenue: number; avgOrdersPerPublisher: number }
+   134→  authorData: { name: string; books: number; sold: number; royalties: number }[]
+   135→  authorStats: { totalAuthors: number; totalBooksPublished: number; totalRoyalties: number; avgBooksPerAuthor: number }
+   136→  wholesaleData: { name: string; orders: number; total: number; status: string }[]
+   137→  wholesaleStats: { totalDistributors: number; totalWholesaleOrders: number; wholesaleRevenue: number; avgWholesaleOrderValue: number }
+   138→  schoolContractData: { name: string; value: number; items: number; status: string }[]
+   139→  schoolStats: { totalSchools: number; activeContracts: number; totalContractValue: number }
+   140→  financialSummary: { month: string; income: number; expense: number; net: number }[]
+   141→  financialStats: { totalIncome: number; totalExpenses: number; netProfit: number; profitMargin: number }
+   142→}
+   143→
+   144→const emptyData: ReportData = {
+   145→  monthlyRevenue: [],
+   146→  topProducts: [],
+   147→  salesByPayment: [],
+   148→  salesStats: { totalRevenue: 0, totalOrders: 0, avgOrderValue: 0, profitMargin: 0 },
+   149→  stockLevels: [],
+   150→  movingItems: [],
+   151→  inventoryStats: { totalSKUs: 0, lowStockCount: 0, outOfStockCount: 0, deadStockCount: 0 },
+   152→  publisherData: [],
+   153→  publisherStats: { totalPublishers: 0, totalTitles: 0, publisherRevenue: 0, avgOrdersPerPublisher: 0 },
+   154→  authorData: [],
+   155→  authorStats: { totalAuthors: 0, totalBooksPublished: 0, totalRoyalties: 0, avgBooksPerAuthor: 0 },
+   156→  wholesaleData: [],
+   157→  wholesaleStats: { totalDistributors: 0, totalWholesaleOrders: 0, wholesaleRevenue: 0, avgWholesaleOrderValue: 0 },
+   158→  schoolContractData: [],
+   159→  schoolStats: { totalSchools: 0, activeContracts: 0, totalContractValue: 0 },
+   160→  financialSummary: [],
+   161→  financialStats: { totalIncome: 0, totalExpenses: 0, netProfit: 0, profitMargin: 0 },
+   162→}
+   163→
+   164→// ─── Loading Skeleton ───
+   165→
+   166→function ReportSkeleton() {
+   167→  return (
+   168→    <div className="space-y-5 animate-pulse">
+   169→      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   170→        {[1, 2, 3, 4].map((i) => (
+   171→          <div key={i} className="h-24 rounded-xl bg-muted/40" />
+   172→        ))}
+   173→      </div>
+   174→      <div className="h-80 rounded-xl bg-muted/40" />
+   175→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+   176→        <div className="h-64 rounded-xl bg-muted/40" />
+   177→        <div className="h-64 rounded-xl bg-muted/40" />
+   178→      </div>
+   179→    </div>
+   180→  )
+   181→}
+   182→
+   183→// ─── Sales Report ───
+   184→
+   185→function SalesReport({ data }: { data: ReportData }) {
+   186→  const { salesStats, monthlyRevenue, topProducts, salesByPayment } = data
+   187→  return (
+   188→    <div className="space-y-5">
+   189→      <MacosStatGrid>
+   190→        <MacosStatCard label="Total Revenue" value={`$${salesStats.totalRevenue.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   191→        <MacosStatCard label="Total Orders" value={salesStats.totalOrders.toLocaleString()} icon={ShoppingCart} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   192→        <MacosStatCard label="Avg Order Value" value={`$${salesStats.avgOrderValue.toLocaleString()}`} icon={TrendingUp} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   193→        <MacosStatCard label="Profit Margin" value={`${salesStats.profitMargin}%`} icon={BarChart3} iconColor="text-macos-red" iconBg="bg-macos-red/10" />
+   194→      </MacosStatGrid>
+   195→
+   196→      {/* Revenue & Profit Area Chart */}
+   197→      <MacosCard noPadding>
+   198→        <div className="px-5 pt-5 pb-0">
+   199→          <MacosSection
+   200→            title="Monthly Revenue & Profit"
+   201→            subtitle="Revenue and profit trends over the selected period"
+   202→            action={
+   203→              <MacosBadge variant="info">
+   204→                <Activity className="size-3 mr-1" />
+   205→                LIVE
+   206→              </MacosBadge>
+   207→            }
+   208→          />
+   209→        </div>
+   210→        <div className="p-5 pt-2">
+   211→          {monthlyRevenue.length > 0 ? (
+   212→            <ChartContainer config={revenueChartConfig} className="h-72 w-full">
+   213→              <BarChart data={monthlyRevenue} barCategoryGap="20%">
+   214→                <defs>
+   215→                  <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+   216→                    <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
+   217→                    <stop offset="95%" stopColor="#007AFF" stopOpacity={0.6} />
+   218→                  </linearGradient>
+   219→                  <linearGradient id="profitGrad" x1="0" y1="0" x2="0" y2="1">
+   220→                    <stop offset="5%" stopColor="#34C759" stopOpacity={0.9} />
+   221→                    <stop offset="95%" stopColor="#34C759" stopOpacity={0.6} />
+   222→                  </linearGradient>
+   223→                </defs>
+   224→                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+   225→                <XAxis dataKey="month" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+   226→                <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+   227→                <ChartTooltip content={<ChartTooltipContent />} />
+   228→                <ChartLegend content={<ChartLegendContent />} />
+   229→                <Bar dataKey="revenue" fill="url(#revenueGrad)" radius={[6, 6, 0, 0]} />
+   230→                <Bar dataKey="profit" fill="url(#profitGrad)" radius={[6, 6, 0, 0]} />
+   231→              </BarChart>
+   232→            </ChartContainer>
+   233→          ) : (
+   234→            <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
+   235→              No sales data available for this period
+   236→            </div>
+   237→          )}
+   238→        </div>
+   239→      </MacosCard>
+   240→
+   241→      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+   242→        {/* Top Products Table */}
+   243→        <MacosCard title="Top Products" subtitle="Best selling products by revenue" noPadding>
+   244→          {topProducts.length > 0 ? (
+   245→            <div className="overflow-x-auto custom-scrollbar">
+   246→              <Table>
+   247→                <TableHeader>
+   248→                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+   249→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Product</TableHead>
+   250→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Category</TableHead>
+   251→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Sold</TableHead>
+   252→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Revenue</TableHead>
+   253→                  </TableRow>
+   254→                </TableHeader>
+   255→                <TableBody>
+   256→                  {topProducts.map((p) => (
+   257→                    <TableRow key={p.name} className="macos-table-row border-b border-border/30 last:border-0">
+   258→                      <TableCell className="text-[13px] font-medium tracking-tight py-3">{p.name}</TableCell>
+   259→                      <TableCell className="py-3">
+   260→                        <MacosBadge>{p.category}</MacosBadge>
+   261→                      </TableCell>
+   262→                      <TableCell className="text-[13px] text-right tabular-nums py-3">{p.sold.toLocaleString()}</TableCell>
+   263→                      <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${p.revenue.toLocaleString()}</TableCell>
+   264→                    </TableRow>
+   265→                  ))}
+   266→                </TableBody>
+   267→              </Table>
+   268→            </div>
+   269→          ) : (
+   270→            <div className="p-5 text-center text-muted-foreground text-sm">
+   271→              No product sales data available
+   272→            </div>
+   273→          )}
+   274→        </MacosCard>
+   275→
+   276→        {/* Sales by Payment Pie */}
+   277→        <MacosCard title="Sales by Payment Method" subtitle="Distribution of sales across payment methods" noPadding>
+   278→          {salesByPayment.length > 0 ? (
+   279→            <div className="p-5">
+   280→              <ChartContainer config={paymentChartConfig} className="h-56 w-full">
+   281→                <PieChart>
+   282→                  <Pie
+   283→                    data={salesByPayment}
+   284→                    dataKey="value"
+   285→                    nameKey="method"
+   286→                    cx="50%"
+   287→                    cy="50%"
+   288→                    innerRadius={45}
+   289→                    outerRadius={80}
+   290→                    paddingAngle={3}
+   291→                    strokeWidth={0}
+   292→                  >
+   293→                    {salesByPayment.map((_, index) => (
+   294→                      <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+   295→                    ))}
+   296→                  </Pie>
+   297→                  <ChartTooltip content={<ChartTooltipContent />} />
+   298→                </PieChart>
+   299→              </ChartContainer>
+   300→              <div className="grid grid-cols-2 gap-2 mt-2">
+   301→                {salesByPayment.map((s, i) => (
+   302→                  <div key={s.method} className="flex items-center gap-2 text-[13px]">
+   303→                    <div className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i] }} />
+   304→                    <span className="text-muted-foreground text-[12px]">{s.method}:</span>
+   305→                    <span className="font-medium text-[13px] tabular-nums">${s.amount.toLocaleString()}</span>
+   306→                  </div>
+   307→                ))}
+   308→              </div>
+   309→            </div>
+   310→          ) : (
+   311→            <div className="p-5 text-center text-muted-foreground text-sm">
+   312→              No payment method data available
+   313→            </div>
+   314→          )}
+   315→        </MacosCard>
+   316→      </div>
+   317→    </div>
+   318→  )
+   319→}
+   320→
+   321→// ─── Inventory Report ───
+   322→
+   323→function InventoryReport({ data }: { data: ReportData }) {
+   324→  const { inventoryStats, stockLevels, movingItems } = data
+   325→  return (
+   326→    <div className="space-y-5">
+   327→      <MacosStatGrid>
+   328→        <MacosStatCard label="Total SKUs" value={inventoryStats.totalSKUs.toLocaleString()} icon={Package} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   329→        <MacosStatCard label="Low Stock" value={inventoryStats.lowStockCount.toString()} icon={BarChart3} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   330→        <MacosStatCard label="Out of Stock" value={inventoryStats.outOfStockCount.toString()} icon={TrendingUp} iconColor="text-macos-red" iconBg="bg-macos-red/10" />
+   331→        <MacosStatCard label="Dead Stock" value={inventoryStats.deadStockCount.toString()} icon={FileText} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   332→      </MacosStatGrid>
+   333→
+   334→      {/* Stock Levels Area Chart */}
+   335→      <MacosCard noPadding>
+   336→        <div className="px-5 pt-5 pb-0">
+   337→          <MacosSection
+   338→            title="Stock Levels by Category"
+   339→            subtitle="Current inventory status across product categories"
+   340→            action={
+   341→              <MacosBadge variant="info">
+   342→                <Package className="size-3 mr-1" />
+   343→                INVENTORY
+   344→              </MacosBadge>
+   345→            }
+   346→          />
+   347→        </div>
+   348→        <div className="p-5 pt-2">
+   349→          {stockLevels.length > 0 ? (
+   350→            <ChartContainer config={stockChartConfig} className="h-72 w-full">
+   351→              <BarChart data={stockLevels} barCategoryGap="20%">
+   352→                <defs>
+   353→                  <linearGradient id="inStockGrad" x1="0" y1="0" x2="0" y2="1">
+   354→                    <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
+   355→                    <stop offset="95%" stopColor="#007AFF" stopOpacity={0.5} />
+   356→                  </linearGradient>
+   357→                  <linearGradient id="lowGrad" x1="0" y1="0" x2="0" y2="1">
+   358→                    <stop offset="5%" stopColor="#FF9500" stopOpacity={0.9} />
+   359→                    <stop offset="95%" stopColor="#FF9500" stopOpacity={0.5} />
+   360→                  </linearGradient>
+   361→                  <linearGradient id="outGrad" x1="0" y1="0" x2="0" y2="1">
+   362→                    <stop offset="5%" stopColor="#FF3B30" stopOpacity={0.9} />
+   363→                    <stop offset="95%" stopColor="#FF3B30" stopOpacity={0.5} />
+   364→                  </linearGradient>
+   365→                </defs>
+   366→                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+   367→                <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+   368→                <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+   369→                <ChartTooltip content={<ChartTooltipContent />} />
+   370→                <ChartLegend content={<ChartLegendContent />} />
+   371→                <Bar dataKey="inStock" stackId="a" fill="url(#inStockGrad)" />
+   372→                <Bar dataKey="low" stackId="a" fill="url(#lowGrad)" />
+   373→                <Bar dataKey="out" stackId="a" fill="url(#outGrad)" radius={[6, 6, 0, 0]} />
+   374→              </BarChart>
+   375→            </ChartContainer>
+   376→          ) : (
+   377→            <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
+   378→              No inventory data available
+   379→            </div>
+   380→          )}
+   381→        </div>
+   382→      </MacosCard>
+   383→
+   384→      {/* Moving Items Table */}
+   385→      <MacosCard title="Fast / Slow / Dead Moving Items" subtitle="Product movement analysis" noPadding>
+   386→        {movingItems.length > 0 ? (
+   387→          <div className="overflow-x-auto custom-scrollbar">
+   388→            <Table>
+   389→              <TableHeader>
+   390→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   391→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Product</TableHead>
+   392→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Movement</TableHead>
+   393→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Units Sold</TableHead>
+   394→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Current Stock</TableHead>
+   395→                </TableRow>
+   396→              </TableHeader>
+   397→              <TableBody>
+   398→                {movingItems.map((item) => (
+   399→                  <TableRow key={item.name} className="macos-table-row border-b border-border/30 last:border-0">
+   400→                    <TableCell className="text-[13px] font-medium tracking-tight py-3">{item.name}</TableCell>
+   401→                    <TableCell className="py-3">
+   402→                      <MacosBadge
+   403→                        variant={
+   404→                          item.type === 'Fast' ? 'success' :
+   405→                          item.type === 'Slow' ? 'warning' : 'danger'
+   406→                        }
+   407→                      >
+   408→                        {item.type}
+   409→                      </MacosBadge>
+   410→                    </TableCell>
+   411→                    <TableCell className="text-[13px] text-right tabular-nums py-3">{item.sold}</TableCell>
+   412→                    <TableCell className="text-[13px] text-right tabular-nums py-3">{item.stock}</TableCell>
+   413→                  </TableRow>
+   414→                ))}
+   415→              </TableBody>
+   416→            </Table>
+   417→          </div>
+   418→        ) : (
+   419→          <div className="p-5 text-center text-muted-foreground text-sm">
+   420→            No inventory movement data available
+   421→          </div>
+   422→        )}
+   423→      </MacosCard>
+   424→    </div>
+   425→  )
+   426→}
+   427→
+   428→// ─── Publisher Report ───
+   429→
+   430→function PublisherReport({ data }: { data: ReportData }) {
+   431→  const { publisherStats, publisherData } = data
+   432→  return (
+   433→    <div className="space-y-5">
+   434→      <MacosStatGrid>
+   435→        <MacosStatCard label="Publishers" value={publisherStats.totalPublishers.toString()} icon={BookOpen} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   436→        <MacosStatCard label="Total Titles" value={publisherStats.totalTitles.toString()} icon={FileText} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   437→        <MacosStatCard label="Publisher Revenue" value={`$${publisherStats.publisherRevenue.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   438→        <MacosStatCard label="Avg Orders/Pub" value={publisherStats.avgOrdersPerPublisher.toString()} icon={ShoppingCart} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   439→      </MacosStatGrid>
+   440→
+   441→      <MacosCard noPadding>
+   442→        <div className="px-5 pt-5 pb-0">
+   443→          <MacosSection
+   444→            title="Publisher Performance"
+   445→            subtitle="Revenue and order distribution by publisher"
+   446→            action={
+   447→              <MacosBadge variant="danger" className="bg-gg-bridge/10 text-gg-bridge">
+   448→                <BookOpen className="size-3 mr-1" />
+   449→                PUBLISHERS
+   450→              </MacosBadge>
+   451→            }
+   452→          />
+   453→        </div>
+   454→        <div className="p-5 pt-2">
+   455→          {publisherData.length > 0 ? (
+   456→            <ChartContainer config={publisherChartConfig} className="h-72 w-full">
+   457→              <BarChart data={publisherData} layout="vertical" barCategoryGap="25%">
+   458→                <defs>
+   459→                  <linearGradient id="pubGrad" x1="0" y1="0" x2="1" y2="0">
+   460→                    <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
+   461→                    <stop offset="95%" stopColor="#5AC8FA" stopOpacity={0.6} />
+   462→                  </linearGradient>
+   463→                </defs>
+   464→                <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
+   465→                <XAxis type="number" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+   466→                <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+   467→                <ChartTooltip content={<ChartTooltipContent />} />
+   468→                <Bar dataKey="revenue" fill="url(#pubGrad)" radius={[0, 6, 6, 0]} />
+   469→              </BarChart>
+   470→            </ChartContainer>
+   471→          ) : (
+   472→            <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
+   473→              No publisher data available
+   474→            </div>
+   475→          )}
+   476→        </div>
+   477→      </MacosCard>
+   478→
+   479→      <MacosCard title="Publisher Details" noPadding>
+   480→        {publisherData.length > 0 ? (
+   481→          <div className="overflow-x-auto custom-scrollbar">
+   482→            <Table>
+   483→              <TableHeader>
+   484→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   485→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Publisher</TableHead>
+   486→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Titles</TableHead>
+   487→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Revenue</TableHead>
+   488→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Orders</TableHead>
+   489→                </TableRow>
+   490→              </TableHeader>
+   491→              <TableBody>
+   492→                {publisherData.map((p) => (
+   493→                  <TableRow key={p.name} className="macos-table-row border-b border-border/30 last:border-0">
+   494→                    <TableCell className="text-[13px] font-medium tracking-tight py-3">{p.name}</TableCell>
+   495→                    <TableCell className="text-[13px] text-right tabular-nums py-3">{p.titles}</TableCell>
+   496→                    <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${p.revenue.toLocaleString()}</TableCell>
+   497→                    <TableCell className="text-[13px] text-right tabular-nums py-3">{p.orders}</TableCell>
+   498→                  </TableRow>
+   499→                ))}
+   500→              </TableBody>
+   501→            </Table>
+   502→          </div>
+   503→        ) : (
+   504→          <div className="p-5 text-center text-muted-foreground text-sm">
+   505→            No publisher data available
+   506→          </div>
+   507→        )}
+   508→      </MacosCard>
+   509→    </div>
+   510→  )
+   511→}
+   512→
+   513→// ─── Author Report ───
+   514→
+   515→function AuthorReport({ data }: { data: ReportData }) {
+   516→  const { authorStats, authorData } = data
+   517→  return (
+   518→    <div className="space-y-5">
+   519→      <MacosStatGrid>
+   520→        <MacosStatCard label="Total Authors" value={authorStats.totalAuthors.toString()} icon={Users} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   521→        <MacosStatCard label="Books Published" value={authorStats.totalBooksPublished.toString()} icon={BookOpen} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   522→        <MacosStatCard label="Total Royalties" value={`$${authorStats.totalRoyalties.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   523→        <MacosStatCard label="Avg Books/Author" value={authorStats.avgBooksPerAuthor.toString()} icon={BarChart3} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   524→      </MacosStatGrid>
+   525→
+   526→      <MacosCard noPadding>
+   527→        <div className="px-5 pt-5 pb-0">
+   528→          <MacosSection
+   529→            title="Top Authors by Sales"
+   530→            subtitle="Author performance and royalty overview"
+   531→            action={
+   532→              <MacosBadge variant="purple">
+   533→                <Users className="size-3 mr-1" />
+   534→                AUTHORS
+   535→              </MacosBadge>
+   536→            }
+   537→          />
+   538→        </div>
+   539→        <div className="p-5 pt-2">
+   540→          {authorData.length > 0 ? (
+   541→            <ChartContainer config={authorChartConfig} className="h-72 w-full">
+   542→              <BarChart data={authorData} barCategoryGap="20%">
+   543→                <defs>
+   544→                  <linearGradient id="soldGrad" x1="0" y1="0" x2="0" y2="1">
+   545→                    <stop offset="5%" stopColor="#007AFF" stopOpacity={0.9} />
+   546→                    <stop offset="95%" stopColor="#007AFF" stopOpacity={0.5} />
+   547→                  </linearGradient>
+   548→                  <linearGradient id="royGrad" x1="0" y1="0" x2="0" y2="1">
+   549→                    <stop offset="5%" stopColor="#34C759" stopOpacity={0.9} />
+   550→                    <stop offset="95%" stopColor="#34C759" stopOpacity={0.5} />
+   551→                  </linearGradient>
+   552→                </defs>
+   553→                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+   554→                <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+   555→                <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+   556→                <ChartTooltip content={<ChartTooltipContent />} />
+   557→                <ChartLegend content={<ChartLegendContent />} />
+   558→                <Bar dataKey="sold" fill="url(#soldGrad)" radius={[6, 6, 0, 0]} />
+   559→                <Bar dataKey="royalties" fill="url(#royGrad)" radius={[6, 6, 0, 0]} />
+   560→              </BarChart>
+   561→            </ChartContainer>
+   562→          ) : (
+   563→            <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
+   564→              No author data available
+   565→            </div>
+   566→          )}
+   567→        </div>
+   568→      </MacosCard>
+   569→
+   570→      <MacosCard title="Author Details" noPadding>
+   571→        {authorData.length > 0 ? (
+   572→          <div className="overflow-x-auto custom-scrollbar">
+   573→            <Table>
+   574→              <TableHeader>
+   575→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   576→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Author</TableHead>
+   577→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Books</TableHead>
+   578→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Sold</TableHead>
+   579→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Royalties</TableHead>
+   580→                </TableRow>
+   581→              </TableHeader>
+   582→              <TableBody>
+   583→                {authorData.map((a) => (
+   584→                  <TableRow key={a.name} className="macos-table-row border-b border-border/30 last:border-0">
+   585→                    <TableCell className="text-[13px] font-medium tracking-tight py-3">{a.name}</TableCell>
+   586→                    <TableCell className="text-[13px] text-right tabular-nums py-3">{a.books}</TableCell>
+   587→                    <TableCell className="text-[13px] text-right tabular-nums py-3">{a.sold.toLocaleString()}</TableCell>
+   588→                    <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${a.royalties.toLocaleString()}</TableCell>
+   589→                  </TableRow>
+   590→                ))}
+   591→              </TableBody>
+   592→            </Table>
+   593→          </div>
+   594→        ) : (
+   595→          <div className="p-5 text-center text-muted-foreground text-sm">
+   596→            No author data available
+   597→          </div>
+   598→        )}
+   599→      </MacosCard>
+   600→    </div>
+   601→  )
+   602→}
+   603→
+   604→// ─── Wholesale Report ───
+   605→
+   606→function WholesaleReport({ data }: { data: ReportData }) {
+   607→  const { wholesaleStats, wholesaleData } = data
+   608→  return (
+   609→    <div className="space-y-5">
+   610→      <MacosStatGrid>
+   611→        <MacosStatCard label="Distributors" value={wholesaleStats.totalDistributors.toString()} icon={Truck} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   612→        <MacosStatCard label="Wholesale Orders" value={wholesaleStats.totalWholesaleOrders.toString()} icon={ShoppingCart} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   613→        <MacosStatCard label="Wholesale Revenue" value={`$${wholesaleStats.wholesaleRevenue.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   614→        <MacosStatCard label="Avg Order Value" value={`$${wholesaleStats.avgWholesaleOrderValue.toLocaleString()}`} icon={TrendingUp} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   615→      </MacosStatGrid>
+   616→
+   617→      <MacosCard noPadding>
+   618→        <div className="px-5 pt-5 pb-0">
+   619→          <MacosSection
+   620→            title="Distributor Performance"
+   621→            subtitle="Orders and revenue by wholesale partner"
+   622→            action={
+   623→              <MacosBadge variant="info">
+   624→                <Truck className="size-3 mr-1" />
+   625→                WHOLESALE
+   626→              </MacosBadge>
+   627→            }
+   628→          />
+   629→        </div>
+   630→        <div className="p-5 pt-2">
+   631→          {wholesaleData.length > 0 ? (
+   632→            <ChartContainer config={paymentChartConfig} className="h-64 w-full">
+   633→              <PieChart>
+   634→                <Pie
+   635→                  data={wholesaleData}
+   636→                  dataKey="total"
+   637→                  nameKey="name"
+   638→                  cx="50%"
+   639→                  cy="50%"
+   640→                  innerRadius={50}
+   641→                  outerRadius={90}
+   642→                  paddingAngle={3}
+   643→                  strokeWidth={0}
+   644→                >
+   645→                  {wholesaleData.map((_, index) => (
+   646→                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+   647→                  ))}
+   648→                </Pie>
+   649→                <ChartTooltip content={<ChartTooltipContent />} />
+   650→              </PieChart>
+   651→            </ChartContainer>
+   652→          ) : (
+   653→            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+   654→              No wholesale data available
+   655→            </div>
+   656→          )}
+   657→        </div>
+   658→      </MacosCard>
+   659→
+   660→      <MacosCard title="Distributor Details" noPadding>
+   661→        {wholesaleData.length > 0 ? (
+   662→          <div className="overflow-x-auto custom-scrollbar">
+   663→            <Table>
+   664→              <TableHeader>
+   665→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   666→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Distributor</TableHead>
+   667→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Orders</TableHead>
+   668→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Total Value</TableHead>
+   669→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+   670→                </TableRow>
+   671→              </TableHeader>
+   672→              <TableBody>
+   673→                {wholesaleData.map((w) => (
+   674→                  <TableRow key={w.name} className="macos-table-row border-b border-border/30 last:border-0">
+   675→                    <TableCell className="text-[13px] font-medium tracking-tight py-3">{w.name}</TableCell>
+   676→                    <TableCell className="text-[13px] text-right tabular-nums py-3">{w.orders}</TableCell>
+   677→                    <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${w.total.toLocaleString()}</TableCell>
+   678→                    <TableCell className="py-3">
+   679→                      <MacosBadge variant={w.status === 'Active' ? 'success' : 'warning'}>
+   680→                        {w.status}
+   681→                      </MacosBadge>
+   682→                    </TableCell>
+   683→                  </TableRow>
+   684→                ))}
+   685→              </TableBody>
+   686→            </Table>
+   687→          </div>
+   688→        ) : (
+   689→          <div className="p-5 text-center text-muted-foreground text-sm">
+   690→            No wholesale data available
+   691→          </div>
+   692→        )}
+   693→      </MacosCard>
+   694→    </div>
+   695→  )
+   696→}
+   697→
+   698→// ─── School Contract Report ───
+   699→
+   700→function SchoolContractReport({ data }: { data: ReportData }) {
+   701→  const { schoolStats, schoolContractData } = data
+   702→  return (
+   703→    <div className="space-y-5">
+   704→      <MacosStatGrid>
+   705→        <MacosStatCard label="Schools" value={schoolStats.totalSchools.toString()} icon={GraduationCap} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   706→        <MacosStatCard label="Active Contracts" value={schoolStats.activeContracts.toString()} icon={FileText} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   707→        <MacosStatCard label="Contract Value" value={`$${schoolStats.totalContractValue.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   708→        <MacosStatCard label="Total Contracts" value={schoolContractData.length.toString()} icon={Package} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   709→      </MacosStatGrid>
+   710→
+   711→      <MacosCard noPadding>
+   712→        <div className="px-5 pt-5 pb-0">
+   713→          <MacosSection
+   714→            title="Contract Value by School"
+   715→            subtitle="Revenue distribution across school partnerships"
+   716→            action={
+   717→              <MacosBadge variant="warning" className="bg-gg-sunset/10 text-gg-sunset">
+   718→                <GraduationCap className="size-3 mr-1" />
+   719→                SCHOOLS
+   720→              </MacosBadge>
+   721→            }
+   722→          />
+   723→        </div>
+   724→        <div className="p-5 pt-2">
+   725→          {schoolContractData.length > 0 ? (
+   726→            <ChartContainer config={schoolChartConfig} className="h-64 w-full">
+   727→              <BarChart data={schoolContractData} barCategoryGap="25%">
+   728→                <defs>
+   729→                  <linearGradient id="schoolGrad" x1="0" y1="0" x2="0" y2="1">
+   730→                    <stop offset="5%" stopColor="#AF52DE" stopOpacity={0.9} />
+   731→                    <stop offset="95%" stopColor="#AF52DE" stopOpacity={0.5} />
+   732→                  </linearGradient>
+   733→                </defs>
+   734→                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+   735→                <XAxis dataKey="name" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+   736→                <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+   737→                <ChartTooltip content={<ChartTooltipContent />} />
+   738→                <Bar dataKey="value" fill="url(#schoolGrad)" radius={[6, 6, 0, 0]} />
+   739→              </BarChart>
+   740→            </ChartContainer>
+   741→          ) : (
+   742→            <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+   743→              No school contract data available
+   744→            </div>
+   745→          )}
+   746→        </div>
+   747→      </MacosCard>
+   748→
+   749→      <MacosCard title="School Contract Details" noPadding>
+   750→        {schoolContractData.length > 0 ? (
+   751→          <div className="overflow-x-auto custom-scrollbar">
+   752→            <Table>
+   753→              <TableHeader>
+   754→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   755→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">School</TableHead>
+   756→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Contract Value</TableHead>
+   757→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Contracts</TableHead>
+   758→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+   759→                </TableRow>
+   760→              </TableHeader>
+   761→              <TableBody>
+   762→                {schoolContractData.map((s) => (
+   763→                  <TableRow key={s.name} className="macos-table-row border-b border-border/30 last:border-0">
+   764→                    <TableCell className="text-[13px] font-medium tracking-tight py-3">{s.name}</TableCell>
+   765→                    <TableCell className="text-[13px] text-right font-medium tabular-nums py-3">${s.value.toLocaleString()}</TableCell>
+   766→                    <TableCell className="text-[13px] text-right tabular-nums py-3">{s.items}</TableCell>
+   767→                    <TableCell className="py-3">
+   768→                      <MacosBadge variant={s.status === 'Active' ? 'success' : 'warning'}>
+   769→                        {s.status}
+   770→                      </MacosBadge>
+   771→                    </TableCell>
+   772→                  </TableRow>
+   773→                ))}
+   774→              </TableBody>
+   775→            </Table>
+   776→          </div>
+   777→        ) : (
+   778→          <div className="p-5 text-center text-muted-foreground text-sm">
+   779→            No school contract data available
+   780→          </div>
+   781→        )}
+   782→      </MacosCard>
+   783→    </div>
+   784→  )
+   785→}
+   786→
+   787→// ─── Financial Report ───
+   788→
+   789→function FinancialReport({ data }: { data: ReportData }) {
+   790→  const { financialStats, financialSummary } = data
+   791→  return (
+   792→    <div className="space-y-5">
+   793→      <MacosStatGrid>
+   794→        <MacosStatCard label="Total Income" value={`$${financialStats.totalIncome.toLocaleString()}`} icon={TrendingUp} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   795→        <MacosStatCard label="Total Expenses" value={`$${financialStats.totalExpenses.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-red" iconBg="bg-macos-red/10" />
+   796→        <MacosStatCard label="Net Profit" value={`$${financialStats.netProfit.toLocaleString()}`} icon={BarChart3} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   797→        <MacosStatCard label="Profit Margin" value={`${financialStats.profitMargin}%`} icon={FileText} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   798→      </MacosStatGrid>
+   799→
+   800→      <MacosCard noPadding>
+   801→        <div className="px-5 pt-5 pb-0">
+   802→          <MacosSection
+   803→            title="Income vs Expenses"
+   804→            subtitle="Monthly financial trends"
+   805→            action={
+   806→              <MacosBadge variant="warning" className="bg-gg-golden/10 text-gg-golden">
+   807→                <TrendingUp className="size-3 mr-1" />
+   808→                FINANCIAL
+   809→              </MacosBadge>
+   810→            }
+   811→          />
+   812→        </div>
+   813→        <div className="p-5 pt-2">
+   814→          {financialSummary.length > 0 ? (
+   815→            <ChartContainer config={financialChartConfig} className="h-72 w-full">
+   816→              <AreaChart data={financialSummary}>
+   817→                <defs>
+   818→                  <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+   819→                    <stop offset="5%" stopColor="#007AFF" stopOpacity={0.3} />
+   820→                    <stop offset="95%" stopColor="#007AFF" stopOpacity={0} />
+   821→                  </linearGradient>
+   822→                  <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+   823→                    <stop offset="5%" stopColor="#FF3B30" stopOpacity={0.3} />
+   824→                    <stop offset="95%" stopColor="#FF3B30" stopOpacity={0} />
+   825→                  </linearGradient>
+   826→                  <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
+   827→                    <stop offset="5%" stopColor="#34C759" stopOpacity={0.3} />
+   828→                    <stop offset="95%" stopColor="#34C759" stopOpacity={0} />
+   829→                  </linearGradient>
+   830→                </defs>
+   831→                <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
+   832→                <XAxis dataKey="month" tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} />
+   833→                <YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" axisLine={false} tickLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} />
+   834→                <ChartTooltip content={<ChartTooltipContent />} />
+   835→                <ChartLegend content={<ChartLegendContent />} />
+   836→                <Area type="monotone" dataKey="income" stroke="#007AFF" strokeWidth={2} fill="url(#incomeGrad)" />
+   837→                <Area type="monotone" dataKey="expense" stroke="#FF3B30" strokeWidth={2} fill="url(#expenseGrad)" />
+   838→                <Area type="monotone" dataKey="net" stroke="#34C759" strokeWidth={2} fill="url(#netGrad)" />
+   839→              </AreaChart>
+   840→            </ChartContainer>
+   841→          ) : (
+   842→            <div className="h-72 flex items-center justify-center text-muted-foreground text-sm">
+   843→              No financial data available for this period
+   844→            </div>
+   845→          )}
+   846→        </div>
+   847→      </MacosCard>
+   848→
+   849→      <MacosCard title="Financial Breakdown" noPadding>
+   850→        {financialSummary.length > 0 ? (
+   851→          <div className="overflow-x-auto custom-scrollbar">
+   852→            <Table>
+   853→              <TableHeader>
+   854→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   855→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Month</TableHead>
+   856→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Income</TableHead>
+   857→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Expenses</TableHead>
+   858→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Net Profit</TableHead>
+   859→                </TableRow>
+   860→              </TableHeader>
+   861→              <TableBody>
+   862→                {financialSummary.map((f) => (
+   863→                  <TableRow key={f.month} className="macos-table-row border-b border-border/30 last:border-0">
+   864→                    <TableCell className="text-[13px] font-medium tracking-tight py-3">{f.month}</TableCell>
+   865→                    <TableCell className="text-[13px] text-right text-macos-blue tabular-nums py-3">${f.income.toLocaleString()}</TableCell>
+   866→                    <TableCell className="text-[13px] text-right text-macos-red tabular-nums py-3">${f.expense.toLocaleString()}</TableCell>
+   867→                    <TableCell className="text-[13px] text-right font-medium text-macos-green tabular-nums py-3">${f.net.toLocaleString()}</TableCell>
+   868→                  </TableRow>
+   869→                ))}
+   870→              </TableBody>
+   871→            </Table>
+   872→          </div>
+   873→        ) : (
+   874→          <div className="p-5 text-center text-muted-foreground text-sm">
+   875→            No financial data available
+   876→          </div>
+   877→        )}
+   878→      </MacosCard>
+   879→    </div>
+   880→  )
+   881→}
+   882→
+   883→// ─── Main Reports Component ───
+   884→
+   885→export function ReportsModule() {
+   886→  const { authUser } = useAppStore()
+   887→  const isViewOnly = authUser?.isViewOnly ?? false
+   888→  const [activeCategory, setActiveCategory] = React.useState<ReportCategory>('sales')
+   889→  const [dateRange, setDateRange] = React.useState('12m')
+   890→  const [reportData, setReportData] = React.useState<ReportData>(emptyData)
+   891→  const [loading, setLoading] = React.useState(true)
+   892→  const [error, setError] = React.useState<string | null>(null)
+   893→
+   894→  // Fetch report data from API
+   895→  React.useEffect(() => {
+   896→    let cancelled = false
+   897→
+   898→    async function fetchReportData() {
+   899→      setLoading(true)
+   900→      setError(null)
+   901→      try {
+   902→        const params = new URLSearchParams()
+   903→        if (authUser?.tenantId) {
+   904→          params.set('tenantId', authUser.tenantId)
+   905→        }
+   906→        params.set('range', dateRange)
+   907→
+   908→        const response = await fetch(`/api/reports?${params.toString()}`)
+   909→        const result = await response.json()
+   910→
+   911→        if (!cancelled) {
+   912→          if (result.success && result.data) {
+   913→            setReportData(result.data)
+   914→          } else {
+   915→            setError(result.error || 'Failed to load report data')
+   916→          }
+   917→        }
+   918→      } catch (err) {
+   919→        if (!cancelled) {
+   920→          setError('Network error: Failed to fetch report data')
+   921→          console.error('Reports fetch error:', err)
+   922→        }
+   923→      } finally {
+   924→        if (!cancelled) {
+   925→          setLoading(false)
+   926→        }
+   927→      }
+   928→    }
+   929→
+   930→    fetchReportData()
+   931→
+   932→    return () => {
+   933→      cancelled = true
+   934→    }
+   935→  }, [authUser?.tenantId, dateRange])
+   936→
+   937→  const renderReport = () => {
+   938→    if (loading) return <ReportSkeleton />
+   939→
+   940→    if (error) {
+   941→      return (
+   942→        <div className="flex flex-col items-center justify-center py-16 gap-3">
+   943→          <div className="size-12 rounded-full bg-destructive/10 flex items-center justify-center">
+   944→            <BarChart3 className="size-6 text-destructive" />
+   945→          </div>
+   946→          <p className="text-sm text-muted-foreground">{error}</p>
+   947→          <button
+   948→            onClick={() => setDateRange(dateRange)}
+   949→            className="text-sm text-primary hover:underline"
+   950→          >
+   951→            Retry
+   952→          </button>
+   953→        </div>
+   954→      )
+   955→    }
+   956→
+   957→    switch (activeCategory) {
+   958→      case 'sales': return <SalesReport data={reportData} />
+   959→      case 'inventory': return <InventoryReport data={reportData} />
+   960→      case 'publisher': return <PublisherReport data={reportData} />
+   961→      case 'author': return <AuthorReport data={reportData} />
+   962→      case 'wholesale': return <WholesaleReport data={reportData} />
+   963→      case 'school': return <SchoolContractReport data={reportData} />
+   964→      case 'financial': return <FinancialReport data={reportData} />
+   965→      default: return <SalesReport data={reportData} />
+   966→    }
+   967→  }
+   968→
+   969→  return (
+   970→    <div className="space-y-5">
+   971→      {/* macOS Page Header */}
+   972→      <MacosPageHeader
+   973→        title="Reports & Analytics"
+   974→        subtitle="Comprehensive business intelligence and reporting"
+   975→        icon={BarChart3}
+   976→        iconColor="text-macos-purple"
+   977→        iconBg="bg-macos-purple/10"
+   978→      >
+   979→        {isViewOnly && (
+   980→          <MacosBadge variant="warning">
+   981→            <Eye className="size-3 mr-1" />
+   982→            VIEW ONLY
+   983→          </MacosBadge>
+   984→        )}
+   985→        <MacosFilterBar
+   986→          items={dateRanges.map((dr) => ({ id: dr.value, label: dr.label }))}
+   987→          activeId={dateRange}
+   988→          onChange={setDateRange}
+   989→        />
+   990→        <MacosButton
+   991→          variant="secondary"
+   992→          icon={Download}
+   993→          disabled={isViewOnly}
+   994→        >
+   995→          Export
+   996→        </MacosButton>
+   997→      </MacosPageHeader>
+   998→
+   999→      {/* Category Filter Bar (macOS Activity Monitor style tabs) */}
+  1000→      <div className="macos-filter-bar">
+  1001→        {reportCategories.map((cat) => {
+  1002→          const Icon = cat.icon
+  1003→          const isActive = activeCategory === cat.id
+  1004→          return (
+  1005→            <button
+  1006→              key={cat.id}
+  1007→              onClick={() => setActiveCategory(cat.id)}
+  1008→              className={`flex items-center gap-1.5 ${
+  1009→                isActive ? 'macos-filter-item macos-filter-item-active' : 'macos-filter-item'
+  1010→              }`}
+  1011→            >
+  1012→              <Icon className="size-3.5" />
+  1013→              <span className="text-[12px]">{cat.label}</span>
+  1014→              {loading && isActive && (
+  1015→                <Loader2 className="size-3 animate-spin text-muted-foreground" />
+  1016→              )}
+  1017→            </button>
+  1018→          )
+  1019→        })}
+  1020→      </div>
+  1021→
+  1022→      {/* Report Content */}
+  1023→      {renderReport()}
+  1024→    </div>
+  1025→  )
+  1026→}
+  1027→

@@ -174,3 +174,129 @@ Work Log:
   10. Live Preview — simulated invoice with conditional rendering matching all settings
 - All styling matches existing sections: macos-card, macos-shadow-card, macos-section-title, MacosFormField, shadcn/ui Select/Switch/Input/Textarea
 - Lint passes clean
+
+---
+Task ID: 3
+Agent: Code Agent
+Task: Complete rewrite of Reports module with professional ERP-style reporting, print/export features, and 42 report types across 10 categories
+
+Work Log:
+
+### Architecture — Complete Rewrite of `reports.tsx`
+- Completely rewrote `/home/z/my-project/src/components/modules/reports.tsx` from scratch
+- Defined 10 report categories with 42 individual report types:
+  - A. Sales Reports (8): Daily Sales Summary, Monthly Sales Analysis, Sales by Category, Sales by Payment Method, Sales by Employee/Cashier, Customer Sales History, Returns & Refunds, Sales Trend Analysis
+  - B. Inventory Reports (7): Stock Level Summary, Low Stock Alert, Inventory Valuation, Inventory Movement Analysis, Stock Adjustment Log, Expiry Tracking, Reorder Point Report
+  - C. Purchase & Supplier Reports (5): Purchase Order Summary, Supplier Performance, Purchase by Supplier, Goods Received, Pending Purchase Orders
+  - D. Financial Reports (8): P&L Statement, Cash Flow, Revenue vs Expenses, Tax Collection, Daily Cash Register, AR Aging, AP Aging, Expense by Category
+  - E. Publisher & Author Reports (4): Publisher Sales Summary, Publisher Performance Ranking, Author Royalty Report, Title-wise Sales Report
+  - F. Customer & CRM Reports (4): Customer Purchase History, Top Customers by Revenue, Loyalty Points Summary, Customer Acquisition
+  - G. Wholesale & Distribution Reports (3): Wholesale Order Summary, Distributor Performance, Bulk Order Analysis
+  - H. School & Academic Reports (3): School Contract Summary, Academic Package Sales, Contract Expiry Alert
+  - I. HR & Employee Reports (4): Employee Attendance, Sales by Employee, Employee Performance, Payroll Summary
+  - J. Branch & Location Reports (3): Branch Performance Comparison, Branch Revenue, Inter-branch Stock Transfer
+
+### Type System
+- Added `ReportCategory` union type for 10 categories
+- Added `ReportDef` interface: id, title, description, category, icon, requiresDateRange, requiresBranchFilter
+- Added `CategoryDef` interface: id, label, icon
+- Kept existing `ReportData` interface with all 10 data sections + 7 stats objects
+
+### Professional Letter-Size Report Format
+- `ReportHeader` component: Company logo area (BookFlow OS), company name, report title, date range, generated timestamp
+- `ReportFooter` component: Page number (Page X of Y), company name, confidentiality notice, generated date
+- Every report renders with professional header and footer
+
+### Print & Export Features
+- Print button: Triggers `window.print()` with proper @media print CSS
+- Export CSV button: Downloads current report data as CSV via `exportToCSV()` utility function
+- PDF button: Uses browser print-to-PDF (via print dialog)
+- `exportToCSV()` function: Takes headers/rows/filename, handles proper CSV escaping (commas, quotes, newlines), creates Blob, triggers download
+- All export buttons in `ReportToolbar` component
+
+### Print CSS
+- `@media print` styles that:
+  - Hide sidebar, filter bar, and action buttons (`.print-hide { display: none !important }`)
+  - Set page size to A4 with 1in/0.75in margins
+  - Use `.print-report-area` for visible content
+  - Remove shadows and rounded corners from cards
+  - Force black borders on tables
+  - Gray backgrounds on table headers with exact color printing
+  - Border collapse on tables for clean print output
+
+### UI Layout
+- **Left sidebar** (`ReportSidebar`): Collapsible report categories with expand/collapse chevrons, search input, report count per category, selected report highlighting
+- **Main area**: Selected report with professional format
+- **Top toolbar** (`ReportToolbar`): Date range selector (7d/30d/90d/12m/ytd), Print/Export CSV/PDF buttons
+- **Report Dashboard** (when no report selected): Quick stats grid (8 clickable stat cards), Quick Access Reports (6 frequently used), Report Categories overview (10 categories with counts)
+
+### Individual Report Components (19 fully implemented)
+1. `DailySalesReport` — Stats + monthly revenue bar chart
+2. `MonthlySalesReport` — Stats + revenue/profit chart + monthly breakdown table
+3. `SalesByCategoryReport` — Category bar chart + product details table
+4. `SalesByPaymentReport` — Payment pie chart + breakdown table
+5. `SalesTrendReport` — Revenue trend area chart
+6. `StockLevelReport` — Stats + stacked bar chart
+7. `LowStockAlertReport` — Alert stats + items requiring attention table
+8. `InventoryMovementReport` — Fast/Slow/Dead stats + movement table
+9. `InventoryValuationReport` — Value stats + category valuation table
+10. `ProfitLossReport` — P&L stats + income/expense/net bar chart + monthly breakdown
+11. `CashFlowReport` — Inflow/outflow stats + area chart
+12. `RevenueVsExpensesReport` — Line chart comparison
+13. `PublisherSalesReport` — Publisher stats + revenue chart + details table
+14. `PublisherRankingReport` — Ranked table with badges
+15. `AuthorRoyaltyReport` — Author stats + royalties chart + details table
+16. `TitleWiseSalesReport` — Title sales ranked table
+17. `TopCustomersReport` — Top revenue contributors table
+18. `WholesaleOrderSummaryReport` — Distributor stats + chart + details table
+19. `SchoolContractSummaryReport` — School stats + chart + details table
+- Remaining 23 reports: `ComingSoonReport` placeholder with icon, title, and description
+
+### CSV Export Logic
+- `handleExportCSV` callback builds appropriate headers/rows for each report type
+- Covers all 19 implemented reports with specific column mappings
+- Generic placeholder export for coming-soon reports
+- Uses `escapeCSV()` utility for proper value escaping
+
+### Data Flow
+- Fetches from `/api/reports?tenantId=...&range=...` on mount and when dateRange changes
+- Loading state with `ReportSkeleton` component
+- Error state with retry button
+- Uses existing API data structure (no API changes needed)
+
+### Utility Functions
+- `formatCurrency()`: Locale-aware currency formatting
+- `formatDate()`: Full date/time formatting for report headers
+- `getDateRangeLabel()`: Maps range codes to display labels
+- `escapeCSV()`: Proper CSV value escaping (commas, quotes, newlines)
+- `exportToCSV()`: Full CSV generation and browser download
+
+### Lint
+- Lint passes clean
+---
+Task ID: 3
+Agent: Main Agent
+Task: Complete rewrite of Reports module with professional ERP-style reporting
+
+Work Log:
+- Searched web for comprehensive bookstore ERP report types and standard ERP reporting modules
+- Read current reports.tsx (1026 lines) and identified it lacked professional formatting, print/export, and many report types
+- Completely rewrote reports.tsx to 2045 lines with professional ERP-style reporting
+- Implemented 42 report types across 10 categories: Sales (8), Inventory (7), Purchase & Supplier (5), Financial (8), Publisher & Author (4), Customer & CRM (4), Wholesale (3), School & Academic (3), HR & Employee (4), Branch & Location (3)
+- Added professional letter-size report format with company header (logo, name, report title, date range, timestamp) and footer (page number, company name, confidentiality)
+- Added Print button with @media print CSS for A4/letter pages (hides sidebar/controls, proper margins, B&W tables)
+- Added Export CSV functionality with proper escaping for all report types
+- Added PDF export via browser print-to-PDF
+- Built collapsible sidebar with report categories and search
+- Built Report Dashboard with quick stats and quick access cards
+- 19 fully implemented reports with real-time charts/tables from /api/reports
+- 23 "Coming Soon" placeholders for reports not yet in the API
+- Loading skeletons, error states with retry, empty states
+- Lint passes clean
+
+Stage Summary:
+- reports.tsx: Complete rewrite from 1026 → 2045 lines
+- 42 report types across 10 professional categories
+- Professional print/export features (Print, CSV, PDF)
+- Letter-size format with header/footer
+- Pushed to GitHub as commit 1743950
