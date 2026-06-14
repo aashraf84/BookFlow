@@ -1,0 +1,1018 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Users,
+     6→  Search,
+     7→  Plus,
+     8→  Mail,
+     9→  Phone,
+    10→  MapPin,
+    11→  Star,
+    12→  Crown,
+    13→  Award,
+    14→  Gift,
+    15→  Megaphone,
+    16→  TrendingUp,
+    17→  Eye,
+    18→  Trash2,
+    19→  Send,
+    20→  Calendar,
+    21→  DollarSign,
+    22→  ShoppingBag,
+    23→  Sparkles,
+    24→  Contact,
+    25→} from 'lucide-react'
+    26→import { Button } from '@/components/ui/button'
+    27→import { Input } from '@/components/ui/input'
+    28→import { Label } from '@/components/ui/label'
+    29→import { Badge } from '@/components/ui/badge'
+    30→import {
+    31→  Select,
+    32→  SelectContent,
+    33→  SelectItem,
+    34→  SelectTrigger,
+    35→  SelectValue,
+    36→} from '@/components/ui/select'
+    37→import { Textarea } from '@/components/ui/textarea'
+    38→import { Separator } from '@/components/ui/separator'
+    39→import { ScrollArea } from '@/components/ui/scroll-area'
+    40→import {
+    41→  Table,
+    42→  TableBody,
+    43→  TableCell,
+    44→  TableHead,
+    45→  TableHeader,
+    46→  TableRow,
+    47→} from '@/components/ui/table'
+    48→import { useAppStore } from '@/store/app-store'
+    49→import {
+    50→  MacosPageHeader,
+    51→  MacosStatCard,
+    52→  MacosSearch,
+    53→  MacosFilterBar,
+    54→  MacosButton,
+    55→  MacosBadge,
+    56→  MacosEmptyState,
+    57→  MacosDialog,
+    58→  MacosFormField,
+    59→  MacosStatGrid,
+    60→} from '@/components/macos-ui'
+    61→
+    62→// ==================== TYPES ====================
+    63→
+    64→interface Customer {
+    65→  id: string
+    66→  name: string
+    67→  email?: string | null
+    68→  phone?: string | null
+    69→  address?: string | null
+    70→  type: string
+    71→  loyaltyPoints: number
+    72→  totalSpent: number
+    73→  creditLimit: number
+    74→  outstanding: number
+    75→  isActive: boolean
+    76→  createdAt: string
+    77→  _count?: { sales: number; wholesaleOrders: number }
+    78→  school?: { id: string; name: string } | null
+    79→}
+    80→
+    81→interface LoyaltyTier {
+    82→  id: string
+    83→  name: string
+    84→  minPoints: number
+    85→  maxPoints?: number | null
+    86→  discount: number
+    87→  benefits?: string | null
+    88→}
+    89→
+    90→interface Campaign {
+    91→  id: string
+    92→  name: string
+    93→  type: string
+    94→  target?: string | null
+    95→  message: string
+    96→  status: string
+    97→  sentCount: number
+    98→  responseCount: number
+    99→  scheduledAt?: string | null
+   100→  sentAt?: string | null
+   101→  createdAt: string
+   102→}
+   103→
+   104→// ==================== CRM & LOYALTY MODULE ====================
+   105→
+   106→export function CRMLoyaltyModule() {
+   107→  const [activeTab, setActiveTab] = React.useState('customers')
+   108→  const tabs = [
+   109→    { id: 'customers', label: 'Customers', count: undefined },
+   110→    { id: 'loyalty', label: 'Loyalty', count: undefined },
+   111→    { id: 'campaigns', label: 'Campaigns', count: undefined },
+   112→  ]
+   113→
+   114→  return (
+   115→    <div className="space-y-5">
+   116→      <MacosPageHeader
+   117→        title="CRM & Loyalty"
+   118→        subtitle="Manage customers, loyalty programs, and marketing campaigns"
+   119→        icon={Contact}
+   120→        iconColor="text-gg-bridge"
+   121→        iconBg="bg-gg-bridge/10"
+   122→      />
+   123→
+   124→      <MacosFilterBar
+   125→        items={tabs}
+   126→        activeId={activeTab}
+   127→        onChange={setActiveTab}
+   128→      />
+   129→
+   130→      <div>
+   131→        {activeTab === 'customers' && <CustomersTab />}
+   132→        {activeTab === 'loyalty' && <LoyaltyTab />}
+   133→        {activeTab === 'campaigns' && <CampaignsTab />}
+   134→      </div>
+   135→    </div>
+   136→  )
+   137→}
+   138→
+   139→// ==================== CUSTOMERS TAB ====================
+   140→
+   141→function CustomersTab() {
+   142→  const { authUser } = useAppStore()
+   143→  const isViewOnly = authUser?.isViewOnly ?? false
+   144→  const [customers, setCustomers] = React.useState<Customer[]>([])
+   145→  const [loading, setLoading] = React.useState(true)
+   146→  const [search, setSearch] = React.useState('')
+   147→  const [typeFilter, setTypeFilter] = React.useState('all')
+   148→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   149→  const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null)
+   150→
+   151→  const fetchCustomers = React.useCallback(async () => {
+   152→    setLoading(true)
+   153→    try {
+   154→      const params = new URLSearchParams()
+   155→      if (search) params.set('search', search)
+   156→      if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter)
+   157→      params.set('limit', '50')
+   158→      const res = await fetch(`/api/customers?${params}`)
+   159→      const json = await res.json()
+   160→      if (json.data) setCustomers(json.data)
+   161→    } catch (err) {
+   162→      console.error('Failed to fetch customers:', err)
+   163→    } finally {
+   164→      setLoading(false)
+   165→    }
+   166→  }, [search, typeFilter])
+   167→
+   168→  React.useEffect(() => {
+   169→    fetchCustomers()
+   170→  }, [fetchCustomers])
+   171→
+   172→  const handleDelete = async (id: string) => {
+   173→    if (!confirm('Are you sure you want to deactivate this customer?')) return
+   174→    try {
+   175→      await fetch(`/api/customers`, {
+   176→        method: 'PUT',
+   177→        headers: { 'Content-Type': 'application/json' },
+   178→        body: JSON.stringify({ id, isActive: false }),
+   179→      })
+   180→      fetchCustomers()
+   181→    } catch (err) {
+   182→      console.error('Failed to deactivate customer:', err)
+   183→    }
+   184→  }
+   185→
+   186→  const getTypeBadge = (type: string) => {
+   187→    const variants: Record<string, 'success' | 'info' | 'warning' | 'purple' | 'danger'> = {
+   188→      retail: 'success',
+   189→      wholesale: 'info',
+   190→      school: 'warning',
+   191→      dealer: 'purple',
+   192→      distributor: 'danger',
+   193→    }
+   194→    return variants[type] || 'default'
+   195→  }
+   196→
+   197→  const getLoyaltyTier = (points: number) => {
+   198→    if (points >= 5000) return { name: 'Platinum', variant: 'purple' as const, icon: Crown }
+   199→    if (points >= 2000) return { name: 'Gold', variant: 'warning' as const, icon: Award }
+   200→    if (points >= 500) return { name: 'Silver', variant: 'default' as const, icon: Star }
+   201→    return { name: 'Bronze', variant: 'warning' as const, icon: Gift }
+   202→  }
+   203→
+   204→  const totalCustomers = customers.length
+   205→  const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0)
+   206→  const totalOutstanding = customers.reduce((sum, c) => sum + c.outstanding, 0)
+   207→  const totalPoints = customers.reduce((sum, c) => sum + c.loyaltyPoints, 0)
+   208→
+   209→  return (
+   210→    <div className="space-y-5">
+   211→      {/* Stats Row */}
+   212→      <MacosStatGrid>
+   213→        <MacosStatCard label="Total Customers" value={totalCustomers} icon={Users} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   214→        <MacosStatCard label="Total Revenue" value={`$${totalRevenue.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   215→        <MacosStatCard label="Outstanding" value={`$${totalOutstanding.toLocaleString()}`} icon={TrendingUp} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   216→        <MacosStatCard label="Loyalty Points" value={totalPoints.toLocaleString()} icon={Sparkles} iconColor="text-gg-bridge" iconBg="bg-gg-bridge/10" />
+   217→      </MacosStatGrid>
+   218→
+   219→      {/* Search & Filter Bar */}
+   220→      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+   221→        <div className="flex gap-2 w-full sm:w-auto">
+   222→          <MacosSearch value={search} onChange={setSearch} placeholder="Search customers..." className="w-full sm:w-64" />
+   223→          <Select value={typeFilter} onValueChange={setTypeFilter}>
+   224→            <SelectTrigger className="w-32 rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   225→              <SelectValue />
+   226→            </SelectTrigger>
+   227→            <SelectContent>
+   228→              <SelectItem value="all">All Types</SelectItem>
+   229→              <SelectItem value="retail">Retail</SelectItem>
+   230→              <SelectItem value="wholesale">Wholesale</SelectItem>
+   231→              <SelectItem value="school">School</SelectItem>
+   232→              <SelectItem value="dealer">Dealer</SelectItem>
+   233→              <SelectItem value="distributor">Distributor</SelectItem>
+   234→            </SelectContent>
+   235→          </Select>
+   236→        </div>
+   237→        {!isViewOnly && (
+   238→          <MacosButton variant="primary" icon={Plus} onClick={() => setShowAddDialog(true)}>
+   239→            Add Customer
+   240→          </MacosButton>
+   241→        )}
+   242→      </div>
+   243→
+   244→      {/* Customer List */}
+   245→      {loading ? (
+   246→        <div className="macos-card macos-shadow-card p-6">
+   247→          <div className="space-y-3">
+   248→            {[1, 2, 3, 4, 5].map((i) => (
+   249→              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+   250→            ))}
+   251→          </div>
+   252→        </div>
+   253→      ) : customers.length === 0 ? (
+   254→        <MacosEmptyState
+   255→          icon={Contact}
+   256→          title="No customers found"
+   257→          description="Add your first customer to get started"
+   258→        />
+   259→      ) : (
+   260→        <div className="macos-card macos-shadow-card overflow-hidden">
+   261→          <ScrollArea className="max-h-[500px] custom-scrollbar">
+   262→            <Table>
+   263→              <TableHeader>
+   264→                <TableRow className="hover:bg-transparent border-b border-border/50">
+   265→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Name</TableHead>
+   266→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Contact</TableHead>
+   267→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Type</TableHead>
+   268→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Tier</TableHead>
+   269→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Points</TableHead>
+   270→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Total Spent</TableHead>
+   271→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Outstanding</TableHead>
+   272→                  {!isViewOnly && <TableHead className="w-10"></TableHead>}
+   273→                </TableRow>
+   274→              </TableHeader>
+   275→              <TableBody>
+   276→                {customers.map((customer) => {
+   277→                  const tier = getLoyaltyTier(customer.loyaltyPoints)
+   278→                  const TierIcon = tier.icon
+   279→                  return (
+   280→                    <TableRow
+   281→                      key={customer.id}
+   282→                      className="macos-table-row cursor-pointer border-b border-border/30 last:border-0"
+   283→                      onClick={() => setSelectedCustomer(customer)}
+   284→                    >
+   285→                      <TableCell className="font-medium text-[13px] tracking-tight">
+   286→                        <div className="flex items-center gap-2.5">
+   287→                          <div className="size-8 rounded-full bg-gg-bridge/10 flex items-center justify-center flex-shrink-0">
+   288→                            <span className="text-[11px] font-semibold text-gg-bridge">{customer.name.charAt(0).toUpperCase()}</span>
+   289→                          </div>
+   290→                          <span>{customer.name}</span>
+   291→                        </div>
+   292→                      </TableCell>
+   293→                      <TableCell>
+   294→                        <div className="text-[11px] space-y-0.5">
+   295→                          {customer.email && (
+   296→                            <div className="flex items-center gap-1 text-muted-foreground">
+   297→                              <Mail className="size-3" strokeWidth={1.8} /> {customer.email}
+   298→                            </div>
+   299→                          )}
+   300→                          {customer.phone && (
+   301→                            <div className="flex items-center gap-1 text-muted-foreground">
+   302→                              <Phone className="size-3" strokeWidth={1.8} /> {customer.phone}
+   303→                            </div>
+   304→                          )}
+   305→                        </div>
+   306→                      </TableCell>
+   307→                      <TableCell>
+   308→                        <MacosBadge variant={getTypeBadge(customer.type)}>
+   309→                          {customer.type}
+   310→                        </MacosBadge>
+   311→                      </TableCell>
+   312→                      <TableCell>
+   313→                        <div className="inline-flex items-center gap-1 macos-badge">
+   314→                          <TierIcon className="size-3" strokeWidth={1.8} />
+   315→                          {tier.name}
+   316→                        </div>
+   317→                      </TableCell>
+   318→                      <TableCell className="text-right">
+   319→                        <span className="text-gg-bridge font-medium text-[13px]">{customer.loyaltyPoints}</span>
+   320→                      </TableCell>
+   321→                      <TableCell className="text-right text-[13px]">
+   322→                        ${customer.totalSpent.toLocaleString()}
+   323→                      </TableCell>
+   324→                      <TableCell className="text-right">
+   325→                        <span className={`text-[13px] ${customer.outstanding > 0 ? 'text-macos-orange font-medium' : ''}`}>
+   326→                          ${customer.outstanding.toLocaleString()}
+   327→                        </span>
+   328→                      </TableCell>
+   329→                      {!isViewOnly && (
+   330→                        <TableCell>
+   331→                          <MacosButton
+   332→                            variant="danger"
+   333→                            className="h-6 w-6 p-0"
+   334→                            onClick={(e) => {
+   335→                              e.stopPropagation()
+   336→                              handleDelete(customer.id)
+   337→                            }}
+   338→                          >
+   339→                            <Trash2 className="size-3" strokeWidth={1.8} />
+   340→                          </MacosButton>
+   341→                        </TableCell>
+   342→                      )}
+   343→                    </TableRow>
+   344→                  )
+   345→                })}
+   346→              </TableBody>
+   347→            </Table>
+   348→          </ScrollArea>
+   349→        </div>
+   350→      )}
+   351→
+   352→      <AddCustomerDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchCustomers} />
+   353→      <CustomerDetailDialog
+   354→        customer={selectedCustomer}
+   355→        onOpenChange={(open) => !open && setSelectedCustomer(null)}
+   356→      />
+   357→    </div>
+   358→  )
+   359→}
+   360→
+   361→// ==================== LOYALTY TAB ====================
+   362→
+   363→function LoyaltyTab() {
+   364→  const [tiers, setTiers] = React.useState<LoyaltyTier[]>([])
+   365→  const [loading, setLoading] = React.useState(true)
+   366→
+   367→  const fetchTiers = React.useCallback(async () => {
+   368→    setLoading(true)
+   369→    try {
+   370→      const res = await fetch('/api/crm/loyalty-tiers')
+   371→      if (res.ok) {
+   372→        const json = await res.json()
+   373→        if (json.data) setTiers(json.data)
+   374→      }
+   375→    } catch (err) {
+   376→      console.error('Failed to fetch loyalty tiers:', err)
+   377→    } finally {
+   378→      setLoading(false)
+   379→    }
+   380→  }, [])
+   381→
+   382→  React.useEffect(() => {
+   383→    fetchTiers()
+   384→  }, [fetchTiers])
+   385→
+   386→  const tierIcons: Record<string, React.ElementType> = {
+   387→    Bronze: Award,
+   388→    Silver: Star,
+   389→    Gold: Crown,
+   390→    Platinum: Gift,
+   391→  }
+   392→
+   393→  const tierColors: Record<string, { bg: string; text: string; gradient: string; barColor: string; accentBg: string }> = {
+   394→    Bronze: { bg: 'bg-macos-orange/10', text: 'text-macos-orange', gradient: 'from-macos-orange to-amber-700', barColor: 'bg-macos-orange', accentBg: 'bg-macos-orange/5' },
+   395→    Silver: { bg: 'bg-secondary', text: 'text-muted-foreground', gradient: 'from-gray-400 to-gray-600', barColor: 'bg-gray-400', accentBg: 'bg-secondary/50' },
+   396→    Gold: { bg: 'bg-gg-golden/10', text: 'text-gg-golden', gradient: 'from-gg-golden to-amber-600', barColor: 'bg-gg-golden', accentBg: 'bg-gg-golden/5' },
+   397→    Platinum: { bg: 'bg-gg-bridge/10', text: 'text-gg-bridge', gradient: 'from-gg-bridge to-gg-sunset', barColor: 'bg-gg-bridge', accentBg: 'bg-gg-bridge/5' },
+   398→  }
+   399→
+   400→  const defaultTiers: LoyaltyTier[] = [
+   401→    { id: '1', name: 'Bronze', minPoints: 0, maxPoints: 499, discount: 2, benefits: 'Birthday discount, Basic support' },
+   402→    { id: '2', name: 'Silver', minPoints: 500, maxPoints: 1999, discount: 5, benefits: 'Priority support, Early access to sales, Free shipping' },
+   403→    { id: '3', name: 'Gold', minPoints: 2000, maxPoints: 4999, discount: 10, benefits: 'VIP support, Exclusive offers, Free shipping, Gift wrapping' },
+   404→    { id: '4', name: 'Platinum', minPoints: 5000, maxPoints: null, discount: 15, benefits: 'Personal account manager, Best prices, Free shipping, Gift wrapping, Invitation to events' },
+   405→  ]
+   406→
+   407→  const displayTiers = tiers.length > 0 ? tiers : defaultTiers
+   408→
+   409→  const pointsRules = [
+   410→    { action: 'Purchase', points: '1 point per $1 spent', icon: ShoppingBag, color: 'bg-macos-green/10 text-macos-green' },
+   411→    { action: 'Referral', points: '50 bonus points', icon: Users, color: 'bg-macos-blue/10 text-macos-blue' },
+   412→    { action: 'Review', points: '20 bonus points', icon: Star, color: 'bg-gg-golden/10 text-gg-golden' },
+   413→    { action: 'Birthday', points: '100 bonus points', icon: Gift, color: 'bg-gg-bridge/10 text-gg-bridge' },
+   414→    { action: 'Social Share', points: '10 bonus points', icon: Megaphone, color: 'bg-macos-teal/10 text-macos-teal' },
+   415→  ]
+   416→
+   417→  return (
+   418→    <div className="space-y-6">
+   419→      {loading ? (
+   420→        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   421→          {[1, 2, 3, 4].map((i) => (
+   422→            <div key={i} className="macos-card macos-shadow-card p-6 animate-pulse">
+   423→              <div className="h-8 bg-muted/50 rounded w-1/2 mb-4" />
+   424→              <div className="h-3 bg-muted/50 rounded w-3/4 mb-2" />
+   425→              <div className="h-3 bg-muted/50 rounded w-1/2" />
+   426→            </div>
+   427→          ))}
+   428→        </div>
+   429→      ) : (
+   430→        <>
+   431→          {/* Loyalty Tiers */}
+   432→          <div>
+   433→            <div className="macos-section-header">
+   434→              <div>
+   435→                <h3 className="macos-section-title">Loyalty Tiers</h3>
+   436→                <p className="macos-section-desc">Customer rewards progression</p>
+   437→              </div>
+   438→              <MacosBadge variant="purple">
+   439→                <Crown className="size-3 mr-1" strokeWidth={1.8} />
+   440→                {displayTiers.length} Tiers
+   441→              </MacosBadge>
+   442→            </div>
+   443→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+   444→              {displayTiers.map((tier) => {
+   445→                const Icon = tierIcons[tier.name] || Star
+   446→                const colors = tierColors[tier.name] || tierColors.Bronze
+   447→                const progress = tier.maxPoints ? Math.min((tier.minPoints / (tier.maxPoints || 1)) * 100, 100) : 100
+   448→                return (
+   449→                  <div key={tier.id} className="macos-card macos-shadow-card relative overflow-hidden group">
+   450→                    <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${colors.gradient}`} />
+   451→                    <div className="p-5 pt-6">
+   452→                      <div className="flex items-center gap-3 mb-4">
+   453→                        <div className={`size-9 rounded-xl ${colors.bg} flex items-center justify-center`}>
+   454→                          <Icon className={`size-4 ${colors.text}`} strokeWidth={1.8} />
+   455→                        </div>
+   456→                        <div>
+   457→                          <h4 className="text-[13px] font-semibold tracking-tight">{tier.name}</h4>
+   458→                          <p className="text-[10px] font-semibold tracking-wider text-macos-green">{tier.discount}% discount</p>
+   459→                        </div>
+   460→                      </div>
+   461→                      <div className="space-y-3">
+   462→                        <div className="flex justify-between text-[11px]">
+   463→                          <span className="text-muted-foreground">Points Range</span>
+   464→                          <span className="font-medium text-[13px]">
+   465→                            {tier.minPoints.toLocaleString()} – {tier.maxPoints ? tier.maxPoints.toLocaleString() : '∞'}
+   466→                          </span>
+   467→                        </div>
+   468→                        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+   469→                          <div
+   470→                            className={`h-full rounded-full ${colors.barColor} transition-all duration-500`}
+   471→                            style={{ width: `${progress}%` }}
+   472→                          />
+   473→                        </div>
+   474→                        {tier.benefits && (
+   475→                          <p className="text-[11px] text-muted-foreground leading-relaxed">{tier.benefits}</p>
+   476→                        )}
+   477→                      </div>
+   478→                    </div>
+   479→                  </div>
+   480→                )
+   481→              })}
+   482→            </div>
+   483→          </div>
+   484→
+   485→          <Separator className="bg-border/50" />
+   486→
+   487→          {/* Points Rules */}
+   488→          <div>
+   489→            <div className="macos-section-header">
+   490→              <div>
+   491→                <h3 className="macos-section-title">Points Rules</h3>
+   492→                <p className="macos-section-desc">How customers earn loyalty points</p>
+   493→              </div>
+   494→            </div>
+   495→            <div className="macos-card macos-shadow-card overflow-hidden">
+   496→              <Table>
+   497→                <TableHeader>
+   498→                  <TableRow className="hover:bg-transparent border-b border-border/50">
+   499→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Action</TableHead>
+   500→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Points Earned</TableHead>
+   501→                  </TableRow>
+   502→                </TableHeader>
+   503→                <TableBody>
+   504→                  {pointsRules.map((rule) => {
+   505→                    const Icon = rule.icon
+   506→                    return (
+   507→                      <TableRow key={rule.action} className="macos-table-row border-b border-border/30 last:border-0">
+   508→                        <TableCell className="flex items-center gap-2.5 text-[13px]">
+   509→                          <div className={`size-7 rounded-lg ${rule.color} flex items-center justify-center`}>
+   510→                            <Icon className="size-3" strokeWidth={1.8} />
+   511→                          </div>
+   512→                          <span className="font-medium">{rule.action}</span>
+   513→                        </TableCell>
+   514→                        <TableCell className="font-medium text-gg-bridge text-[13px]">{rule.points}</TableCell>
+   515→                      </TableRow>
+   516→                    )
+   517→                  })}
+   518→                </TableBody>
+   519→              </Table>
+   520→            </div>
+   521→          </div>
+   522→        </>
+   523→      )}
+   524→    </div>
+   525→  )
+   526→}
+   527→
+   528→// ==================== CAMPAIGNS TAB ====================
+   529→
+   530→function CampaignsTab() {
+   531→  const { authUser } = useAppStore()
+   532→  const isViewOnly = authUser?.isViewOnly ?? false
+   533→  const [campaigns, setCampaigns] = React.useState<Campaign[]>([])
+   534→  const [loading, setLoading] = React.useState(true)
+   535→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   536→
+   537→  const fetchCampaigns = React.useCallback(async () => {
+   538→    setLoading(true)
+   539→    try {
+   540→      const res = await fetch('/api/crm/campaigns')
+   541→      if (res.ok) {
+   542→        const json = await res.json()
+   543→        if (json.data) setCampaigns(json.data)
+   544→      }
+   545→    } catch (err) {
+   546→      console.error('Failed to fetch campaigns:', err)
+   547→    } finally {
+   548→      setLoading(false)
+   549→    }
+   550→  }, [])
+   551→
+   552→  React.useEffect(() => {
+   553→    fetchCampaigns()
+   554→  }, [fetchCampaigns])
+   555→
+   556→  const getStatusBadge = (status: string): 'default' | 'warning' | 'info' | 'success' => {
+   557→    switch (status) {
+   558→      case 'draft': return 'default'
+   559→      case 'scheduled': return 'warning'
+   560→      case 'sent': return 'info'
+   561→      case 'completed': return 'success'
+   562→      default: return 'default'
+   563→    }
+   564→  }
+   565→
+   566→  const getTypeBadge = (type: string): 'success' | 'info' | 'purple' => {
+   567→    switch (type) {
+   568→      case 'sms': return 'success'
+   569→      case 'whatsapp': return 'info'
+   570→      case 'email': return 'info'
+   571→      case 'social': return 'purple'
+   572→      default: return 'info'
+   573→    }
+   574→  }
+   575→
+   576→  return (
+   577→    <div className="space-y-5">
+   578→      <div className="flex items-center justify-between">
+   579→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{campaigns.length} campaigns</p>
+   580→        {!isViewOnly && (
+   581→          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+   582→            Create Campaign
+   583→          </MacosButton>
+   584→        )}
+   585→      </div>
+   586→
+   587→      {loading ? (
+   588→        <div className="macos-card macos-shadow-card p-6">
+   589→          <div className="space-y-3">
+   590→            {[1, 2, 3].map((i) => (
+   591→              <div key={i} className="h-14 bg-muted/50 rounded-xl animate-pulse" />
+   592→            ))}
+   593→          </div>
+   594→        </div>
+   595→      ) : campaigns.length === 0 ? (
+   596→        <MacosEmptyState
+   597→          icon={Megaphone}
+   598→          title="No campaigns found"
+   599→          description="Create your first marketing campaign"
+   600→        />
+   601→      ) : (
+   602→        <div className="macos-card macos-shadow-card overflow-hidden">
+   603→          <ScrollArea className="max-h-[500px] custom-scrollbar">
+   604→            <Table>
+   605→              <TableHeader>
+   606→                <TableRow className="hover:bg-transparent border-b border-border/50">
+   607→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Name</TableHead>
+   608→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Type</TableHead>
+   609→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
+   610→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Sent</TableHead>
+   611→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Responses</TableHead>
+   612→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Schedule</TableHead>
+   613→                </TableRow>
+   614→              </TableHeader>
+   615→              <TableBody>
+   616→                {campaigns.map((campaign) => (
+   617→                  <TableRow key={campaign.id} className="macos-table-row border-b border-border/30 last:border-0">
+   618→                    <TableCell className="font-medium text-[13px] tracking-tight">{campaign.name}</TableCell>
+   619→                    <TableCell>
+   620→                      <MacosBadge variant={getTypeBadge(campaign.type)}>
+   621→                        {campaign.type}
+   622→                      </MacosBadge>
+   623→                    </TableCell>
+   624→                    <TableCell>
+   625→                      <MacosBadge variant={getStatusBadge(campaign.status)}>
+   626→                        {campaign.status}
+   627→                      </MacosBadge>
+   628→                    </TableCell>
+   629→                    <TableCell className="text-right text-[13px]">
+   630→                      <span className="flex items-center justify-end gap-1 text-muted-foreground">
+   631→                        <Send className="size-3" strokeWidth={1.8} /> {campaign.sentCount}
+   632→                      </span>
+   633→                    </TableCell>
+   634→                    <TableCell className="text-right">
+   635→                      <span className="text-macos-green font-medium text-[13px] flex items-center justify-end gap-1">
+   636→                        <TrendingUp className="size-3" strokeWidth={1.8} /> {campaign.responseCount}
+   637→                      </span>
+   638→                    </TableCell>
+   639→                    <TableCell className="text-[11px] text-muted-foreground">
+   640→                      {campaign.scheduledAt ? (
+   641→                        <span className="flex items-center gap-1">
+   642→                          <Calendar className="size-3" strokeWidth={1.8} />
+   643→                          {new Date(campaign.scheduledAt).toLocaleDateString()}
+   644→                        </span>
+   645→                      ) : '—'}
+   646→                    </TableCell>
+   647→                  </TableRow>
+   648→                ))}
+   649→              </TableBody>
+   650→            </Table>
+   651→          </ScrollArea>
+   652→        </div>
+   653→      )}
+   654→
+   655→      <CreateCampaignDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSuccess={fetchCampaigns} />
+   656→    </div>
+   657→  )
+   658→}
+   659→
+   660→// ==================== ADD CUSTOMER DIALOG ====================
+   661→
+   662→function AddCustomerDialog({
+   663→  open,
+   664→  onOpenChange,
+   665→  onSuccess,
+   666→}: {
+   667→  open: boolean
+   668→  onOpenChange: (open: boolean) => void
+   669→  onSuccess: () => void
+   670→}) {
+   671→  const [saving, setSaving] = React.useState(false)
+   672→  const [form, setForm] = React.useState({
+   673→    name: '',
+   674→    email: '',
+   675→    phone: '',
+   676→    address: '',
+   677→    type: 'retail',
+   678→    creditLimit: '',
+   679→  })
+   680→
+   681→  const handleSubmit = async (e: React.FormEvent) => {
+   682→    e.preventDefault()
+   683→    if (!form.name.trim()) return
+   684→    setSaving(true)
+   685→    try {
+   686→      const res = await fetch('/api/customers', {
+   687→        method: 'POST',
+   688→        headers: { 'Content-Type': 'application/json' },
+   689→        body: JSON.stringify({
+   690→          ...form,
+   691→          creditLimit: parseFloat(form.creditLimit) || 0,
+   692→        }),
+   693→      })
+   694→      if (res.ok) {
+   695→        setForm({ name: '', email: '', phone: '', address: '', type: 'retail', creditLimit: '' })
+   696→        onOpenChange(false)
+   697→        onSuccess()
+   698→      } else {
+   699→        const json = await res.json()
+   700→        alert(json.error || 'Failed to create customer')
+   701→      }
+   702→    } catch (err) {
+   703→      console.error('Failed to create customer:', err)
+   704→      alert('Failed to create customer')
+   705→    } finally {
+   706→      setSaving(false)
+   707→    }
+   708→  }
+   709→
+   710→  return (
+   711→    <MacosDialog
+   712→      open={open}
+   713→      onOpenChange={onOpenChange}
+   714→      title="Add Customer"
+   715→      description="Register a new customer"
+   716→      footer={
+   717→        <>
+   718→          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+   719→          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.name.trim()}>
+   720→            {saving ? 'Saving...' : 'Add Customer'}
+   721→          </MacosButton>
+   722→        </>
+   723→      }
+   724→    >
+   725→      <form onSubmit={handleSubmit} className="space-y-4">
+   726→        <MacosFormField label="Name *">
+   727→          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Smith" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+   728→        </MacosFormField>
+   729→        <div className="grid grid-cols-2 gap-3">
+   730→          <MacosFormField label="Email">
+   731→            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+   732→          </MacosFormField>
+   733→          <MacosFormField label="Phone">
+   734→            <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+1-555-0100" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+   735→          </MacosFormField>
+   736→        </div>
+   737→        <MacosFormField label="Address">
+   738→          <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main Street" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+   739→        </MacosFormField>
+   740→        <div className="grid grid-cols-2 gap-3">
+   741→          <MacosFormField label="Customer Type">
+   742→            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+   743→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   744→                <SelectValue />
+   745→              </SelectTrigger>
+   746→              <SelectContent>
+   747→                <SelectItem value="retail">Retail</SelectItem>
+   748→                <SelectItem value="wholesale">Wholesale</SelectItem>
+   749→                <SelectItem value="school">School</SelectItem>
+   750→                <SelectItem value="dealer">Dealer</SelectItem>
+   751→                <SelectItem value="distributor">Distributor</SelectItem>
+   752→              </SelectContent>
+   753→            </Select>
+   754→          </MacosFormField>
+   755→          <MacosFormField label="Credit Limit ($)">
+   756→            <Input type="number" step="0.01" value={form.creditLimit} onChange={(e) => setForm({ ...form, creditLimit: e.target.value })} placeholder="5000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+   757→          </MacosFormField>
+   758→        </div>
+   759→      </form>
+   760→    </MacosDialog>
+   761→  )
+   762→}
+   763→
+   764→// ==================== CUSTOMER DETAIL DIALOG ====================
+   765→
+   766→function CustomerDetailDialog({
+   767→  customer,
+   768→  onOpenChange,
+   769→}: {
+   770→  customer: Customer | null
+   771→  onOpenChange: (open: boolean) => void
+   772→}) {
+   773→  if (!customer) return null
+   774→
+   775→  const getTypeBadge = (type: string) => {
+   776→    const variants: Record<string, 'success' | 'info' | 'warning' | 'purple' | 'danger'> = {
+   777→      retail: 'success',
+   778→      wholesale: 'info',
+   779→      school: 'warning',
+   780→      dealer: 'purple',
+   781→      distributor: 'danger',
+   782→    }
+   783→    return variants[type] || 'default'
+   784→  }
+   785→
+   786→  const getLoyaltyTier = (points: number) => {
+   787→    if (points >= 5000) return { name: 'Platinum', variant: 'purple' as const, icon: Crown }
+   788→    if (points >= 2000) return { name: 'Gold', variant: 'warning' as const, icon: Award }
+   789→    if (points >= 500) return { name: 'Silver', variant: 'default' as const, icon: Star }
+   790→    return { name: 'Bronze', variant: 'warning' as const, icon: Gift }
+   791→  }
+   792→
+   793→  const tier = getLoyaltyTier(customer.loyaltyPoints)
+   794→  const TierIcon = tier.icon
+   795→
+   796→  return (
+   797→    <MacosDialog
+   798→      open={!!customer}
+   799→      onOpenChange={onOpenChange}
+   800→      title={customer.name}
+   801→      description="Customer details and purchase history"
+   802→    >
+   803→      <div className="space-y-4">
+   804→        <div className="flex items-center gap-2">
+   805→          <div className="size-9 rounded-full bg-gg-bridge/10 flex items-center justify-center">
+   806→            <span className="text-sm font-bold text-gg-bridge">{customer.name.charAt(0).toUpperCase()}</span>
+   807→          </div>
+   808→          <div className="flex items-center gap-1.5">
+   809→            <MacosBadge variant={getTypeBadge(customer.type)}>{customer.type}</MacosBadge>
+   810→            <div className="inline-flex items-center gap-1 macos-badge">
+   811→              <TierIcon className="size-3" strokeWidth={1.8} />
+   812→              {tier.name}
+   813→            </div>
+   814→          </div>
+   815→        </div>
+   816→
+   817→        <div className="grid grid-cols-2 gap-4">
+   818→          <div className="space-y-3">
+   819→            {customer.email && (
+   820→              <div className="flex items-center gap-2 text-[13px]">
+   821→                <div className="size-6 rounded-lg bg-macos-blue/10 flex items-center justify-center">
+   822→                  <Mail className="size-3 text-macos-blue" strokeWidth={1.8} />
+   823→                </div>
+   824→                <span className="font-medium">{customer.email}</span>
+   825→              </div>
+   826→            )}
+   827→            {customer.phone && (
+   828→              <div className="flex items-center gap-2 text-[13px]">
+   829→                <div className="size-6 rounded-lg bg-macos-green/10 flex items-center justify-center">
+   830→                  <Phone className="size-3 text-macos-green" strokeWidth={1.8} />
+   831→                </div>
+   832→                <span className="font-medium">{customer.phone}</span>
+   833→              </div>
+   834→            )}
+   835→            {customer.address && (
+   836→              <div className="flex items-center gap-2 text-[13px]">
+   837→                <div className="size-6 rounded-lg bg-macos-orange/10 flex items-center justify-center">
+   838→                  <MapPin className="size-3 text-macos-orange" strokeWidth={1.8} />
+   839→                </div>
+   840→                <span className="font-medium">{customer.address}</span>
+   841→              </div>
+   842→            )}
+   843→          </div>
+   844→          <div className="space-y-3">
+   845→            <div className="macos-stat macos-shadow-card" style={{ padding: '12px' }}>
+   846→              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Total Spent</p>
+   847→              <p className="text-[24px] font-bold text-macos-green tracking-tight">${customer.totalSpent.toLocaleString()}</p>
+   848→            </div>
+   849→            <div className="grid grid-cols-2 gap-2">
+   850→              <div className="macos-stat macos-shadow-card" style={{ padding: '8px 12px' }}>
+   851→                <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Points</p>
+   852→                <p className="font-bold text-gg-bridge text-[13px]">{customer.loyaltyPoints}</p>
+   853→              </div>
+   854→              <div className="macos-stat macos-shadow-card" style={{ padding: '8px 12px' }}>
+   855→                <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Outstanding</p>
+   856→                <p className="font-bold text-macos-orange text-[13px]">${customer.outstanding.toLocaleString()}</p>
+   857→              </div>
+   858→            </div>
+   859→          </div>
+   860→        </div>
+   861→
+   862→        <Separator className="bg-border/50" />
+   863→
+   864→        <div>
+   865→          <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-3">Purchase History</h4>
+   866→          {(customer._count?.sales || 0) > 0 || (customer._count?.wholesaleOrders || 0) > 0 ? (
+   867→            <div className="space-y-2">
+   868→              <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+   869→                <span className="flex items-center gap-2">
+   870→                  <div className="size-6 rounded-lg bg-macos-green/10 flex items-center justify-center">
+   871→                    <ShoppingBag className="size-3 text-macos-green" strokeWidth={1.8} />
+   872→                  </div>
+   873→                  Retail Sales
+   874→                </span>
+   875→                <MacosBadge>{customer._count?.sales || 0}</MacosBadge>
+   876→              </div>
+   877→              <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 text-[13px]">
+   878→                <span className="flex items-center gap-2">
+   879→                  <div className="size-6 rounded-lg bg-macos-teal/10 flex items-center justify-center">
+   880→                    <DollarSign className="size-3 text-macos-teal" strokeWidth={1.8} />
+   881→                  </div>
+   882→                  Wholesale Orders
+   883→                </span>
+   884→                <MacosBadge>{customer._count?.wholesaleOrders || 0}</MacosBadge>
+   885→              </div>
+   886→            </div>
+   887→          ) : (
+   888→            <p className="text-[13px] text-muted-foreground text-center py-4">No purchase history yet</p>
+   889→          )}
+   890→        </div>
+   891→
+   892→        {customer.school && (
+   893→          <>
+   894→            <Separator className="bg-border/50" />
+   895→            <div>
+   896→              <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase mb-2">Linked School</h4>
+   897→              <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary/50 text-[13px]">
+   898→                <div className="size-6 rounded-lg bg-macos-orange/10 flex items-center justify-center">
+   899→                  <Award className="size-3 text-macos-orange" strokeWidth={1.8} />
+   900→                </div>
+   901→                <span className="font-medium">{customer.school.name}</span>
+   902→              </div>
+   903→            </div>
+   904→          </>
+   905→        )}
+   906→      </div>
+   907→    </MacosDialog>
+   908→  )
+   909→}
+   910→
+   911→// ==================== CREATE CAMPAIGN DIALOG ====================
+   912→
+   913→function CreateCampaignDialog({
+   914→  open,
+   915→  onOpenChange,
+   916→  onSuccess,
+   917→}: {
+   918→  open: boolean
+   919→  onOpenChange: (open: boolean) => void
+   920→  onSuccess: () => void
+   921→}) {
+   922→  const [saving, setSaving] = React.useState(false)
+   923→  const [form, setForm] = React.useState({
+   924→    name: '',
+   925→    type: 'email',
+   926→    target: 'all',
+   927→    message: '',
+   928→    scheduledAt: '',
+   929→  })
+   930→
+   931→  const handleSubmit = async (e: React.FormEvent) => {
+   932→    e.preventDefault()
+   933→    if (!form.name.trim() || !form.message.trim()) return
+   934→    setSaving(true)
+   935→    try {
+   936→      const res = await fetch('/api/crm/campaigns', {
+   937→        method: 'POST',
+   938→        headers: { 'Content-Type': 'application/json' },
+   939→        body: JSON.stringify({
+   940→          ...form,
+   941→          scheduledAt: form.scheduledAt || null,
+   942→        }),
+   943→      })
+   944→      if (res.ok) {
+   945→        setForm({ name: '', type: 'email', target: 'all', message: '', scheduledAt: '' })
+   946→        onOpenChange(false)
+   947→        onSuccess()
+   948→      } else {
+   949→        const json = await res.json()
+   950→        alert(json.error || 'Failed to create campaign')
+   951→      }
+   952→    } catch (err) {
+   953→      console.error('Failed to create campaign:', err)
+   954→      alert('Failed to create campaign')
+   955→    } finally {
+   956→      setSaving(false)
+   957→    }
+   958→  }
+   959→
+   960→  return (
+   961→    <MacosDialog
+   962→      open={open}
+   963→      onOpenChange={onOpenChange}
+   964→      title="Create Campaign"
+   965→      description="Launch a new marketing campaign"
+   966→      footer={
+   967→        <>
+   968→          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+   969→          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.name.trim() || !form.message.trim()}>
+   970→            {saving ? 'Creating...' : 'Create Campaign'}
+   971→          </MacosButton>
+   972→        </>
+   973→      }
+   974→    >
+   975→      <form onSubmit={handleSubmit} className="space-y-4">
+   976→        <MacosFormField label="Campaign Name *">
+   977→          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Summer Reading Sale" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+   978→        </MacosFormField>
+   979→        <div className="grid grid-cols-2 gap-3">
+   980→          <MacosFormField label="Campaign Type">
+   981→            <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+   982→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   983→                <SelectValue />
+   984→              </SelectTrigger>
+   985→              <SelectContent>
+   986→                <SelectItem value="email">Email</SelectItem>
+   987→                <SelectItem value="sms">SMS</SelectItem>
+   988→                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+   989→                <SelectItem value="social">Social Media</SelectItem>
+   990→              </SelectContent>
+   991→            </Select>
+   992→          </MacosFormField>
+   993→          <MacosFormField label="Target Audience">
+   994→            <Select value={form.target} onValueChange={(v) => setForm({ ...form, target: v })}>
+   995→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   996→                <SelectValue />
+   997→              </SelectTrigger>
+   998→              <SelectContent>
+   999→                <SelectItem value="all">All Customers</SelectItem>
+  1000→                <SelectItem value="retail">Retail</SelectItem>
+  1001→                <SelectItem value="wholesale">Wholesale</SelectItem>
+  1002→                <SelectItem value="school">Schools</SelectItem>
+  1003→                <SelectItem value="dealer">Dealers</SelectItem>
+  1004→              </SelectContent>
+  1005→            </Select>
+  1006→          </MacosFormField>
+  1007→        </div>
+  1008→        <MacosFormField label="Message *">
+  1009→          <Textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} placeholder="Write your campaign message..." rows={4} className="rounded-lg bg-secondary/80 border-0 text-[13px]" required />
+  1010→        </MacosFormField>
+  1011→        <MacosFormField label="Schedule (optional)">
+  1012→          <Input type="datetime-local" value={form.scheduledAt} onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+  1013→        </MacosFormField>
+  1014→      </form>
+  1015→    </MacosDialog>
+  1016→  )
+  1017→}
+  1018→

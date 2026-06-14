@@ -1,0 +1,1327 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  GraduationCap,
+     6→  Search,
+     7→  Plus,
+     8→  Phone,
+     9→  Mail,
+    10→  MapPin,
+    11→  User,
+    12→  Calendar,
+    13→  FileText,
+    14→  Package,
+    15→  BookOpen,
+    16→  PencilRuler,
+    17→  Trash2,
+    18→  ChevronRight,
+    19→  X,
+    20→  DollarSign,
+    21→  Eye,
+    22→  Users,
+    23→  School as SchoolIcon,
+    24→} from 'lucide-react'
+    25→import { Button } from '@/components/ui/button'
+    26→import { Input } from '@/components/ui/input'
+    27→import { Label } from '@/components/ui/label'
+    28→import {
+    29→  Select,
+    30→  SelectContent,
+    31→  SelectItem,
+    32→  SelectTrigger,
+    33→  SelectValue,
+    34→} from '@/components/ui/select'
+    35→import { Textarea } from '@/components/ui/textarea'
+    36→import { Separator } from '@/components/ui/separator'
+    37→import { ScrollArea } from '@/components/ui/scroll-area'
+    38→import {
+    39→  Table,
+    40→  TableBody,
+    41→  TableCell,
+    42→  TableHead,
+    43→  TableHeader,
+    44→  TableRow,
+    45→} from '@/components/ui/table'
+    46→import { useAppStore } from '@/store/app-store'
+    47→import {
+    48→  MacosPageHeader,
+    49→  MacosStatCard,
+    50→  MacosSearch,
+    51→  MacosFilterBar,
+    52→  MacosButton,
+    53→  MacosBadge,
+    54→  MacosEmptyState,
+    55→  MacosDialog,
+    56→  MacosFormField,
+    57→  MacosStatGrid,
+    58→} from '@/components/macos-ui'
+    59→
+    60→// ==================== TYPES ====================
+    61→
+    62→interface School {
+    63→  id: string
+    64→  name: string
+    65→  address?: string | null
+    66→  phone?: string | null
+    67→  email?: string | null
+    68→  contactPerson?: string | null
+    69→  academicSession?: string | null
+    70→  isActive: boolean
+    71→  createdAt: string
+    72→  customer?: { id: string; name: string } | null
+    73→  _count?: { contracts: number; packages: number }
+    74→}
+    75→
+    76→interface SchoolContract {
+    77→  id: string
+    78→  schoolId: string
+    79→  title: string
+    80→  academicSession?: string | null
+    81→  totalValue: number
+    82→  status: string
+    83→  startDate?: string | null
+    84→  endDate?: string | null
+    85→  notes?: string | null
+    86→  createdAt: string
+    87→  school?: { id: string; name: string }
+    88→}
+    89→
+    90→interface AcademicPackage {
+    91→  id: string
+    92→  name: string
+    93→  schoolId?: string | null
+    94→  grade?: string | null
+    95→  academicLevel?: string | null
+    96→  description?: string | null
+    97→  totalPrice: number
+    98→  discount: number
+    99→  isActive: boolean
+   100→  createdAt: string
+   101→  school?: { id: string; name: string } | null
+   102→  items: AcademicPackageItem[]
+   103→}
+   104→
+   105→interface AcademicPackageItem {
+   106→  id: string
+   107→  bookId?: string | null
+   108→  stationeryId?: string | null
+   109→  quantity: number
+   110→  unitPrice: number
+   111→  book?: { id: string; title: string } | null
+   112→  stationery?: { id: string; name: string } | null
+   113→}
+   114→
+   115→interface Book {
+   116→  id: string
+   117→  title: string
+   118→  price: number
+   119→}
+   120→
+   121→interface StationeryProduct {
+   122→  id: string
+   123→  name: string
+   124→  price: number
+   125→}
+   126→
+   127→// ==================== SCHOOL SUPPLY MODULE ====================
+   128→
+   129→export function SchoolSupplyModule() {
+   130→  const { authUser } = useAppStore()
+   131→  const isViewOnly = authUser?.isViewOnly ?? false
+   132→
+   133→  const [activeTab, setActiveTab] = React.useState('schools')
+   134→  const tabs = [
+   135→    { id: 'schools', label: 'Schools', count: undefined },
+   136→    { id: 'contracts', label: 'Contracts', count: undefined },
+   137→    { id: 'packages', label: 'Packages', count: undefined },
+   138→  ]
+   139→
+   140→  return (
+   141→    <div className="space-y-5">
+   142→      <MacosPageHeader
+   143→        title="School Supply"
+   144→        subtitle="Manage schools, contracts & academic packages"
+   145→        icon={GraduationCap}
+   146→        iconColor="text-macos-blue"
+   147→        iconBg="bg-macos-blue/10"
+   148→      />
+   149→
+   150→      <MacosFilterBar
+   151→        items={tabs}
+   152→        activeId={activeTab}
+   153→        onChange={setActiveTab}
+   154→      />
+   155→
+   156→      <div>
+   157→        {activeTab === 'schools' && <SchoolsTab isViewOnly={isViewOnly} />}
+   158→        {activeTab === 'contracts' && <ContractsTab isViewOnly={isViewOnly} />}
+   159→        {activeTab === 'packages' && <PackagesTab isViewOnly={isViewOnly} />}
+   160→      </div>
+   161→    </div>
+   162→  )
+   163→}
+   164→
+   165→// ==================== SCHOOLS TAB ====================
+   166→
+   167→function SchoolsTab({ isViewOnly }: { isViewOnly: boolean }) {
+   168→  const [schools, setSchools] = React.useState<School[]>([])
+   169→  const [loading, setLoading] = React.useState(true)
+   170→  const [search, setSearch] = React.useState('')
+   171→  const [showAddDialog, setShowAddDialog] = React.useState(false)
+   172→  const [selectedSchool, setSelectedSchool] = React.useState<School | null>(null)
+   173→
+   174→  const fetchSchools = React.useCallback(async () => {
+   175→    setLoading(true)
+   176→    try {
+   177→      const res = await fetch(`/api/schools?search=${encodeURIComponent(search)}&limit=50`)
+   178→      const json = await res.json()
+   179→      if (json.data) setSchools(json.data)
+   180→    } catch (err) {
+   181→      console.error('Failed to fetch schools:', err)
+   182→    } finally {
+   183→      setLoading(false)
+   184→    }
+   185→  }, [search])
+   186→
+   187→  React.useEffect(() => {
+   188→    fetchSchools()
+   189→  }, [fetchSchools])
+   190→
+   191→  const handleDelete = async (id: string) => {
+   192→    if (!confirm('Are you sure you want to deactivate this school?')) return
+   193→    try {
+   194→      await fetch(`/api/schools?id=${id}`, { method: 'DELETE' })
+   195→      fetchSchools()
+   196→    } catch (err) {
+   197→      console.error('Failed to delete school:', err)
+   198→    }
+   199→  }
+   200→
+   201→  const totalContracts = schools.reduce((s, sc) => s + (sc._count?.contracts || 0), 0)
+   202→  const totalPackages = schools.reduce((s, sc) => s + (sc._count?.packages || 0), 0)
+   203→  const activeSchools = schools.filter((s) => s.isActive).length
+   204→
+   205→  return (
+   206→    <div className="space-y-4">
+   207→      {/* Stats */}
+   208→      <MacosStatGrid>
+   209→        <MacosStatCard label="Total Schools" value={schools.length} icon={GraduationCap} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   210→        <MacosStatCard label="Active" value={activeSchools} icon={SchoolIcon} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   211→        <MacosStatCard label="Contracts" value={totalContracts} icon={FileText} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   212→        <MacosStatCard label="Packages" value={totalPackages} icon={Package} iconColor="text-macos-teal" iconBg="bg-macos-teal/10" />
+   213→      </MacosStatGrid>
+   214→
+   215→      {/* Search & Add */}
+   216→      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+   217→        <MacosSearch value={search} onChange={setSearch} placeholder="Search schools..." className="w-full sm:w-64" />
+   218→        {!isViewOnly && (
+   219→          <MacosButton variant="primary" icon={Plus} onClick={() => setShowAddDialog(true)}>
+   220→            Add School
+   221→          </MacosButton>
+   222→        )}
+   223→      </div>
+   224→
+   225→      {loading ? (
+   226→        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+   227→          {[1, 2, 3].map((i) => (
+   228→            <div key={i} className="macos-card macos-shadow-card p-4 animate-pulse">
+   229→              <div className="h-4 bg-muted rounded w-2/3 mb-3" />
+   230→              <div className="h-3 bg-muted rounded w-1/2 mb-2" />
+   231→              <div className="h-3 bg-muted rounded w-3/4" />
+   232→            </div>
+   233→          ))}
+   234→        </div>
+   235→      ) : schools.length === 0 ? (
+   236→        <MacosEmptyState
+   237→          icon={GraduationCap}
+   238→          title="No schools found"
+   239→          description="Add your first school to get started"
+   240→        />
+   241→      ) : (
+   242→        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+   243→          {schools.map((school) => (
+   244→            <div
+   245→              key={school.id}
+   246→              className="macos-card macos-shadow-card macos-card-hover cursor-pointer group"
+   247→              onClick={() => setSelectedSchool(school)}
+   248→            >
+   249→              <div className="p-4">
+   250→                <div className="flex items-start justify-between mb-3">
+   251→                  <div className="flex items-center gap-2.5">
+   252→                    <div className="size-9 rounded-xl bg-macos-blue/10 flex items-center justify-center">
+   253→                      <GraduationCap className="size-4 text-macos-blue" strokeWidth={1.8} />
+   254→                    </div>
+   255→                    <div>
+   256→                      <h3 className="font-semibold text-[13px] leading-tight tracking-tight">{school.name}</h3>
+   257→                      {school.academicSession && (
+   258→                        <MacosBadge variant="purple" className="mt-0.5">{school.academicSession}</MacosBadge>
+   259→                      )}
+   260→                    </div>
+   261→                  </div>
+   262→                  <MacosBadge variant={school.isActive ? 'success' : 'danger'}>
+   263→                    {school.isActive ? 'Active' : 'Inactive'}
+   264→                  </MacosBadge>
+   265→                </div>
+   266→                <div className="space-y-1.5 text-[11px] text-muted-foreground">
+   267→                  {school.address && (
+   268→                    <div className="flex items-center gap-1.5">
+   269→                      <MapPin className="size-3 shrink-0" strokeWidth={1.8} />
+   270→                      <span className="truncate">{school.address}</span>
+   271→                    </div>
+   272→                  )}
+   273→                  {school.phone && (
+   274→                    <div className="flex items-center gap-1.5">
+   275→                      <Phone className="size-3 shrink-0" strokeWidth={1.8} />
+   276→                      {school.phone}
+   277→                    </div>
+   278→                  )}
+   279→                  {school.contactPerson && (
+   280→                    <div className="flex items-center gap-1.5">
+   281→                      <User className="size-3 shrink-0" strokeWidth={1.8} />
+   282→                      {school.contactPerson}
+   283→                    </div>
+   284→                  )}
+   285→                </div>
+   286→                <Separator className="my-3 bg-border/50" />
+   287→                <div className="flex items-center justify-between text-[11px]">
+   288→                  <span className="text-muted-foreground">
+   289→                    {school._count?.contracts || 0} contracts
+   290→                  </span>
+   291→                  <span className="text-muted-foreground">
+   292→                    {school._count?.packages || 0} packages
+   293→                  </span>
+   294→                  {!isViewOnly && (
+   295→                    <MacosButton
+   296→                      variant="danger"
+   297→                      className="opacity-0 group-hover:opacity-100 h-6 text-[10px]"
+   298→                      onClick={(e) => {
+   299→                        e.stopPropagation()
+   300→                        handleDelete(school.id)
+   301→                      }}
+   302→                    >
+   303→                      <Trash2 className="size-3" strokeWidth={1.8} />
+   304→                    </MacosButton>
+   305→                  )}
+   306→                </div>
+   307→              </div>
+   308→            </div>
+   309→          ))}
+   310→        </div>
+   311→      )}
+   312→
+   313→      <AddSchoolDialog open={showAddDialog} onOpenChange={setShowAddDialog} onSuccess={fetchSchools} />
+   314→      <SchoolDetailDialog school={selectedSchool} onOpenChange={(open) => !open && setSelectedSchool(null)} onSuccess={fetchSchools} isViewOnly={isViewOnly} />
+   315→    </div>
+   316→  )
+   317→}
+   318→
+   319→// ==================== CONTRACTS TAB ====================
+   320→
+   321→function ContractsTab({ isViewOnly }: { isViewOnly: boolean }) {
+   322→  const [contracts, setContracts] = React.useState<SchoolContract[]>([])
+   323→  const [schools, setSchools] = React.useState<School[]>([])
+   324→  const [loading, setLoading] = React.useState(true)
+   325→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   326→
+   327→  const fetchContracts = React.useCallback(async () => {
+   328→    setLoading(true)
+   329→    try {
+   330→      const res = await fetch('/api/schools/contracts')
+   331→      if (res.ok) {
+   332→        const json = await res.json()
+   333→        if (json.data) setContracts(json.data)
+   334→      } else {
+   335→        const schoolRes = await fetch('/api/schools?limit=50')
+   336→        const schoolJson = await schoolRes.json()
+   337→        if (schoolJson.data) {
+   338→          const allContracts: SchoolContract[] = []
+   339→          schoolJson.data.forEach((s: School & { contracts?: SchoolContract[] }) => {
+   340→            if (s.contracts) {
+   341→              s.contracts.forEach((c) => allContracts.push({ ...c, school: { id: s.id, name: s.name } }))
+   342→            }
+   343→          })
+   344→          setContracts(allContracts)
+   345→        }
+   346→      }
+   347→    } catch (err) {
+   348→      console.error('Failed to fetch contracts:', err)
+   349→    } finally {
+   350→      setLoading(false)
+   351→    }
+   352→  }, [])
+   353→
+   354→  const fetchSchools = React.useCallback(async () => {
+   355→    try {
+   356→      const res = await fetch('/api/schools?limit=50')
+   357→      const json = await res.json()
+   358→      if (json.data) setSchools(json.data)
+   359→    } catch (err) {
+   360→      console.error('Failed to fetch schools:', err)
+   361→    }
+   362→  }, [])
+   363→
+   364→  React.useEffect(() => {
+   365→    fetchContracts()
+   366→    fetchSchools()
+   367→  }, [fetchContracts, fetchSchools])
+   368→
+   369→  const getStatusBadge = (status: string) => {
+   370→    switch (status) {
+   371→      case 'active': return 'success' as const
+   372→      case 'expired': return 'warning' as const
+   373→      case 'cancelled': return 'danger' as const
+   374→      case 'pending': return 'warning' as const
+   375→      case 'confirmed': return 'info' as const
+   376→      default: return 'default' as const
+   377→    }
+   378→  }
+   379→
+   380→  const totalValue = contracts.reduce((s, c) => s + c.totalValue, 0)
+   381→  const activeContracts = contracts.filter((c) => c.status === 'active').length
+   382→
+   383→  return (
+   384→    <div className="space-y-4">
+   385→      {/* Stats */}
+   386→      <MacosStatGrid className="grid-cols-2 lg:grid-cols-3">
+   387→        <MacosStatCard label="Total Contracts" value={contracts.length} icon={FileText} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   388→        <MacosStatCard label="Active" value={activeContracts} icon={Calendar} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   389→        <MacosStatCard label="Total Value" value={`$${totalValue.toLocaleString()}`} icon={DollarSign} iconColor="text-gg-golden" iconBg="bg-gg-golden/10" />
+   390→      </MacosStatGrid>
+   391→
+   392→      <div className="flex items-center justify-between">
+   393→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{contracts.length} contracts</p>
+   394→        {!isViewOnly && (
+   395→          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+   396→            Create Contract
+   397→          </MacosButton>
+   398→        )}
+   399→      </div>
+   400→
+   401→      {loading ? (
+   402→        <div className="macos-card macos-shadow-card p-6">
+   403→          <div className="space-y-3">
+   404→            {[1, 2, 3].map((i) => (
+   405→              <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+   406→            ))}
+   407→          </div>
+   408→        </div>
+   409→      ) : contracts.length === 0 ? (
+   410→        <MacosEmptyState
+   411→          icon={FileText}
+   412→          title="No contracts found"
+   413→          description="Create your first school contract"
+   414→        />
+   415→      ) : (
+   416→        <div className="macos-card macos-shadow-card overflow-hidden">
+   417→          <ScrollArea className="max-h-[500px]">
+   418→            <Table>
+   419→              <TableHeader>
+   420→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   421→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Title</TableHead>
+   422→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">School</TableHead>
+   423→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Session</TableHead>
+   424→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Value</TableHead>
+   425→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Status</TableHead>
+   426→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Period</TableHead>
+   427→                </TableRow>
+   428→              </TableHeader>
+   429→              <TableBody>
+   430→                {contracts.map((contract) => (
+   431→                  <TableRow key={contract.id} className="macos-table-row border-b border-border/30 last:border-0">
+   432→                    <TableCell className="font-medium text-[13px] tracking-tight">{contract.title}</TableCell>
+   433→                    <TableCell className="text-[13px]">{contract.school?.name || '—'}</TableCell>
+   434→                    <TableCell className="text-[13px]">{contract.academicSession || '—'}</TableCell>
+   435→                    <TableCell className="text-[13px] font-medium">${contract.totalValue.toLocaleString()}</TableCell>
+   436→                    <TableCell>
+   437→                      <MacosBadge variant={getStatusBadge(contract.status)}>
+   438→                        {contract.status}
+   439→                      </MacosBadge>
+   440→                    </TableCell>
+   441→                    <TableCell className="text-[11px] text-muted-foreground">
+   442→                      {contract.startDate
+   443→                        ? `${new Date(contract.startDate).toLocaleDateString()} - ${contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '...'}`
+   444→                        : '—'}
+   445→                    </TableCell>
+   446→                  </TableRow>
+   447→                ))}
+   448→              </TableBody>
+   449→            </Table>
+   450→          </ScrollArea>
+   451→        </div>
+   452→      )}
+   453→
+   454→      <CreateContractDialog
+   455→        open={showCreateDialog}
+   456→        onOpenChange={setShowCreateDialog}
+   457→        schools={schools}
+   458→        onSuccess={fetchContracts}
+   459→      />
+   460→    </div>
+   461→  )
+   462→}
+   463→
+   464→// ==================== PACKAGES TAB ====================
+   465→
+   466→function PackagesTab({ isViewOnly }: { isViewOnly: boolean }) {
+   467→  const [packages, setPackages] = React.useState<AcademicPackage[]>([])
+   468→  const [schools, setSchools] = React.useState<School[]>([])
+   469→  const [books, setBooks] = React.useState<Book[]>([])
+   470→  const [stationery, setStationery] = React.useState<StationeryProduct[]>([])
+   471→  const [loading, setLoading] = React.useState(true)
+   472→  const [showCreateDialog, setShowCreateDialog] = React.useState(false)
+   473→  const [selectedPackage, setSelectedPackage] = React.useState<AcademicPackage | null>(null)
+   474→
+   475→  const fetchPackages = React.useCallback(async () => {
+   476→    setLoading(true)
+   477→    try {
+   478→      const res = await fetch('/api/schools/packages')
+   479→      if (res.ok) {
+   480→        const json = await res.json()
+   481→        if (json.data) setPackages(json.data)
+   482→      } else {
+   483→        const schoolRes = await fetch('/api/schools?limit=50')
+   484→        const schoolJson = await schoolRes.json()
+   485→        if (schoolJson.data) {
+   486→          const allPackages: AcademicPackage[] = []
+   487→          schoolJson.data.forEach((s: School & { packages?: AcademicPackage[] }) => {
+   488→            if (s.packages) {
+   489→              s.packages.forEach((p) => allPackages.push({ ...p, school: { id: s.id, name: s.name } }))
+   490→            }
+   491→          })
+   492→          setPackages(allPackages)
+   493→        }
+   494→      }
+   495→    } catch (err) {
+   496→      console.error('Failed to fetch packages:', err)
+   497→    } finally {
+   498→      setLoading(false)
+   499→    }
+   500→  }, [])
+   501→
+   502→  const fetchReferenceData = React.useCallback(async () => {
+   503→    try {
+   504→      const [schoolsRes, booksRes, stationeryRes] = await Promise.all([
+   505→        fetch('/api/schools?limit=50'),
+   506→        fetch('/api/books?limit=100'),
+   507→        fetch('/api/stationery?limit=100'),
+   508→      ])
+   509→      const [schoolsJson, booksJson, stationeryJson] = await Promise.all([
+   510→        schoolsRes.json(),
+   511→        booksRes.json(),
+   512→        stationeryRes.json(),
+   513→      ])
+   514→      if (schoolsJson.data) setSchools(schoolsJson.data)
+   515→      if (booksJson.data) setBooks(booksJson.data)
+   516→      if (stationeryJson.data) setStationery(stationeryJson.data)
+   517→    } catch (err) {
+   518→      console.error('Failed to fetch reference data:', err)
+   519→    }
+   520→  }, [])
+   521→
+   522→  React.useEffect(() => {
+   523→    fetchPackages()
+   524→    fetchReferenceData()
+   525→  }, [fetchPackages, fetchReferenceData])
+   526→
+   527→  const totalPackageValue = packages.reduce((s, p) => s + p.totalPrice, 0)
+   528→
+   529→  return (
+   530→    <div className="space-y-4">
+   531→      {/* Stats */}
+   532→      <MacosStatGrid className="grid-cols-2 lg:grid-cols-3">
+   533→        <MacosStatCard label="Packages" value={packages.length} icon={Package} iconColor="text-macos-teal" iconBg="bg-macos-teal/10" />
+   534→        <MacosStatCard label="Active" value={packages.filter((p) => p.isActive).length} icon={BookOpen} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   535→        <MacosStatCard label="Total Value" value={`$${totalPackageValue.toLocaleString()}`} icon={DollarSign} iconColor="text-gg-golden" iconBg="bg-gg-golden/10" />
+   536→      </MacosStatGrid>
+   537→
+   538→      <div className="flex items-center justify-between">
+   539→        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{packages.length} academic packages</p>
+   540→        {!isViewOnly && (
+   541→          <MacosButton variant="primary" icon={Plus} onClick={() => setShowCreateDialog(true)}>
+   542→            Create Package
+   543→          </MacosButton>
+   544→        )}
+   545→      </div>
+   546→
+   547→      {loading ? (
+   548→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   549→          {[1, 2, 3, 4].map((i) => (
+   550→            <div key={i} className="macos-card macos-shadow-card p-4 animate-pulse">
+   551→              <div className="h-4 bg-muted rounded w-2/3 mb-3" />
+   552→              <div className="h-3 bg-muted rounded w-1/2 mb-2" />
+   553→              <div className="h-3 bg-muted rounded w-3/4" />
+   554→            </div>
+   555→          ))}
+   556→        </div>
+   557→      ) : packages.length === 0 ? (
+   558→        <MacosEmptyState
+   559→          icon={Package}
+   560→          title="No packages found"
+   561→          description="Create your first academic package"
+   562→        />
+   563→      ) : (
+   564→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   565→          {packages.map((pkg) => (
+   566→            <div
+   567→              key={pkg.id}
+   568→              className="macos-card macos-shadow-card macos-card-hover cursor-pointer"
+   569→              onClick={() => setSelectedPackage(pkg)}
+   570→            >
+   571→              <div className="p-4">
+   572→                <div className="flex items-start justify-between mb-3">
+   573→                  <div className="flex items-center gap-2.5">
+   574→                    <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+   575→                      <Package className="size-4 text-macos-teal" strokeWidth={1.8} />
+   576→                    </div>
+   577→                    <div>
+   578→                      <h3 className="font-semibold text-[13px] tracking-tight">{pkg.name}</h3>
+   579→                      {pkg.grade && (
+   580→                        <MacosBadge variant="info" className="mt-0.5">Grade {pkg.grade}</MacosBadge>
+   581→                      )}
+   582→                    </div>
+   583→                  </div>
+   584→                  <div className="text-right">
+   585→                    <p className="text-[13px] font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
+   586→                    {pkg.discount > 0 && (
+   587→                      <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% off</p>
+   588→                    )}
+   589→                  </div>
+   590→                </div>
+   591→                {pkg.school && (
+   592→                  <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1">
+   593→                    <GraduationCap className="size-3" strokeWidth={1.8} />
+   594→                    {pkg.school.name}
+   595→                  </p>
+   596→                )}
+   597→                {pkg.items && pkg.items.length > 0 && (
+   598→                  <div className="space-y-1.5 mb-3">
+   599→                    {pkg.items.slice(0, 4).map((item) => (
+   600→                      <div key={item.id} className="flex items-center justify-between text-[11px]">
+   601→                        <span className="flex items-center gap-1.5 text-muted-foreground">
+   602→                          {item.bookId ? (
+   603→                            <BookOpen className="size-3 text-macos-teal" strokeWidth={1.8} />
+   604→                          ) : (
+   605→                            <PencilRuler className="size-3 text-macos-orange" strokeWidth={1.8} />
+   606→                          )}
+   607→                          {item.book?.title || item.stationery?.name || 'Item'}
+   608→                        </span>
+   609→                        <span className="text-muted-foreground">×{item.quantity} · ${item.unitPrice}</span>
+   610→                      </div>
+   611→                    ))}
+   612→                    {pkg.items.length > 4 && (
+   613→                      <p className="text-[10px] text-muted-foreground">+{pkg.items.length - 4} more items</p>
+   614→                    )}
+   615→                  </div>
+   616→                )}
+   617→                <Separator className="bg-border/50" />
+   618→                <div className="flex items-center justify-between mt-3">
+   619→                  <span className="text-[11px] text-muted-foreground">
+   620→                    {pkg.items?.length || 0} items
+   621→                  </span>
+   622→                  <MacosButton variant="ghost" className="h-6 text-[10px]">
+   623→                    <Eye className="size-3" strokeWidth={1.8} /> View
+   624→                  </MacosButton>
+   625→                </div>
+   626→              </div>
+   627→            </div>
+   628→          ))}
+   629→        </div>
+   630→      )}
+   631→
+   632→      <CreatePackageDialog
+   633→        open={showCreateDialog}
+   634→        onOpenChange={setShowCreateDialog}
+   635→        schools={schools}
+   636→        books={books}
+   637→        stationery={stationery}
+   638→        onSuccess={fetchPackages}
+   639→      />
+   640→
+   641→      <PackageDetailDialog
+   642→        pkg={selectedPackage}
+   643→        onOpenChange={(open) => !open && setSelectedPackage(null)}
+   644→      />
+   645→    </div>
+   646→  )
+   647→}
+   648→
+   649→// ==================== ADD SCHOOL DIALOG ====================
+   650→
+   651→function AddSchoolDialog({
+   652→  open,
+   653→  onOpenChange,
+   654→  onSuccess,
+   655→}: {
+   656→  open: boolean
+   657→  onOpenChange: (open: boolean) => void
+   658→  onSuccess: () => void
+   659→}) {
+   660→  const [saving, setSaving] = React.useState(false)
+   661→  const [form, setForm] = React.useState({
+   662→    name: '',
+   663→    address: '',
+   664→    phone: '',
+   665→    email: '',
+   666→    contactPerson: '',
+   667→    academicSession: '',
+   668→  })
+   669→
+   670→  const handleSubmit = async (e: React.FormEvent) => {
+   671→    e.preventDefault()
+   672→    if (!form.name.trim()) return
+   673→    setSaving(true)
+   674→    try {
+   675→      const res = await fetch('/api/schools', {
+   676→        method: 'POST',
+   677→        headers: { 'Content-Type': 'application/json' },
+   678→        body: JSON.stringify(form),
+   679→      })
+   680→      if (res.ok) {
+   681→        setForm({ name: '', address: '', phone: '', email: '', contactPerson: '', academicSession: '' })
+   682→        onOpenChange(false)
+   683→        onSuccess()
+   684→      } else {
+   685→        const json = await res.json()
+   686→        alert(json.error || 'Failed to create school')
+   687→      }
+   688→    } catch (err) {
+   689→      console.error('Failed to create school:', err)
+   690→      alert('Failed to create school')
+   691→    } finally {
+   692→      setSaving(false)
+   693→    }
+   694→  }
+   695→
+   696→  return (
+   697→    <MacosDialog
+   698→      open={open}
+   699→      onOpenChange={onOpenChange}
+   700→      title="Add School"
+   701→      description="Register a new school for supply programs"
+   702→      footer={
+   703→        <>
+   704→          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+   705→          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.name.trim()}>
+   706→            {saving ? 'Saving...' : 'Add School'}
+   707→          </MacosButton>
+   708→        </>
+   709→      }
+   710→    >
+   711→      <form onSubmit={handleSubmit} className="space-y-4">
+   712→        <MacosFormField label="Name *">
+   713→          <Input
+   714→            value={form.name}
+   715→            onChange={(e) => setForm({ ...form, name: e.target.value })}
+   716→            placeholder="Springfield Academy"
+   717→            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   718→            required
+   719→          />
+   720→        </MacosFormField>
+   721→        <MacosFormField label="Address">
+   722→          <Input
+   723→            value={form.address}
+   724→            onChange={(e) => setForm({ ...form, address: e.target.value })}
+   725→            placeholder="123 Education Street"
+   726→            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   727→          />
+   728→        </MacosFormField>
+   729→        <div className="grid grid-cols-2 gap-3">
+   730→          <MacosFormField label="Phone">
+   731→            <Input
+   732→              value={form.phone}
+   733→              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+   734→              placeholder="+1-555-0100"
+   735→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   736→            />
+   737→          </MacosFormField>
+   738→          <MacosFormField label="Email">
+   739→            <Input
+   740→              type="email"
+   741→              value={form.email}
+   742→              onChange={(e) => setForm({ ...form, email: e.target.value })}
+   743→              placeholder="school@example.com"
+   744→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   745→            />
+   746→          </MacosFormField>
+   747→        </div>
+   748→        <div className="grid grid-cols-2 gap-3">
+   749→          <MacosFormField label="Contact Person">
+   750→            <Input
+   751→              value={form.contactPerson}
+   752→              onChange={(e) => setForm({ ...form, contactPerson: e.target.value })}
+   753→              placeholder="John Smith"
+   754→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   755→            />
+   756→          </MacosFormField>
+   757→          <MacosFormField label="Academic Session">
+   758→            <Input
+   759→              value={form.academicSession}
+   760→              onChange={(e) => setForm({ ...form, academicSession: e.target.value })}
+   761→              placeholder="2025-2026"
+   762→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   763→            />
+   764→          </MacosFormField>
+   765→        </div>
+   766→      </form>
+   767→    </MacosDialog>
+   768→  )
+   769→}
+   770→
+   771→// ==================== SCHOOL DETAIL DIALOG ====================
+   772→
+   773→function SchoolDetailDialog({
+   774→  school,
+   775→  onOpenChange,
+   776→  onSuccess,
+   777→  isViewOnly,
+   778→}: {
+   779→  school: School | null
+   780→  onOpenChange: (open: boolean) => void
+   781→  onSuccess: () => void
+   782→  isViewOnly: boolean
+   783→}) {
+   784→  const [saving, setSaving] = React.useState(false)
+   785→  const [form, setForm] = React.useState({
+   786→    name: '',
+   787→    address: '',
+   788→    phone: '',
+   789→    email: '',
+   790→    contactPerson: '',
+   791→    academicSession: '',
+   792→  })
+   793→
+   794→  React.useEffect(() => {
+   795→    if (school) {
+   796→      setForm({
+   797→        name: school.name || '',
+   798→        address: school.address || '',
+   799→        phone: school.phone || '',
+   800→        email: school.email || '',
+   801→        contactPerson: school.contactPerson || '',
+   802→        academicSession: school.academicSession || '',
+   803→      })
+   804→    }
+   805→  }, [school])
+   806→
+   807→  const handleSubmit = async (e: React.FormEvent) => {
+   808→    e.preventDefault()
+   809→    if (!school) return
+   810→    setSaving(true)
+   811→    try {
+   812→      const res = await fetch('/api/schools', {
+   813→        method: 'PUT',
+   814→        headers: { 'Content-Type': 'application/json' },
+   815→        body: JSON.stringify({ id: school.id, ...form }),
+   816→      })
+   817→      if (res.ok) {
+   818→        onOpenChange(false)
+   819→        onSuccess()
+   820→      } else {
+   821→        const json = await res.json()
+   822→        alert(json.error || 'Failed to update school')
+   823→      }
+   824→    } catch (err) {
+   825→      console.error('Failed to update school:', err)
+   826→      alert('Failed to update school')
+   827→    } finally {
+   828→      setSaving(false)
+   829→    }
+   830→  }
+   831→
+   832→  if (!school) return null
+   833→
+   834→  return (
+   835→    <MacosDialog
+   836→      open={!!school}
+   837→      onOpenChange={onOpenChange}
+   838→      title="Edit School"
+   839→      description="Update school information"
+   840→      footer={
+   841→        !isViewOnly ? (
+   842→          <>
+   843→            <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+   844→            <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving}>
+   845→              {saving ? 'Saving...' : 'Update School'}
+   846→            </MacosButton>
+   847→          </>
+   848→        ) : undefined
+   849→      }
+   850→    >
+   851→      <form onSubmit={handleSubmit} className="space-y-4">
+   852→        <MacosFormField label="Name *">
+   853→          <Input
+   854→            value={form.name}
+   855→            onChange={(e) => setForm({ ...form, name: e.target.value })}
+   856→            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   857→            required
+   858→            disabled={isViewOnly}
+   859→          />
+   860→        </MacosFormField>
+   861→        <MacosFormField label="Address">
+   862→          <Input
+   863→            value={form.address}
+   864→            onChange={(e) => setForm({ ...form, address: e.target.value })}
+   865→            className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   866→            disabled={isViewOnly}
+   867→          />
+   868→        </MacosFormField>
+   869→        <div className="grid grid-cols-2 gap-3">
+   870→          <MacosFormField label="Phone">
+   871→            <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" disabled={isViewOnly} />
+   872→          </MacosFormField>
+   873→          <MacosFormField label="Email">
+   874→            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" disabled={isViewOnly} />
+   875→          </MacosFormField>
+   876→        </div>
+   877→        <div className="grid grid-cols-2 gap-3">
+   878→          <MacosFormField label="Contact Person">
+   879→            <Input value={form.contactPerson} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" disabled={isViewOnly} />
+   880→          </MacosFormField>
+   881→          <MacosFormField label="Academic Session">
+   882→            <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" disabled={isViewOnly} />
+   883→          </MacosFormField>
+   884→        </div>
+   885→      </form>
+   886→    </MacosDialog>
+   887→  )
+   888→}
+   889→
+   890→// ==================== CREATE CONTRACT DIALOG ====================
+   891→
+   892→function CreateContractDialog({
+   893→  open,
+   894→  onOpenChange,
+   895→  schools,
+   896→  onSuccess,
+   897→}: {
+   898→  open: boolean
+   899→  onOpenChange: (open: boolean) => void
+   900→  schools: School[]
+   901→  onSuccess: () => void
+   902→}) {
+   903→  const [saving, setSaving] = React.useState(false)
+   904→  const [form, setForm] = React.useState({
+   905→    schoolId: '',
+   906→    title: '',
+   907→    academicSession: '',
+   908→    totalValue: '',
+   909→    startDate: '',
+   910→    endDate: '',
+   911→    notes: '',
+   912→  })
+   913→
+   914→  const handleSubmit = async (e: React.FormEvent) => {
+   915→    e.preventDefault()
+   916→    if (!form.schoolId || !form.title.trim()) return
+   917→    setSaving(true)
+   918→    try {
+   919→      const res = await fetch('/api/schools/contracts', {
+   920→        method: 'POST',
+   921→        headers: { 'Content-Type': 'application/json' },
+   922→        body: JSON.stringify({
+   923→          schoolId: form.schoolId,
+   924→          title: form.title,
+   925→          academicSession: form.academicSession,
+   926→          totalValue: parseFloat(form.totalValue) || 0,
+   927→          startDate: form.startDate || null,
+   928→          endDate: form.endDate || null,
+   929→          notes: form.notes,
+   930→        }),
+   931→      })
+   932→      if (res.ok) {
+   933→        setForm({ schoolId: '', title: '', academicSession: '', totalValue: '', startDate: '', endDate: '', notes: '' })
+   934→        onOpenChange(false)
+   935→        onSuccess()
+   936→      } else {
+   937→        const json = await res.json()
+   938→        alert(json.error || 'Failed to create contract')
+   939→      }
+   940→    } catch (err) {
+   941→      console.error('Failed to create contract:', err)
+   942→      alert('Failed to create contract')
+   943→    } finally {
+   944→      setSaving(false)
+   945→    }
+   946→  }
+   947→
+   948→  return (
+   949→    <MacosDialog
+   950→      open={open}
+   951→      onOpenChange={onOpenChange}
+   952→      title="Create Contract"
+   953→      description="Create a new school supply contract"
+   954→      footer={
+   955→        <>
+   956→          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+   957→          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.schoolId || !form.title.trim()}>
+   958→            {saving ? 'Creating...' : 'Create Contract'}
+   959→          </MacosButton>
+   960→        </>
+   961→      }
+   962→    >
+   963→      <form onSubmit={handleSubmit} className="space-y-4">
+   964→        <MacosFormField label="School *">
+   965→          <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
+   966→            <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   967→              <SelectValue placeholder="Select school" />
+   968→            </SelectTrigger>
+   969→            <SelectContent>
+   970→              {schools.map((s) => (
+   971→                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+   972→              ))}
+   973→            </SelectContent>
+   974→          </Select>
+   975→        </MacosFormField>
+   976→        <MacosFormField label="Contract Title *">
+   977→          <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Annual Supply Agreement" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+   978→        </MacosFormField>
+   979→        <div className="grid grid-cols-2 gap-3">
+   980→          <MacosFormField label="Academic Session">
+   981→            <Input value={form.academicSession} onChange={(e) => setForm({ ...form, academicSession: e.target.value })} placeholder="2025-2026" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+   982→          </MacosFormField>
+   983→          <MacosFormField label="Total Value ($)">
+   984→            <Input type="number" step="0.01" value={form.totalValue} onChange={(e) => setForm({ ...form, totalValue: e.target.value })} placeholder="50000" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+   985→          </MacosFormField>
+   986→        </div>
+   987→        <div className="grid grid-cols-2 gap-3">
+   988→          <MacosFormField label="Start Date">
+   989→            <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+   990→          </MacosFormField>
+   991→          <MacosFormField label="End Date">
+   992→            <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+   993→          </MacosFormField>
+   994→        </div>
+   995→        <MacosFormField label="Notes">
+   996→          <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Additional contract details..." rows={3} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+   997→        </MacosFormField>
+   998→      </form>
+   999→    </MacosDialog>
+  1000→  )
+  1001→}
+  1002→
+  1003→// ==================== CREATE PACKAGE DIALOG ====================
+  1004→
+  1005→interface PackageItemForm {
+  1006→  key: string
+  1007→  itemType: 'book' | 'stationery'
+  1008→  itemId: string
+  1009→  quantity: number
+  1010→  unitPrice: number
+  1011→  name: string
+  1012→}
+  1013→
+  1014→function CreatePackageDialog({
+  1015→  open,
+  1016→  onOpenChange,
+  1017→  schools,
+  1018→  books,
+  1019→  stationery,
+  1020→  onSuccess,
+  1021→}: {
+  1022→  open: boolean
+  1023→  onOpenChange: (open: boolean) => void
+  1024→  schools: School[]
+  1025→  books: Book[]
+  1026→  stationery: StationeryProduct[]
+  1027→  onSuccess: () => void
+  1028→}) {
+  1029→  const [saving, setSaving] = React.useState(false)
+  1030→  const [form, setForm] = React.useState({
+  1031→    schoolId: '',
+  1032→    name: '',
+  1033→    grade: '',
+  1034→    academicLevel: '',
+  1035→    description: '',
+  1036→    discount: '',
+  1037→  })
+  1038→  const [items, setItems] = React.useState<PackageItemForm[]>([
+  1039→    { key: crypto.randomUUID(), itemType: 'book', itemId: '', quantity: 1, unitPrice: 0, name: '' },
+  1040→  ])
+  1041→
+  1042→  const totalPrice = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+  1043→
+  1044→  const addItem = () => {
+  1045→    setItems([
+  1046→      ...items,
+  1047→      { key: crypto.randomUUID(), itemType: 'book', itemId: '', quantity: 1, unitPrice: 0, name: '' },
+  1048→    ])
+  1049→  }
+  1050→
+  1051→  const removeItem = (key: string) => {
+  1052→    if (items.length > 1) {
+  1053→      setItems(items.filter((i) => i.key !== key))
+  1054→    }
+  1055→  }
+  1056→
+  1057→  const updateItem = (key: string, updates: Partial<PackageItemForm>) => {
+  1058→    setItems(
+  1059→      items.map((item) => {
+  1060→        if (item.key !== key) return item
+  1061→        const updated = { ...item, ...updates }
+  1062→        if (updates.itemId) {
+  1063→          if (updated.itemType === 'book') {
+  1064→            const book = books.find((b) => b.id === updates.itemId)
+  1065→            if (book) {
+  1066→              updated.unitPrice = book.price
+  1067→              updated.name = book.title
+  1068→            }
+  1069→          } else {
+  1070→            const product = stationery.find((s) => s.id === updates.itemId)
+  1071→            if (product) {
+  1072→              updated.unitPrice = product.price
+  1073→              updated.name = product.name
+  1074→            }
+  1075→          }
+  1076→        }
+  1077→        return updated
+  1078→      })
+  1079→    )
+  1080→  }
+  1081→
+  1082→  const handleSubmit = async (e: React.FormEvent) => {
+  1083→    e.preventDefault()
+  1084→    if (!form.name.trim()) return
+  1085→    setSaving(true)
+  1086→    try {
+  1087→      const res = await fetch('/api/schools/packages', {
+  1088→        method: 'POST',
+  1089→        headers: { 'Content-Type': 'application/json' },
+  1090→        body: JSON.stringify({
+  1091→          schoolId: form.schoolId || null,
+  1092→          name: form.name,
+  1093→          grade: form.grade,
+  1094→          academicLevel: form.academicLevel,
+  1095→          description: form.description,
+  1096→          totalPrice,
+  1097→          discount: parseFloat(form.discount) || 0,
+  1098→          items: items
+  1099→            .filter((i) => i.itemId)
+  1100→            .map((i) => ({
+  1101→              bookId: i.itemType === 'book' ? i.itemId : null,
+  1102→              stationeryId: i.itemType === 'stationery' ? i.itemId : null,
+  1103→              quantity: i.quantity,
+  1104→              unitPrice: i.unitPrice,
+  1105→            })),
+  1106→        }),
+  1107→      })
+  1108→      if (res.ok) {
+  1109→        setForm({ schoolId: '', name: '', grade: '', academicLevel: '', description: '', discount: '' })
+  1110→        setItems([{ key: crypto.randomUUID(), itemType: 'book', itemId: '', quantity: 1, unitPrice: 0, name: '' }])
+  1111→        onOpenChange(false)
+  1112→        onSuccess()
+  1113→      } else {
+  1114→        const json = await res.json()
+  1115→        alert(json.error || 'Failed to create package')
+  1116→      }
+  1117→    } catch (err) {
+  1118→      console.error('Failed to create package:', err)
+  1119→      alert('Failed to create package')
+  1120→    } finally {
+  1121→      setSaving(false)
+  1122→    }
+  1123→  }
+  1124→
+  1125→  return (
+  1126→    <MacosDialog
+  1127→      open={open}
+  1128→      onOpenChange={onOpenChange}
+  1129→      title="Create Academic Package"
+  1130→      description="Build a grade-wise package with books and stationery"
+  1131→      className="max-w-2xl"
+  1132→      footer={
+  1133→        <>
+  1134→          <MacosButton variant="secondary" onClick={() => onOpenChange(false)}>Cancel</MacosButton>
+  1135→          <MacosButton variant="primary" onClick={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} disabled={saving || !form.name.trim()}>
+  1136→            {saving ? 'Creating...' : 'Create Package'}
+  1137→          </MacosButton>
+  1138→        </>
+  1139→      }
+  1140→    >
+  1141→      <form onSubmit={handleSubmit} className="space-y-4">
+  1142→        <div className="grid grid-cols-2 gap-3">
+  1143→          <MacosFormField label="School">
+  1144→            <Select value={form.schoolId} onValueChange={(v) => setForm({ ...form, schoolId: v })}>
+  1145→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+  1146→                <SelectValue placeholder="Select school" />
+  1147→              </SelectTrigger>
+  1148→              <SelectContent>
+  1149→                {schools.map((s) => (
+  1150→                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+  1151→                ))}
+  1152→              </SelectContent>
+  1153→            </Select>
+  1154→          </MacosFormField>
+  1155→          <MacosFormField label="Package Name *">
+  1156→            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Grade 1 Package" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" required />
+  1157→          </MacosFormField>
+  1158→        </div>
+  1159→        <div className="grid grid-cols-3 gap-3">
+  1160→          <MacosFormField label="Grade">
+  1161→            <Input value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} placeholder="1" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+  1162→          </MacosFormField>
+  1163→          <MacosFormField label="Academic Level">
+  1164→            <Input value={form.academicLevel} onChange={(e) => setForm({ ...form, academicLevel: e.target.value })} placeholder="Primary" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+  1165→          </MacosFormField>
+  1166→          <MacosFormField label="Discount (%)">
+  1167→            <Input type="number" min="0" max="100" value={form.discount} onChange={(e) => setForm({ ...form, discount: e.target.value })} placeholder="10" className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30" />
+  1168→          </MacosFormField>
+  1169→        </div>
+  1170→        <MacosFormField label="Description">
+  1171→          <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Package description..." rows={2} className="rounded-lg bg-secondary/80 border-0 text-[13px]" />
+  1172→        </MacosFormField>
+  1173→
+  1174→        <Separator className="bg-border/50" />
+  1175→
+  1176→        <div className="space-y-3">
+  1177→          <div className="flex items-center justify-between">
+  1178→            <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Package Items</Label>
+  1179→            <MacosButton variant="ghost" className="text-[11px]" onClick={addItem}>
+  1180→              <Plus className="size-3" strokeWidth={2} /> Add Item
+  1181→            </MacosButton>
+  1182→          </div>
+  1183→          <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+  1184→            {items.map((item) => (
+  1185→              <div key={item.key} className="flex items-end gap-2 p-3 rounded-xl bg-secondary/50">
+  1186→                <div className="flex-1 space-y-1">
+  1187→                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Type</Label>
+  1188→                  <Select
+  1189→                    value={item.itemType}
+  1190→                    onValueChange={(v: 'book' | 'stationery') =>
+  1191→                      updateItem(item.key, { itemType: v, itemId: '', unitPrice: 0, name: '' })
+  1192→                    }
+  1193→                  >
+  1194→                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
+  1195→                      <SelectValue />
+  1196→                    </SelectTrigger>
+  1197→                    <SelectContent>
+  1198→                      <SelectItem value="book"><span className="flex items-center gap-1"><BookOpen className="size-3" /> Book</span></SelectItem>
+  1199→                      <SelectItem value="stationery"><span className="flex items-center gap-1"><PencilRuler className="size-3" /> Stationery</span></SelectItem>
+  1200→                    </SelectContent>
+  1201→                  </Select>
+  1202→                </div>
+  1203→                <div className="flex-[2] space-y-1">
+  1204→                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Item</Label>
+  1205→                  <Select value={item.itemId} onValueChange={(v) => updateItem(item.key, { itemId: v })}>
+  1206→                    <SelectTrigger className="h-7 text-[11px] rounded-lg border-0 bg-background">
+  1207→                      <SelectValue placeholder={`Select ${item.itemType}...`} />
+  1208→                    </SelectTrigger>
+  1209→                    <SelectContent>
+  1210→                      {(item.itemType === 'book' ? books : stationery).map((b) => (
+  1211→                        <SelectItem key={b.id} value={b.id}>
+  1212→                          {b.name || b.title} — ${b.price}
+  1213→                        </SelectItem>
+  1214→                      ))}
+  1215→                    </SelectContent>
+  1216→                  </Select>
+  1217→                </div>
+  1218→                <div className="w-16 space-y-1">
+  1219→                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Qty</Label>
+  1220→                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(item.key, { quantity: parseInt(e.target.value) || 1 })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1221→                </div>
+  1222→                <div className="w-20 space-y-1">
+  1223→                  <Label className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">Price</Label>
+  1224→                  <Input type="number" step="0.01" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.key, { unitPrice: parseFloat(e.target.value) || 0 })} className="h-7 text-[11px] rounded-lg border-0 bg-background" />
+  1225→                </div>
+  1226→                <Button
+  1227→                  type="button"
+  1228→                  variant="ghost"
+  1229→                  size="sm"
+  1230→                  className="h-7 w-7 p-0 text-macos-red hover:text-macos-red hover:bg-macos-red/10 rounded-lg"
+  1231→                  onClick={() => removeItem(item.key)}
+  1232→                  disabled={items.length <= 1}
+  1233→                >
+  1234→                  <X className="size-3" />
+  1235→                </Button>
+  1236→              </div>
+  1237→            ))}
+  1238→          </div>
+  1239→        </div>
+  1240→
+  1241→        <div className="flex items-center justify-between p-3 rounded-xl bg-macos-green/10">
+  1242→          <span className="text-[13px] font-medium">Total Package Price</span>
+  1243→          <span className="text-[13px] font-bold tracking-tight text-macos-green">${totalPrice.toLocaleString()}</span>
+  1244→        </div>
+  1245→      </form>
+  1246→    </MacosDialog>
+  1247→  )
+  1248→}
+  1249→
+  1250→// ==================== PACKAGE DETAIL DIALOG ====================
+  1251→
+  1252→function PackageDetailDialog({
+  1253→  pkg,
+  1254→  onOpenChange,
+  1255→}: {
+  1256→  pkg: AcademicPackage | null
+  1257→  onOpenChange: (open: boolean) => void
+  1258→}) {
+  1259→  if (!pkg) return null
+  1260→
+  1261→  return (
+  1262→    <MacosDialog
+  1263→      open={!!pkg}
+  1264→      onOpenChange={onOpenChange}
+  1265→      title={pkg.name}
+  1266→      description={`${pkg.grade ? `Grade ${pkg.grade}` : ''}${pkg.academicLevel ? ` · ${pkg.academicLevel}` : ''}${pkg.school ? ` · ${pkg.school.name}` : ''}`}
+  1267→    >
+  1268→      <div className="space-y-4">
+  1269→        {pkg.description && (
+  1270→          <p className="text-[13px] text-muted-foreground">{pkg.description}</p>
+  1271→        )}
+  1272→
+  1273→        <div className="space-y-2">
+  1274→          <h4 className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Package Items</h4>
+  1275→          <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+  1276→            {pkg.items && pkg.items.length > 0 ? (
+  1277→              pkg.items.map((item) => (
+  1278→                <div
+  1279→                  key={item.id}
+  1280→                  className="flex items-center justify-between p-3 rounded-xl bg-secondary/50"
+  1281→                >
+  1282→                  <div className="flex items-center gap-3">
+  1283→                    {item.bookId ? (
+  1284→                      <div className="size-9 rounded-xl bg-macos-teal/10 flex items-center justify-center">
+  1285→                        <BookOpen className="size-4 text-macos-teal" strokeWidth={1.8} />
+  1286→                      </div>
+  1287→                    ) : (
+  1288→                      <div className="size-9 rounded-xl bg-macos-orange/10 flex items-center justify-center">
+  1289→                        <PencilRuler className="size-4 text-macos-orange" strokeWidth={1.8} />
+  1290→                      </div>
+  1291→                    )}
+  1292→                    <div>
+  1293→                      <p className="text-[13px] font-medium">
+  1294→                        {item.book?.title || item.stationery?.name || 'Unknown Item'}
+  1295→                      </p>
+  1296→                      <p className="text-[11px] text-muted-foreground">
+  1297→                        {item.bookId ? 'Book' : 'Stationery'} · Qty: {item.quantity} × ${item.unitPrice}
+  1298→                      </p>
+  1299→                    </div>
+  1300→                  </div>
+  1301→                  <p className="font-semibold text-[13px]">
+  1302→                    ${(item.quantity * item.unitPrice).toLocaleString()}
+  1303→                  </p>
+  1304→                </div>
+  1305→              ))
+  1306→            ) : (
+  1307→              <p className="text-[13px] text-muted-foreground text-center py-4">No items in this package</p>
+  1308→            )}
+  1309→          </div>
+  1310→        </div>
+  1311→
+  1312→        <Separator className="bg-border/50" />
+  1313→
+  1314→        <div className="flex items-center justify-between">
+  1315→          <div>
+  1316→            <p className="text-[11px] text-muted-foreground">Total Price</p>
+  1317→            {pkg.discount > 0 && (
+  1318→              <p className="text-[10px] font-semibold text-macos-orange">{pkg.discount}% discount applied</p>
+  1319→            )}
+  1320→          </div>
+  1321→          <p className="text-[24px] font-bold tracking-tight text-macos-green">${pkg.totalPrice.toLocaleString()}</p>
+  1322→        </div>
+  1323→      </div>
+  1324→    </MacosDialog>
+  1325→  )
+  1326→}
+  1327→

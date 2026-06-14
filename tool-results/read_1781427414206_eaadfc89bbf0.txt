@@ -1,0 +1,761 @@
+     1→'use client'
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react'
+     4→import {
+     5→  Plus,
+     6→  Pencil,
+     7→  Trash2,
+     8→  ArrowLeft,
+     9→  Building2,
+    10→  RefreshCw,
+    11→  Mail,
+    12→  Phone,
+    13→  Globe,
+    14→  MapPin,
+    15→  FileText,
+    16→  Loader2,
+    17→  BookOpen,
+    18→} from 'lucide-react'
+    19→import { Input } from '@/components/ui/input'
+    20→import { Textarea } from '@/components/ui/textarea'
+    21→import { Skeleton } from '@/components/ui/skeleton'
+    22→import {
+    23→  Table,
+    24→  TableBody,
+    25→  TableCell,
+    26→  TableHead,
+    27→  TableHeader,
+    28→  TableRow,
+    29→} from '@/components/ui/table'
+    30→import { useAppStore } from '@/store/app-store'
+    31→import {
+    32→  MacosPageHeader,
+    33→  MacosSearch,
+    34→  MacosButton,
+    35→  MacosBadge,
+    36→  MacosDialog,
+    37→  MacosEmptyState,
+    38→  MacosFormField,
+    39→  MacosStatCard,
+    40→  MacosStatGrid,
+    41→  MacosCard,
+    42→} from '@/components/macos-ui'
+    43→
+    44→// ── Types ────────────────────────────────────────────────────────
+    45→interface PublisherData {
+    46→  id: string
+    47→  name: string
+    48→  contact: string | null
+    49→  email: string | null
+    50→  phone: string | null
+    51→  address: string | null
+    52→  website: string | null
+    53→  agreement: string | null
+    54→  createdAt: string
+    55→  _count: { books: number }
+    56→}
+    57→
+    58→interface BookData {
+    59→  id: string
+    60→  title: string
+    61→  isbn: string | null
+    62→  price: number
+    63→  category: { id: string; name: string; type: string | null } | null
+    64→  author: { id: string; name: string } | null
+    65→}
+    66→
+    67→interface PublisherFormData {
+    68→  name: string
+    69→  contact: string
+    70→  email: string
+    71→  phone: string
+    72→  address: string
+    73→  website: string
+    74→  agreement: string
+    75→}
+    76→
+    77→const emptyForm: PublisherFormData = {
+    78→  name: '',
+    79→  contact: '',
+    80→  email: '',
+    81→  phone: '',
+    82→  address: '',
+    83→  website: '',
+    84→  agreement: '',
+    85→}
+    86→
+    87→// ── Publisher icon colors ─────────────────────────────────────
+    88→const publisherColors = [
+    89→  { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
+    90→  { bg: 'bg-macos-green/10', text: 'text-macos-green' },
+    91→  { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
+    92→  { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
+    93→  { bg: 'bg-gg-bridge/10', text: 'text-gg-bridge' },
+    94→  { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
+    95→  { bg: 'bg-gg-bay/10', text: 'text-gg-bay' },
+    96→  { bg: 'bg-gg-sunset/10', text: 'text-gg-sunset' },
+    97→]
+    98→
+    99→const getPublisherColor = (name: string) => {
+   100→  let hash = 0
+   101→  for (let i = 0; i < name.length; i++) {
+   102→    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+   103→  }
+   104→  return publisherColors[Math.abs(hash) % publisherColors.length]
+   105→}
+   106→
+   107→// ── Category badge color for book detail table ────────────────
+   108→const categoryColorMap: Record<string, { bg: string; text: string }> = {
+   109→  'Fiction': { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
+   110→  'Non-Fiction': { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
+   111→  'Science': { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
+   112→  'Technology': { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
+   113→  'History': { bg: 'bg-gg-bridge/10', text: 'text-gg-bridge' },
+   114→  'Art': { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
+   115→  'Business': { bg: 'bg-macos-green/10', text: 'text-macos-green' },
+   116→  'Education': { bg: 'bg-gg-bay/10', text: 'text-gg-bay' },
+   117→  'Literature': { bg: 'bg-gg-golden/10', text: 'text-gg-golden' },
+   118→  'Philosophy': { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
+   119→}
+   120→
+   121→const getCategoryColor = (name: string) => {
+   122→  return categoryColorMap[name] || { bg: 'bg-macos-purple/10', text: 'text-macos-purple' }
+   123→}
+   124→
+   125→// ── Component ────────────────────────────────────────────────────
+   126→export function PublishersModule() {
+   127→  const authUser = useAppStore((s) => s.authUser)
+   128→  const isViewOnly = authUser?.isViewOnly ?? false
+   129→
+   130→  const [publishers, setPublishers] = useState<PublisherData[]>([])
+   131→  const [total, setTotal] = useState(0)
+   132→  const [page, setPage] = useState(1)
+   133→  const [totalPages, setTotalPages] = useState(1)
+   134→  const [loading, setLoading] = useState(true)
+   135→  const [search, setSearch] = useState('')
+   136→  const [dialogOpen, setDialogOpen] = useState(false)
+   137→  const [editing, setEditing] = useState<PublisherData | null>(null)
+   138→  const [form, setForm] = useState<PublisherFormData>(emptyForm)
+   139→  const [saving, setSaving] = useState(false)
+   140→  const [deleting, setDeleting] = useState<string | null>(null)
+   141→
+   142→  // Detail view
+   143→  const [selectedPublisher, setSelectedPublisher] = useState<PublisherData | null>(null)
+   144→  const [publisherBooks, setPublisherBooks] = useState<BookData[]>([])
+   145→  const [loadingBooks, setLoadingBooks] = useState(false)
+   146→
+   147→  const limit = 10
+   148→
+   149→  // ── Fetch publishers ───────────────────────────────────────
+   150→  const fetchPublishers = useCallback(async () => {
+   151→    setLoading(true)
+   152→    try {
+   153→      const params = new URLSearchParams({
+   154→        page: String(page),
+   155→        limit: String(limit),
+   156→      })
+   157→      if (search) params.set('search', search)
+   158→
+   159→      const res = await fetch(`/api/publishers?${params}`)
+   160→      if (!res.ok) throw new Error('Failed to fetch publishers')
+   161→      const json = await res.json()
+   162→      setPublishers(json.data || [])
+   163→      setTotal(json.pagination?.total || 0)
+   164→      setTotalPages(json.pagination?.totalPages || 1)
+   165→    } catch {
+   166→      setPublishers([])
+   167→    } finally {
+   168→      setLoading(false)
+   169→    }
+   170→  }, [page, search])
+   171→
+   172→  useEffect(() => {
+   173→    fetchPublishers()
+   174→  }, [fetchPublishers])
+   175→
+   176→  useEffect(() => {
+   177→    setPage(1)
+   178→  }, [search])
+   179→
+   180→  // ── Fetch publisher books ──────────────────────────────────
+   181→  const fetchPublisherBooks = async (publisherId: string) => {
+   182→    setLoadingBooks(true)
+   183→    try {
+   184→      const res = await fetch(`/api/books?publisherId=${publisherId}&limit=50`)
+   185→      if (!res.ok) throw new Error('Failed to fetch books')
+   186→      const json = await res.json()
+   187→      setPublisherBooks(json.data || [])
+   188→    } catch {
+   189→      setPublisherBooks([])
+   190→    } finally {
+   191→      setLoadingBooks(false)
+   192→    }
+   193→  }
+   194→
+   195→  // ── Open detail view ───────────────────────────────────────
+   196→  const openDetail = (publisher: PublisherData) => {
+   197→    setSelectedPublisher(publisher)
+   198→    fetchPublisherBooks(publisher.id)
+   199→  }
+   200→
+   201→  // ── Save publisher ─────────────────────────────────────────
+   202→  const handleSave = async () => {
+   203→    if (!form.name.trim()) return
+   204→    setSaving(true)
+   205→    try {
+   206→      const payload = {
+   207→        name: form.name.trim(),
+   208→        contact: form.contact || null,
+   209→        email: form.email || null,
+   210→        phone: form.phone || null,
+   211→        address: form.address || null,
+   212→        website: form.website || null,
+   213→        agreement: form.agreement || null,
+   214→      }
+   215→
+   216→      let res: Response
+   217→      if (editing) {
+   218→        res = await fetch('/api/publishers', {
+   219→          method: 'PUT',
+   220→          headers: { 'Content-Type': 'application/json' },
+   221→          body: JSON.stringify({ id: editing.id, ...payload }),
+   222→        })
+   223→      } else {
+   224→        res = await fetch('/api/publishers', {
+   225→          method: 'POST',
+   226→          headers: { 'Content-Type': 'application/json' },
+   227→          body: JSON.stringify(payload),
+   228→        })
+   229→      }
+   230→
+   231→      if (!res.ok) {
+   232→        const err = await res.json()
+   233→        throw new Error(err.error || 'Failed to save publisher')
+   234→      }
+   235→
+   236→      setDialogOpen(false)
+   237→      setEditing(null)
+   238→      setForm(emptyForm)
+   239→      fetchPublishers()
+   240→    } catch (err) {
+   241→      alert(err instanceof Error ? err.message : 'Failed to save publisher')
+   242→    } finally {
+   243→      setSaving(false)
+   244→    }
+   245→  }
+   246→
+   247→  // ── Delete publisher ───────────────────────────────────────
+   248→  const handleDelete = async (id: string) => {
+   249→    if (!confirm('Are you sure you want to delete this publisher?')) return
+   250→    setDeleting(id)
+   251→    try {
+   252→      const res = await fetch(`/api/publishers?id=${id}`, { method: 'DELETE' })
+   253→      if (!res.ok) {
+   254→        const err = await res.json()
+   255→        throw new Error(err.error || 'Failed to delete')
+   256→      }
+   257→      fetchPublishers()
+   258→    } catch (err) {
+   259→      alert(err instanceof Error ? err.message : 'Failed to delete publisher')
+   260→    } finally {
+   261→      setDeleting(null)
+   262→    }
+   263→  }
+   264→
+   265→  // ── Open dialog for edit ───────────────────────────────────
+   266→  const openEdit = (publisher: PublisherData) => {
+   267→    setEditing(publisher)
+   268→    setForm({
+   269→      name: publisher.name,
+   270→      contact: publisher.contact || '',
+   271→      email: publisher.email || '',
+   272→      phone: publisher.phone || '',
+   273→      address: publisher.address || '',
+   274→      website: publisher.website || '',
+   275→      agreement: publisher.agreement || '',
+   276→    })
+   277→    setDialogOpen(true)
+   278→  }
+   279→
+   280→  // ── Open dialog for add ────────────────────────────────────
+   281→  const openAdd = () => {
+   282→    setEditing(null)
+   283→    setForm(emptyForm)
+   284→    setDialogOpen(true)
+   285→  }
+   286→
+   287→  // ── Stats computation ──────────────────────────────────────
+   288→  const publishersWithBooks = publishers.filter(p => p._count.books > 0).length
+   289→  const publishersWithEmail = publishers.filter(p => p.email).length
+   290→  const publishersWithWebsite = publishers.filter(p => p.website).length
+   291→
+   292→  // ── Detail View ────────────────────────────────────────────
+   293→  if (selectedPublisher) {
+   294→    const pubColor = getPublisherColor(selectedPublisher.name)
+   295→    return (
+   296→      <div className="space-y-5">
+   297→        {/* Back button */}
+   298→        <MacosButton variant="ghost" icon={ArrowLeft} onClick={() => setSelectedPublisher(null)}>
+   299→          Back to Publishers
+   300→        </MacosButton>
+   301→
+   302→        {/* Publisher Profile Card */}
+   303→        <div className="macos-card macos-shadow-card p-6">
+   304→          <div className="flex flex-col sm:flex-row gap-5">
+   305→            <div className={`size-16 rounded-2xl ${pubColor.bg} flex items-center justify-center shrink-0`}>
+   306→              <Building2 className={`size-8 ${pubColor.text}`} strokeWidth={1.5} />
+   307→            </div>
+   308→            <div className="space-y-1.5 flex-1 min-w-0">
+   309→              <h1 className="macos-page-title text-[20px]">{selectedPublisher.name}</h1>
+   310→              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-medium text-muted-foreground">
+   311→                {selectedPublisher.contact && (
+   312→                  <span className="flex items-center gap-1.5">
+   313→                    <Mail className="size-3.5 text-muted-foreground" strokeWidth={1.5} /> {selectedPublisher.contact}
+   314→                  </span>
+   315→                )}
+   316→                {selectedPublisher.email && (
+   317→                  <a
+   318→                    href={`mailto:${selectedPublisher.email}`}
+   319→                    className="flex items-center gap-1.5 text-macos-blue hover:text-macos-blue/80 transition-colors"
+   320→                  >
+   321→                    <Mail className="size-3.5" strokeWidth={1.5} /> {selectedPublisher.email}
+   322→                  </a>
+   323→                )}
+   324→                {selectedPublisher.phone && (
+   325→                  <span className="flex items-center gap-1.5">
+   326→                    <Phone className="size-3.5 text-muted-foreground" strokeWidth={1.5} /> {selectedPublisher.phone}
+   327→                  </span>
+   328→                )}
+   329→              </div>
+   330→              {selectedPublisher.address && (
+   331→                <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1.5">
+   332→                  <MapPin className="size-3.5 shrink-0" strokeWidth={1.5} /> {selectedPublisher.address}
+   333→                </p>
+   334→              )}
+   335→              {selectedPublisher.website && (
+   336→                <a
+   337→                  href={selectedPublisher.website}
+   338→                  target="_blank"
+   339→                  rel="noopener noreferrer"
+   340→                  className="text-[13px] font-medium text-macos-blue flex items-center gap-1.5 hover:text-macos-blue/80 transition-colors"
+   341→                >
+   342→                  <Globe className="size-3.5 shrink-0" strokeWidth={1.5} /> {selectedPublisher.website}
+   343→                </a>
+   344→              )}
+   345→              {selectedPublisher.agreement && (
+   346→                <p className="text-[13px] font-medium text-gg-golden flex items-center gap-1.5">
+   347→                  <FileText className="size-3.5 shrink-0" strokeWidth={1.5} /> Agreement: {selectedPublisher.agreement}
+   348→                </p>
+   349→              )}
+   350→              <div className="pt-2">
+   351→                <MacosBadge variant="success">
+   352→                  {selectedPublisher._count.books} books
+   353→                </MacosBadge>
+   354→              </div>
+   355→            </div>
+   356→          </div>
+   357→        </div>
+   358→
+   359→        {/* Stats Grid for Detail */}
+   360→        <MacosStatGrid>
+   361→          <MacosStatCard
+   362→            label="Total Books"
+   363→            value={selectedPublisher._count.books}
+   364→            icon={BookOpen}
+   365→            iconColor="text-macos-purple"
+   366→            iconBg="bg-macos-purple/10"
+   367→          />
+   368→          <MacosStatCard
+   369→            label="Has Contact"
+   370→            value={selectedPublisher.contact ? 'Yes' : 'No'}
+   371→            icon={Mail}
+   372→            iconColor="text-macos-blue"
+   373→            iconBg="bg-macos-blue/10"
+   374→          />
+   375→          <MacosStatCard
+   376→            label="Has Website"
+   377→            value={selectedPublisher.website ? 'Yes' : 'No'}
+   378→            icon={Globe}
+   379→            iconColor="text-macos-teal"
+   380→            iconBg="bg-macos-teal/10"
+   381→          />
+   382→          <MacosStatCard
+   383→            label="Has Agreement"
+   384→            value={selectedPublisher.agreement ? 'Yes' : 'No'}
+   385→            icon={FileText}
+   386→            iconColor="text-gg-golden"
+   387→            iconBg="bg-gg-golden/10"
+   388→          />
+   389→        </MacosStatGrid>
+   390→
+   391→        {/* Books by Publisher */}
+   392→        <MacosCard
+   393→          title={`Books by ${selectedPublisher.name}`}
+   394→          action={
+   395→            <MacosBadge variant="purple">{publisherBooks.length}</MacosBadge>
+   396→          }
+   397→          noPadding
+   398→        >
+   399→          {loadingBooks ? (
+   400→            <div className="p-5 space-y-3">
+   401→              {Array.from({ length: 3 }).map((_, i) => (
+   402→                <Skeleton key={i} className="h-10 w-full rounded-lg" />
+   403→              ))}
+   404→            </div>
+   405→          ) : publisherBooks.length === 0 ? (
+   406→            <MacosEmptyState
+   407→              icon={BookOpen}
+   408→              title="No books from this publisher yet"
+   409→              description="Books will appear here when added"
+   410→            />
+   411→          ) : (
+   412→            <div className="overflow-x-auto custom-scrollbar">
+   413→              <Table>
+   414→                <TableHeader>
+   415→                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+   416→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Title</TableHead>
+   417→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Author</TableHead>
+   418→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden sm:table-cell">ISBN</TableHead>
+   419→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden md:table-cell">Category</TableHead>
+   420→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Price</TableHead>
+   421→                  </TableRow>
+   422→                </TableHeader>
+   423→                <TableBody>
+   424→                  {publisherBooks.map((book) => {
+   425→                    const catColor = book.category ? getCategoryColor(book.category.name) : null
+   426→                    return (
+   427→                      <TableRow key={book.id} className="macos-table-row border-b border-border/30">
+   428→                        <TableCell className="text-[13px] font-medium tracking-tight py-3">{book.title}</TableCell>
+   429→                        <TableCell className="text-[13px] text-muted-foreground py-3">
+   430→                          {book.author?.name || '\u2014'}
+   431→                        </TableCell>
+   432→                        <TableCell className="hidden sm:table-cell text-[13px] text-muted-foreground font-mono py-3">
+   433→                          {book.isbn || '\u2014'}
+   434→                        </TableCell>
+   435→                        <TableCell className="hidden md:table-cell py-3">
+   436→                          {book.category && catColor ? (
+   437→                            <span className={`macos-badge ${catColor.bg} ${catColor.text}`}>
+   438→                              {book.category.name}
+   439→                            </span>
+   440→                          ) : (
+   441→                            <span className="text-[13px] text-muted-foreground">{'\u2014'}</span>
+   442→                          )}
+   443→                        </TableCell>
+   444→                        <TableCell className="text-[13px] text-right font-semibold tracking-tight py-3">
+   445→                          ${book.price.toFixed(2)}
+   446→                        </TableCell>
+   447→                      </TableRow>
+   448→                    )
+   449→                  })}
+   450→                </TableBody>
+   451→              </Table>
+   452→            </div>
+   453→          )}
+   454→        </MacosCard>
+   455→      </div>
+   456→    )
+   457→  }
+   458→
+   459→  // ── Main Table View ────────────────────────────────────────
+   460→  return (
+   461→    <div className="space-y-5">
+   462→      {/* macOS Page Header */}
+   463→      <MacosPageHeader
+   464→        title="Publishers"
+   465→        subtitle={`${total} publishers in directory`}
+   466→        icon={Building2}
+   467→        iconColor="text-macos-blue"
+   468→        iconBg="bg-macos-blue/10"
+   469→      >
+   470→        {!isViewOnly && (
+   471→          <MacosButton variant="primary" icon={Plus} onClick={openAdd}>
+   472→            Add Publisher
+   473→          </MacosButton>
+   474→        )}
+   475→      </MacosPageHeader>
+   476→
+   477→      {/* Stats Grid */}
+   478→      {!loading && publishers.length > 0 && (
+   479→        <MacosStatGrid>
+   480→          <MacosStatCard
+   481→            label="Total Publishers"
+   482→            value={total}
+   483→            icon={Building2}
+   484→            iconColor="text-macos-blue"
+   485→            iconBg="bg-macos-blue/10"
+   486→          />
+   487→          <MacosStatCard
+   488→            label="With Books"
+   489→            value={publishersWithBooks}
+   490→            icon={BookOpen}
+   491→            iconColor="text-macos-purple"
+   492→            iconBg="bg-macos-purple/10"
+   493→          />
+   494→          <MacosStatCard
+   495→            label="With Email"
+   496→            value={publishersWithEmail}
+   497→            icon={Mail}
+   498→            iconColor="text-macos-green"
+   499→            iconBg="bg-macos-green/10"
+   500→          />
+   501→          <MacosStatCard
+   502→            label="With Website"
+   503→            value={publishersWithWebsite}
+   504→            icon={Globe}
+   505→            iconColor="text-macos-teal"
+   506→            iconBg="bg-macos-teal/10"
+   507→          />
+   508→        </MacosStatGrid>
+   509→      )}
+   510→
+   511→      {/* Spotlight Search */}
+   512→      <MacosSearch
+   513→        value={search}
+   514→        onChange={setSearch}
+   515→        placeholder="Search by name, contact, email..."
+   516→      />
+   517→
+   518→      {/* Publishers Table */}
+   519→      <div className="macos-card macos-shadow-card overflow-hidden">
+   520→        {loading ? (
+   521→          <div className="p-5 space-y-3">
+   522→            {Array.from({ length: 5 }).map((_, i) => (
+   523→              <div key={i} className="flex items-center gap-3">
+   524→                <Skeleton className="size-8 rounded-xl shrink-0" />
+   525→                <Skeleton className="h-4 w-full rounded-lg" />
+   526→              </div>
+   527→            ))}
+   528→          </div>
+   529→        ) : publishers.length === 0 ? (
+   530→          <MacosEmptyState
+   531→            icon={Building2}
+   532→            title="No publishers found"
+   533→            description="Try adjusting your search or add a new publisher"
+   534→            action={
+   535→              !isViewOnly ? (
+   536→                <MacosButton variant="primary" icon={Plus} onClick={openAdd}>
+   537→                  Add Publisher
+   538→                </MacosButton>
+   539→              ) : undefined
+   540→            }
+   541→          />
+   542→        ) : (
+   543→          <div className="overflow-x-auto custom-scrollbar">
+   544→            <Table>
+   545→              <TableHeader>
+   546→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   547→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Publisher</TableHead>
+   548→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden sm:table-cell">Contact</TableHead>
+   549→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden md:table-cell">Email</TableHead>
+   550→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 hidden lg:table-cell">Phone</TableHead>
+   551→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-center">Books</TableHead>
+   552→                  {!isViewOnly && (
+   553→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Actions</TableHead>
+   554→                  )}
+   555→                </TableRow>
+   556→              </TableHeader>
+   557→              <TableBody>
+   558→                {publishers.map((pub) => {
+   559→                  const pubColor = getPublisherColor(pub.name)
+   560→                  return (
+   561→                    <TableRow
+   562→                      key={pub.id}
+   563→                      className="macos-table-row cursor-pointer border-b border-border/30 last:border-0"
+   564→                      onClick={() => openDetail(pub)}
+   565→                    >
+   566→                      <TableCell className="py-3">
+   567→                        <div className="flex items-center gap-2.5">
+   568→                          <div className={`size-8 rounded-xl ${pubColor.bg} flex items-center justify-center shrink-0`}>
+   569→                            <Building2 className={`size-4 ${pubColor.text}`} strokeWidth={1.5} />
+   570→                          </div>
+   571→                          <span className="text-[13px] font-medium tracking-tight">{pub.name}</span>
+   572→                        </div>
+   573→                      </TableCell>
+   574→                      <TableCell className="hidden sm:table-cell text-[13px] text-muted-foreground py-3">
+   575→                        {pub.contact || '\u2014'}
+   576→                      </TableCell>
+   577→                      <TableCell className="hidden md:table-cell py-3">
+   578→                        {pub.email ? (
+   579→                          <span className="text-[13px] text-macos-blue">{pub.email}</span>
+   580→                        ) : (
+   581→                          <span className="text-[13px] text-muted-foreground">{'\u2014'}</span>
+   582→                        )}
+   583→                      </TableCell>
+   584→                      <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground py-3">
+   585→                        {pub.phone || '\u2014'}
+   586→                      </TableCell>
+   587→                      <TableCell className="text-center py-3">
+   588→                        <MacosBadge variant="warning">
+   589→                          {pub._count.books}
+   590→                        </MacosBadge>
+   591→                      </TableCell>
+   592→                      {!isViewOnly && (
+   593→                        <TableCell className="text-right py-3">
+   594→                          <div className="flex justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+   595→                            <MacosButton
+   596→                              variant="ghost"
+   597→                              icon={Pencil}
+   598→                              onClick={() => openEdit(pub)}
+   599→                              className="hover:bg-macos-blue/10 hover:text-macos-blue"
+   600→                            />
+   601→                            <MacosButton
+   602→                              variant="ghost"
+   603→                              icon={deleting === pub.id ? Loader2 : Trash2}
+   604→                              onClick={() => handleDelete(pub.id)}
+   605→                              disabled={deleting === pub.id}
+   606→                              className="hover:bg-macos-red/10 hover:text-macos-red"
+   607→                            />
+   608→                          </div>
+   609→                        </TableCell>
+   610→                      )}
+   611→                    </TableRow>
+   612→                  )
+   613→                })}
+   614→              </TableBody>
+   615→            </Table>
+   616→          </div>
+   617→        )}
+   618→      </div>
+   619→
+   620→      {/* Pagination */}
+   621→      {totalPages > 1 && (
+   622→        <div className="flex items-center justify-between px-1">
+   623→          <p className="text-[11px] text-muted-foreground font-medium">
+   624→            Page {page} of {totalPages} &middot; {total} results
+   625→          </p>
+   626→          <div className="flex gap-1">
+   627→            <MacosButton
+   628→              variant="ghost"
+   629→              icon={ArrowLeft}
+   630→              onClick={() => setPage((p) => Math.max(1, p - 1))}
+   631→              disabled={page <= 1}
+   632→            >
+   633→              Prev
+   634→            </MacosButton>
+   635→            <MacosButton
+   636→              variant="ghost"
+   637→              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+   638→              disabled={page >= totalPages}
+   639→            >
+   640→              Next
+   641→            </MacosButton>
+   642→          </div>
+   643→        </div>
+   644→      )}
+   645→
+   646→      {/* Add/Edit Dialog */}
+   647→      <MacosDialog
+   648→        open={dialogOpen}
+   649→        onOpenChange={(open) => {
+   650→          setDialogOpen(open)
+   651→          if (!open) {
+   652→            setEditing(null)
+   653→            setForm(emptyForm)
+   654→          }
+   655→        }}
+   656→        title={editing ? 'Edit Publisher' : 'Add New Publisher'}
+   657→        description={editing ? 'Update publisher contact and agreement details.' : 'Add a new publisher to your directory.'}
+   658→        footer={
+   659→          <>
+   660→            <MacosButton
+   661→              variant="secondary"
+   662→              onClick={() => {
+   663→                setDialogOpen(false)
+   664→                setEditing(null)
+   665→                setForm(emptyForm)
+   666→              }}
+   667→            >
+   668→              Cancel
+   669→            </MacosButton>
+   670→            <MacosButton
+   671→              variant="primary"
+   672→              icon={saving ? RefreshCw : Plus}
+   673→              onClick={handleSave}
+   674→              disabled={saving || !form.name.trim()}
+   675→            >
+   676→              {editing ? 'Update Publisher' : 'Create Publisher'}
+   677→            </MacosButton>
+   678→          </>
+   679→        }
+   680→      >
+   681→        <div className="space-y-4">
+   682→          <MacosFormField label="Name *" description="Required">
+   683→            <Input
+   684→              id="pub-name"
+   685→              value={form.name}
+   686→              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+   687→              placeholder="Publisher name"
+   688→              className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus-visible:ring-1 focus-visible:ring-primary/30"
+   689→            />
+   690→          </MacosFormField>
+   691→
+   692→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   693→            <MacosFormField label="Contact Person">
+   694→              <Input
+   695→                id="pub-contact"
+   696→                value={form.contact}
+   697→                onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
+   698→                placeholder="Contact name"
+   699→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus-visible:ring-1 focus-visible:ring-primary/30"
+   700→              />
+   701→            </MacosFormField>
+   702→            <MacosFormField label="Email">
+   703→              <Input
+   704→                id="pub-email"
+   705→                type="email"
+   706→                value={form.email}
+   707→                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+   708→                placeholder="publisher@example.com"
+   709→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus-visible:ring-1 focus-visible:ring-primary/30"
+   710→              />
+   711→            </MacosFormField>
+   712→          </div>
+   713→
+   714→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   715→            <MacosFormField label="Phone">
+   716→              <Input
+   717→                id="pub-phone"
+   718→                value={form.phone}
+   719→                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+   720→                placeholder="+1-..."
+   721→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus-visible:ring-1 focus-visible:ring-primary/30"
+   722→              />
+   723→            </MacosFormField>
+   724→            <MacosFormField label="Website">
+   725→              <Input
+   726→                id="pub-website"
+   727→                value={form.website}
+   728→                onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+   729→                placeholder="https://..."
+   730→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus-visible:ring-1 focus-visible:ring-primary/30"
+   731→              />
+   732→            </MacosFormField>
+   733→          </div>
+   734→
+   735→          <MacosFormField label="Address">
+   736→            <Textarea
+   737→              id="pub-address"
+   738→              value={form.address}
+   739→              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+   740→              placeholder="Full address..."
+   741→              rows={2}
+   742→              className="rounded-lg border-border/50 text-[13px] mt-1 focus-visible:ring-1 focus-visible:ring-primary/30"
+   743→            />
+   744→          </MacosFormField>
+   745→
+   746→          <MacosFormField label="Agreement">
+   747→            <Textarea
+   748→              id="pub-agreement"
+   749→              value={form.agreement}
+   750→              onChange={(e) => setForm((f) => ({ ...f, agreement: e.target.value }))}
+   751→              placeholder="Distribution agreement details..."
+   752→              rows={2}
+   753→              className="rounded-lg border-border/50 text-[13px] mt-1 focus-visible:ring-1 focus-visible:ring-primary/30"
+   754→            />
+   755→          </MacosFormField>
+   756→        </div>
+   757→      </MacosDialog>
+   758→    </div>
+   759→  )
+   760→}
+   761→

@@ -1,0 +1,658 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Globe,
+     6→  ShoppingBag,
+     7→  Truck,
+     8→  Store,
+     9→  MapPin,
+    10→  Package,
+    11→  CheckCircle2,
+    12→  Clock,
+    13→  XCircle,
+    14→  ChevronRight,
+    15→  Eye,
+    16→  Search,
+    17→  ArrowRight,
+    18→  CreditCard,
+    19→} from 'lucide-react'
+    20→import { Input } from '@/components/ui/input'
+    21→import {
+    22→  Table,
+    23→  TableBody,
+    24→  TableCell,
+    25→  TableHead,
+    26→  TableHeader,
+    27→  TableRow,
+    28→} from '@/components/ui/table'
+    29→import { Separator } from '@/components/ui/separator'
+    30→import { useToast } from '@/hooks/use-toast'
+    31→import { useAppStore } from '@/store/app-store'
+    32→import {
+    33→  MacosPageHeader,
+    34→  MacosStatCard,
+    35→  MacosStatGrid,
+    36→  MacosCard,
+    37→  MacosSearch,
+    38→  MacosFilterBar,
+    39→  MacosButton,
+    40→  MacosBadge,
+    41→  MacosDialog,
+    42→  MacosEmptyState,
+    43→  MacosSection,
+    44→} from '@/components/macos-ui'
+    45→
+    46→// Types
+    47→interface OrderItem {
+    48→  name: string
+    49→  quantity: number
+    50→  price: number
+    51→}
+    52→
+    53→interface OnlineOrder {
+    54→  id: string
+    55→  orderNumber: string
+    56→  customerName: string
+    57→  customerEmail: string | null
+    58→  customerPhone: string | null
+    59→  items: OrderItem[] | string
+    60→  total: number
+    61→  status: string
+    62→  deliveryMethod: string
+    63→  deliveryAddress: string | null
+    64→  notes: string | null
+    65→  createdAt: string
+    66→  updatedAt: string
+    67→}
+    68→
+    69→// Order status config - spec: pending=orange, confirmed=blue, shipped=purple, delivered=green, cancelled=red
+    70→const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+    71→  pending: { label: 'Pending', color: 'text-macos-orange', bgColor: 'bg-macos-orange/10', icon: Clock },
+    72→  confirmed: { label: 'Confirmed', color: 'text-macos-blue', bgColor: 'bg-macos-blue/10', icon: CheckCircle2 },
+    73→  shipped: { label: 'Shipped', color: 'text-macos-purple', bgColor: 'bg-macos-purple/10', icon: Truck },
+    74→  delivered: { label: 'Delivered', color: 'text-macos-green', bgColor: 'bg-macos-green/10', icon: Package },
+    75→  cancelled: { label: 'Cancelled', color: 'text-macos-red', bgColor: 'bg-macos-red/10', icon: XCircle },
+    76→}
+    77→
+    78→const deliveryMethodConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+    79→  home: { label: 'Home Delivery', color: 'text-macos-blue', bgColor: 'bg-macos-blue/10', icon: Truck },
+    80→  pickup: { label: 'Store Pickup', color: 'text-macos-green', bgColor: 'bg-macos-green/10', icon: Store },
+    81→  'click-collect': { label: 'Click & Collect', color: 'text-macos-purple', bgColor: 'bg-macos-purple/10', icon: ShoppingBag },
+    82→}
+    83→
+    84→const nextStatusMap: Record<string, string[]> = {
+    85→  pending: ['confirmed', 'cancelled'],
+    86→  confirmed: ['shipped', 'cancelled'],
+    87→  shipped: ['delivered'],
+    88→  delivered: [],
+    89→  cancelled: [],
+    90→}
+    91→
+    92→// Delivery pipeline stages
+    93→const deliveryPipelineStages = ['pending', 'confirmed', 'shipped', 'delivered']
+    94→
+    95→function parseItems(items: OrderItem[] | string): OrderItem[] {
+    96→  if (typeof items === 'string') {
+    97→    try {
+    98→      return JSON.parse(items)
+    99→    } catch {
+   100→      return []
+   101→    }
+   102→  }
+   103→  return items
+   104→}
+   105→
+   106→// Delivery Pipeline Step Component
+   107→function DeliveryPipelineStep({
+   108→  label,
+   109→  icon: Icon,
+   110→  isActive,
+   111→  isCompleted,
+   112→  isCurrent,
+   113→  color,
+   114→  bgColor,
+   115→  isLast,
+   116→}: {
+   117→  label: string
+   118→  icon: React.ElementType
+   119→  isActive: boolean
+   120→  isCompleted: boolean
+   121→  isCurrent: boolean
+   122→  color: string
+   123→  bgColor: string
+   124→  isLast: boolean
+   125→}) {
+   126→  return (
+   127→    <div className="flex items-center gap-0 flex-1 min-w-0">
+   128→      <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1">
+   129→        <div
+   130→          className={`relative flex items-center justify-center size-10 rounded-xl transition-all duration-300 ${
+   131→            isCurrent
+   132→              ? `${bgColor} ring-2 ring-offset-1 ring-offset-background ${color.replace('text-', 'ring-')}`
+   133→              : isCompleted
+   134→              ? bgColor
+   135→              : 'bg-secondary/60'
+   136→          }`}
+   137→        >
+   138→          <Icon className={`size-4 ${isCurrent || isCompleted ? color : 'text-muted-foreground/50'}`} />
+   139→          {isCurrent && (
+   140→            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center size-2.5 rounded-full bg-macos-blue animate-pulse" />
+   141→          )}
+   142→        </div>
+   143→        <div className="text-center">
+   144→          <p className={`text-[10px] font-semibold uppercase tracking-wider ${isCurrent ? color : isCompleted ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+   145→            {label}
+   146→          </p>
+   147→        </div>
+   148→      </div>
+   149→      {!isLast && (
+   150→        <div className="flex items-center self-start mt-5 -ml-1 -mr-1">
+   151→          <div className={`h-[2px] w-full min-w-[24px] rounded-full transition-colors ${
+   152→            isCompleted ? 'bg-gg-golden/50' : 'bg-border'
+   153→          }`} />
+   154→          <ArrowRight className={`size-3 -ml-1 ${isCompleted ? 'text-gg-golden/50' : 'text-muted-foreground/30'}`} />
+   155→        </div>
+   156→      )}
+   157→    </div>
+   158→  )
+   159→}
+   160→
+   161→// Order detail pipeline for a single order in the detail dialog
+   162→function OrderDeliveryPipeline({ status }: { status: string }) {
+   163→  const currentIdx = deliveryPipelineStages.indexOf(status)
+   164→  const isCancelled = status === 'cancelled'
+   165→
+   166→  return (
+   167→    <div className="py-3">
+   168→      {isCancelled ? (
+   169→        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-macos-red/5 border border-macos-red/10">
+   170→          <XCircle className="size-5 text-macos-red" />
+   171→          <div>
+   172→            <p className="text-[13px] font-semibold text-macos-red">Order Cancelled</p>
+   173→            <p className="text-[11px] text-muted-foreground">This order has been cancelled</p>
+   174→          </div>
+   175→        </div>
+   176→      ) : (
+   177→        <div className="flex items-start gap-2">
+   178→          {deliveryPipelineStages.map((stage, idx) => {
+   179→            const config = statusConfig[stage]
+   180→            const isLast = idx === deliveryPipelineStages.length - 1
+   181→            const isCompleted = idx < currentIdx
+   182→            const isCurrent = idx === currentIdx
+   183→            return (
+   184→              <DeliveryPipelineStep
+   185→                key={stage}
+   186→                label={config.label}
+   187→                icon={config.icon}
+   188→                isActive={isCompleted || isCurrent}
+   189→                isCompleted={isCompleted}
+   190→                isCurrent={isCurrent}
+   191→                color={config.color}
+   192→                bgColor={config.bgColor}
+   193→                isLast={isLast}
+   194→              />
+   195→            )
+   196→          })}
+   197→        </div>
+   198→      )}
+   199→    </div>
+   200→  )
+   201→}
+   202→
+   203→export function EcommerceModule() {
+   204→  const { toast } = useToast()
+   205→  const authUser = useAppStore((s) => s.authUser)
+   206→  const isViewOnly = authUser?.isViewOnly ?? false
+   207→
+   208→  const [orders, setOrders] = React.useState<OnlineOrder[]>([])
+   209→  const [loading, setLoading] = React.useState(true)
+   210→  const [statusFilter, setStatusFilter] = React.useState('all')
+   211→  const [selectedOrder, setSelectedOrder] = React.useState<OnlineOrder | null>(null)
+   212→  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false)
+   213→  const [searchQuery, setSearchQuery] = React.useState('')
+   214→
+   215→  const fetchOrders = React.useCallback(async () => {
+   216→    try {
+   217→      setLoading(true)
+   218→      const url = statusFilter && statusFilter !== 'all' ? `/api/ecommerce?status=${statusFilter}` : '/api/ecommerce'
+   219→      const res = await fetch(url)
+   220→      if (!res.ok) throw new Error('Failed to fetch orders')
+   221→      const json = await res.json()
+   222→      setOrders(json.data || [])
+   223→    } catch {
+   224→      toast({ title: 'Error', description: 'Failed to fetch online orders', variant: 'destructive' })
+   225→    } finally {
+   226→      setLoading(false)
+   227→    }
+   228→  }, [statusFilter, toast])
+   229→
+   230→  React.useEffect(() => {
+   231→    fetchOrders()
+   232→  }, [fetchOrders])
+   233→
+   234→  const handleStatusUpdate = async (order: OnlineOrder, newStatus: string) => {
+   235→    try {
+   236→      const res = await fetch('/api/ecommerce', {
+   237→        method: 'PUT',
+   238→        headers: { 'Content-Type': 'application/json' },
+   239→        body: JSON.stringify({ id: order.id, status: newStatus }),
+   240→      })
+   241→      if (!res.ok) throw new Error('Failed to update order status')
+   242→      toast({ title: 'Success', description: `Order ${order.orderNumber} updated to ${newStatus}` })
+   243→      fetchOrders()
+   244→      if (selectedOrder?.id === order.id) {
+   245→        setSelectedOrder({ ...order, status: newStatus })
+   246→      }
+   247→    } catch {
+   248→      toast({ title: 'Error', description: 'Failed to update order status', variant: 'destructive' })
+   249→    }
+   250→  }
+   251→
+   252→  const openOrderDetail = (order: OnlineOrder) => {
+   253→    setSelectedOrder(order)
+   254→    setDetailDialogOpen(true)
+   255→  }
+   256→
+   257→  // Filter orders by search
+   258→  const filteredOrders = orders.filter((o) => {
+   259→    if (!searchQuery) return true
+   260→    const q = searchQuery.toLowerCase()
+   261→    return (
+   262→      o.orderNumber.toLowerCase().includes(q) ||
+   263→      o.customerName.toLowerCase().includes(q) ||
+   264→      (o.customerEmail && o.customerEmail.toLowerCase().includes(q))
+   265→    )
+   266→  })
+   267→
+   268→  const pendingCount = orders.filter((o) => o.status === 'pending').length
+   269→  const shippedCount = orders.filter((o) => o.status === 'shipped').length
+   270→  const deliveredCount = orders.filter((o) => o.status === 'delivered').length
+   271→  const totalRevenue = orders.filter((o) => o.status !== 'cancelled').reduce((sum, o) => sum + o.total, 0)
+   272→
+   273→  // Pipeline aggregate counts
+   274→  const pipelineCounts = {
+   275→    pending: orders.filter((o) => o.status === 'pending').length,
+   276→    confirmed: orders.filter((o) => o.status === 'confirmed').length,
+   277→    shipped: orders.filter((o) => o.status === 'shipped').length,
+   278→    delivered: orders.filter((o) => o.status === 'delivered').length,
+   279→  }
+   280→
+   281→  const cancelledCount = orders.filter((o) => o.status === 'cancelled').length
+   282→
+   283→  return (
+   284→    <div className="space-y-6">
+   285→      {/* macOS Page Header */}
+   286→      <MacosPageHeader
+   287→        title="E-Commerce"
+   288→        subtitle="Manage online orders, fulfillment, and delivery"
+   289→        icon={Globe}
+   290→        iconColor="text-macos-blue"
+   291→        iconBg="bg-macos-blue/10"
+   292→      >
+   293→        {isViewOnly && (
+   294→          <MacosBadge variant="warning">
+   295→            <Eye className="size-3 mr-1" />
+   296→            DEMO MODE
+   297→          </MacosBadge>
+   298→        )}
+   299→      </MacosPageHeader>
+   300→
+   301→      {/* Stats - macOS Stat Cards */}
+   302→      <MacosStatGrid>
+   303→        <MacosStatCard label="Total Orders" value={orders.length} icon={Globe} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   304→        <MacosStatCard label="Pending" value={pendingCount} icon={Clock} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   305→        <MacosStatCard label="Shipped" value={shippedCount} icon={Truck} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   306→        <MacosStatCard label="Delivered" value={deliveredCount} icon={Package} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   307→      </MacosStatGrid>
+   308→
+   309→      {/* Order Tracking Delivery Pipeline */}
+   310→      <MacosCard noPadding>
+   311→        <div className="px-5 pt-5 pb-0">
+   312→          <MacosSection
+   313→            title="Order Tracking Pipeline"
+   314→            subtitle="Real-time order flow from placement to delivery"
+   315→            action={
+   316→              <div className="flex items-center gap-2">
+   317→                <CreditCard className="size-3.5 text-gg-golden" />
+   318→                <span className="text-[13px] font-semibold text-gg-golden">
+   319→                  ${totalRevenue.toLocaleString()} revenue
+   320→                </span>
+   321→              </div>
+   322→            }
+   323→          />
+   324→        </div>
+   325→        <div className="p-5 pt-2">
+   326→          <div className="flex items-start justify-between gap-2">
+   327→            {deliveryPipelineStages.map((stage, idx) => {
+   328→              const config = statusConfig[stage]
+   329→              const count = pipelineCounts[stage as keyof typeof pipelineCounts] || 0
+   330→              const isLast = idx === deliveryPipelineStages.length - 1
+   331→              const isActive = count > 0
+   332→              const laterCounts = deliveryPipelineStages.slice(idx + 1).reduce((sum, s) => sum + (pipelineCounts[s as keyof typeof pipelineCounts] || 0), 0)
+   333→              const isCompleted = count === 0 && laterCounts > 0
+   334→              const StageIcon = config.icon
+   335→              return (
+   336→                <div key={stage} className="flex items-center gap-0 flex-1 min-w-0">
+   337→                  <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1">
+   338→                    <div
+   339→                      className={`relative flex items-center justify-center size-10 rounded-xl transition-all duration-300 ${
+   340→                        isActive
+   341→                          ? `${config.bgColor} ring-2 ring-offset-1 ring-offset-background ${config.color.replace('text-', 'ring-')}`
+   342→                          : isCompleted
+   343→                          ? config.bgColor
+   344→                          : 'bg-secondary/60'
+   345→                      }`}
+   346→                    >
+   347→                      <StageIcon className={`size-4 ${isActive || isCompleted ? config.color : 'text-muted-foreground/50'}`} />
+   348→                      {count > 0 && (
+   349→                        <span className={`absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-bold px-1 ${
+   350→                          isActive ? config.bgColor + ' ' + config.color : 'bg-secondary text-muted-foreground'
+   351→                        }`}>
+   352→                          {count}
+   353→                        </span>
+   354→                      )}
+   355→                    </div>
+   356→                    <div className="text-center">
+   357→                      <p className={`text-[10px] font-semibold uppercase tracking-wider ${isActive ? config.color : isCompleted ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+   358→                        {config.label}
+   359→                      </p>
+   360→                    </div>
+   361→                  </div>
+   362→                  {!isLast && (
+   363→                    <div className="flex items-center self-start mt-5 -ml-1 -mr-1">
+   364→                      <div className={`h-[2px] w-full min-w-[24px] rounded-full transition-colors ${
+   365→                        isCompleted ? 'bg-gg-golden/50' : 'bg-border'
+   366→                      }`} />
+   367→                      <ArrowRight className={`size-3 -ml-1 ${isCompleted ? 'text-gg-golden/50' : 'text-muted-foreground/30'}`} />
+   368→                    </div>
+   369→                  )}
+   370→                </div>
+   371→              )
+   372→            })}
+   373→          </div>
+   374→          {/* Cancelled count */}
+   375→          {cancelledCount > 0 && (
+   376→            <div className="mt-4 flex items-center gap-2 pt-3 border-t border-border">
+   377→              <XCircle className="size-3.5 text-macos-red" />
+   378→              <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Cancelled:</span>
+   379→              <MacosBadge variant="danger">{cancelledCount}</MacosBadge>
+   380→            </div>
+   381→          )}
+   382→        </div>
+   383→      </MacosCard>
+   384→
+   385→      {/* Filter Bar + Search */}
+   386→      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+   387→        <MacosFilterBar
+   388→          items={[
+   389→            { id: 'all', label: 'All' },
+   390→            { id: 'pending', label: 'Pending' },
+   391→            { id: 'confirmed', label: 'Confirmed' },
+   392→            { id: 'shipped', label: 'Shipped' },
+   393→            { id: 'delivered', label: 'Delivered' },
+   394→            { id: 'cancelled', label: 'Cancelled' },
+   395→          ]}
+   396→          activeId={statusFilter}
+   397→          onChange={setStatusFilter}
+   398→        />
+   399→        <MacosSearch
+   400→          value={searchQuery}
+   401→          onChange={setSearchQuery}
+   402→          placeholder="Search orders..."
+   403→        />
+   404→      </div>
+   405→
+   406→      {/* Orders Table */}
+   407→      {loading ? (
+   408→        <MacosCard>
+   409→          <div className="p-8 text-center text-muted-foreground animate-pulse text-[13px]">
+   410→            Loading orders...
+   411→          </div>
+   412→        </MacosCard>
+   413→      ) : filteredOrders.length === 0 ? (
+   414→        <MacosCard>
+   415→          <MacosEmptyState
+   416→            icon={Globe}
+   417→            title="No orders found"
+   418→            description={statusFilter !== 'all' || searchQuery ? 'Try adjusting your filters' : 'Online orders will appear here'}
+   419→          />
+   420→        </MacosCard>
+   421→      ) : (
+   422→        <div className="macos-card macos-shadow-card overflow-hidden">
+   423→          <div className="overflow-x-auto custom-scrollbar">
+   424→            <Table>
+   425→              <TableHeader>
+   426→                <TableRow className="border-b border-border/50 hover:bg-transparent">
+   427→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Order #</TableHead>
+   428→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Customer</TableHead>
+   429→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Total</TableHead>
+   430→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+   431→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Delivery</TableHead>
+   432→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Date</TableHead>
+   433→                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Actions</TableHead>
+   434→                </TableRow>
+   435→              </TableHeader>
+   436→              <TableBody>
+   437→                {filteredOrders.map((order) => {
+   438→                  const st = statusConfig[order.status] || statusConfig.pending
+   439→                  const dm = deliveryMethodConfig[order.deliveryMethod] || deliveryMethodConfig.home
+   440→                  const DmIcon = dm.icon
+   441→                  const StIcon = st.icon
+   442→                  return (
+   443→                    <TableRow key={order.id} className="macos-table-row border-b border-border/30 last:border-0">
+   444→                      <TableCell className="text-[13px] font-mono font-medium tracking-tight py-3">
+   445→                        <div className="flex items-center gap-2">
+   446→                          <div className={`size-7 rounded-lg flex items-center justify-center ${st.bgColor}`}>
+   447→                            <StIcon className={`size-3.5 ${st.color}`} />
+   448→                          </div>
+   449→                          {order.orderNumber}
+   450→                        </div>
+   451→                      </TableCell>
+   452→                      <TableCell className="py-3">
+   453→                        <div>
+   454→                          <p className="font-medium text-[13px] tracking-tight">{order.customerName}</p>
+   455→                          {order.customerEmail && (
+   456→                            <p className="text-[11px] text-muted-foreground">{order.customerEmail}</p>
+   457→                          )}
+   458→                        </div>
+   459→                      </TableCell>
+   460→                      <TableCell className="text-[13px] font-semibold tracking-tight py-3 text-gg-golden">${order.total.toLocaleString()}</TableCell>
+   461→                      <TableCell className="py-3">
+   462→                        <MacosBadge
+   463→                          variant={
+   464→                            order.status === 'delivered' ? 'success' :
+   465→                            order.status === 'cancelled' ? 'danger' :
+   466→                            order.status === 'pending' ? 'warning' :
+   467→                            order.status === 'confirmed' ? 'info' : 'purple'
+   468→                          }
+   469→                        >
+   470→                          {st.label}
+   471→                        </MacosBadge>
+   472→                      </TableCell>
+   473→                      <TableCell className="py-3">
+   474→                        <MacosBadge
+   475→                          variant={
+   476→                            order.deliveryMethod === 'home' ? 'info' :
+   477→                            order.deliveryMethod === 'pickup' ? 'success' : 'purple'
+   478→                          }
+   479→                        >
+   480→                          <DmIcon className="size-3 mr-1" />
+   481→                          {dm.label}
+   482→                        </MacosBadge>
+   483→                      </TableCell>
+   484→                      <TableCell className="text-[13px] font-medium tracking-tight py-3 text-muted-foreground">
+   485→                        {new Date(order.createdAt).toLocaleDateString()}
+   486→                      </TableCell>
+   487→                      <TableCell className="text-right py-3">
+   488→                        <div className="flex items-center justify-end gap-1">
+   489→                          {nextStatusMap[order.status]?.map((ns) => {
+   490→                            const NsIcon = ns === 'cancelled' ? XCircle : ChevronRight
+   491→                            return (
+   492→                              <MacosButton
+   493→                                key={ns}
+   494→                                variant={ns === 'cancelled' ? 'danger' : 'secondary'}
+   495→                                icon={NsIcon}
+   496→                                onClick={() => handleStatusUpdate(order, ns)}
+   497→                                disabled={isViewOnly}
+   498→                              >
+   499→                                {ns.charAt(0).toUpperCase() + ns.slice(1)}
+   500→                              </MacosButton>
+   501→                            )
+   502→                          })}
+   503→                          <MacosButton
+   504→                            variant="ghost"
+   505→                            icon={Eye}
+   506→                            onClick={() => openOrderDetail(order)}
+   507→                          >
+   508→                            View
+   509→                          </MacosButton>
+   510→                        </div>
+   511→                      </TableCell>
+   512→                    </TableRow>
+   513→                  )
+   514→                })}
+   515→              </TableBody>
+   516→            </Table>
+   517→          </div>
+   518→        </div>
+   519→      )}
+   520→
+   521→      {/* Order Detail Dialog - frosted glass */}
+   522→      <MacosDialog
+   523→        open={detailDialogOpen}
+   524→        onOpenChange={setDetailDialogOpen}
+   525→        title={
+   526→          selectedOrder
+   527→            ? `Order ${selectedOrder.orderNumber}`
+   528→            : 'Order Details'
+   529→        }
+   530→        description="Order details and delivery tracking"
+   531→        className="max-w-lg"
+   532→      >
+   533→        {selectedOrder && (
+   534→          <div className="space-y-4">
+   535→            {/* Status Badge */}
+   536→            <div className="flex items-center gap-2">
+   537→              {(() => {
+   538→                const st = statusConfig[selectedOrder.status] || statusConfig.pending
+   539→                const variant =
+   540→                  selectedOrder.status === 'delivered' ? 'success' as const :
+   541→                  selectedOrder.status === 'cancelled' ? 'danger' as const :
+   542→                  selectedOrder.status === 'pending' ? 'warning' as const :
+   543→                  selectedOrder.status === 'confirmed' ? 'info' as const : 'purple' as const
+   544→                return <MacosBadge variant={variant}>{st.label}</MacosBadge>
+   545→              })()}
+   546→            </div>
+   547→
+   548→            {/* Delivery Status Pipeline */}
+   549→            <div className="macos-card p-4">
+   550→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-2">Delivery Status</p>
+   551→              <OrderDeliveryPipeline status={selectedOrder.status} />
+   552→            </div>
+   553→
+   554→            {/* Customer Info */}
+   555→            <div className="grid grid-cols-2 gap-4 text-[13px]">
+   556→              <div>
+   557→                <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Customer</p>
+   558→                <p className="font-medium mt-0.5">{selectedOrder.customerName}</p>
+   559→              </div>
+   560→              <div>
+   561→                <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Email</p>
+   562→                <p className="font-medium mt-0.5">{selectedOrder.customerEmail || '—'}</p>
+   563→              </div>
+   564→              <div>
+   565→                <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Phone</p>
+   566→                <p className="font-medium mt-0.5">{selectedOrder.customerPhone || '—'}</p>
+   567→              </div>
+   568→              <div>
+   569→                <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Delivery</p>
+   570→                <div className="mt-1">
+   571→                  <MacosBadge
+   572→                    variant={
+   573→                      selectedOrder.deliveryMethod === 'home' ? 'info' :
+   574→                      selectedOrder.deliveryMethod === 'pickup' ? 'success' : 'purple'
+   575→                    }
+   576→                  >
+   577→                    {(() => {
+   578→                      const dm = deliveryMethodConfig[selectedOrder.deliveryMethod] || deliveryMethodConfig.home
+   579→                      const DmIcon = dm.icon
+   580→                      return <><DmIcon className="size-3 mr-1" />{dm.label}</>
+   581→                    })()}
+   582→                  </MacosBadge>
+   583→                </div>
+   584→              </div>
+   585→            </div>
+   586→
+   587→            {selectedOrder.deliveryAddress && (
+   588→              <div className="text-[13px]">
+   589→                <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Address</p>
+   590→                <div className="flex items-start gap-1.5 mt-0.5">
+   591→                  <MapPin className="size-3.5 mt-0.5 text-muted-foreground shrink-0" />
+   592→                  <p>{selectedOrder.deliveryAddress}</p>
+   593→                </div>
+   594→              </div>
+   595→            )}
+   596→
+   597→            <Separator />
+   598→
+   599→            {/* Items */}
+   600→            <div>
+   601→              <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground mb-2">Order Items</p>
+   602→              <div className="space-y-2">
+   603→                {parseItems(selectedOrder.items).map((item, i) => (
+   604→                  <div key={i} className="flex items-center justify-between text-[13px] py-1.5 px-3 rounded-xl bg-secondary/50">
+   605→                    <div>
+   606→                      <p className="font-medium">{item.name}</p>
+   607→                      <p className="text-[11px] text-muted-foreground">Qty: {item.quantity} × ${item.price.toFixed(2)}</p>
+   608→                    </div>
+   609→                    <p className="font-medium text-gg-golden">${(item.quantity * item.price).toFixed(2)}</p>
+   610→                  </div>
+   611→                ))}
+   612→                {parseItems(selectedOrder.items).length === 0 && (
+   613→                  <p className="text-[13px] text-muted-foreground">No items data available</p>
+   614→                )}
+   615→              </div>
+   616→            </div>
+   617→
+   618→            <Separator />
+   619→
+   620→            {/* Total */}
+   621→            <div className="flex items-center justify-between">
+   622→              <span className="font-semibold text-[13px]">Total</span>
+   623→              <span className="text-2xl font-bold tracking-tight text-gg-golden">${selectedOrder.total.toLocaleString()}</span>
+   624→            </div>
+   625→
+   626→            {selectedOrder.notes && (
+   627→              <div className="text-[13px]">
+   628→                <p className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Notes</p>
+   629→                <p className="mt-0.5">{selectedOrder.notes}</p>
+   630→              </div>
+   631→            )}
+   632→
+   633→            {/* Status Actions */}
+   634→            {nextStatusMap[selectedOrder.status]?.length > 0 && !isViewOnly && (
+   635→              <div className="flex items-center gap-2 pt-2">
+   636→                <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Update:</span>
+   637→                {nextStatusMap[selectedOrder.status].map((ns) => (
+   638→                  <MacosButton
+   639→                    key={ns}
+   640→                    variant={ns === 'cancelled' ? 'danger' : 'primary'}
+   641→                    onClick={() => {
+   642→                      handleStatusUpdate(selectedOrder, ns)
+   643→                      setDetailDialogOpen(false)
+   644→                    }}
+   645→                    disabled={isViewOnly}
+   646→                  >
+   647→                    {ns.charAt(0).toUpperCase() + ns.slice(1)}
+   648→                  </MacosButton>
+   649→                ))}
+   650→              </div>
+   651→            )}
+   652→          </div>
+   653→        )}
+   654→      </MacosDialog>
+   655→    </div>
+   656→  )
+   657→}
+   658→

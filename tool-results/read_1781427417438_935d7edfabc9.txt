@@ -1,0 +1,774 @@
+     1→'use client'
+     2→
+     3→import React, { useState, useEffect, useCallback } from 'react'
+     4→import {
+     5→  Plus,
+     6→  Pencil,
+     7→  Trash2,
+     8→  ArrowLeft,
+     9→  BookOpen,
+    10→  RefreshCw,
+    11→  Globe,
+    12→  Mail,
+    13→  Phone,
+    14→  PenTool,
+    15→  Users,
+    16→  X,
+    17→  ExternalLink,
+    18→  MapPin,
+    19→} from 'lucide-react'
+    20→import { Input } from '@/components/ui/input'
+    21→import { Textarea } from '@/components/ui/textarea'
+    22→import { Skeleton } from '@/components/ui/skeleton'
+    23→import {
+    24→  Table,
+    25→  TableBody,
+    26→  TableCell,
+    27→  TableHead,
+    28→  TableHeader,
+    29→  TableRow,
+    30→} from '@/components/ui/table'
+    31→import { useAppStore } from '@/store/app-store'
+    32→import {
+    33→  MacosPageHeader,
+    34→  MacosSearch,
+    35→  MacosButton,
+    36→  MacosBadge,
+    37→  MacosDialog,
+    38→  MacosEmptyState,
+    39→  MacosFormField,
+    40→  MacosStatCard,
+    41→  MacosStatGrid,
+    42→  MacosCard,
+    43→} from '@/components/macos-ui'
+    44→
+    45→// ── Types ────────────────────────────────────────────────────────
+    46→interface AuthorData {
+    47→  id: string
+    48→  name: string
+    49→  bio: string | null
+    50→  nationality: string | null
+    51→  website: string | null
+    52→  email: string | null
+    53→  phone: string | null
+    54→  createdAt: string
+    55→  _count: { books: number }
+    56→}
+    57→
+    58→interface BookData {
+    59→  id: string
+    60→  title: string
+    61→  isbn: string | null
+    62→  price: number
+    63→  category: { id: string; name: string; type: string | null } | null
+    64→  publisher: { id: string; name: string } | null
+    65→}
+    66→
+    67→interface AuthorFormData {
+    68→  name: string
+    69→  bio: string
+    70→  nationality: string
+    71→  website: string
+    72→  email: string
+    73→  phone: string
+    74→}
+    75→
+    76→const emptyForm: AuthorFormData = {
+    77→  name: '',
+    78→  bio: '',
+    79→  nationality: '',
+    80→  website: '',
+    81→  email: '',
+    82→  phone: '',
+    83→}
+    84→
+    85→// ── Avatar color palette (macOS Retina + Golden Gate) ──────────
+    86→const avatarColors = [
+    87→  { bg: 'bg-macos-blue/10', text: 'text-macos-blue', ring: 'ring-macos-blue/20' },
+    88→  { bg: 'bg-macos-green/10', text: 'text-macos-green', ring: 'ring-macos-green/20' },
+    89→  { bg: 'bg-macos-purple/10', text: 'text-macos-purple', ring: 'ring-macos-purple/20' },
+    90→  { bg: 'bg-macos-orange/10', text: 'text-macos-orange', ring: 'ring-macos-orange/20' },
+    91→  { bg: 'bg-macos-pink/10', text: 'text-macos-pink', ring: 'ring-macos-pink/20' },
+    92→  { bg: 'bg-macos-teal/10', text: 'text-macos-teal', ring: 'ring-macos-teal/20' },
+    93→  { bg: 'bg-gg-bay/10', text: 'text-gg-bay', ring: 'ring-gg-bay/20' },
+    94→  { bg: 'bg-gg-sunset/10', text: 'text-gg-sunset', ring: 'ring-gg-sunset/20' },
+    95→  { bg: 'bg-macos-red/10', text: 'text-macos-red', ring: 'ring-macos-red/20' },
+    96→  { bg: 'bg-gg-golden/10', text: 'text-gg-golden', ring: 'ring-gg-golden/20' },
+    97→]
+    98→
+    99→const getAvatarColor = (name: string) => {
+   100→  let hash = 0
+   101→  for (let i = 0; i < name.length; i++) {
+   102→    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+   103→  }
+   104→  return avatarColors[Math.abs(hash) % avatarColors.length]
+   105→}
+   106→
+   107→// ── Nationality flag emoji ────────────────────────────────────
+   108→const nationalityFlags: Record<string, string> = {
+   109→  'American': '🇺🇸', 'British': '🇬🇧', 'French': '🇫🇷', 'German': '🇩🇪',
+   110→  'Japanese': '🇯🇵', 'Chinese': '🇨🇳', 'Indian': '🇮🇳', 'Spanish': '🇪🇸',
+   111→  'Italian': '🇮🇹', 'Russian': '🇷🇺', 'Brazilian': '🇧🇷', 'Canadian': '🇨🇦',
+   112→  'Australian': '🇦🇺', 'Mexican': '🇲🇽', 'Korean': '🇰🇷', 'Arab': '🌍',
+   113→  'Egyptian': '🇪🇬', 'Turkish': '🇹🇷', 'Iranian': '🇮🇷', 'Pakistani': '🇵🇰',
+   114→  'Nigerian': '🇳🇬', 'South African': '🇿🇦', 'Swedish': '🇸🇪', 'Norwegian': '🇳🇴',
+   115→  'Danish': '🇩🇰', 'Dutch': '🇳🇱', 'Portuguese': '🇵🇹', 'Greek': '🇬🇷',
+   116→  'Polish': '🇵🇱', 'Czech': '🇨🇿', 'Argentine': '🇦🇷', 'Colombian': '🇨🇴',
+   117→  'Thai': '🇹🇭', 'Vietnamese': '🇻🇳', 'Indonesian': '🇮🇩', 'Filipino': '🇵🇭',
+   118→  'Malaysian': '🇲🇾', 'Singaporean': '🇸🇬', 'Lebanese': '🇱🇧', 'Moroccan': '🇲🇦',
+   119→}
+   120→
+   121→const getFlag = (nationality: string | null) => {
+   122→  if (!nationality) return ''
+   123→  return nationalityFlags[nationality] || '🌍'
+   124→}
+   125→
+   126→// ── Category badge color for book detail table ────────────────
+   127→const categoryColorMap: Record<string, { bg: string; text: string }> = {
+   128→  'Fiction': { bg: 'bg-macos-purple/10', text: 'text-macos-purple' },
+   129→  'Non-Fiction': { bg: 'bg-macos-blue/10', text: 'text-macos-blue' },
+   130→  'Science': { bg: 'bg-macos-teal/10', text: 'text-macos-teal' },
+   131→  'Technology': { bg: 'bg-macos-orange/10', text: 'text-macos-orange' },
+   132→  'History': { bg: 'bg-gg-bridge/10', text: 'text-gg-bridge' },
+   133→  'Art': { bg: 'bg-macos-pink/10', text: 'text-macos-pink' },
+   134→  'Business': { bg: 'bg-macos-green/10', text: 'text-macos-green' },
+   135→  'Education': { bg: 'bg-gg-bay/10', text: 'text-gg-bay' },
+   136→  'Literature': { bg: 'bg-gg-golden/10', text: 'text-gg-golden' },
+   137→  'Philosophy': { bg: 'bg-macos-indigo/10', text: 'text-macos-indigo' },
+   138→}
+   139→
+   140→const getCategoryColor = (name: string) => {
+   141→  return categoryColorMap[name] || { bg: 'bg-macos-purple/10', text: 'text-macos-purple' }
+   142→}
+   143→
+   144→// ── Component ────────────────────────────────────────────────────
+   145→export function AuthorsModule() {
+   146→  const { authUser } = useAppStore()
+   147→  const isViewOnly = authUser?.isViewOnly ?? false
+   148→
+   149→  const [authors, setAuthors] = useState<AuthorData[]>([])
+   150→  const [total, setTotal] = useState(0)
+   151→  const [page, setPage] = useState(1)
+   152→  const [loading, setLoading] = useState(true)
+   153→  const [search, setSearch] = useState('')
+   154→  const [dialogOpen, setDialogOpen] = useState(false)
+   155→  const [editing, setEditing] = useState<AuthorData | null>(null)
+   156→  const [form, setForm] = useState<AuthorFormData>(emptyForm)
+   157→  const [saving, setSaving] = useState(false)
+   158→  const [deleting, setDeleting] = useState<string | null>(null)
+   159→
+   160→  // Detail view state
+   161→  const [selectedAuthor, setSelectedAuthor] = useState<AuthorData | null>(null)
+   162→  const [authorBooks, setAuthorBooks] = useState<BookData[]>([])
+   163→  const [loadingBooks, setLoadingBooks] = useState(false)
+   164→
+   165→  const limit = 12
+   166→
+   167→  // ── Fetch authors ──────────────────────────────────────────
+   168→  const fetchAuthors = useCallback(async () => {
+   169→    setLoading(true)
+   170→    try {
+   171→      const params = new URLSearchParams({
+   172→        page: String(page),
+   173→        limit: String(limit),
+   174→      })
+   175→      if (search) params.set('search', search)
+   176→
+   177→      const res = await fetch(`/api/authors?${params}`)
+   178→      if (!res.ok) throw new Error('Failed to fetch authors')
+   179→      const json = await res.json()
+   180→      setAuthors(json.data || [])
+   181→      setTotal(json.pagination?.total || 0)
+   182→    } catch {
+   183→      setAuthors([])
+   184→    } finally {
+   185→      setLoading(false)
+   186→    }
+   187→  }, [page, search])
+   188→
+   189→  useEffect(() => {
+   190→    fetchAuthors()
+   191→  }, [fetchAuthors])
+   192→
+   193→  useEffect(() => {
+   194→    setPage(1)
+   195→  }, [search])
+   196→
+   197→  // ── Fetch author books ─────────────────────────────────────
+   198→  const fetchAuthorBooks = async (authorId: string) => {
+   199→    setLoadingBooks(true)
+   200→    try {
+   201→      const res = await fetch(`/api/books?authorId=${authorId}&limit=50`)
+   202→      if (!res.ok) throw new Error('Failed to fetch books')
+   203→      const json = await res.json()
+   204→      setAuthorBooks(json.data || [])
+   205→    } catch {
+   206→      setAuthorBooks([])
+   207→    } finally {
+   208→      setLoadingBooks(false)
+   209→    }
+   210→  }
+   211→
+   212→  // ── Open detail view ───────────────────────────────────────
+   213→  const openDetail = (author: AuthorData) => {
+   214→    setSelectedAuthor(author)
+   215→    fetchAuthorBooks(author.id)
+   216→  }
+   217→
+   218→  // ── Save author ────────────────────────────────────────────
+   219→  const handleSave = async () => {
+   220→    if (!form.name.trim()) return
+   221→    setSaving(true)
+   222→    try {
+   223→      const payload = {
+   224→        name: form.name.trim(),
+   225→        bio: form.bio || null,
+   226→        nationality: form.nationality || null,
+   227→        website: form.website || null,
+   228→        email: form.email || null,
+   229→        phone: form.phone || null,
+   230→      }
+   231→
+   232→      let res: Response
+   233→      if (editing) {
+   234→        res = await fetch('/api/authors', {
+   235→          method: 'PUT',
+   236→          headers: { 'Content-Type': 'application/json' },
+   237→          body: JSON.stringify({ id: editing.id, ...payload }),
+   238→        })
+   239→      } else {
+   240→        res = await fetch('/api/authors', {
+   241→          method: 'POST',
+   242→          headers: { 'Content-Type': 'application/json' },
+   243→          body: JSON.stringify(payload),
+   244→        })
+   245→      }
+   246→
+   247→      if (!res.ok) {
+   248→        const err = await res.json()
+   249→        throw new Error(err.error || 'Failed to save author')
+   250→      }
+   251→
+   252→      setDialogOpen(false)
+   253→      setEditing(null)
+   254→      setForm(emptyForm)
+   255→      fetchAuthors()
+   256→    } catch (err) {
+   257→      alert(err instanceof Error ? err.message : 'Failed to save author')
+   258→    } finally {
+   259→      setSaving(false)
+   260→    }
+   261→  }
+   262→
+   263→  // ── Delete author ──────────────────────────────────────────
+   264→  const handleDelete = async (id: string) => {
+   265→    if (!confirm('Are you sure you want to delete this author?')) return
+   266→    setDeleting(id)
+   267→    try {
+   268→      const res = await fetch(`/api/authors?id=${id}`, { method: 'DELETE' })
+   269→      if (!res.ok) {
+   270→        const err = await res.json()
+   271→        throw new Error(err.error || 'Failed to delete')
+   272→      }
+   273→      fetchAuthors()
+   274→    } catch (err) {
+   275→      alert(err instanceof Error ? err.message : 'Failed to delete author')
+   276→    } finally {
+   277→      setDeleting(null)
+   278→    }
+   279→  }
+   280→
+   281→  // ── Open dialog for edit ───────────────────────────────────
+   282→  const openEdit = (author: AuthorData) => {
+   283→    setEditing(author)
+   284→    setForm({
+   285→      name: author.name,
+   286→      bio: author.bio || '',
+   287→      nationality: author.nationality || '',
+   288→      website: author.website || '',
+   289→      email: author.email || '',
+   290→      phone: author.phone || '',
+   291→    })
+   292→    setDialogOpen(true)
+   293→  }
+   294→
+   295→  // ── Open dialog for add ────────────────────────────────────
+   296→  const openAdd = () => {
+   297→    setEditing(null)
+   298→    setForm(emptyForm)
+   299→    setDialogOpen(true)
+   300→  }
+   301→
+   302→  const getInitials = (name: string) =>
+   303→    name
+   304→      .split(' ')
+   305→      .map((w) => w[0])
+   306→      .join('')
+   307→      .toUpperCase()
+   308→      .slice(0, 2)
+   309→
+   310→  const totalPages = Math.ceil(total / limit)
+   311→
+   312→  // ── Stats computation ──────────────────────────────────────
+   313→  const authorsWithBooks = authors.filter(a => a._count.books > 0).length
+   314→  const authorsWithEmail = authors.filter(a => a.email).length
+   315→  const nationalities = new Set(authors.map(a => a.nationality).filter(Boolean)).size
+   316→
+   317→  // ── Detail View ────────────────────────────────────────────
+   318→  if (selectedAuthor) {
+   319→    const avatarColor = getAvatarColor(selectedAuthor.name)
+   320→    return (
+   321→      <div className="space-y-5">
+   322→        {/* Back button */}
+   323→        <MacosButton variant="ghost" icon={ArrowLeft} onClick={() => setSelectedAuthor(null)}>
+   324→          Back to Authors
+   325→        </MacosButton>
+   326→
+   327→        {/* Author Profile Card */}
+   328→        <div className="macos-card macos-shadow-card p-6">
+   329→          <div className="flex flex-col sm:flex-row gap-5">
+   330→            <div className={`size-16 rounded-2xl ${avatarColor.bg} flex items-center justify-center shrink-0 ring-2 ${avatarColor.ring} ring-offset-2 ring-offset-card`}>
+   331→              <span className={`text-xl font-bold ${avatarColor.text}`}>
+   332→                {getInitials(selectedAuthor.name)}
+   333→              </span>
+   334→            </div>
+   335→            <div className="flex-1 min-w-0">
+   336→              <h1 className="macos-page-title text-[20px]">{selectedAuthor.name}</h1>
+   337→              <div className="flex flex-wrap items-center gap-3 mt-2">
+   338→                {selectedAuthor.nationality && (
+   339→                  <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-medium">
+   340→                    <MapPin className="size-3" strokeWidth={1.5} />
+   341→                    {getFlag(selectedAuthor.nationality)} {selectedAuthor.nationality}
+   342→                  </span>
+   343→                )}
+   344→                <MacosBadge variant="success">
+   345→                  {selectedAuthor._count.books} {selectedAuthor._count.books === 1 ? 'book' : 'books'}
+   346→                </MacosBadge>
+   347→              </div>
+   348→              <div className="flex flex-wrap gap-4 mt-3">
+   349→                {selectedAuthor.email && (
+   350→                  <a
+   351→                    href={`mailto:${selectedAuthor.email}`}
+   352→                    className="flex items-center gap-1.5 text-[12px] font-medium text-macos-blue hover:text-macos-blue/80 transition-colors"
+   353→                  >
+   354→                    <Mail className="size-3" strokeWidth={1.5} /> {selectedAuthor.email}
+   355→                  </a>
+   356→                )}
+   357→                {selectedAuthor.phone && (
+   358→                  <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground font-medium">
+   359→                    <Phone className="size-3" strokeWidth={1.5} /> {selectedAuthor.phone}
+   360→                  </span>
+   361→                )}
+   362→                {selectedAuthor.website && (
+   363→                  <a
+   364→                    href={selectedAuthor.website}
+   365→                    target="_blank"
+   366→                    rel="noopener noreferrer"
+   367→                    className="flex items-center gap-1.5 text-[12px] font-medium text-macos-blue hover:text-macos-blue/80 transition-colors"
+   368→                  >
+   369→                    <ExternalLink className="size-3" strokeWidth={1.5} /> Website
+   370→                  </a>
+   371→                )}
+   372→              </div>
+   373→              {selectedAuthor.bio && (
+   374→                <p className="text-[13px] text-muted-foreground mt-3 leading-relaxed max-w-2xl">
+   375→                  {selectedAuthor.bio}
+   376→                </p>
+   377→              )}
+   378→            </div>
+   379→          </div>
+   380→        </div>
+   381→
+   382→        {/* Stats Grid for Detail */}
+   383→        <MacosStatGrid>
+   384→          <MacosStatCard
+   385→            label="Total Books"
+   386→            value={selectedAuthor._count.books}
+   387→            icon={BookOpen}
+   388→            iconColor="text-macos-purple"
+   389→            iconBg="bg-macos-purple/10"
+   390→          />
+   391→          <MacosStatCard
+   392→            label="Nationality"
+   393→            value={selectedAuthor.nationality || 'N/A'}
+   394→            icon={Globe}
+   395→            iconColor="text-macos-teal"
+   396→            iconBg="bg-macos-teal/10"
+   397→          />
+   398→          <MacosStatCard
+   399→            label="Has Email"
+   400→            value={selectedAuthor.email ? 'Yes' : 'No'}
+   401→            icon={Mail}
+   402→            iconColor="text-macos-blue"
+   403→            iconBg="bg-macos-blue/10"
+   404→          />
+   405→          <MacosStatCard
+   406→            label="Has Website"
+   407→            value={selectedAuthor.website ? 'Yes' : 'No'}
+   408→            icon={ExternalLink}
+   409→            iconColor="text-macos-orange"
+   410→            iconBg="bg-macos-orange/10"
+   411→          />
+   412→        </MacosStatGrid>
+   413→
+   414→        {/* Books by Author Card */}
+   415→        <MacosCard
+   416→          title={`Books by ${selectedAuthor.name}`}
+   417→          action={
+   418→            <MacosBadge variant="purple">{authorBooks.length}</MacosBadge>
+   419→          }
+   420→          noPadding
+   421→        >
+   422→          {loadingBooks ? (
+   423→            <div className="p-5 space-y-3">
+   424→              {Array.from({ length: 3 }).map((_, i) => (
+   425→                <div key={i} className="flex items-center gap-3">
+   426→                  <Skeleton className="size-8 rounded-lg" />
+   427→                  <div className="flex-1 space-y-1.5">
+   428→                    <Skeleton className="h-4 w-2/3" />
+   429→                    <Skeleton className="h-3 w-1/3" />
+   430→                  </div>
+   431→                </div>
+   432→              ))}
+   433→            </div>
+   434→          ) : authorBooks.length === 0 ? (
+   435→            <MacosEmptyState
+   436→              icon={BookOpen}
+   437→              title="No books yet"
+   438→              description="This author hasn't been linked to any books"
+   439→            />
+   440→          ) : (
+   441→            <div className="overflow-x-auto custom-scrollbar">
+   442→              <Table>
+   443→                <TableHeader>
+   444→                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+   445→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Title</TableHead>
+   446→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">ISBN</TableHead>
+   447→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Category</TableHead>
+   448→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">Publisher</TableHead>
+   449→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 text-right">Price</TableHead>
+   450→                  </TableRow>
+   451→                </TableHeader>
+   452→                <TableBody>
+   453→                  {authorBooks.map((book) => {
+   454→                    const catColor = book.category ? getCategoryColor(book.category.name) : null
+   455→                    return (
+   456→                      <TableRow key={book.id} className="macos-table-row border-b border-border/30">
+   457→                        <TableCell className="text-[13px] font-medium tracking-tight py-3">{book.title}</TableCell>
+   458→                        <TableCell className="text-[11px] text-muted-foreground font-mono py-3">
+   459→                          {book.isbn || <span className="text-muted-foreground/50">&mdash;</span>}
+   460→                        </TableCell>
+   461→                        <TableCell className="py-3">
+   462→                          {book.category && catColor ? (
+   463→                            <span className={`macos-badge ${catColor.bg} ${catColor.text}`}>
+   464→                              {book.category.name}
+   465→                            </span>
+   466→                          ) : (
+   467→                            <span className="text-[13px] text-muted-foreground/50">&mdash;</span>
+   468→                          )}
+   469→                        </TableCell>
+   470→                        <TableCell className="text-[13px] text-muted-foreground font-medium py-3">
+   471→                          {book.publisher?.name || <span className="text-muted-foreground/50">&mdash;</span>}
+   472→                        </TableCell>
+   473→                        <TableCell className="text-[13px] text-right font-semibold tracking-tight py-3">
+   474→                          ${book.price.toFixed(2)}
+   475→                        </TableCell>
+   476→                      </TableRow>
+   477→                    )
+   478→                  })}
+   479→                </TableBody>
+   480→              </Table>
+   481→            </div>
+   482→          )}
+   483→        </MacosCard>
+   484→      </div>
+   485→    )
+   486→  }
+   487→
+   488→  // ── Main List View ─────────────────────────────────────────
+   489→  return (
+   490→    <div className="space-y-5">
+   491→      {/* macOS Page Header */}
+   492→      <MacosPageHeader
+   493→        title="Authors"
+   494→        subtitle={`${total} ${total === 1 ? 'author' : 'authors'} in your catalog`}
+   495→        icon={Users}
+   496→        iconColor="text-gg-sunset"
+   497→        iconBg="bg-gg-sunset/10"
+   498→      >
+   499→        {!isViewOnly && (
+   500→          <MacosButton variant="primary" icon={Plus} onClick={openAdd}>
+   501→            Add Author
+   502→          </MacosButton>
+   503→        )}
+   504→      </MacosPageHeader>
+   505→
+   506→      {/* Stats Grid */}
+   507→      {!loading && authors.length > 0 && (
+   508→        <MacosStatGrid>
+   509→          <MacosStatCard
+   510→            label="Total Authors"
+   511→            value={total}
+   512→            icon={Users}
+   513→            iconColor="text-gg-sunset"
+   514→            iconBg="bg-gg-sunset/10"
+   515→          />
+   516→          <MacosStatCard
+   517→            label="With Books"
+   518→            value={authorsWithBooks}
+   519→            icon={BookOpen}
+   520→            iconColor="text-macos-purple"
+   521→            iconBg="bg-macos-purple/10"
+   522→          />
+   523→          <MacosStatCard
+   524→            label="With Email"
+   525→            value={authorsWithEmail}
+   526→            icon={Mail}
+   527→            iconColor="text-macos-blue"
+   528→            iconBg="bg-macos-blue/10"
+   529→          />
+   530→          <MacosStatCard
+   531→            label="Nationalities"
+   532→            value={nationalities}
+   533→            icon={Globe}
+   534→            iconColor="text-macos-teal"
+   535→            iconBg="bg-macos-teal/10"
+   536→          />
+   537→        </MacosStatGrid>
+   538→      )}
+   539→
+   540→      {/* Spotlight Search */}
+   541→      <MacosSearch
+   542→        value={search}
+   543→        onChange={setSearch}
+   544→        placeholder="Search by name, nationality, email..."
+   545→      />
+   546→
+   547→      {/* Authors Grid */}
+   548→      {loading ? (
+   549→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   550→          {Array.from({ length: 6 }).map((_, i) => (
+   551→            <div key={i} className="macos-card macos-shadow-card p-4 space-y-3">
+   552→              <div className="flex items-center gap-3">
+   553→                <Skeleton className="size-10 rounded-xl" />
+   554→                <div className="space-y-1.5 flex-1">
+   555→                  <Skeleton className="h-4 w-28" />
+   556→                  <Skeleton className="h-3 w-16" />
+   557→                </div>
+   558→              </div>
+   559→              <Skeleton className="h-3 w-full" />
+   560→              <Skeleton className="h-3 w-2/3" />
+   561→            </div>
+   562→          ))}
+   563→        </div>
+   564→      ) : authors.length === 0 ? (
+   565→        <MacosEmptyState
+   566→          icon={PenTool}
+   567→          title="No authors found"
+   568→          description="Try adjusting your search or add a new author"
+   569→          action={
+   570→            !isViewOnly ? (
+   571→              <MacosButton variant="primary" icon={Plus} onClick={openAdd}>
+   572→                Add Author
+   573→              </MacosButton>
+   574→            ) : undefined
+   575→          }
+   576→        />
+   577→      ) : (
+   578→        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+   579→          {authors.map((author) => {
+   580→            const avatarColor = getAvatarColor(author.name)
+   581→            return (
+   582→              <div
+   583→                key={author.id}
+   584→                className="macos-card macos-shadow-card macos-card-hover p-4 cursor-pointer group"
+   585→                onClick={() => openDetail(author)}
+   586→              >
+   587→                <div className="flex items-start gap-3">
+   588→                  <div className={`size-10 rounded-xl ${avatarColor.bg} flex items-center justify-center shrink-0`}>
+   589→                    <span className={`text-sm font-bold ${avatarColor.text}`}>
+   590→                      {getInitials(author.name)}
+   591→                    </span>
+   592→                  </div>
+   593→                  <div className="flex-1 min-w-0">
+   594→                    <h3 className="text-[13px] font-semibold truncate group-hover:text-macos-blue transition-colors">{author.name}</h3>
+   595→                    {author.nationality && (
+   596→                      <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5 font-medium">
+   597→                        <Globe className="size-3" strokeWidth={1.5} />
+   598→                        {getFlag(author.nationality)} {author.nationality}
+   599→                      </p>
+   600→                    )}
+   601→                    <MacosBadge variant="success" className="mt-2">
+   602→                      {author._count.books} {author._count.books === 1 ? 'book' : 'books'}
+   603→                    </MacosBadge>
+   604→                  </div>
+   605→                </div>
+   606→                {author.bio && (
+   607→                  <p className="text-[13px] text-muted-foreground mt-3 line-clamp-2 leading-relaxed font-medium">
+   608→                    {author.bio}
+   609→                  </p>
+   610→                )}
+   611→                {/* Contact info row */}
+   612→                {author.email && (
+   613→                  <div className="flex items-center gap-3 mt-3 pt-2 border-t border-border/30">
+   614→                    <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium truncate">
+   615→                      <Mail className="size-3 shrink-0" strokeWidth={1.5} />
+   616→                      <span className="truncate">{author.email}</span>
+   617→                    </span>
+   618→                  </div>
+   619→                )}
+   620→                {/* Actions */}
+   621→                {!isViewOnly && (
+   622→                  <div className="mt-3 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+   623→                    <MacosButton
+   624→                      variant="ghost"
+   625→                      icon={Pencil}
+   626→                      onClick={() => openEdit(author)}
+   627→                      className="hover:bg-macos-blue/10 hover:text-macos-blue"
+   628→                    />
+   629→                    <MacosButton
+   630→                      variant="ghost"
+   631→                      icon={deleting === author.id ? RefreshCw : Trash2}
+   632→                      onClick={() => handleDelete(author.id)}
+   633→                      disabled={deleting === author.id}
+   634→                      className="hover:bg-macos-red/10 hover:text-macos-red"
+   635→                    />
+   636→                  </div>
+   637→                )}
+   638→              </div>
+   639→            )
+   640→          })}
+   641→        </div>
+   642→      )}
+   643→
+   644→      {/* Pagination */}
+   645→      {totalPages > 1 && (
+   646→        <div className="flex items-center justify-between px-1">
+   647→          <p className="text-[11px] text-muted-foreground font-medium">
+   648→            Page {page} of {totalPages} &middot; {total} results
+   649→          </p>
+   650→          <div className="flex gap-1">
+   651→            <MacosButton
+   652→              variant="ghost"
+   653→              icon={ArrowLeft}
+   654→              onClick={() => setPage((p) => Math.max(1, p - 1))}
+   655→              disabled={page <= 1}
+   656→            >
+   657→              Prev
+   658→            </MacosButton>
+   659→            <MacosButton
+   660→              variant="ghost"
+   661→              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+   662→              disabled={page >= totalPages}
+   663→            >
+   664→              Next
+   665→            </MacosButton>
+   666→          </div>
+   667→        </div>
+   668→      )}
+   669→
+   670→      {/* Add/Edit Dialog */}
+   671→      <MacosDialog
+   672→        open={dialogOpen}
+   673→        onOpenChange={(open) => {
+   674→          setDialogOpen(open)
+   675→          if (!open) {
+   676→            setEditing(null)
+   677→            setForm(emptyForm)
+   678→          }
+   679→        }}
+   680→        title={editing ? 'Edit Author' : 'Add New Author'}
+   681→        description={editing ? 'Update author information' : 'Fill in the author details'}
+   682→        footer={
+   683→          <>
+   684→            <MacosButton
+   685→              variant="secondary"
+   686→              onClick={() => {
+   687→                setDialogOpen(false)
+   688→                setEditing(null)
+   689→                setForm(emptyForm)
+   690→              }}
+   691→            >
+   692→              Cancel
+   693→            </MacosButton>
+   694→            <MacosButton
+   695→              variant="primary"
+   696→              icon={saving ? RefreshCw : Plus}
+   697→              onClick={handleSave}
+   698→              disabled={saving || !form.name.trim()}
+   699→            >
+   700→              {editing ? 'Update Author' : 'Create Author'}
+   701→            </MacosButton>
+   702→          </>
+   703→        }
+   704→      >
+   705→        <div className="space-y-4">
+   706→          <MacosFormField label="Name *" description="Required">
+   707→            <Input
+   708→              id="author-name"
+   709→              value={form.name}
+   710→              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+   711→              placeholder="Author name"
+   712→              className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   713→            />
+   714→          </MacosFormField>
+   715→
+   716→          <MacosFormField label="Bio">
+   717→            <Textarea
+   718→              id="author-bio"
+   719→              value={form.bio}
+   720→              onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+   721→              placeholder="Author biography..."
+   722→              rows={3}
+   723→              className="rounded-lg border-border/50 text-[13px] mt-1 focus:ring-primary/20"
+   724→            />
+   725→          </MacosFormField>
+   726→
+   727→          <div className="grid grid-cols-2 gap-3">
+   728→            <MacosFormField label="Nationality">
+   729→              <Input
+   730→                id="author-nationality"
+   731→                value={form.nationality}
+   732→                onChange={(e) => setForm((f) => ({ ...f, nationality: e.target.value }))}
+   733→                placeholder="e.g. American"
+   734→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   735→              />
+   736→            </MacosFormField>
+   737→            <MacosFormField label="Website">
+   738→              <Input
+   739→                id="author-website"
+   740→                value={form.website}
+   741→                onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+   742→                placeholder="https://..."
+   743→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   744→              />
+   745→            </MacosFormField>
+   746→          </div>
+   747→
+   748→          <div className="grid grid-cols-2 gap-3">
+   749→            <MacosFormField label="Email">
+   750→              <Input
+   751→                id="author-email"
+   752→                type="email"
+   753→                value={form.email}
+   754→                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+   755→                placeholder="author@example.com"
+   756→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   757→              />
+   758→            </MacosFormField>
+   759→            <MacosFormField label="Phone">
+   760→              <Input
+   761→                id="author-phone"
+   762→                value={form.phone}
+   763→                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+   764→                placeholder="+1-..."
+   765→                className="rounded-lg border-border/50 text-[13px] h-8 mt-1 focus:ring-primary/20"
+   766→              />
+   767→            </MacosFormField>
+   768→          </div>
+   769→        </div>
+   770→      </MacosDialog>
+   771→    </div>
+   772→  )
+   773→}
+   774→

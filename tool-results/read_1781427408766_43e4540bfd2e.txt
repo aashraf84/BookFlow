@@ -1,0 +1,780 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Printer,
+     6→  Plus,
+     7→  FileText,
+     8→  BookOpen,
+     9→  CheckCircle2,
+    10→  XCircle,
+    11→  ArrowRight,
+    12→  Clock,
+    13→  Package,
+    14→  DollarSign,
+    15→  Eye,
+    16→  Send,
+    17→  PenTool,
+    18→  Shield,
+    19→  Globe,
+    20→} from 'lucide-react'
+    21→import { Input } from '@/components/ui/input'
+    22→import { Textarea } from '@/components/ui/textarea'
+    23→import {
+    24→  Select,
+    25→  SelectContent,
+    26→  SelectItem,
+    27→  SelectTrigger,
+    28→  SelectValue,
+    29→} from '@/components/ui/select'
+    30→import {
+    31→  Table,
+    32→  TableBody,
+    33→  TableCell,
+    34→  TableHead,
+    35→  TableHeader,
+    36→  TableRow,
+    37→} from '@/components/ui/table'
+    38→import { useToast } from '@/hooks/use-toast'
+    39→import { useAppStore } from '@/store/app-store'
+    40→import {
+    41→  MacosPageHeader,
+    42→  MacosStatCard,
+    43→  MacosStatGrid,
+    44→  MacosCard,
+    45→  MacosSearch,
+    46→  MacosFilterBar,
+    47→  MacosButton,
+    48→  MacosBadge,
+    49→  MacosDialog,
+    50→  MacosFormField,
+    51→  MacosEmptyState,
+    52→  MacosSection,
+    53→} from '@/components/macos-ui'
+    54→
+    55→// Types
+    56→interface Manuscript {
+    57→  id: string
+    58→  title: string
+    59→  author: string | null
+    60→  status: string
+    61→  submittedAt: string
+    62→  reviewedAt: string | null
+    63→  publishedAt: string | null
+    64→  notes: string | null
+    65→  createdAt: string
+    66→  updatedAt: string
+    67→}
+    68→
+    69→interface PrintOrder {
+    70→  id: string
+    71→  bookId: string | null
+    72→  quantity: number
+    73→  status: string
+    74→  costPerUnit: number
+    75→  totalCost: number
+    76→  notes: string | null
+    77→  createdAt: string
+    78→  updatedAt: string
+    79→  book?: { id: string; title: string; isbn: string | null } | null
+    80→}
+    81→
+    82→interface BookOption {
+    83→  id: string
+    84→  title: string
+    85→  isbn: string | null
+    86→}
+    87→
+    88→// Manuscript status config - spec: submitted=blue, reviewed=purple, approved=green, published=teal, rejected=red
+    89→const manuscriptStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+    90→  submitted: { label: 'Submitted', color: 'text-macos-blue', bgColor: 'bg-macos-blue/10', icon: Send },
+    91→  reviewed: { label: 'Reviewed', color: 'text-macos-purple', bgColor: 'bg-macos-purple/10', icon: PenTool },
+    92→  approved: { label: 'Approved', color: 'text-macos-green', bgColor: 'bg-macos-green/10', icon: Shield },
+    93→  published: { label: 'Published', color: 'text-macos-teal', bgColor: 'bg-macos-teal/10', icon: Globe },
+    94→  rejected: { label: 'Rejected', color: 'text-macos-red', bgColor: 'bg-macos-red/10', icon: XCircle },
+    95→}
+    96→
+    97→const printStatusConfig: Record<string, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
+    98→  ordered: { label: 'Ordered', color: 'text-macos-orange', bgColor: 'bg-macos-orange/10', icon: Clock },
+    99→  printing: { label: 'Printing', color: 'text-macos-blue', bgColor: 'bg-macos-blue/10', icon: Printer },
+   100→  completed: { label: 'Completed', color: 'text-macos-green', bgColor: 'bg-macos-green/10', icon: CheckCircle2 },
+   101→}
+   102→
+   103→const statusWorkflow = ['submitted', 'reviewed', 'approved', 'published']
+   104→const rejectionStates = ['rejected']
+   105→
+   106→function getNextStatus(current: string): string[] {
+   107→  if (current === 'rejected') return []
+   108→  const idx = statusWorkflow.indexOf(current)
+   109→  if (idx === -1) return []
+   110→  if (idx === statusWorkflow.length - 1) return []
+   111→  return [statusWorkflow[idx + 1]]
+   112→}
+   113→
+   114→// Pipeline step component for manuscript workflow visualization
+   115→function PipelineStep({
+   116→  label,
+   117→  icon: Icon,
+   118→  isActive,
+   119→  isCompleted,
+   120→  count,
+   121→  color,
+   122→  bgColor,
+   123→  isLast,
+   124→}: {
+   125→  label: string
+   126→  icon: React.ElementType
+   127→  isActive: boolean
+   128→  isCompleted: boolean
+   129→  count: number
+   130→  color: string
+   131→  bgColor: string
+   132→  isLast: boolean
+   133→}) {
+   134→  return (
+   135→    <div className="flex items-center gap-0 flex-1 min-w-0">
+   136→      <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1">
+   137→        <div
+   138→          className={`relative flex items-center justify-center size-10 rounded-xl transition-all duration-300 ${
+   139→            isActive
+   140→              ? `${bgColor} ring-2 ring-offset-1 ring-offset-background ${color.replace('text-', 'ring-')}`
+   141→              : isCompleted
+   142→              ? bgColor
+   143→              : 'bg-secondary/60'
+   144→          }`}
+   145→        >
+   146→          <Icon className={`size-4 ${isActive || isCompleted ? color : 'text-muted-foreground/50'}`} />
+   147→          {count > 0 && (
+   148→            <span className={`absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-bold px-1 ${
+   149→              isActive ? 'bg-macos-blue text-white' : isCompleted ? bgColor + ' ' + color : 'bg-secondary text-muted-foreground'
+   150→            }`}>
+   151→              {count}
+   152→            </span>
+   153→          )}
+   154→        </div>
+   155→        <div className="text-center">
+   156→          <p className={`text-[10px] font-semibold uppercase tracking-wider ${isActive ? color : isCompleted ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+   157→            {label}
+   158→          </p>
+   159→        </div>
+   160→      </div>
+   161→      {!isLast && (
+   162→        <div className="flex items-center pt-[-16px] self-start mt-5 -ml-1 -mr-1">
+   163→          <div className={`h-[2px] w-full min-w-[24px] rounded-full transition-colors ${
+   164→            isCompleted ? 'bg-macos-green/40' : 'bg-border'
+   165→          }`} />
+   166→          <ArrowRight className={`size-3 -ml-1 ${isCompleted ? 'text-macos-green/40' : 'text-muted-foreground/30'}`} />
+   167→        </div>
+   168→      )}
+   169→    </div>
+   170→  )
+   171→}
+   172→
+   173→export function PublishingModule() {
+   174→  const { toast } = useToast()
+   175→  const authUser = useAppStore((s) => s.authUser)
+   176→  const isViewOnly = authUser?.isViewOnly ?? false
+   177→
+   178→  const [manuscripts, setManuscripts] = React.useState<Manuscript[]>([])
+   179→  const [printOrders, setPrintOrders] = React.useState<PrintOrder[]>([])
+   180→  const [books, setBooks] = React.useState<BookOption[]>([])
+   181→  const [loading, setLoading] = React.useState(true)
+   182→  const [manuscriptDialogOpen, setManuscriptDialogOpen] = React.useState(false)
+   183→  const [printOrderDialogOpen, setPrintOrderDialogOpen] = React.useState(false)
+   184→  const [submitting, setSubmitting] = React.useState(false)
+   185→  const [activeTab, setActiveTab] = React.useState('manuscripts')
+   186→  const [searchQuery, setSearchQuery] = React.useState('')
+   187→  const [statusFilter, setStatusFilter] = React.useState('all')
+   188→
+   189→  const [msForm, setMsForm] = React.useState({ title: '', author: '', notes: '' })
+   190→  const [poForm, setPoForm] = React.useState({ bookId: '', quantity: '', costPerUnit: '' })
+   191→
+   192→  const fetchManuscripts = React.useCallback(async () => {
+   193→    try {
+   194→      const res = await fetch('/api/publishing?type=manuscripts')
+   195→      if (!res.ok) throw new Error('Failed to fetch manuscripts')
+   196→      const json = await res.json()
+   197→      setManuscripts(json.data || [])
+   198→    } catch {
+   199→      toast({ title: 'Error', description: 'Failed to fetch manuscripts', variant: 'destructive' })
+   200→    }
+   201→  }, [toast])
+   202→
+   203→  const fetchPrintOrders = React.useCallback(async () => {
+   204→    try {
+   205→      const res = await fetch('/api/publishing?type=print-orders')
+   206→      if (!res.ok) throw new Error('Failed to fetch print orders')
+   207→      const json = await res.json()
+   208→      setPrintOrders(json.data || [])
+   209→    } catch {
+   210→      toast({ title: 'Error', description: 'Failed to fetch print orders', variant: 'destructive' })
+   211→    }
+   212→  }, [toast])
+   213→
+   214→  const fetchBooks = React.useCallback(async () => {
+   215→    try {
+   216→      const res = await fetch('/api/books')
+   217→      if (!res.ok) throw new Error('Failed to fetch books')
+   218→      const json = await res.json()
+   219→      setBooks(json.data || [])
+   220→    } catch {
+   221→      // Silently fail
+   222→    }
+   223→  }, [])
+   224→
+   225→  React.useEffect(() => {
+   226→    const loadAll = async () => {
+   227→      setLoading(true)
+   228→      await Promise.all([fetchManuscripts(), fetchPrintOrders(), fetchBooks()])
+   229→      setLoading(false)
+   230→    }
+   231→    loadAll()
+   232→  }, [fetchManuscripts, fetchPrintOrders, fetchBooks])
+   233→
+   234→  const handleSubmitManuscript = async () => {
+   235→    if (!msForm.title) {
+   236→      toast({ title: 'Validation Error', description: 'Title is required', variant: 'destructive' })
+   237→      return
+   238→    }
+   239→    try {
+   240→      setSubmitting(true)
+   241→      const res = await fetch('/api/publishing?type=manuscripts', {
+   242→        method: 'POST',
+   243→        headers: { 'Content-Type': 'application/json' },
+   244→        body: JSON.stringify(msForm),
+   245→      })
+   246→      if (!res.ok) throw new Error('Failed to submit manuscript')
+   247→      toast({ title: 'Success', description: 'Manuscript submitted successfully' })
+   248→      setManuscriptDialogOpen(false)
+   249→      setMsForm({ title: '', author: '', notes: '' })
+   250→      fetchManuscripts()
+   251→    } catch {
+   252→      toast({ title: 'Error', description: 'Failed to submit manuscript', variant: 'destructive' })
+   253→    } finally {
+   254→      setSubmitting(false)
+   255→    }
+   256→  }
+   257→
+   258→  const handleCreatePrintOrder = async () => {
+   259→    if (!poForm.bookId || !poForm.quantity) {
+   260→      toast({ title: 'Validation Error', description: 'Book and quantity are required', variant: 'destructive' })
+   261→      return
+   262→    }
+   263→    try {
+   264→      setSubmitting(true)
+   265→      const res = await fetch('/api/publishing?type=print-orders', {
+   266→        method: 'POST',
+   267→        headers: { 'Content-Type': 'application/json' },
+   268→        body: JSON.stringify({
+   269→          bookId: poForm.bookId,
+   270→          quantity: parseInt(poForm.quantity),
+   271→          costPerUnit: parseFloat(poForm.costPerUnit) || 0,
+   272→        }),
+   273→      })
+   274→      if (!res.ok) throw new Error('Failed to create print order')
+   275→      toast({ title: 'Success', description: 'Print order created successfully' })
+   276→      setPrintOrderDialogOpen(false)
+   277→      setPoForm({ bookId: '', quantity: '', costPerUnit: '' })
+   278→      fetchPrintOrders()
+   279→    } catch {
+   280→      toast({ title: 'Error', description: 'Failed to create print order', variant: 'destructive' })
+   281→    } finally {
+   282→      setSubmitting(false)
+   283→    }
+   284→  }
+   285→
+   286→  const handleManuscriptStatus = async (manuscript: Manuscript, newStatus: string) => {
+   287→    try {
+   288→      const res = await fetch('/api/publishing?type=manuscripts', {
+   289→        method: 'PUT',
+   290→        headers: { 'Content-Type': 'application/json' },
+   291→        body: JSON.stringify({ id: manuscript.id, status: newStatus }),
+   292→      })
+   293→      if (!res.ok) throw new Error('Failed to update status')
+   294→      toast({ title: 'Success', description: `Manuscript status updated to ${newStatus}` })
+   295→      fetchManuscripts()
+   296→    } catch {
+   297→      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' })
+   298→    }
+   299→  }
+   300→
+   301→  const handlePrintOrderStatus = async (order: PrintOrder, newStatus: string) => {
+   302→    try {
+   303→      const res = await fetch('/api/publishing?type=print-orders', {
+   304→        method: 'PUT',
+   305→        headers: { 'Content-Type': 'application/json' },
+   306→        body: JSON.stringify({ id: order.id, status: newStatus }),
+   307→      })
+   308→      if (!res.ok) throw new Error('Failed to update status')
+   309→      toast({ title: 'Success', description: `Print order status updated to ${newStatus}` })
+   310→      fetchPrintOrders()
+   311→    } catch {
+   312→      toast({ title: 'Error', description: 'Failed to update status', variant: 'destructive' })
+   313→    }
+   314→  }
+   315→
+   316→  const msByStatus = manuscripts.reduce<Record<string, number>>((acc, m) => {
+   317→    acc[m.status] = (acc[m.status] || 0) + 1
+   318→    return acc
+   319→  }, {})
+   320→
+   321→  const totalPrintCost = printOrders.reduce((sum, o) => sum + o.totalCost, 0)
+   322→
+   323→  // Filter manuscripts
+   324→  const filteredManuscripts = manuscripts.filter((m) => {
+   325→    const matchesSearch = !searchQuery ||
+   326→      m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   327→      (m.author && m.author.toLowerCase().includes(searchQuery.toLowerCase()))
+   328→    const matchesStatus = statusFilter === 'all' || m.status === statusFilter
+   329→    return matchesSearch && matchesStatus
+   330→  })
+   331→
+   332→  const tabs = [
+   333→    { id: 'manuscripts', label: 'Manuscripts' },
+   334→    { id: 'print-orders', label: 'Print Orders' },
+   335→  ]
+   336→
+   337→  return (
+   338→    <div className="space-y-6">
+   339→      {/* macOS Page Header */}
+   340→      <MacosPageHeader
+   341→        title="Publishing"
+   342→        subtitle="Manage manuscripts, reviews, and print production"
+   343→        icon={BookOpen}
+   344→        iconColor="text-macos-teal"
+   345→        iconBg="bg-macos-teal/10"
+   346→      >
+   347→        {isViewOnly && (
+   348→          <MacosBadge variant="warning">
+   349→            <Eye className="size-3 mr-1" />
+   350→            DEMO MODE
+   351→          </MacosBadge>
+   352→        )}
+   353→      </MacosPageHeader>
+   354→
+   355→      {/* Summary Metrics - macOS Stat Cards */}
+   356→      <MacosStatGrid className="lg:grid-cols-5">
+   357→        <MacosStatCard label="Manuscripts" value={manuscripts.length} icon={FileText} iconColor="text-macos-blue" iconBg="bg-macos-blue/10" />
+   358→        <MacosStatCard label="Submitted" value={msByStatus['submitted'] || 0} icon={Clock} iconColor="text-macos-orange" iconBg="bg-macos-orange/10" />
+   359→        <MacosStatCard label="Published" value={msByStatus['published'] || 0} icon={Globe} iconColor="text-macos-teal" iconBg="bg-macos-teal/10" />
+   360→        <MacosStatCard label="Print Orders" value={printOrders.length} icon={Printer} iconColor="text-macos-purple" iconBg="bg-macos-purple/10" />
+   361→        <MacosStatCard label="Print Cost" value={`$${totalPrintCost.toLocaleString()}`} icon={DollarSign} iconColor="text-macos-green" iconBg="bg-macos-green/10" />
+   362→      </MacosStatGrid>
+   363→
+   364→      {/* Manuscript Workflow Pipeline Visualization */}
+   365→      <MacosCard noPadding>
+   366→        <div className="px-5 pt-5 pb-0">
+   367→          <MacosSection
+   368→            title="Manuscript Workflow Pipeline"
+   369→            subtitle="Track manuscripts through the publishing lifecycle"
+   370→          />
+   371→        </div>
+   372→        <div className="p-5 pt-2">
+   373→          <div className="flex items-start justify-between gap-2">
+   374→            {statusWorkflow.map((status, idx) => {
+   375→              const config = manuscriptStatusConfig[status]
+   376→              const count = msByStatus[status] || 0
+   377→              const isLast = idx === statusWorkflow.length - 1
+   378→              const isActive = count > 0
+   379→              const laterCounts = statusWorkflow.slice(idx + 1).reduce((sum, s) => sum + (msByStatus[s] || 0), 0)
+   380→              const isCompleted = count === 0 && laterCounts > 0
+   381→              return (
+   382→                <PipelineStep
+   383→                  key={status}
+   384→                  label={config.label}
+   385→                  icon={config.icon}
+   386→                  isActive={isActive}
+   387→                  isCompleted={isCompleted}
+   388→                  count={count}
+   389→                  color={config.color}
+   390→                  bgColor={config.bgColor}
+   391→                  isLast={isLast}
+   392→                />
+   393→              )
+   394→            })}
+   395→          </div>
+   396→          {/* Rejected count if any */}
+   397→          {(msByStatus['rejected'] || 0) > 0 && (
+   398→            <div className="mt-4 flex items-center gap-2 pt-3 border-t border-border">
+   399→              <XCircle className="size-3.5 text-macos-red" />
+   400→              <span className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Rejected:</span>
+   401→              <MacosBadge variant="danger">{msByStatus['rejected']}</MacosBadge>
+   402→            </div>
+   403→          )}
+   404→        </div>
+   405→      </MacosCard>
+   406→
+   407→      {/* Filter Bar + Actions */}
+   408→      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+   409→        <MacosFilterBar
+   410→          items={tabs.map((tab) => ({ id: tab.id, label: tab.label }))}
+   411→          activeId={activeTab}
+   412→          onChange={setActiveTab}
+   413→        />
+   414→        <div className="flex items-center gap-2">
+   415→          {activeTab === 'manuscripts' && (
+   416→            <MacosSearch
+   417→              value={searchQuery}
+   418→              onChange={setSearchQuery}
+   419→              placeholder="Search manuscripts..."
+   420→            />
+   421→          )}
+   422→          {activeTab === 'manuscripts' && (
+   423→            <Select value={statusFilter} onValueChange={setStatusFilter}>
+   424→              <SelectTrigger className="w-[140px] h-8 text-[12px] font-medium rounded-lg bg-secondary/80 border-0">
+   425→                <SelectValue placeholder="Filter status" />
+   426→              </SelectTrigger>
+   427→              <SelectContent>
+   428→                <SelectItem value="all">All Status</SelectItem>
+   429→                <SelectItem value="submitted">Submitted</SelectItem>
+   430→                <SelectItem value="reviewed">Reviewed</SelectItem>
+   431→                <SelectItem value="approved">Approved</SelectItem>
+   432→                <SelectItem value="published">Published</SelectItem>
+   433→                <SelectItem value="rejected">Rejected</SelectItem>
+   434→              </SelectContent>
+   435→            </Select>
+   436→          )}
+   437→          {!isViewOnly && (
+   438→            <>
+   439→              <MacosButton
+   440→                variant="secondary"
+   441→                icon={Plus}
+   442→                onClick={() => setManuscriptDialogOpen(true)}
+   443→              >
+   444→                Submit Manuscript
+   445→              </MacosButton>
+   446→              <MacosButton
+   447→                variant="primary"
+   448→                icon={Plus}
+   449→                onClick={() => setPrintOrderDialogOpen(true)}
+   450→              >
+   451→                Print Order
+   452→              </MacosButton>
+   453→            </>
+   454→          )}
+   455→        </div>
+   456→      </div>
+   457→
+   458→      {/* Manuscripts Tab */}
+   459→      {activeTab === 'manuscripts' && (
+   460→        <div>
+   461→          {loading ? (
+   462→            <MacosCard>
+   463→              <div className="p-8 text-center text-muted-foreground animate-pulse text-[13px]">
+   464→                Loading manuscripts...
+   465→              </div>
+   466→            </MacosCard>
+   467→          ) : filteredManuscripts.length === 0 ? (
+   468→            <MacosCard>
+   469→              <MacosEmptyState
+   470→                icon={FileText}
+   471→                title="No manuscripts found"
+   472→                description={searchQuery || statusFilter !== 'all' ? 'Try adjusting your filters' : 'Submit your first manuscript to get started'}
+   473→              />
+   474→            </MacosCard>
+   475→          ) : (
+   476→            <div className="macos-card macos-shadow-card overflow-hidden">
+   477→              <div className="overflow-x-auto custom-scrollbar">
+   478→                <Table>
+   479→                  <TableHeader>
+   480→                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+   481→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Title</TableHead>
+   482→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Author</TableHead>
+   483→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+   484→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Submitted</TableHead>
+   485→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Actions</TableHead>
+   486→                    </TableRow>
+   487→                  </TableHeader>
+   488→                  <TableBody>
+   489→                    {filteredManuscripts.map((ms) => {
+   490→                      const nextStatuses = getNextStatus(ms.status)
+   491→                      const statusConf = manuscriptStatusConfig[ms.status] || manuscriptStatusConfig.submitted
+   492→                      const StatusIcon = statusConf.icon
+   493→                      return (
+   494→                        <TableRow key={ms.id} className="macos-table-row border-b border-border/30 last:border-0">
+   495→                          <TableCell className="text-[13px] font-medium tracking-tight py-3 max-w-[200px]">
+   496→                            <div className="flex items-center gap-2">
+   497→                              <div className={`size-7 rounded-lg flex items-center justify-center ${statusConf.bgColor}`}>
+   498→                                <StatusIcon className={`size-3.5 ${statusConf.color}`} />
+   499→                              </div>
+   500→                              <span className="truncate">{ms.title}</span>
+   501→                            </div>
+   502→                          </TableCell>
+   503→                          <TableCell className="text-[13px] font-medium tracking-tight py-3 text-muted-foreground">{ms.author || '—'}</TableCell>
+   504→                          <TableCell className="py-3">
+   505→                            <MacosBadge
+   506→                              variant={
+   507→                                ms.status === 'published' ? 'success' :
+   508→                                ms.status === 'rejected' ? 'danger' :
+   509→                                ms.status === 'submitted' ? 'info' :
+   510→                                ms.status === 'reviewed' ? 'purple' : 'default'
+   511→                              }
+   512→                            >
+   513→                              {statusConf.label}
+   514→                            </MacosBadge>
+   515→                          </TableCell>
+   516→                          <TableCell className="text-[13px] font-medium tracking-tight py-3 text-muted-foreground">
+   517→                            {new Date(ms.submittedAt).toLocaleDateString()}
+   518→                          </TableCell>
+   519→                          <TableCell className="text-right py-3">
+   520→                            <div className="flex items-center justify-end gap-1">
+   521→                              {nextStatuses.map((ns) => {
+   522→                                const nsConf = manuscriptStatusConfig[ns]
+   523→                                return (
+   524→                                  <MacosButton
+   525→                                    key={ns}
+   526→                                    variant="secondary"
+   527→                                    icon={ArrowRight}
+   528→                                    onClick={() => handleManuscriptStatus(ms, ns)}
+   529→                                    disabled={isViewOnly}
+   530→                                    className={nsConf?.color}
+   531→                                  >
+   532→                                    {ns.charAt(0).toUpperCase() + ns.slice(1)}
+   533→                                  </MacosButton>
+   534→                                )
+   535→                              })}
+   536→                              {!rejectionStates.includes(ms.status) && ms.status !== 'published' && !isViewOnly && (
+   537→                                <MacosButton
+   538→                                  variant="danger"
+   539→                                  icon={XCircle}
+   540→                                  onClick={() => handleManuscriptStatus(ms, 'rejected')}
+   541→                                  disabled={isViewOnly}
+   542→                                >
+   543→                                  Reject
+   544→                                </MacosButton>
+   545→                              )}
+   546→                              {ms.status === 'published' && (
+   547→                                <CheckCircle2 className="size-4 text-macos-green" />
+   548→                              )}
+   549→                              {ms.status === 'rejected' && (
+   550→                                <XCircle className="size-4 text-macos-red" />
+   551→                              )}
+   552→                            </div>
+   553→                          </TableCell>
+   554→                        </TableRow>
+   555→                      )
+   556→                    })}
+   557→                  </TableBody>
+   558→                </Table>
+   559→              </div>
+   560→            </div>
+   561→          )}
+   562→        </div>
+   563→      )}
+   564→
+   565→      {/* Print Orders Tab */}
+   566→      {activeTab === 'print-orders' && (
+   567→        <div>
+   568→          {loading ? (
+   569→            <MacosCard>
+   570→              <div className="p-8 text-center text-muted-foreground animate-pulse text-[13px]">
+   571→                Loading print orders...
+   572→              </div>
+   573→            </MacosCard>
+   574→          ) : printOrders.length === 0 ? (
+   575→            <MacosCard>
+   576→              <MacosEmptyState
+   577→                icon={Printer}
+   578→                title="No print orders yet"
+   579→                description="Create a print order for a published book"
+   580→              />
+   581→            </MacosCard>
+   582→          ) : (
+   583→            <div className="macos-card macos-shadow-card overflow-hidden">
+   584→              <div className="overflow-x-auto custom-scrollbar">
+   585→                <Table>
+   586→                  <TableHeader>
+   587→                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+   588→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Book</TableHead>
+   589→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Quantity</TableHead>
+   590→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Cost/Unit</TableHead>
+   591→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Total Cost</TableHead>
+   592→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+   593→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Actions</TableHead>
+   594→                    </TableRow>
+   595→                  </TableHeader>
+   596→                  <TableBody>
+   597→                    {printOrders.map((po) => {
+   598→                      const poConf = printStatusConfig[po.status] || printStatusConfig.ordered
+   599→                      const PoIcon = poConf.icon
+   600→                      return (
+   601→                        <TableRow key={po.id} className="macos-table-row border-b border-border/30 last:border-0">
+   602→                          <TableCell className="text-[13px] font-medium tracking-tight py-3">
+   603→                            <div className="flex items-center gap-2">
+   604→                              <div className={`size-7 rounded-lg flex items-center justify-center ${poConf.bgColor}`}>
+   605→                                <PoIcon className={`size-3.5 ${poConf.color}`} />
+   606→                              </div>
+   607→                              {po.book?.title || 'Unknown Book'}
+   608→                            </div>
+   609→                          </TableCell>
+   610→                          <TableCell className="text-[13px] font-medium tracking-tight py-3">{po.quantity.toLocaleString()}</TableCell>
+   611→                          <TableCell className="text-[13px] font-medium tracking-tight py-3">${po.costPerUnit.toFixed(2)}</TableCell>
+   612→                          <TableCell className="text-[13px] font-medium tracking-tight py-3 font-semibold">${po.totalCost.toLocaleString()}</TableCell>
+   613→                          <TableCell className="py-3">
+   614→                            <MacosBadge
+   615→                              variant={po.status === 'completed' ? 'success' : po.status === 'printing' ? 'info' : 'warning'}
+   616→                            >
+   617→                              {poConf.label}
+   618→                            </MacosBadge>
+   619→                          </TableCell>
+   620→                          <TableCell className="text-right py-3">
+   621→                            <div className="flex items-center justify-end gap-1">
+   622→                              {po.status === 'ordered' && !isViewOnly && (
+   623→                                <MacosButton
+   624→                                  variant="secondary"
+   625→                                  icon={ArrowRight}
+   626→                                  onClick={() => handlePrintOrderStatus(po, 'printing')}
+   627→                                  disabled={isViewOnly}
+   628→                                >
+   629→                                  Start Printing
+   630→                                </MacosButton>
+   631→                              )}
+   632→                              {po.status === 'printing' && !isViewOnly && (
+   633→                                <MacosButton
+   634→                                  variant="primary"
+   635→                                  icon={CheckCircle2}
+   636→                                  onClick={() => handlePrintOrderStatus(po, 'completed')}
+   637→                                  disabled={isViewOnly}
+   638→                                  className="bg-macos-green text-white hover:bg-macos-green/90"
+   639→                                >
+   640→                                  Complete
+   641→                                </MacosButton>
+   642→                              )}
+   643→                              {po.status === 'completed' && (
+   644→                                <MacosBadge variant="success">
+   645→                                  <CheckCircle2 className="size-3 mr-1" />
+   646→                                  Done
+   647→                                </MacosBadge>
+   648→                              )}
+   649→                              {isViewOnly && po.status !== 'completed' && (
+   650→                                <span className="text-[10px] text-muted-foreground">View only</span>
+   651→                              )}
+   652→                            </div>
+   653→                          </TableCell>
+   654→                        </TableRow>
+   655→                      )
+   656→                    })}
+   657→                  </TableBody>
+   658→                </Table>
+   659→              </div>
+   660→            </div>
+   661→          )}
+   662→        </div>
+   663→      )}
+   664→
+   665→      {/* Submit Manuscript Dialog - frosted glass */}
+   666→      <MacosDialog
+   667→        open={manuscriptDialogOpen}
+   668→        onOpenChange={setManuscriptDialogOpen}
+   669→        title="Submit Manuscript"
+   670→        description="Submit a new manuscript for review and publishing"
+   671→        footer={
+   672→          <>
+   673→            <MacosButton variant="secondary" onClick={() => setManuscriptDialogOpen(false)}>
+   674→              Cancel
+   675→            </MacosButton>
+   676→            <MacosButton variant="primary" onClick={handleSubmitManuscript} disabled={submitting}>
+   677→              {submitting ? 'Submitting...' : 'Submit Manuscript'}
+   678→            </MacosButton>
+   679→          </>
+   680→        }
+   681→      >
+   682→        <div className="space-y-4">
+   683→          <MacosFormField label="Title" description="Required">
+   684→            <Input
+   685→              placeholder="The Great Adventure"
+   686→              value={msForm.title}
+   687→              onChange={(e) => setMsForm((prev) => ({ ...prev, title: e.target.value }))}
+   688→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-ring"
+   689→            />
+   690→          </MacosFormField>
+   691→          <MacosFormField label="Author">
+   692→            <Input
+   693→              placeholder="Jane Doe"
+   694→              value={msForm.author}
+   695→              onChange={(e) => setMsForm((prev) => ({ ...prev, author: e.target.value }))}
+   696→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-ring"
+   697→            />
+   698→          </MacosFormField>
+   699→          <MacosFormField label="Notes">
+   700→            <Textarea
+   701→              placeholder="Additional notes about this manuscript..."
+   702→              value={msForm.notes}
+   703→              onChange={(e) => setMsForm((prev) => ({ ...prev, notes: e.target.value }))}
+   704→              rows={3}
+   705→              className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-ring"
+   706→            />
+   707→          </MacosFormField>
+   708→        </div>
+   709→      </MacosDialog>
+   710→
+   711→      {/* Create Print Order Dialog - frosted glass */}
+   712→      <MacosDialog
+   713→        open={printOrderDialogOpen}
+   714→        onOpenChange={setPrintOrderDialogOpen}
+   715→        title="Create Print Order"
+   716→        description="Order a print run for a published book"
+   717→        footer={
+   718→          <>
+   719→            <MacosButton variant="secondary" onClick={() => setPrintOrderDialogOpen(false)}>
+   720→              Cancel
+   721→            </MacosButton>
+   722→            <MacosButton variant="primary" onClick={handleCreatePrintOrder} disabled={submitting}>
+   723→              {submitting ? 'Creating...' : 'Create Order'}
+   724→            </MacosButton>
+   725→          </>
+   726→        }
+   727→      >
+   728→        <div className="space-y-4">
+   729→          <MacosFormField label="Book" description="Required">
+   730→            <Select
+   731→              value={poForm.bookId}
+   732→              onValueChange={(v) => setPoForm((prev) => ({ ...prev, bookId: v }))}
+   733→            >
+   734→              <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   735→                <SelectValue placeholder="Select a book" />
+   736→              </SelectTrigger>
+   737→              <SelectContent>
+   738→                {books.map((book) => (
+   739→                  <SelectItem key={book.id} value={book.id}>
+   740→                    {book.title}{book.isbn ? ` (${book.isbn})` : ''}
+   741→                  </SelectItem>
+   742→                ))}
+   743→              </SelectContent>
+   744→            </Select>
+   745→          </MacosFormField>
+   746→          <div className="grid grid-cols-2 gap-4">
+   747→            <MacosFormField label="Quantity" description="Required">
+   748→              <Input
+   749→                type="number"
+   750→                placeholder="500"
+   751→                value={poForm.quantity}
+   752→                onChange={(e) => setPoForm((prev) => ({ ...prev, quantity: e.target.value }))}
+   753→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-ring"
+   754→              />
+   755→            </MacosFormField>
+   756→            <MacosFormField label="Cost Per Unit">
+   757→              <Input
+   758→                type="number"
+   759→                step="0.01"
+   760→                placeholder="2.50"
+   761→                value={poForm.costPerUnit}
+   762→                onChange={(e) => setPoForm((prev) => ({ ...prev, costPerUnit: e.target.value }))}
+   763→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-ring"
+   764→              />
+   765→            </MacosFormField>
+   766→          </div>
+   767→          {poForm.quantity && poForm.costPerUnit && (
+   768→            <div className="macos-card p-3 text-[13px]">
+   769→              <span className="text-muted-foreground">Total Cost: </span>
+   770→              <span className="font-bold text-gg-golden">
+   771→                ${(parseInt(poForm.quantity) * parseFloat(poForm.costPerUnit)).toLocaleString()}
+   772→              </span>
+   773→            </div>
+   774→          )}
+   775→        </div>
+   776→      </MacosDialog>
+   777→    </div>
+   778→  )
+   779→}
+   780→

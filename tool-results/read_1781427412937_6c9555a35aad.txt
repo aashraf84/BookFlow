@@ -1,0 +1,719 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Building,
+     6→  Plus,
+     7→  MapPin,
+     8→  Phone,
+     9→  Mail,
+    10→  User,
+    11→  MoreVertical,
+    12→  Pencil,
+    13→  Power,
+    14→  PowerOff,
+    15→  Users,
+    16→  ShoppingCart,
+    17→  Package,
+    18→  Wifi,
+    19→  WifiOff,
+    20→  Globe,
+    21→  ChevronRight,
+    22→} from 'lucide-react'
+    23→import { Input } from '@/components/ui/input'
+    24→import {
+    25→  DropdownMenu,
+    26→  DropdownMenuContent,
+    27→  DropdownMenuItem,
+    28→  DropdownMenuTrigger,
+    29→} from '@/components/ui/dropdown-menu'
+    30→import { useToast } from '@/hooks/use-toast'
+    31→import { useAppStore } from '@/store/app-store'
+    32→import {
+    33→  MacosPageHeader,
+    34→  MacosStatCard,
+    35→  MacosStatGrid,
+    36→  MacosCard,
+    37→  MacosButton,
+    38→  MacosBadge,
+    39→  MacosDialog,
+    40→  MacosEmptyState,
+    41→  MacosFormField,
+    42→} from '@/components/macos-ui'
+    43→
+    44→// Types
+    45→interface Branch {
+    46→  id: string
+    47→  name: string
+    48→  code: string
+    49→  address: string | null
+    50→  phone: string | null
+    51→  email: string | null
+    52→  manager: string | null
+    53→  isActive: boolean
+    54→  createdAt: string
+    55→  updatedAt: string
+    56→  _count?: {
+    57→    employees: number
+    58→    sales: number
+    59→    warehouses: number
+    60→  }
+    61→}
+    62→
+    63→interface BranchFormData {
+    64→  name: string
+    65→  code: string
+    66→  address: string
+    67→  phone: string
+    68→  email: string
+    69→  manager: string
+    70→}
+    71→
+    72→const defaultFormData: BranchFormData = {
+    73→  name: '',
+    74→  code: '',
+    75→  address: '',
+    76→  phone: '',
+    77→  email: '',
+    78→  manager: '',
+    79→}
+    80→
+    81→// Helper: Network signal strength indicator
+    82→function SignalBars({ strength }: { strength: number }) {
+    83→  const bars = [1, 2, 3, 4]
+    84→  return (
+    85→    <div className="flex items-end gap-[2px]">
+    86→      {bars.map((bar) => (
+    87→        <div
+    88→          key={bar}
+    89→          className={`w-[3px] rounded-sm transition-colors ${
+    90→            bar <= strength
+    91→              ? 'bg-macos-green'
+    92→              : 'bg-muted-foreground/20'
+    93→          }`}
+    94→          style={{ height: `${bar * 3 + 2}px` }}
+    95→        />
+    96→      ))}
+    97→    </div>
+    98→  )
+    99→}
+   100→
+   101→// Get signal strength based on metrics
+   102→function getSignalStrength(branch: Branch) {
+   103→  const employees = branch._count?.employees || 0
+   104→  const sales = branch._count?.sales || 0
+   105→  if (employees >= 5 && sales >= 10) return 4
+   106→  if (employees >= 3 && sales >= 5) return 3
+   107→  if (employees >= 1) return 2
+   108→  return 1
+   109→}
+   110→
+   111→export function BranchesModule() {
+   112→  const authUser = useAppStore((s) => s.authUser)
+   113→  const isViewOnly = authUser?.isViewOnly ?? false
+   114→  const { toast } = useToast()
+   115→  const [branches, setBranches] = React.useState<Branch[]>([])
+   116→  const [loading, setLoading] = React.useState(true)
+   117→  const [addDialogOpen, setAddDialogOpen] = React.useState(false)
+   118→  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+   119→  const [formData, setFormData] = React.useState<BranchFormData>(defaultFormData)
+   120→  const [editingBranch, setEditingBranch] = React.useState<Branch | null>(null)
+   121→  const [submitting, setSubmitting] = React.useState(false)
+   122→  const [selectedBranch, setSelectedBranch] = React.useState<Branch | null>(null)
+   123→  const [detailOpen, setDetailOpen] = React.useState(false)
+   124→
+   125→  const fetchBranches = React.useCallback(async () => {
+   126→    try {
+   127→      setLoading(true)
+   128→      const res = await fetch('/api/branches')
+   129→      if (!res.ok) throw new Error('Failed to fetch branches')
+   130→      const json = await res.json()
+   131→      setBranches(json.data || [])
+   132→    } catch {
+   133→      toast({ title: 'Error', description: 'Failed to fetch branches', variant: 'destructive' })
+   134→    } finally {
+   135→      setLoading(false)
+   136→    }
+   137→  }, [toast])
+   138→
+   139→  React.useEffect(() => {
+   140→    fetchBranches()
+   141→  }, [fetchBranches])
+   142→
+   143→  const handleAddBranch = async () => {
+   144→    if (!formData.name || !formData.code) {
+   145→      toast({ title: 'Validation Error', description: 'Name and code are required', variant: 'destructive' })
+   146→      return
+   147→    }
+   148→    try {
+   149→      setSubmitting(true)
+   150→      const res = await fetch('/api/branches', {
+   151→        method: 'POST',
+   152→        headers: { 'Content-Type': 'application/json' },
+   153→        body: JSON.stringify(formData),
+   154→      })
+   155→      if (!res.ok) {
+   156→        const err = await res.json()
+   157→        throw new Error(err.error || 'Failed to create branch')
+   158→      }
+   159→      toast({ title: 'Success', description: 'Branch created successfully' })
+   160→      setAddDialogOpen(false)
+   161→      setFormData(defaultFormData)
+   162→      fetchBranches()
+   163→    } catch (err) {
+   164→      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to create branch', variant: 'destructive' })
+   165→    } finally {
+   166→      setSubmitting(false)
+   167→    }
+   168→  }
+   169→
+   170→  const handleEditBranch = async () => {
+   171→    if (!editingBranch) return
+   172→    try {
+   173→      setSubmitting(true)
+   174→      const res = await fetch('/api/branches', {
+   175→        method: 'PUT',
+   176→        headers: { 'Content-Type': 'application/json' },
+   177→        body: JSON.stringify({ id: editingBranch.id, ...formData }),
+   178→      })
+   179→      if (!res.ok) {
+   180→        const err = await res.json()
+   181→        throw new Error(err.error || 'Failed to update branch')
+   182→      }
+   183→      toast({ title: 'Success', description: 'Branch updated successfully' })
+   184→      setEditDialogOpen(false)
+   185→      setEditingBranch(null)
+   186→      setFormData(defaultFormData)
+   187→      fetchBranches()
+   188→    } catch (err) {
+   189→      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to update branch', variant: 'destructive' })
+   190→    } finally {
+   191→      setSubmitting(false)
+   192→    }
+   193→  }
+   194→
+   195→  const handleToggleStatus = async (branch: Branch) => {
+   196→    try {
+   197→      const res = await fetch('/api/branches', {
+   198→        method: 'PUT',
+   199→        headers: { 'Content-Type': 'application/json' },
+   200→        body: JSON.stringify({ id: branch.id, isActive: !branch.isActive }),
+   201→      })
+   202→      if (!res.ok) throw new Error('Failed to update branch status')
+   203→      toast({
+   204→        title: 'Success',
+   205→        description: `Branch ${branch.isActive ? 'deactivated' : 'activated'} successfully`,
+   206→      })
+   207→      fetchBranches()
+   208→    } catch {
+   209→      toast({ title: 'Error', description: 'Failed to update branch status', variant: 'destructive' })
+   210→    }
+   211→  }
+   212→
+   213→  const openEditDialog = (branch: Branch) => {
+   214→    setEditingBranch(branch)
+   215→    setFormData({
+   216→      name: branch.name,
+   217→      code: branch.code,
+   218→      address: branch.address || '',
+   219→      phone: branch.phone || '',
+   220→      email: branch.email || '',
+   221→      manager: branch.manager || '',
+   222→    })
+   223→    setEditDialogOpen(true)
+   224→  }
+   225→
+   226→  const openDetailDialog = (branch: Branch) => {
+   227→    setSelectedBranch(branch)
+   228→    setDetailOpen(true)
+   229→  }
+   230→
+   231→  const activeBranches = branches.filter((b) => b.isActive)
+   232→  const inactiveBranches = branches.filter((b) => !b.isActive)
+   233→
+   234→  const totalEmployees = branches.reduce((sum, b) => sum + (b._count?.employees || 0), 0)
+   235→  const totalSales = branches.reduce((sum, b) => sum + (b._count?.sales || 0), 0)
+   236→
+   237→  return (
+   238→    <div className="space-y-5">
+   239→      {/* Page Header */}
+   240→      <MacosPageHeader
+   241→        title="Network Locations"
+   242→        subtitle="Manage branch locations & connectivity"
+   243→        icon={Globe}
+   244→        iconColor="text-gg-bay"
+   245→        iconBg="bg-gg-bay/10"
+   246→      >
+   247→        {!isViewOnly && (
+   248→          <MacosButton variant="primary" icon={Plus} onClick={() => { setFormData(defaultFormData); setAddDialogOpen(true) }}>
+   249→            Add Location
+   250→          </MacosButton>
+   251→        )}
+   252→      </MacosPageHeader>
+   253→
+   254→      {/* Performance Metrics */}
+   255→      <MacosStatGrid>
+   256→        <MacosStatCard
+   257→          label="Locations"
+   258→          value={branches.length}
+   259→          icon={Building}
+   260→          iconColor="text-gg-bay"
+   261→          iconBg="bg-gg-bay/10"
+   262→        />
+   263→        <MacosStatCard
+   264→          label="Online"
+   265→          value={activeBranches.length}
+   266→          icon={Wifi}
+   267→          iconColor="text-macos-green"
+   268→          iconBg="bg-macos-green/10"
+   269→        />
+   270→        <MacosStatCard
+   271→          label="Staff"
+   272→          value={totalEmployees}
+   273→          icon={Users}
+   274→          iconColor="text-gg-sunset"
+   275→          iconBg="bg-gg-sunset/10"
+   276→        />
+   277→        <MacosStatCard
+   278→          label="Sales"
+   279→          value={totalSales}
+   280→          icon={ShoppingCart}
+   281→          iconColor="text-macos-purple"
+   282→          iconBg="bg-macos-purple/10"
+   283→        />
+   284→      </MacosStatGrid>
+   285→
+   286→      {/* Branch Cards - macOS System Settings > Network style */}
+   287→      {loading ? (
+   288→        <MacosCard>
+   289→          <div className="p-6 space-y-4">
+   290→            {[1, 2, 3].map((i) => (
+   291→              <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
+   292→            ))}
+   293→          </div>
+   294→        </MacosCard>
+   295→      ) : branches.length === 0 ? (
+   296→        <MacosCard>
+   297→          <MacosEmptyState
+   298→            icon={Globe}
+   299→            title="No network locations"
+   300→            description="Add your first branch location to get started"
+   301→            action={
+   302→              !isViewOnly ? (
+   303→                <MacosButton variant="primary" icon={Plus} onClick={() => setAddDialogOpen(true)}>
+   304→                  Add Location
+   305→                </MacosButton>
+   306→              ) : undefined
+   307→            }
+   308→          />
+   309→        </MacosCard>
+   310→      ) : (
+   311→        <MacosCard noPadding>
+   312→          {/* Section: Active Locations */}
+   313→          <div className="px-4 pt-4 pb-2">
+   314→            <div className="flex items-center justify-between mb-1">
+   315→              <div className="flex items-center gap-2">
+   316→                <Wifi className="size-3.5 text-macos-green" strokeWidth={1.5} />
+   317→                <h3 className="macos-section-title">Active Locations</h3>
+   318→              </div>
+   319→              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{activeBranches.length} online</span>
+   320→            </div>
+   321→          </div>
+   322→
+   323→          {/* Network-style list items */}
+   324→          <div className="divide-y divide-border/30">
+   325→            {activeBranches.map((branch) => (
+   326→              <div
+   327→                key={branch.id}
+   328→                className="flex items-center gap-4 px-4 py-3 cursor-pointer macos-table-row group"
+   329→                onClick={() => openDetailDialog(branch)}
+   330→              >
+   331→                {/* Network icon with status indicator */}
+   332→                <div className="relative shrink-0">
+   333→                  <div className="size-10 rounded-xl bg-gg-bay/10 flex items-center justify-center">
+   334→                    <Building className="size-5 text-gg-bay" strokeWidth={1.5} />
+   335→                  </div>
+   336→                  <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-macos-green ring-2 ring-card" />
+   337→                </div>
+   338→
+   339→                {/* Branch info */}
+   340→                <div className="flex-1 min-w-0">
+   341→                  <div className="flex items-center gap-2">
+   342→                    <p className="text-[13px] font-semibold truncate">{branch.name}</p>
+   343→                    <MacosBadge variant="info">{branch.code}</MacosBadge>
+   344→                  </div>
+   345→                  <div className="flex items-center gap-3 mt-0.5">
+   346→                    {branch.address && (
+   347→                      <span className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+   348→                        <MapPin className="size-3 shrink-0" strokeWidth={1.5} />
+   349→                        {branch.address}
+   350→                      </span>
+   351→                    )}
+   352→                  </div>
+   353→                </div>
+   354→
+   355→                {/* Signal strength + metrics */}
+   356→                <div className="flex items-center gap-4 shrink-0">
+   357→                  <div className="hidden sm:flex items-center gap-3">
+   358→                    <div className="flex items-center gap-1.5">
+   359→                      <Users className="size-3 text-muted-foreground" strokeWidth={1.5} />
+   360→                      <span className="text-[11px] text-muted-foreground font-medium">{branch._count?.employees || 0}</span>
+   361→                    </div>
+   362→                    <div className="flex items-center gap-1.5">
+   363→                      <ShoppingCart className="size-3 text-muted-foreground" strokeWidth={1.5} />
+   364→                      <span className="text-[11px] text-muted-foreground font-medium">{branch._count?.sales || 0}</span>
+   365→                    </div>
+   366→                    <div className="flex items-center gap-1.5">
+   367→                      <Package className="size-3 text-muted-foreground" strokeWidth={1.5} />
+   368→                      <span className="text-[11px] text-muted-foreground font-medium">{branch._count?.warehouses || 0}</span>
+   369→                    </div>
+   370→                  </div>
+   371→                  <SignalBars strength={getSignalStrength(branch)} />
+   372→                </div>
+   373→
+   374→                {/* Actions */}
+   375→                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+   376→                  {!isViewOnly && (
+   377→                    <DropdownMenu>
+   378→                      <DropdownMenuTrigger asChild>
+   379→                        <button className="size-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-secondary/80 transition-opacity">
+   380→                          <MoreVertical className="size-3.5" strokeWidth={1.5} />
+   381→                        </button>
+   382→                      </DropdownMenuTrigger>
+   383→                      <DropdownMenuContent align="end" className="rounded-xl macos-shadow-float">
+   384→                        <DropdownMenuItem onClick={() => openEditDialog(branch)} className="rounded-lg text-[13px]">
+   385→                          <Pencil className="size-3.5 mr-2" strokeWidth={1.5} />
+   386→                          Edit Location
+   387→                        </DropdownMenuItem>
+   388→                        <DropdownMenuItem onClick={() => handleToggleStatus(branch)} className="rounded-lg text-[13px]">
+   389→                          <PowerOff className="size-3.5 mr-2" strokeWidth={1.5} />
+   390→                          Deactivate
+   391→                        </DropdownMenuItem>
+   392→                      </DropdownMenuContent>
+   393→                    </DropdownMenu>
+   394→                  )}
+   395→                  <ChevronRight className="size-3.5 text-muted-foreground/40 shrink-0" strokeWidth={1.5} />
+   396→                </div>
+   397→              </div>
+   398→            ))}
+   399→          </div>
+   400→
+   401→          {/* Inactive Locations Section */}
+   402→          {inactiveBranches.length > 0 && (
+   403→            <>
+   404→              <div className="px-4 pt-5 pb-2">
+   405→                <div className="flex items-center justify-between mb-1">
+   406→                  <div className="flex items-center gap-2">
+   407→                    <WifiOff className="size-3.5 text-macos-red" strokeWidth={1.5} />
+   408→                    <h3 className="macos-section-title">Offline Locations</h3>
+   409→                  </div>
+   410→                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{inactiveBranches.length} offline</span>
+   411→                </div>
+   412→              </div>
+   413→
+   414→              <div className="divide-y divide-border/30">
+   415→                {inactiveBranches.map((branch) => (
+   416→                  <div
+   417→                    key={branch.id}
+   418→                    className="flex items-center gap-4 px-4 py-3 opacity-60 cursor-pointer macos-table-row group"
+   419→                    onClick={() => openDetailDialog(branch)}
+   420→                  >
+   421→                    {/* Network icon with offline indicator */}
+   422→                    <div className="relative shrink-0">
+   423→                      <div className="size-10 rounded-xl bg-secondary/50 flex items-center justify-center">
+   424→                        <Building className="size-5 text-muted-foreground" strokeWidth={1.5} />
+   425→                      </div>
+   426→                      <div className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-macos-red ring-2 ring-card" />
+   427→                    </div>
+   428→
+   429→                    {/* Branch info */}
+   430→                    <div className="flex-1 min-w-0">
+   431→                      <div className="flex items-center gap-2">
+   432→                        <p className="text-[13px] font-semibold truncate">{branch.name}</p>
+   433→                        <MacosBadge variant="default">{branch.code}</MacosBadge>
+   434→                        <MacosBadge variant="danger">Offline</MacosBadge>
+   435→                      </div>
+   436→                      {branch.address && (
+   437→                        <span className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+   438→                          <MapPin className="size-3 shrink-0" strokeWidth={1.5} />
+   439→                          {branch.address}
+   440→                        </span>
+   441→                      )}
+   442→                    </div>
+   443→
+   444→                    {/* Actions */}
+   445→                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+   446→                      {!isViewOnly && (
+   447→                        <MacosButton
+   448→                          variant="ghost"
+   449→                          icon={Power}
+   450→                          onClick={() => handleToggleStatus(branch)}
+   451→                          className="text-macos-green hover:text-macos-green hover:bg-macos-green/10"
+   452→                        >
+   453→                          Reactivate
+   454→                        </MacosButton>
+   455→                      )}
+   456→                      <ChevronRight className="size-3.5 text-muted-foreground/40 shrink-0" strokeWidth={1.5} />
+   457→                    </div>
+   458→                  </div>
+   459→                ))}
+   460→              </div>
+   461→            </>
+   462→          )}
+   463→
+   464→          {/* Footer */}
+   465→          <div className="px-4 py-2.5 border-t border-border/30">
+   466→            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+   467→              {branches.length} location{branches.length !== 1 ? 's' : ''} · {activeBranches.length} online · {inactiveBranches.length} offline
+   468→            </p>
+   469→          </div>
+   470→        </MacosCard>
+   471→      )}
+   472→
+   473→      {/* Branch Detail Dialog - macOS Network Details style */}
+   474→      <MacosDialog
+   475→        open={detailOpen}
+   476→        onOpenChange={setDetailOpen}
+   477→        title=""
+   478→      >
+   479→        {selectedBranch && (
+   480→          <>
+   481→            {/* Custom header with network icon */}
+   482→            <div className="flex items-center gap-3 -mt-2 mb-2">
+   483→              <div className="relative">
+   484→                <div className="size-10 rounded-xl bg-gg-bay/10 flex items-center justify-center">
+   485→                  <Building className="size-5 text-gg-bay" strokeWidth={1.5} />
+   486→                </div>
+   487→                <div className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full ring-2 ring-card ${selectedBranch.isActive ? 'bg-macos-green' : 'bg-macos-red'}`} />
+   488→              </div>
+   489→              <div>
+   490→                <p className="text-[15px] font-semibold tracking-[-0.02em]">{selectedBranch.name}</p>
+   491→                <p className="text-[12px] font-normal text-muted-foreground">{selectedBranch.code} · {selectedBranch.isActive ? 'Online' : 'Offline'}</p>
+   492→              </div>
+   493→            </div>
+   494→
+   495→            <div className="space-y-4">
+   496→              {/* Location Info */}
+   497→              <div className="macos-card p-4 space-y-3">
+   498→                <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Location Details</h4>
+   499→                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   500→                  {selectedBranch.address && (
+   501→                    <div className="flex items-center gap-2.5 text-[13px]">
+   502→                      <div className="size-7 rounded-lg bg-gg-sunset/10 flex items-center justify-center shrink-0">
+   503→                        <MapPin className="size-3.5 text-gg-sunset" strokeWidth={1.5} />
+   504→                      </div>
+   505→                      <div className="min-w-0">
+   506→                        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Address</p>
+   507→                        <p className="truncate">{selectedBranch.address}</p>
+   508→                      </div>
+   509→                    </div>
+   510→                  )}
+   511→                  {selectedBranch.phone && (
+   512→                    <div className="flex items-center gap-2.5 text-[13px]">
+   513→                      <div className="size-7 rounded-lg bg-macos-green/10 flex items-center justify-center shrink-0">
+   514→                        <Phone className="size-3.5 text-macos-green" strokeWidth={1.5} />
+   515→                      </div>
+   516→                      <div>
+   517→                        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Phone</p>
+   518→                        <p>{selectedBranch.phone}</p>
+   519→                      </div>
+   520→                    </div>
+   521→                  )}
+   522→                  {selectedBranch.email && (
+   523→                    <div className="flex items-center gap-2.5 text-[13px]">
+   524→                      <div className="size-7 rounded-lg bg-macos-blue/10 flex items-center justify-center shrink-0">
+   525→                        <Mail className="size-3.5 text-macos-blue" strokeWidth={1.5} />
+   526→                      </div>
+   527→                      <div className="min-w-0">
+   528→                        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Email</p>
+   529→                        <p className="truncate">{selectedBranch.email}</p>
+   530→                      </div>
+   531→                    </div>
+   532→                  )}
+   533→                  {selectedBranch.manager && (
+   534→                    <div className="flex items-center gap-2.5 text-[13px]">
+   535→                      <div className="size-7 rounded-lg bg-macos-purple/10 flex items-center justify-center shrink-0">
+   536→                        <User className="size-3.5 text-macos-purple" strokeWidth={1.5} />
+   537→                      </div>
+   538→                      <div>
+   539→                        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Manager</p>
+   540→                        <p>{selectedBranch.manager}</p>
+   541→                      </div>
+   542→                    </div>
+   543→                  )}
+   544→                </div>
+   545→              </div>
+   546→
+   547→              {/* Performance Metrics */}
+   548→              <div className="macos-card p-4 space-y-3">
+   549→                <h4 className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Performance</h4>
+   550→                <div className="grid grid-cols-3 gap-3">
+   551→                  <div className="p-3 rounded-xl bg-macos-blue/10 text-center">
+   552→                    <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-blue">{selectedBranch._count?.employees || 0}</p>
+   553→                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Staff</p>
+   554→                  </div>
+   555→                  <div className="p-3 rounded-xl bg-macos-green/10 text-center">
+   556→                    <p className="text-[22px] font-bold tracking-[-0.03em] text-macos-green">{selectedBranch._count?.sales || 0}</p>
+   557→                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Sales</p>
+   558→                  </div>
+   559→                  <div className="p-3 rounded-xl bg-gg-golden/10 text-center">
+   560→                    <p className="text-[22px] font-bold tracking-[-0.03em] text-gg-golden">{selectedBranch._count?.warehouses || 0}</p>
+   561→                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Warehouses</p>
+   562→                  </div>
+   563→                </div>
+   564→                <div className="flex items-center gap-2 pt-1">
+   565→                  <span className="text-[11px] text-muted-foreground">Signal strength</span>
+   566→                  <SignalBars strength={getSignalStrength(selectedBranch)} />
+   567→                  <span className="text-[11px] text-muted-foreground">
+   568→                    {getSignalStrength(selectedBranch) >= 4 ? 'Excellent' : getSignalStrength(selectedBranch) >= 3 ? 'Good' : getSignalStrength(selectedBranch) >= 2 ? 'Fair' : 'Weak'}
+   569→                  </span>
+   570→                </div>
+   571→              </div>
+   572→            </div>
+   573→          </>
+   574→        )}
+   575→      </MacosDialog>
+   576→
+   577→      {/* Add Branch Dialog */}
+   578→      <MacosDialog
+   579→        open={addDialogOpen}
+   580→        onOpenChange={setAddDialogOpen}
+   581→        title="Add New Location"
+   582→        description="Create a new branch location for your bookstore"
+   583→        footer={
+   584→          <>
+   585→            <MacosButton variant="secondary" onClick={() => setAddDialogOpen(false)}>
+   586→              Cancel
+   587→            </MacosButton>
+   588→            <MacosButton variant="primary" onClick={handleAddBranch} disabled={submitting}>
+   589→              {submitting ? 'Creating...' : 'Create Location'}
+   590→            </MacosButton>
+   591→          </>
+   592→        }
+   593→      >
+   594→        <div className="space-y-4">
+   595→          <div className="grid grid-cols-2 gap-4">
+   596→            <MacosFormField label="Name *">
+   597→              <Input
+   598→                placeholder="Downtown Store"
+   599→                value={formData.name}
+   600→                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+   601→                className="macos-search rounded-lg text-[13px] h-8 border-0"
+   602→              />
+   603→            </MacosFormField>
+   604→            <MacosFormField label="Code *">
+   605→              <Input
+   606→                placeholder="DT-001"
+   607→                value={formData.code}
+   608→                onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
+   609→                className="macos-search rounded-lg text-[13px] h-8 border-0"
+   610→              />
+   611→            </MacosFormField>
+   612→          </div>
+   613→          <MacosFormField label="Address">
+   614→            <Input
+   615→              placeholder="123 Main Street, City"
+   616→              value={formData.address}
+   617→              onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+   618→              className="macos-search rounded-lg text-[13px] h-8 border-0"
+   619→            />
+   620→          </MacosFormField>
+   621→          <div className="grid grid-cols-2 gap-4">
+   622→            <MacosFormField label="Phone">
+   623→              <Input
+   624→                placeholder="+1 555-0100"
+   625→                value={formData.phone}
+   626→                onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+   627→                className="macos-search rounded-lg text-[13px] h-8 border-0"
+   628→              />
+   629→            </MacosFormField>
+   630→            <MacosFormField label="Email">
+   631→              <Input
+   632→                placeholder="branch@bookflow.com"
+   633→                value={formData.email}
+   634→                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+   635→                className="macos-search rounded-lg text-[13px] h-8 border-0"
+   636→              />
+   637→            </MacosFormField>
+   638→          </div>
+   639→          <MacosFormField label="Manager">
+   640→            <Input
+   641→              placeholder="John Smith"
+   642→              value={formData.manager}
+   643→              onChange={(e) => setFormData((prev) => ({ ...prev, manager: e.target.value }))}
+   644→              className="macos-search rounded-lg text-[13px] h-8 border-0"
+   645→            />
+   646→          </MacosFormField>
+   647→        </div>
+   648→      </MacosDialog>
+   649→
+   650→      {/* Edit Branch Dialog */}
+   651→      <MacosDialog
+   652→        open={editDialogOpen}
+   653→        onOpenChange={setEditDialogOpen}
+   654→        title="Edit Location"
+   655→        description="Update branch information"
+   656→        footer={
+   657→          <>
+   658→            <MacosButton variant="secondary" onClick={() => setEditDialogOpen(false)}>
+   659→              Cancel
+   660→            </MacosButton>
+   661→            <MacosButton variant="primary" onClick={handleEditBranch} disabled={submitting}>
+   662→              {submitting ? 'Saving...' : 'Save Changes'}
+   663→            </MacosButton>
+   664→          </>
+   665→        }
+   666→      >
+   667→        <div className="space-y-4">
+   668→          <div className="grid grid-cols-2 gap-4">
+   669→            <MacosFormField label="Name *">
+   670→              <Input
+   671→                value={formData.name}
+   672→                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+   673→                className="macos-search rounded-lg text-[13px] h-8 border-0"
+   674→              />
+   675→            </MacosFormField>
+   676→            <MacosFormField label="Code *">
+   677→              <Input
+   678→                value={formData.code}
+   679→                onChange={(e) => setFormData((prev) => ({ ...prev, code: e.target.value.toUpperCase() }))}
+   680→                className="macos-search rounded-lg text-[13px] h-8 border-0"
+   681→              />
+   682→            </MacosFormField>
+   683→          </div>
+   684→          <MacosFormField label="Address">
+   685→            <Input
+   686→              value={formData.address}
+   687→              onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+   688→              className="macos-search rounded-lg text-[13px] h-8 border-0"
+   689→            />
+   690→          </MacosFormField>
+   691→          <div className="grid grid-cols-2 gap-4">
+   692→            <MacosFormField label="Phone">
+   693→              <Input
+   694→                value={formData.phone}
+   695→                onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+   696→                className="macos-search rounded-lg text-[13px] h-8 border-0"
+   697→              />
+   698→            </MacosFormField>
+   699→            <MacosFormField label="Email">
+   700→              <Input
+   701→                value={formData.email}
+   702→                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+   703→                className="macos-search rounded-lg text-[13px] h-8 border-0"
+   704→              />
+   705→            </MacosFormField>
+   706→          </div>
+   707→          <MacosFormField label="Manager">
+   708→            <Input
+   709→              value={formData.manager}
+   710→              onChange={(e) => setFormData((prev) => ({ ...prev, manager: e.target.value }))}
+   711→              className="macos-search rounded-lg text-[13px] h-8 border-0"
+   712→            />
+   713→          </MacosFormField>
+   714→        </div>
+   715→      </MacosDialog>
+   716→    </div>
+   717→  )
+   718→}
+   719→

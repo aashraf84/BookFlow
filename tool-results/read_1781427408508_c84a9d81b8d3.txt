@@ -1,0 +1,1117 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Plus,
+     6→  Truck,
+     7→  Package,
+     8→  Users,
+     9→  BarChart3,
+    10→  Loader2,
+    11→  AlertCircle,
+    12→  Eye,
+    13→  CheckCircle2,
+    14→  Ship,
+    15→  PackageCheck,
+    16→  DollarSign,
+    17→  TrendingUp,
+    18→  X,
+    19→  ShoppingCart,
+    20→} from 'lucide-react'
+    21→
+    22→import { Button } from '@/components/ui/button'
+    23→import { Input } from '@/components/ui/input'
+    24→import { Label } from '@/components/ui/label'
+    25→import {
+    26→  Select,
+    27→  SelectContent,
+    28→  SelectItem,
+    29→  SelectTrigger,
+    30→  SelectValue,
+    31→} from '@/components/ui/select'
+    32→import {
+    33→  Table,
+    34→  TableBody,
+    35→  TableCell,
+    36→  TableHead,
+    37→  TableHeader,
+    38→  TableRow,
+    39→} from '@/components/ui/table'
+    40→import { Separator } from '@/components/ui/separator'
+    41→import { Textarea } from '@/components/ui/textarea'
+    42→import { Skeleton } from '@/components/ui/skeleton'
+    43→import { useAppStore } from '@/store/app-store'
+    44→import {
+    45→  MacosPageHeader,
+    46→  MacosStatCard,
+    47→  MacosCard,
+    48→  MacosSearch,
+    49→  MacosFilterBar,
+    50→  MacosButton,
+    51→  MacosBadge,
+    52→  MacosDialog,
+    53→  MacosEmptyState,
+    54→  MacosFormField,
+    55→  MacosStatGrid,
+    56→  MacosSection,
+    57→} from '@/components/macos-ui'
+    58→
+    59→// ─── Types ────────────────────────────────────────────────────────
+    60→interface Dealer {
+    61→  id: string
+    62→  name: string
+    63→  email?: string | null
+    64→  phone?: string | null
+    65→  address?: string | null
+    66→  type: string
+    67→  loyaltyPoints: number
+    68→  totalSpent: number
+    69→  creditLimit: number
+    70→  outstanding: number
+    71→  isActive: boolean
+    72→  _count?: { sales: number; wholesaleOrders: number }
+    73→}
+    74→
+    75→interface OrderItem {
+    76→  id: string
+    77→  bookId: string | null
+    78→  stationeryId: string | null
+    79→  quantity: number
+    80→  unitPrice: number
+    81→  discount: number
+    82→  totalPrice: number
+    83→  book?: { id: string; title: string; price: number } | null
+    84→  stationery?: { id: string; name: string; price: number } | null
+    85→}
+    86→
+    87→interface WholesaleOrder {
+    88→  id: string
+    89→  orderNumber: string
+    90→  customerId: string | null
+    91→  dealerName: string | null
+    92→  distributorName: string | null
+    93→  status: string
+    94→  subtotal: number
+    95→  discount: number
+    96→  tax: number
+    97→  total: number
+    98→  paymentStatus: string
+    99→  deliveryAddress: string | null
+   100→  notes: string | null
+   101→  createdAt: string
+   102→  updatedAt: string
+   103→  customer?: { id: string; name: string; type: string } | null
+   104→  items: OrderItem[]
+   105→}
+   106→
+   107→interface OrderFormItem {
+   108→  productType: 'book' | 'stationery'
+   109→  productId: string
+   110→  productName: string
+   111→  quantity: number
+   112→  unitPrice: number
+   113→  discount: number
+   114→}
+   115→
+   116→// ─── Component ────────────────────────────────────────────────────
+   117→export function WholesaleModule() {
+   118→  const { authUser } = useAppStore()
+   119→  const isViewOnly = authUser?.isViewOnly ?? false
+   120→
+   121→  const [activeTab, setActiveTab] = React.useState('orders')
+   122→  const [orders, setOrders] = React.useState<WholesaleOrder[]>([])
+   123→  const [dealers, setDealers] = React.useState<Dealer[]>([])
+   124→  const [loading, setLoading] = React.useState(true)
+   125→  const [error, setError] = React.useState<string | null>(null)
+   126→
+   127→  // Status filter
+   128→  const [statusFilter, setStatusFilter] = React.useState('all')
+   129→
+   130→  // New order dialog
+   131→  const [orderDialogOpen, setOrderDialogOpen] = React.useState(false)
+   132→  const [saving, setSaving] = React.useState(false)
+   133→  const [selectedDealerId, setSelectedDealerId] = React.useState('')
+   134→  const [dealerName, setDealerName] = React.useState('')
+   135→  const [orderDiscount, setOrderDiscount] = React.useState('')
+   136→  const [orderTax, setOrderTax] = React.useState('')
+   137→  const [deliveryAddress, setDeliveryAddress] = React.useState('')
+   138→  const [orderNotes, setOrderNotes] = React.useState('')
+   139→  const [orderItems, setOrderItems] = React.useState<OrderFormItem[]>([])
+   140→
+   141→  // Product search for adding items
+   142→  const [productSearch, setProductSearch] = React.useState('')
+   143→  const [searchResults, setSearchResults] = React.useState<Array<{ id: string; type: 'book' | 'stationery'; name: string; price: number }>>([])
+   144→  const [searchLoading, setSearchLoading] = React.useState(false)
+   145→
+   146→  // Order detail dialog
+   147→  const [detailOrder, setDetailOrder] = React.useState<WholesaleOrder | null>(null)
+   148→  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false)
+   149→
+   150→  // Updating status
+   151→  const [updatingStatus, setUpdatingStatus] = React.useState<string | null>(null)
+   152→
+   153→  // Fetch orders
+   154→  const fetchOrders = React.useCallback(async () => {
+   155→    setLoading(true)
+   156→    setError(null)
+   157→    try {
+   158→      const params = new URLSearchParams()
+   159→      params.set('limit', '50')
+   160→      if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter)
+   161→      const res = await fetch(`/api/wholesale?${params.toString()}`)
+   162→      if (!res.ok) throw new Error('Failed to fetch orders')
+   163→      const json = await res.json()
+   164→      setOrders(json.data || [])
+   165→    } catch (err) {
+   166→      setError(err instanceof Error ? err.message : 'Unknown error')
+   167→    } finally {
+   168→      setLoading(false)
+   169→    }
+   170→  }, [statusFilter])
+   171→
+   172→  // Fetch dealers (customers of type wholesale/dealer/distributor)
+   173→  const fetchDealers = React.useCallback(async () => {
+   174→    try {
+   175→      const res = await fetch('/api/customers?type=wholesale&limit=100')
+   176→      const res2 = await fetch('/api/customers?type=dealer&limit=100')
+   177→      const json1 = res.ok ? await res.json() : { data: [] }
+   178→      const json2 = res2.ok ? await res2.json() : { data: [] }
+   179→      // Also get distributors
+   180→      const res3 = await fetch('/api/customers?type=distributor&limit=100')
+   181→      const json3 = res3.ok ? await res3.json() : { data: [] }
+   182→      setDealers([...(json1.data || []), ...(json2.data || []), ...(json3.data || [])])
+   183→    } catch {
+   184→      // silent
+   185→    }
+   186→  }, [])
+   187→
+   188→  React.useEffect(() => {
+   189→    fetchOrders()
+   190→  }, [fetchOrders])
+   191→
+   192→  React.useEffect(() => {
+   193→    fetchDealers()
+   194→  }, [fetchDealers])
+   195→
+   196→  // Product search for order items
+   197→  React.useEffect(() => {
+   198→    if (!productSearch) {
+   199→      setSearchResults([])
+   200→      return
+   201→    }
+   202→    const searchProducts = async () => {
+   203→      setSearchLoading(true)
+   204→      try {
+   205→        const params = new URLSearchParams()
+   206→        params.set('search', productSearch)
+   207→        params.set('limit', '10')
+   208→
+   209→        const [booksRes, stationeryRes] = await Promise.all([
+   210→          fetch(`/api/books?${params.toString()}`),
+   211→          fetch(`/api/stationery?${params.toString()}`),
+   212→        ])
+   213→
+   214→        const bookData = booksRes.ok ? await booksRes.json() : { data: [] }
+   215→        const stationeryData = stationeryRes.ok ? await stationeryRes.json() : { data: [] }
+   216→
+   217→        const results: Array<{ id: string; type: 'book' | 'stationery'; name: string; price: number }> = [
+   218→          ...(bookData.data || []).map((b: Record<string, unknown>) => ({
+   219→            id: b.id as string,
+   220→            type: 'book' as const,
+   221→            name: b.title as string,
+   222→            price: (b.price as number) || 0,
+   223→          })),
+   224→          ...(stationeryData.data || []).map((s: Record<string, unknown>) => ({
+   225→            id: s.id as string,
+   226→            type: 'stationery' as const,
+   227→            name: s.name as string,
+   228→            price: (s.price as number) || 0,
+   229→          })),
+   230→        ]
+   231→
+   232→        setSearchResults(results)
+   233→      } catch {
+   234→        // silent
+   235→      } finally {
+   236→        setSearchLoading(false)
+   237→      }
+   238→    }
+   239→    const debounce = setTimeout(searchProducts, 300)
+   240→    return () => clearTimeout(debounce)
+   241→  }, [productSearch])
+   242→
+   243→  // Add product to order items
+   244→  const addItemToOrder = (product: { id: string; type: 'book' | 'stationery'; name: string; price: number }) => {
+   245→    const existing = orderItems.find((i) => i.productId === product.id && i.productType === product.type)
+   246→    if (existing) {
+   247→      setOrderItems((prev) =>
+   248→        prev.map((i) =>
+   249→          i.productId === product.id && i.productType === product.type
+   250→            ? { ...i, quantity: i.quantity + 1 }
+   251→            : i
+   252→        )
+   253→      )
+   254→    } else {
+   255→      setOrderItems((prev) => [
+   256→        ...prev,
+   257→        {
+   258→          productType: product.type,
+   259→          productId: product.id,
+   260→          productName: product.name,
+   261→          quantity: 1,
+   262→          unitPrice: product.price,
+   263→          discount: 0,
+   264→        },
+   265→      ])
+   266→    }
+   267→    setProductSearch('')
+   268→    setSearchResults([])
+   269→  }
+   270→
+   271→  // Remove order item
+   272→  const removeOrderItem = (index: number) => {
+   273→    setOrderItems((prev) => prev.filter((_, i) => i !== index))
+   274→  }
+   275→
+   276→  // Update order item
+   277→  const updateOrderItem = (index: number, field: keyof OrderFormItem, value: number | string) => {
+   278→    setOrderItems((prev) =>
+   279→      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+   280→    )
+   281→  }
+   282→
+   283→  // Status badges using MacosBadge
+   284→  const getStatusBadge = (status: string) => {
+   285→    const map: Record<string, { variant: 'warning' | 'info' | 'purple' | 'success' | 'danger'; label: string }> = {
+   286→      pending: { variant: 'warning', label: 'Pending' },
+   287→      confirmed: { variant: 'info', label: 'Confirmed' },
+   288→      shipped: { variant: 'purple', label: 'Shipped' },
+   289→      delivered: { variant: 'success', label: 'Delivered' },
+   290→      cancelled: { variant: 'danger', label: 'Cancelled' },
+   291→    }
+   292→    const s = map[status] || { variant: 'default' as const, label: status }
+   293→    return <MacosBadge variant={s.variant}>{s.label}</MacosBadge>
+   294→  }
+   295→
+   296→  const getPaymentBadge = (status: string) => {
+   297→    const map: Record<string, { variant: 'danger' | 'warning' | 'success'; label: string }> = {
+   298→      unpaid: { variant: 'danger', label: 'Unpaid' },
+   299→      partial: { variant: 'warning', label: 'Partial' },
+   300→      paid: { variant: 'success', label: 'Paid' },
+   301→    }
+   302→    const s = map[status] || { variant: 'default' as const, label: status }
+   303→    return <MacosBadge variant={s.variant}>{s.label}</MacosBadge>
+   304→  }
+   305→
+   306→  // Compute order total
+   307→  const orderSubtotal = orderItems.reduce((s, i) => s + i.quantity * i.unitPrice * (1 - i.discount / 100), 0)
+   308→  const orderDiscountAmt = parseFloat(orderDiscount) || 0
+   309→  const orderTaxAmt = (orderSubtotal - orderDiscountAmt) * ((parseFloat(orderTax) || 0) / 100)
+   310→  const orderTotal = orderSubtotal - orderDiscountAmt + orderTaxAmt
+   311→
+   312→  // Create wholesale order
+   313→  const handleCreateOrder = async () => {
+   314→    if (orderItems.length === 0) return
+   315→    setSaving(true)
+   316→    setError(null)
+   317→    try {
+   318→      const items = orderItems.map((item) => ({
+   319→        bookId: item.productType === 'book' ? item.productId : undefined,
+   320→        stationeryId: item.productType === 'stationery' ? item.productId : undefined,
+   321→        quantity: item.quantity,
+   322→        unitPrice: item.unitPrice,
+   323→        discount: item.discount,
+   324→      }))
+   325→
+   326→      const res = await fetch('/api/wholesale', {
+   327→        method: 'POST',
+   328→        headers: { 'Content-Type': 'application/json' },
+   329→        body: JSON.stringify({
+   330→          customerId: selectedDealerId || undefined,
+   331→          dealerName: dealerName || undefined,
+   332→          discount: orderDiscountAmt,
+   333→          tax: parseFloat(orderTax) || 0,
+   334→          paymentStatus: 'unpaid',
+   335→          deliveryAddress: deliveryAddress || undefined,
+   336→          notes: orderNotes || undefined,
+   337→          items,
+   338→        }),
+   339→      })
+   340→
+   341→      if (!res.ok) {
+   342→        const errData = await res.json()
+   343→        throw new Error(errData.error || 'Failed to create order')
+   344→      }
+   345→
+   346→      // Reset form
+   347→      setOrderDialogOpen(false)
+   348→      setSelectedDealerId('')
+   349→      setDealerName('')
+   350→      setOrderDiscount('')
+   351→      setOrderTax('')
+   352→      setDeliveryAddress('')
+   353→      setOrderNotes('')
+   354→      setOrderItems([])
+   355→      fetchOrders()
+   356→    } catch (err) {
+   357→      setError(err instanceof Error ? err.message : 'Failed to create order')
+   358→    } finally {
+   359→      setSaving(false)
+   360→    }
+   361→  }
+   362→
+   363→  // Update order status
+   364→  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+   365→    setUpdatingStatus(orderId)
+   366→    try {
+   367→      const res = await fetch('/api/wholesale', {
+   368→        method: 'PUT',
+   369→        headers: { 'Content-Type': 'application/json' },
+   370→        body: JSON.stringify({ id: orderId, status: newStatus }),
+   371→      })
+   372→      if (!res.ok) throw new Error('Failed to update status')
+   373→      fetchOrders()
+   374→      if (detailOrder?.id === orderId) {
+   375→        setDetailOrder((prev) => prev ? { ...prev, status: newStatus } : null)
+   376→      }
+   377→    } catch (err) {
+   378→      setError(err instanceof Error ? err.message : 'Failed to update status')
+   379→    } finally {
+   380→      setUpdatingStatus(null)
+   381→    }
+   382→  }
+   383→
+   384→  // View order detail
+   385→  const handleViewOrder = (order: WholesaleOrder) => {
+   386→    setDetailOrder(order)
+   387→    setDetailDialogOpen(true)
+   388→  }
+   389→
+   390→  // Analytics
+   391→  const totalRevenue = orders.filter((o) => o.status === 'delivered').reduce((s, o) => s + o.total, 0)
+   392→  const pendingAmount = orders.filter((o) => o.paymentStatus === 'unpaid' || o.paymentStatus === 'partial').reduce((s, o) => s + o.total, 0)
+   393→  const topDealers = dealers.sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5)
+   394→  const outstandingReceivables = dealers.reduce((s, d) => s + d.outstanding, 0)
+   395→
+   396→  // Get item name
+   397→  const getItemName = (item: OrderItem): string => {
+   398→    if (item.book) return item.book.title
+   399→    if (item.stationery) return item.stationery.name
+   400→    return 'Unknown Item'
+   401→  }
+   402→
+   403→  // Stats
+   404→  const pendingOrders = orders.filter((o) => o.status === 'pending').length
+   405→  const shippedOrders = orders.filter((o) => o.status === 'shipped').length
+   406→
+   407→  // Tabs
+   408→  const tabs = [
+   409→    { id: 'orders', label: 'Orders' },
+   410→    { id: 'dealers', label: 'Dealers' },
+   411→    { id: 'analytics', label: 'Analytics' },
+   412→  ]
+   413→
+   414→  // Status filter tabs
+   415→  const statusTabs = [
+   416→    { id: 'all', label: 'All' },
+   417→    { id: 'pending', label: 'Pending' },
+   418→    { id: 'confirmed', label: 'Confirmed' },
+   419→    { id: 'shipped', label: 'Shipped' },
+   420→    { id: 'delivered', label: 'Delivered' },
+   421→    { id: 'cancelled', label: 'Cancelled' },
+   422→  ]
+   423→
+   424→  return (
+   425→    <div className="space-y-5">
+   426→      {/* Page Header */}
+   427→      <MacosPageHeader
+   428→        title="Wholesale"
+   429→        subtitle="Manage bulk orders, dealers & distributor relationships"
+   430→        icon={Truck}
+   431→        iconColor="text-gg-bay"
+   432→        iconBg="bg-gg-bay/10"
+   433→      >
+   434→        {!isViewOnly && (
+   435→          <MacosButton
+   436→            variant="primary"
+   437→            icon={Plus}
+   438→            onClick={() => setOrderDialogOpen(true)}
+   439→          >
+   440→            New Order
+   441→          </MacosButton>
+   442→        )}
+   443→      </MacosPageHeader>
+   444→
+   445→      {/* Error Alert */}
+   446→      {error && (
+   447→        <div className="flex items-center gap-2 macos-card macos-shadow-card p-3 text-[13px] text-macos-red bg-macos-red/5">
+   448→          <AlertCircle className="size-3.5 shrink-0" />
+   449→          {error}
+   450→          <MacosButton variant="ghost" className="ml-auto text-macos-red hover:text-macos-red" onClick={() => setError(null)}>
+   451→            Dismiss
+   452→          </MacosButton>
+   453→        </div>
+   454→      )}
+   455→
+   456→      {/* Stats Row */}
+   457→      <MacosStatGrid>
+   458→        <MacosStatCard
+   459→          label="Total Orders"
+   460→          value={orders.length}
+   461→          icon={Package}
+   462→          iconColor="text-gg-bay"
+   463→          iconBg="bg-gg-bay/10"
+   464→        />
+   465→        <MacosStatCard
+   466→          label="Pending"
+   467→          value={pendingOrders}
+   468→          icon={DollarSign}
+   469→          iconColor="text-macos-orange"
+   470→          iconBg="bg-macos-orange/10"
+   471→        />
+   472→        <MacosStatCard
+   473→          label="Shipped"
+   474→          value={shippedOrders}
+   475→          icon={Truck}
+   476→          iconColor="text-macos-purple"
+   477→          iconBg="bg-macos-purple/10"
+   478→        />
+   479→        <MacosStatCard
+   480→          label="Outstanding"
+   481→          value={`$${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+   482→          icon={TrendingUp}
+   483→          iconColor="text-macos-red"
+   484→          iconBg="bg-macos-red/10"
+   485→        />
+   486→      </MacosStatGrid>
+   487→
+   488→      {/* Filter Bar — Main Tabs */}
+   489→      <MacosFilterBar
+   490→        items={tabs}
+   491→        activeId={activeTab}
+   492→        onChange={setActiveTab}
+   493→      />
+   494→
+   495→      {/* Orders Tab */}
+   496→      {activeTab === 'orders' && (
+   497→        <div className="space-y-4">
+   498→          {/* Status Filter */}
+   499→          <MacosFilterBar
+   500→            items={statusTabs}
+   501→            activeId={statusFilter}
+   502→            onChange={setStatusFilter}
+   503→          />
+   504→
+   505→          {/* Orders Table */}
+   506→          <div className="macos-card macos-shadow-card overflow-hidden">
+   507→            {loading ? (
+   508→              <div className="p-4 space-y-3">
+   509→                {Array.from({ length: 5 }).map((_, i) => (
+   510→                  <Skeleton key={i} className="h-10 w-full" />
+   511→                ))}
+   512→              </div>
+   513→            ) : orders.length === 0 ? (
+   514→              <MacosEmptyState
+   515→                icon={Package}
+   516→                title="No wholesale orders found"
+   517→                description="Create your first wholesale order"
+   518→              />
+   519→            ) : (
+   520→              <div className="overflow-x-auto custom-scrollbar">
+   521→                <Table>
+   522→                  <TableHeader>
+   523→                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+   524→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Order #</TableHead>
+   525→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Dealer</TableHead>
+   526→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Status</TableHead>
+   527→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Total</TableHead>
+   528→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Payment</TableHead>
+   529→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 hidden sm:table-cell">Date</TableHead>
+   530→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Actions</TableHead>
+   531→                    </TableRow>
+   532→                  </TableHeader>
+   533→                  <TableBody>
+   534→                    {orders.map((order) => (
+   535→                      <TableRow key={order.id} className="macos-table-row cursor-default border-b border-border/30 last:border-0">
+   536→                        <TableCell className="font-mono text-[13px] font-medium tracking-tight py-3">{order.orderNumber}</TableCell>
+   537→                        <TableCell className="text-[13px] font-medium tracking-tight py-3">
+   538→                          {order.customer?.name || order.dealerName || '—'}
+   539→                        </TableCell>
+   540→                        <TableCell className="py-3">{getStatusBadge(order.status)}</TableCell>
+   541→                        <TableCell className="text-right text-[13px] font-medium tracking-tight py-3">${order.total.toFixed(2)}</TableCell>
+   542→                        <TableCell className="py-3">{getPaymentBadge(order.paymentStatus)}</TableCell>
+   543→                        <TableCell className="hidden sm:table-cell text-muted-foreground text-[13px] tracking-tight py-3">
+   544→                          {new Date(order.createdAt).toLocaleDateString()}
+   545→                        </TableCell>
+   546→                        <TableCell className="text-right py-3">
+   547→                          <div className="flex items-center justify-end gap-0.5">
+   548→                            <MacosButton variant="ghost" onClick={() => handleViewOrder(order)} className="h-7">
+   549→                              <Eye className="size-3" />
+   550→                              View
+   551→                            </MacosButton>
+   552→                            {!isViewOnly && order.status === 'pending' && (
+   553→                              <MacosButton
+   554→                                variant="ghost"
+   555→                                className="h-7 text-macos-blue hover:text-macos-blue hover:bg-macos-blue/10"
+   556→                                onClick={() => handleStatusUpdate(order.id, 'confirmed')}
+   557→                                disabled={updatingStatus === order.id}
+   558→                              >
+   559→                                <CheckCircle2 className="size-3" />
+   560→                                Confirm
+   561→                              </MacosButton>
+   562→                            )}
+   563→                            {!isViewOnly && order.status === 'confirmed' && (
+   564→                              <MacosButton
+   565→                                variant="ghost"
+   566→                                className="h-7 text-macos-purple hover:text-macos-purple hover:bg-macos-purple/10"
+   567→                                onClick={() => handleStatusUpdate(order.id, 'shipped')}
+   568→                                disabled={updatingStatus === order.id}
+   569→                              >
+   570→                                <Ship className="size-3" />
+   571→                                Ship
+   572→                              </MacosButton>
+   573→                            )}
+   574→                            {!isViewOnly && order.status === 'shipped' && (
+   575→                              <MacosButton
+   576→                                variant="ghost"
+   577→                                className="h-7 text-macos-green hover:text-macos-green hover:bg-macos-green/10"
+   578→                                onClick={() => handleStatusUpdate(order.id, 'delivered')}
+   579→                                disabled={updatingStatus === order.id}
+   580→                              >
+   581→                                <PackageCheck className="size-3" />
+   582→                                Deliver
+   583→                              </MacosButton>
+   584→                            )}
+   585→                          </div>
+   586→                        </TableCell>
+   587→                      </TableRow>
+   588→                    ))}
+   589→                  </TableBody>
+   590→                </Table>
+   591→              </div>
+   592→            )}
+   593→          </div>
+   594→        </div>
+   595→      )}
+   596→
+   597→      {/* Dealers Tab */}
+   598→      {activeTab === 'dealers' && (
+   599→        <div className="macos-card macos-shadow-card overflow-hidden glass-card">
+   600→          <div className="macos-section-header px-5 pt-4 pb-3">
+   601→            <MacosSection
+   602→              title={`Wholesale Dealers & Distributors (${dealers.length})`}
+   603→            />
+   604→          </div>
+   605→          {dealers.length === 0 ? (
+   606→            <MacosEmptyState
+   607→              icon={Users}
+   608→              title="No dealers found"
+   609→              description="Add wholesale customers from the CRM module"
+   610→            />
+   611→          ) : (
+   612→            <div className="overflow-x-auto custom-scrollbar">
+   613→              <Table>
+   614→                <TableHeader>
+   615→                  <TableRow className="border-b border-border/50 hover:bg-transparent">
+   616→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Name</TableHead>
+   617→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 hidden sm:table-cell">Type</TableHead>
+   618→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 hidden md:table-cell">Contact</TableHead>
+   619→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Total Spent</TableHead>
+   620→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Outstanding</TableHead>
+   621→                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 hidden sm:table-cell text-right">Orders</TableHead>
+   622→                  </TableRow>
+   623→                </TableHeader>
+   624→                <TableBody>
+   625→                  {dealers.map((dealer) => (
+   626→                    <TableRow key={dealer.id} className="macos-table-row cursor-default border-b border-border/30 last:border-0">
+   627→                      <TableCell className="text-[13px] font-medium tracking-tight py-3">{dealer.name}</TableCell>
+   628→                      <TableCell className="hidden sm:table-cell py-3">
+   629→                        <MacosBadge variant="purple" className="capitalize">{dealer.type}</MacosBadge>
+   630→                      </TableCell>
+   631→                      <TableCell className="hidden md:table-cell text-muted-foreground text-[13px] tracking-tight py-3">
+   632→                        {dealer.email || dealer.phone || '—'}
+   633→                      </TableCell>
+   634→                      <TableCell className="text-right text-[13px] font-medium tracking-tight py-3">${dealer.totalSpent.toFixed(2)}</TableCell>
+   635→                      <TableCell className="text-right text-[13px] tracking-tight py-3">
+   636→                        {dealer.outstanding > 0 ? (
+   637→                          <span className="text-macos-red font-medium">${dealer.outstanding.toFixed(2)}</span>
+   638→                        ) : (
+   639→                          <span className="text-muted-foreground">$0.00</span>
+   640→                        )}
+   641→                      </TableCell>
+   642→                      <TableCell className="hidden sm:table-cell text-right text-muted-foreground text-[13px] tracking-tight py-3">
+   643→                        {dealer._count?.wholesaleOrders || 0}
+   644→                      </TableCell>
+   645→                    </TableRow>
+   646→                  ))}
+   647→                </TableBody>
+   648→              </Table>
+   649→            </div>
+   650→          )}
+   651→        </div>
+   652→      )}
+   653→
+   654→      {/* Analytics Tab */}
+   655→      {activeTab === 'analytics' && (
+   656→        <div className="space-y-4">
+   657→          {/* Metrics Cards */}
+   658→          <MacosStatGrid>
+   659→            <MacosStatCard
+   660→              label="Revenue (Delivered)"
+   661→              value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+   662→              icon={DollarSign}
+   663→              iconColor="text-macos-green"
+   664→              iconBg="bg-macos-green/10"
+   665→            />
+   666→            <MacosStatCard
+   667→              label="Pending Amount"
+   668→              value={`$${pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+   669→              icon={BarChart3}
+   670→              iconColor="text-macos-orange"
+   671→              iconBg="bg-macos-orange/10"
+   672→            />
+   673→            <MacosStatCard
+   674→              label="Active Dealers"
+   675→              value={dealers.filter((d) => d.isActive).length}
+   676→              icon={Users}
+   677→              iconColor="text-macos-blue"
+   678→              iconBg="bg-macos-blue/10"
+   679→            />
+   680→            <MacosStatCard
+   681→              label="Outstanding"
+   682→              value={`$${outstandingReceivables.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+   683→              icon={TrendingUp}
+   684→              iconColor="text-macos-red"
+   685→              iconBg="bg-macos-red/10"
+   686→            />
+   687→          </MacosStatGrid>
+   688→
+   689→          {/* Top Dealers */}
+   690→          <MacosCard
+   691→            title="Top Dealers by Revenue"
+   692→            subtitle="Highest grossing wholesale partners"
+   693→            noPadding
+   694→          >
+   695→            {topDealers.length === 0 ? (
+   696→              <div className="py-8 text-center text-muted-foreground text-[13px] tracking-tight">No dealer data available</div>
+   697→            ) : (
+   698→              <div className="overflow-x-auto custom-scrollbar">
+   699→                <Table>
+   700→                  <TableHeader>
+   701→                    <TableRow className="border-b border-border/50 hover:bg-transparent">
+   702→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Rank</TableHead>
+   703→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9">Dealer</TableHead>
+   704→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Total Spent</TableHead>
+   705→                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 h-9 text-right">Outstanding</TableHead>
+   706→                    </TableRow>
+   707→                  </TableHeader>
+   708→                  <TableBody>
+   709→                    {topDealers.map((dealer, i) => (
+   710→                      <TableRow key={dealer.id} className="macos-table-row cursor-default border-b border-border/30 last:border-0">
+   711→                        <TableCell className="py-3">
+   712→                          {i === 0 ? (
+   713→                            <MacosBadge variant="warning">#{i + 1}</MacosBadge>
+   714→                          ) : (
+   715→                            <MacosBadge>#{i + 1}</MacosBadge>
+   716→                          )}
+   717→                        </TableCell>
+   718→                        <TableCell className="text-[13px] font-medium tracking-tight py-3">{dealer.name}</TableCell>
+   719→                        <TableCell className="text-right text-[13px] font-medium tracking-tight py-3">${dealer.totalSpent.toFixed(2)}</TableCell>
+   720→                        <TableCell className="text-right text-[13px] tracking-tight py-3">
+   721→                          {dealer.outstanding > 0 ? (
+   722→                            <span className="text-macos-red">${dealer.outstanding.toFixed(2)}</span>
+   723→                          ) : (
+   724→                            <span className="text-muted-foreground">$0.00</span>
+   725→                          )}
+   726→                        </TableCell>
+   727→                      </TableRow>
+   728→                    ))}
+   729→                  </TableBody>
+   730→                </Table>
+   731→              </div>
+   732→            )}
+   733→          </MacosCard>
+   734→
+   735→          {/* Order Status Breakdown */}
+   736→          <MacosCard
+   737→            title="Order Status Breakdown"
+   738→            noPadding
+   739→          >
+   740→            <div className="p-5">
+   741→              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+   742→                {['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((status) => {
+   743→                  const count = orders.filter((o) => o.status === status).length
+   744→                  const total = orders.filter((o) => o.status === status).reduce((s, o) => s + o.total, 0)
+   745→                  const statusVariantMap: Record<string, 'warning' | 'info' | 'purple' | 'success' | 'danger'> = {
+   746→                    pending: 'warning',
+   747→                    confirmed: 'info',
+   748→                    shipped: 'purple',
+   749→                    delivered: 'success',
+   750→                    cancelled: 'danger',
+   751→                  }
+   752→                  const iconMap: Record<string, React.ElementType> = {
+   753→                    pending: DollarSign,
+   754→                    confirmed: CheckCircle2,
+   755→                    shipped: Truck,
+   756→                    delivered: PackageCheck,
+   757→                    cancelled: X,
+   758→                  }
+   759→                  const colorMap: Record<string, { iconColor: string; iconBg: string }> = {
+   760→                    pending: { iconColor: 'text-macos-orange', iconBg: 'bg-macos-orange/10' },
+   761→                    confirmed: { iconColor: 'text-macos-blue', iconBg: 'bg-macos-blue/10' },
+   762→                    shipped: { iconColor: 'text-macos-purple', iconBg: 'bg-macos-purple/10' },
+   763→                    delivered: { iconColor: 'text-macos-green', iconBg: 'bg-macos-green/10' },
+   764→                    cancelled: { iconColor: 'text-macos-red', iconBg: 'bg-macos-red/10' },
+   765→                  }
+   766→                  const StatusIcon = iconMap[status]
+   767→                  const colors = colorMap[status]
+   768→                  return (
+   769→                    <MacosStatCard
+   770→                      key={status}
+   771→                      label={status}
+   772→                      value={count}
+   773→                      icon={StatusIcon}
+   774→                      iconColor={colors.iconColor}
+   775→                      iconBg={colors.iconBg}
+   776→                    />
+   777→                  )
+   778→                })}
+   779→              </div>
+   780→            </div>
+   781→          </MacosCard>
+   782→        </div>
+   783→      )}
+   784→
+   785→      {/* New Order Dialog */}
+   786→      <MacosDialog
+   787→        open={orderDialogOpen}
+   788→        onOpenChange={setOrderDialogOpen}
+   789→        title="New Wholesale Order"
+   790→        description="Create a new bulk order for a dealer or distributor"
+   791→        className="glass-card sm:max-w-[650px]"
+   792→        footer={
+   793→          <>
+   794→            <MacosButton variant="secondary" onClick={() => setOrderDialogOpen(false)} disabled={saving}>
+   795→              Cancel
+   796→            </MacosButton>
+   797→            <MacosButton variant="primary" onClick={handleCreateOrder} disabled={saving || orderItems.length === 0}>
+   798→              {saving ? (
+   799→                <>
+   800→                  <Loader2 className="size-3.5 animate-spin" />
+   801→                  Creating...
+   802→                </>
+   803→              ) : (
+   804→                'Create Order'
+   805→              )}
+   806→            </MacosButton>
+   807→          </>
+   808→        }
+   809→      >
+   810→        <div className="space-y-4">
+   811→          {/* Dealer Selection */}
+   812→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   813→            <MacosFormField label="Dealer / Customer">
+   814→              <Select value={selectedDealerId} onValueChange={(v) => {
+   815→                setSelectedDealerId(v)
+   816→                const dealer = dealers.find((d) => d.id === v)
+   817→                if (dealer) setDealerName(dealer.name)
+   818→              }}>
+   819→                <SelectTrigger className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8">
+   820→                  <SelectValue placeholder="Select dealer" />
+   821→                </SelectTrigger>
+   822→                <SelectContent>
+   823→                  {dealers.map((d) => (
+   824→                    <SelectItem key={d.id} value={d.id}>{d.name} ({d.type})</SelectItem>
+   825→                  ))}
+   826→                </SelectContent>
+   827→              </Select>
+   828→            </MacosFormField>
+   829→            <MacosFormField label="Or Dealer Name">
+   830→              <Input
+   831→                value={dealerName}
+   832→                onChange={(e) => setDealerName(e.target.value)}
+   833→                placeholder="Enter dealer name"
+   834→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   835→              />
+   836→            </MacosFormField>
+   837→          </div>
+   838→
+   839→          <MacosFormField label="Delivery Address">
+   840→            <Input
+   841→              value={deliveryAddress}
+   842→              onChange={(e) => setDeliveryAddress(e.target.value)}
+   843→              placeholder="Delivery address"
+   844→              className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   845→            />
+   846→          </MacosFormField>
+   847→
+   848→          {/* Add Products */}
+   849→          <MacosFormField label="Add Products">
+   850→            <MacosSearch
+   851→              value={productSearch}
+   852→              onChange={setProductSearch}
+   853→              placeholder="Search books or stationery..."
+   854→            />
+   855→            {searchLoading && (
+   856→              <div className="flex items-center gap-2 text-[11px] text-muted-foreground px-2 mt-1.5">
+   857→                <Loader2 className="size-3 animate-spin" /> Searching...
+   858→              </div>
+   859→            )}
+   860→            {searchResults.length > 0 && (
+   861→              <div className="macos-card macos-shadow overflow-hidden max-h-40 overflow-y-auto custom-scrollbar mt-1.5">
+   862→                {searchResults.map((product) => (
+   863→                  <button
+   864→                    key={`${product.type}-${product.id}`}
+   865→                    className="w-full flex items-center justify-between p-2.5 hover:bg-secondary/80 text-left text-[13px] tracking-tight transition-colors border-b border-border/20 last:border-0"
+   866→                    onClick={() => addItemToOrder(product)}
+   867→                  >
+   868→                    <div className="flex items-center gap-2">
+   869→                      <MacosBadge variant="purple">{product.type}</MacosBadge>
+   870→                      <span>{product.name}</span>
+   871→                    </div>
+   872→                    <span className="text-muted-foreground">${product.price.toFixed(2)}</span>
+   873→                  </button>
+   874→                ))}
+   875→              </div>
+   876→            )}
+   877→          </MacosFormField>
+   878→
+   879→          {/* Order Items */}
+   880→          {orderItems.length > 0 && (
+   881→            <MacosFormField label="Order Items">
+   882→              <div className="macos-card overflow-hidden divide-y divide-border/30">
+   883→                {orderItems.map((item, index) => (
+   884→                  <div key={index} className="flex items-center gap-2 p-2.5">
+   885→                    <MacosBadge variant="purple" className="shrink-0">{item.productType}</MacosBadge>
+   886→                    <span className="text-[13px] flex-1 truncate tracking-tight">{item.productName}</span>
+   887→                    <Input
+   888→                      type="number"
+   889→                      min="1"
+   890→                      value={item.quantity}
+   891→                      onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
+   892→                      className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+   893→                    />
+   894→                    <Input
+   895→                      type="number"
+   896→                      step="0.01"
+   897→                      min="0"
+   898→                      value={item.unitPrice}
+   899→                      onChange={(e) => updateOrderItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+   900→                      className="w-20 text-right text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+   901→                    />
+   902→                    <Input
+   903→                      type="number"
+   904→                      min="0"
+   905→                      max="100"
+   906→                      value={item.discount}
+   907→                      onChange={(e) => updateOrderItem(index, 'discount', parseFloat(e.target.value) || 0)}
+   908→                      className="w-14 text-center text-[13px] h-7 rounded-lg bg-secondary/80 border-0 focus-visible:ring-1 focus-visible:ring-primary/30"
+   909→                      placeholder="%"
+   910→                    />
+   911→                    <Button variant="ghost" size="icon" className="size-6 rounded-lg text-macos-red hover:text-macos-red hover:bg-macos-red/10" onClick={() => removeOrderItem(index)}>
+   912→                      <X className="size-3" />
+   913→                    </Button>
+   914→                  </div>
+   915→                ))}
+   916→              </div>
+   917→            </MacosFormField>
+   918→          )}
+   919→
+   920→          {/* Discount / Tax */}
+   921→          <div className="grid grid-cols-2 gap-4">
+   922→            <MacosFormField label="Discount ($)">
+   923→              <Input
+   924→                type="number"
+   925→                step="0.01"
+   926→                min="0"
+   927→                value={orderDiscount}
+   928→                onChange={(e) => setOrderDiscount(e.target.value)}
+   929→                placeholder="0.00"
+   930→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   931→              />
+   932→            </MacosFormField>
+   933→            <MacosFormField label="Tax (%)">
+   934→              <Input
+   935→                type="number"
+   936→                step="0.5"
+   937→                min="0"
+   938→                value={orderTax}
+   939→                onChange={(e) => setOrderTax(e.target.value)}
+   940→                placeholder="0"
+   941→                className="rounded-lg bg-secondary/80 border-0 text-[13px] h-8 focus-visible:ring-1 focus-visible:ring-primary/30"
+   942→              />
+   943→            </MacosFormField>
+   944→          </div>
+   945→
+   946→          {/* Order Total Preview */}
+   947→          {orderItems.length > 0 && (
+   948→            <div className="macos-card p-3 space-y-1 text-[13px] tracking-tight bg-secondary/50">
+   949→              <div className="flex justify-between">
+   950→                <span className="text-muted-foreground">Subtotal</span>
+   951→                <span>${orderSubtotal.toFixed(2)}</span>
+   952→              </div>
+   953→              {orderDiscountAmt > 0 && (
+   954→                <div className="flex justify-between text-macos-green">
+   955→                  <span>Discount</span>
+   956→                  <span>-${orderDiscountAmt.toFixed(2)}</span>
+   957→                </div>
+   958→              )}
+   959→              {orderTaxAmt > 0 && (
+   960→                <div className="flex justify-between">
+   961→                  <span className="text-muted-foreground">Tax</span>
+   962→                  <span>${orderTaxAmt.toFixed(2)}</span>
+   963→                </div>
+   964→              )}
+   965→              <Separator />
+   966→              <div className="flex justify-between font-bold text-base tracking-tight">
+   967→                <span>Total</span>
+   968→                <span>${orderTotal.toFixed(2)}</span>
+   969→              </div>
+   970→            </div>
+   971→          )}
+   972→
+   973→          <MacosFormField label="Notes">
+   974→            <Textarea
+   975→              value={orderNotes}
+   976→              onChange={(e) => setOrderNotes(e.target.value)}
+   977→              placeholder="Order notes..."
+   978→              rows={2}
+   979→              className="rounded-lg bg-secondary/80 border-0 text-[13px] focus-visible:ring-1 focus-visible:ring-primary/30"
+   980→            />
+   981→          </MacosFormField>
+   982→        </div>
+   983→      </MacosDialog>
+   984→
+   985→      {/* Order Detail Dialog */}
+   986→      <MacosDialog
+   987→        open={detailDialogOpen}
+   988→        onOpenChange={setDetailDialogOpen}
+   989→        title="Order Details"
+   990→        description={detailOrder?.orderNumber || ''}
+   991→        className="glass-card sm:max-w-[550px]"
+   992→      >
+   993→        {detailOrder && (
+   994→          <div className="space-y-4">
+   995→            {/* Order Info */}
+   996→            <div className="grid grid-cols-2 gap-3 text-[13px] tracking-tight">
+   997→              <div>
+   998→                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Dealer</p>
+   999→                <p className="font-medium">{detailOrder.customer?.name || detailOrder.dealerName || '—'}</p>
+  1000→              </div>
+  1001→              <div>
+  1002→                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Status</p>
+  1003→                <div className="mt-1">{getStatusBadge(detailOrder.status)}</div>
+  1004→              </div>
+  1005→              <div>
+  1006→                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Payment</p>
+  1007→                <div className="mt-1">{getPaymentBadge(detailOrder.paymentStatus)}</div>
+  1008→              </div>
+  1009→              <div>
+  1010→                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Date</p>
+  1011→                <p className="font-medium">{new Date(detailOrder.createdAt).toLocaleDateString()}</p>
+  1012→              </div>
+  1013→            </div>
+  1014→
+  1015→            {detailOrder.deliveryAddress && (
+  1016→              <div className="text-[13px] tracking-tight">
+  1017→                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Delivery Address</p>
+  1018→                <p className="font-medium">{detailOrder.deliveryAddress}</p>
+  1019→              </div>
+  1020→            )}
+  1021→
+  1022→            <Separator />
+  1023→
+  1024→            {/* Items */}
+  1025→            <div className="space-y-2">
+  1026→              <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Items ({detailOrder.items.length})</Label>
+  1027→              <div className="macos-card overflow-hidden divide-y divide-border/30">
+  1028→                {detailOrder.items.map((item) => (
+  1029→                  <div key={item.id} className="flex items-center justify-between p-2.5 text-[13px] tracking-tight">
+  1030→                    <div className="flex-1 min-w-0">
+  1031→                      <p className="font-medium truncate">{getItemName(item)}</p>
+  1032→                      <p className="text-[11px] text-muted-foreground tracking-tight">
+  1033→                        ${item.unitPrice.toFixed(2)} × {item.quantity}
+  1034→                        {item.discount > 0 && <span className="text-macos-green ml-1">-{item.discount}%</span>}
+  1035→                      </p>
+  1036→                    </div>
+  1037→                    <span className="font-medium ml-2">${item.totalPrice.toFixed(2)}</span>
+  1038→                  </div>
+  1039→                ))}
+  1040→              </div>
+  1041→            </div>
+  1042→
+  1043→            <Separator />
+  1044→
+  1045→            {/* Totals */}
+  1046→            <div className="space-y-1.5 text-[13px] tracking-tight">
+  1047→              <div className="flex justify-between">
+  1048→                <span className="text-muted-foreground">Subtotal</span>
+  1049→                <span>${detailOrder.subtotal.toFixed(2)}</span>
+  1050→              </div>
+  1051→              {detailOrder.discount > 0 && (
+  1052→                <div className="flex justify-between text-macos-green">
+  1053→                  <span>Discount</span>
+  1054→                  <span>-${detailOrder.discount.toFixed(2)}</span>
+  1055→                </div>
+  1056→              )}
+  1057→              {detailOrder.tax > 0 && (
+  1058→                <div className="flex justify-between">
+  1059→                  <span className="text-muted-foreground">Tax</span>
+  1060→                  <span>${detailOrder.tax.toFixed(2)}</span>
+  1061→                </div>
+  1062→              )}
+  1063→              <Separator />
+  1064→              <div className="flex justify-between font-bold text-base tracking-tight">
+  1065→                <span>Total</span>
+  1066→                <span>${detailOrder.total.toFixed(2)}</span>
+  1067→              </div>
+  1068→            </div>
+  1069→
+  1070→            {/* Status Actions */}
+  1071→            {!isViewOnly && (
+  1072→              <div className="flex gap-2 pt-2">
+  1073→                {detailOrder.status === 'pending' && (
+  1074→                  <MacosButton variant="primary" icon={CheckCircle2} onClick={() => handleStatusUpdate(detailOrder.id, 'confirmed')} disabled={updatingStatus === detailOrder.id}>
+  1075→                    Confirm Order
+  1076→                  </MacosButton>
+  1077→                )}
+  1078→                {detailOrder.status === 'confirmed' && (
+  1079→                  <MacosButton
+  1080→                    variant="primary"
+  1081→                    icon={Ship}
+  1082→                    onClick={() => handleStatusUpdate(detailOrder.id, 'shipped')}
+  1083→                    disabled={updatingStatus === detailOrder.id}
+  1084→                    className="bg-macos-purple hover:bg-macos-purple/90 text-white"
+  1085→                  >
+  1086→                    Mark as Shipped
+  1087→                  </MacosButton>
+  1088→                )}
+  1089→                {detailOrder.status === 'shipped' && (
+  1090→                  <MacosButton
+  1091→                    variant="primary"
+  1092→                    icon={PackageCheck}
+  1093→                    onClick={() => handleStatusUpdate(detailOrder.id, 'delivered')}
+  1094→                    disabled={updatingStatus === detailOrder.id}
+  1095→                    className="bg-macos-green hover:bg-macos-green/90 text-white"
+  1096→                  >
+  1097→                    Mark as Delivered
+  1098→                  </MacosButton>
+  1099→                )}
+  1100→                {(detailOrder.status === 'pending' || detailOrder.status === 'confirmed') && (
+  1101→                  <MacosButton
+  1102→                    variant="danger"
+  1103→                    onClick={() => handleStatusUpdate(detailOrder.id, 'cancelled')}
+  1104→                    disabled={updatingStatus === detailOrder.id}
+  1105→                  >
+  1106→                    Cancel Order
+  1107→                  </MacosButton>
+  1108→                )}
+  1109→              </div>
+  1110→            )}
+  1111→          </div>
+  1112→        )}
+  1113→      </MacosDialog>
+  1114→    </div>
+  1115→  )
+  1116→}
+  1117→

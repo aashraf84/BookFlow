@@ -1,0 +1,872 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  ShoppingCart,
+     6→  Plus,
+     7→  Minus,
+     8→  Trash2,
+     9→  CreditCard,
+    10→  Banknote,
+    11→  Building,
+    12→  Smartphone,
+    13→  Loader2,
+    14→  AlertCircle,
+    15→  X,
+    16→  Check,
+    17→  Receipt,
+    18→  UserCircle,
+    19→  Package,
+    20→  BookOpen,
+    21→  PencilRuler,
+    22→  GraduationCap,
+    23→  Tag,
+    24→  Eye,
+    25→  Sparkles,
+    26→} from 'lucide-react'
+    27→
+    28→import { Button } from '@/components/ui/button'
+    29→import { Input } from '@/components/ui/input'
+    30→import { Label } from '@/components/ui/label'
+    31→import {
+    32→  Select,
+    33→  SelectContent,
+    34→  SelectItem,
+    35→  SelectTrigger,
+    36→  SelectValue,
+    37→} from '@/components/ui/select'
+    38→import { Separator } from '@/components/ui/separator'
+    39→import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+    40→import { useAppStore } from '@/store/app-store'
+    41→import {
+    42→  MacosPageHeader,
+    43→  MacosSearch,
+    44→  MacosFilterBar,
+    45→  MacosButton,
+    46→  MacosBadge,
+    47→  MacosDialog,
+    48→  MacosEmptyState,
+    49→  MacosFormField,
+    50→} from '@/components/macos-ui'
+    51→
+    52→// ─── Types ────────────────────────────────────────────────────────
+    53→type ProductType = 'book' | 'stationery'
+    54→
+    55→interface POSProduct {
+    56→  id: string
+    57→  type: ProductType
+    58→  name: string
+    59→  sku: string | null
+    60→  isbn: string | null
+    61→  barcode: string | null
+    62→  price: number
+    63→  costPrice: number
+    64→  discount: number
+    65→  author?: string | null
+    66→  brand?: string | null
+    67→  category?: string | null
+    68→}
+    69→
+    70→interface CartItem {
+    71→  product: POSProduct
+    72→  quantity: number
+    73→  unitPrice: number
+    74→  discount: number
+    75→  totalPrice: number
+    76→}
+    77→
+    78→interface Customer {
+    79→  id: string
+    80→  name: string
+    81→  email?: string | null
+    82→  phone?: string | null
+    83→  loyaltyPoints: number
+    84→}
+    85→
+    86→interface CompletedSale {
+    87→  invoiceNumber: string
+    88→  total: number
+    89→  subtotal: number
+    90→  discount: number
+    91→  tax: number
+    92→  paymentMethod: string
+    93→  customerName: string | null
+    94→  items: Array<{ name: string; quantity: number; unitPrice: number; totalPrice: number }>
+    95→}
+    96→
+    97→// ─── Component ────────────────────────────────────────────────────
+    98→export function RetailPOSModule() {
+    99→  const { authUser } = useAppStore()
+   100→  const isViewOnly = authUser?.isViewOnly ?? false
+   101→
+   102→  // Products
+   103→  const [products, setProducts] = React.useState<POSProduct[]>([])
+   104→  const [searchTerm, setSearchTerm] = React.useState('')
+   105→  const [categoryFilter, setCategoryFilter] = React.useState<'all' | 'books' | 'stationery' | 'school'>('all')
+   106→  const [searchLoading, setSearchLoading] = React.useState(false)
+   107→
+   108→  // Cart
+   109→  const [cart, setCart] = React.useState<CartItem[]>([])
+   110→  const [cartDiscount, setCartDiscount] = React.useState(0)
+   111→  const [discountType, setDiscountType] = React.useState<'percentage' | 'fixed'>('percentage')
+   112→  const [taxRate, setTaxRate] = React.useState(0)
+   113→
+   114→  // Customer
+   115→  const [customerSearch, setCustomerSearch] = React.useState('')
+   116→  const [customers, setCustomers] = React.useState<Customer[]>([])
+   117→  const [selectedCustomer, setSelectedCustomer] = React.useState<Customer | null>(null)
+   118→  const [customerLookupOpen, setCustomerLookupOpen] = React.useState(false)
+   119→
+   120→  // Payment
+   121→  const [paymentMethod, setPaymentMethod] = React.useState('cash')
+   122→
+   123→  // Sale
+   124→  const [completing, setCompleting] = React.useState(false)
+   125→  const [completedSale, setCompletedSale] = React.useState<CompletedSale | null>(null)
+   126→  const [error, setError] = React.useState<string | null>(null)
+   127→
+   128→  // Search products
+   129→  React.useEffect(() => {
+   130→    const searchProducts = async () => {
+   131→      setSearchLoading(true)
+   132→      try {
+   133→        const params = new URLSearchParams()
+   134→        params.set('limit', '30')
+   135→        if (searchTerm) params.set('search', searchTerm)
+   136→
+   137→        const [booksRes, stationeryRes] = await Promise.all([
+   138→          fetch(`/api/books?${params.toString()}`),
+   139→          fetch(`/api/stationery?${params.toString()}`),
+   140→        ])
+   141→
+   142→        const bookData = booksRes.ok ? await booksRes.json() : { data: [] }
+   143→        const stationeryData = stationeryRes.ok ? await stationeryRes.json() : { data: [] }
+   144→
+   145→        const bookProducts: POSProduct[] = (bookData.data || []).map((b: Record<string, unknown>) => ({
+   146→          id: b.id as string,
+   147→          type: 'book' as ProductType,
+   148→          name: b.title as string,
+   149→          sku: null,
+   150→          isbn: (b.isbn as string) || null,
+   151→          barcode: (b.barcode as string) || null,
+   152→          price: (b.price as number) || 0,
+   153→          costPrice: (b.costPrice as number) || 0,
+   154→          discount: (b.discount as number) || 0,
+   155→          author: (b.author as { name: string } | null)?.name || null,
+   156→          category: (b.category as { name: string } | null)?.name || null,
+   157→        }))
+   158→
+   159→        const stationeryProducts: POSProduct[] = (stationeryData.data || []).map((s: Record<string, unknown>) => ({
+   160→          id: s.id as string,
+   161→          type: 'stationery' as ProductType,
+   162→          name: s.name as string,
+   163→          sku: (s.sku as string) || null,
+   164→          isbn: null,
+   165→          barcode: (s.barcode as string) || null,
+   166→          price: (s.price as number) || 0,
+   167→          costPrice: (s.costPrice as number) || 0,
+   168→          discount: (s.discount as number) || 0,
+   169→          brand: (s.brand as string) || null,
+   170→          category: (s.category as { name: string } | null)?.name || null,
+   171→        }))
+   172→
+   173→        let all = [...bookProducts, ...stationeryProducts]
+   174→
+   175→        // Apply category filter
+   176→        if (categoryFilter === 'books') {
+   177→          all = all.filter((p) => p.type === 'book')
+   178→        } else if (categoryFilter === 'stationery') {
+   179→          all = all.filter((p) => p.type === 'stationery')
+   180→        } else if (categoryFilter === 'school') {
+   181→          all = all.filter((p) => p.category?.toLowerCase().includes('school') || p.category?.toLowerCase().includes('educational'))
+   182→        }
+   183→
+   184→        setProducts(all)
+   185→      } catch {
+   186→        // silent
+   187→      } finally {
+   188→        setSearchLoading(false)
+   189→      }
+   190→    }
+   191→
+   192→    const debounce = setTimeout(searchProducts, 300)
+   193→    return () => clearTimeout(debounce)
+   194→  }, [searchTerm, categoryFilter])
+   195→
+   196→  // Search customers
+   197→  React.useEffect(() => {
+   198→    if (!customerSearch) {
+   199→      setCustomers([])
+   200→      return
+   201→    }
+   202→    const searchCustomers = async () => {
+   203→      try {
+   204→        const res = await fetch(`/api/customers?search=${encodeURIComponent(customerSearch)}&type=retail&limit=10`)
+   205→        if (res.ok) {
+   206→          const json = await res.json()
+   207→          setCustomers(json.data || [])
+   208→        }
+   209→      } catch {
+   210→        // silent
+   211→      }
+   212→    }
+   213→    const debounce = setTimeout(searchCustomers, 300)
+   214→    return () => clearTimeout(debounce)
+   215→  }, [customerSearch])
+   216→
+   217→  // Add to cart
+   218→  const addToCart = (product: POSProduct) => {
+   219→    if (isViewOnly) return
+   220→    setCart((prev) => {
+   221→      const existing = prev.find((item) => item.product.id === product.id && item.product.type === product.type)
+   222→      if (existing) {
+   223→        return prev.map((item) =>
+   224→          item.product.id === product.id && item.product.type === product.type
+   225→            ? {
+   226→                ...item,
+   227→                quantity: item.quantity + 1,
+   228→                totalPrice: (item.quantity + 1) * item.unitPrice * (1 - item.discount / 100),
+   229→              }
+   230→            : item
+   231→        )
+   232→      }
+   233→      const unitPrice = product.price * (1 - product.discount / 100)
+   234→      return [
+   235→        ...prev,
+   236→        {
+   237→          product,
+   238→          quantity: 1,
+   239→          unitPrice: product.price,
+   240→          discount: product.discount,
+   241→          totalPrice: unitPrice,
+   242→        },
+   243→      ]
+   244→    })
+   245→  }
+   246→
+   247→  // Update cart quantity
+   248→  const updateQuantity = (index: number, newQty: number) => {
+   249→    if (isViewOnly) return
+   250→    if (newQty < 1) {
+   251→      removeFromCart(index)
+   252→      return
+   253→    }
+   254→    setCart((prev) =>
+   255→      prev.map((item, i) =>
+   256→        i === index
+   257→          ? { ...item, quantity: newQty, totalPrice: newQty * item.unitPrice * (1 - item.discount / 100) }
+   258→          : item
+   259→      )
+   260→    )
+   261→  }
+   262→
+   263→  // Remove from cart
+   264→  const removeFromCart = (index: number) => {
+   265→    if (isViewOnly) return
+   266→    setCart((prev) => prev.filter((_, i) => i !== index))
+   267→  }
+   268→
+   269→  // Clear cart
+   270→  const clearCart = () => {
+   271→    if (isViewOnly) return
+   272→    setCart([])
+   273→    setCartDiscount(0)
+   274→    setSelectedCustomer(null)
+   275→    setCompletedSale(null)
+   276→  }
+   277→
+   278→  // Compute totals
+   279→  const subtotal = cart.reduce((s, item) => s + item.totalPrice, 0)
+   280→  const discountAmount = discountType === 'percentage' ? subtotal * (cartDiscount / 100) : cartDiscount
+   281→  const afterDiscount = Math.max(0, subtotal - discountAmount)
+   282→  const taxAmount = afterDiscount * (taxRate / 100)
+   283→  const total = afterDiscount + taxAmount
+   284→
+   285→  // Complete sale
+   286→  const handleCompleteSale = async () => {
+   287→    if (isViewOnly || cart.length === 0) return
+   288→    setCompleting(true)
+   289→    setError(null)
+   290→    try {
+   291→      const saleItems = cart.map((item) => ({
+   292→        bookId: item.product.type === 'book' ? item.product.id : undefined,
+   293→        stationeryId: item.product.type === 'stationery' ? item.product.id : undefined,
+   294→        quantity: item.quantity,
+   295→        unitPrice: item.unitPrice,
+   296→        discount: item.discount,
+   297→      }))
+   298→
+   299→      const res = await fetch('/api/sales', {
+   300→        method: 'POST',
+   301→        headers: { 'Content-Type': 'application/json' },
+   302→        body: JSON.stringify({
+   303→          customerId: selectedCustomer?.id || null,
+   304→          discount: discountAmount,
+   305→          tax: taxRate,
+   306→          paymentMethod,
+   307→          paymentStatus: 'paid',
+   308→          saleType: 'retail',
+   309→          items: saleItems,
+   310→        }),
+   311→      })
+   312→
+   313→      if (!res.ok) {
+   314→        const errData = await res.json()
+   315→        throw new Error(errData.error || 'Failed to complete sale')
+   316→      }
+   317→
+   318→      const json = await res.json()
+   319→      const sale = json.data
+   320→
+   321→      setCompletedSale({
+   322→        invoiceNumber: sale.invoiceNumber,
+   323→        total: sale.total,
+   324→        subtotal: sale.subtotal,
+   325→        discount: sale.discount,
+   326→        tax: sale.tax,
+   327→        paymentMethod: sale.paymentMethod,
+   328→        customerName: selectedCustomer?.name || null,
+   329→        items: cart.map((item) => ({
+   330→          name: item.product.name,
+   331→          quantity: item.quantity,
+   332→          unitPrice: item.unitPrice,
+   333→          totalPrice: item.totalPrice,
+   334→        })),
+   335→      })
+   336→
+   337→      // Clear cart
+   338→      setCart([])
+   339→      setCartDiscount(0)
+   340→      setSelectedCustomer(null)
+   341→    } catch (err) {
+   342→      setError(err instanceof Error ? err.message : 'Failed to complete sale')
+   343→    } finally {
+   344→      setCompleting(false)
+   345→    }
+   346→  }
+   347→
+   348→  // Payment method icons
+   349→  const paymentMethods = [
+   350→    { value: 'cash', label: 'Cash', icon: Banknote, color: 'macos-green' as const },
+   351→    { value: 'card', label: 'Card', icon: CreditCard, color: 'macos-blue' as const },
+   352→    { value: 'bank', label: 'Bank', icon: Building, color: 'macos-purple' as const },
+   353→    { value: 'wallet', label: 'Wallet', icon: Smartphone, color: 'macos-orange' as const },
+   354→  ]
+   355→
+   356→  // Category filters for MacosFilterBar
+   357→  const categoryFilterItems = [
+   358→    { id: 'all', label: 'All' },
+   359→    { id: 'books', label: 'Books' },
+   360→    { id: 'stationery', label: 'Stationery' },
+   361→    { id: 'school', label: 'School' },
+   362→  ]
+   363→
+   364→  return (
+   365→    <div className="flex flex-col h-[calc(100vh-52px-32px)] overflow-hidden">
+   366→      {/* ─── Page Header ─── */}
+   367→      <MacosPageHeader
+   368→        title="Point of Sale"
+   369→        subtitle="Process retail transactions — select products, add to cart, and complete sales"
+   370→        icon={ShoppingCart}
+   371→        iconColor="text-gg-bridge"
+   372→        iconBg="bg-gg-bridge/10"
+   373→      >
+   374→        {isViewOnly && (
+   375→          <MacosBadge variant="warning" className="flex items-center gap-1.5">
+   376→            <Eye className="size-3" />
+   377→            View Only
+   378→          </MacosBadge>
+   379→        )}
+   380→      </MacosPageHeader>
+   381→
+   382→      {/* ─── Error Alert ─── */}
+   383→      {error && (
+   384→        <div className="macos-card macos-shadow-card flex items-center gap-2.5 p-3 mb-4 border-macos-red/20 bg-macos-red/5 flex-shrink-0">
+   385→          <div className="size-6 rounded-md bg-macos-red/10 flex items-center justify-center flex-shrink-0">
+   386→            <AlertCircle className="size-3.5 text-macos-red" />
+   387→          </div>
+   388→          <span className="text-[13px] font-medium text-macos-red flex-1">{error}</span>
+   389→          <button
+   390→            className="size-6 rounded-md hover:bg-macos-red/10 flex items-center justify-center transition-colors"
+   391→            onClick={() => setError(null)}
+   392→          >
+   393→            <X className="size-3.5 text-macos-red" />
+   394→          </button>
+   395→        </div>
+   396→      )}
+   397→
+   398→      {/* ─── Receipt Dialog ─── */}
+   399→      <MacosDialog
+   400→        open={!!completedSale}
+   401→        onOpenChange={(open) => !open && setCompletedSale(null)}
+   402→        title="Sale Completed"
+   403→        description="Transaction processed successfully"
+   404→        className="glass-card"
+   405→        footer={
+   406→          <Button
+   407→            onClick={() => setCompletedSale(null)}
+   408→            className="w-full bg-macos-green text-white rounded-lg font-semibold text-[13px] h-10 hover:bg-macos-green/90"
+   409→          >
+   410→            <Check className="size-4 mr-1.5" />
+   411→            Done
+   412→          </Button>
+   413→        }
+   414→      >
+   415→        {completedSale && (
+   416→          <div className="space-y-4">
+   417→            <div className="text-center space-y-1.5 py-3">
+   418→              <div className="flex items-center justify-center gap-1.5">
+   419→                <Sparkles className="size-3.5 text-gg-golden" />
+   420→                <p className="text-[15px] font-bold tracking-tight">BookFlow OS</p>
+   421→                <Sparkles className="size-3.5 text-gg-golden" />
+   422→              </div>
+   423→              <p className="text-[11px] text-muted-foreground font-medium">Invoice {completedSale.invoiceNumber}</p>
+   424→              <p className="text-[10px] text-muted-foreground">{new Date().toLocaleString()}</p>
+   425→            </div>
+   426→
+   427→            <div className="rounded-xl bg-secondary/50 p-3 space-y-2">
+   428→              {completedSale.items.map((item, i) => (
+   429→                <div key={i} className="flex justify-between text-[13px] tracking-tight">
+   430→                  <span className="flex-1 truncate mr-3 font-medium">{item.name} <span className="text-muted-foreground">×{item.quantity}</span></span>
+   431→                  <span className="font-semibold tabular-nums">${item.totalPrice.toFixed(2)}</span>
+   432→                </div>
+   433→              ))}
+   434→            </div>
+   435→
+   436→            <Separator className="opacity-50" />
+   437→
+   438→            <div className="space-y-2 text-[13px] tracking-tight">
+   439→              <div className="flex justify-between">
+   440→                <span className="text-muted-foreground">Subtotal</span>
+   441→                <span className="tabular-nums">${completedSale.subtotal.toFixed(2)}</span>
+   442→              </div>
+   443→              {completedSale.discount > 0 && (
+   444→                <div className="flex justify-between text-macos-green">
+   445→                  <span>Discount</span>
+   446→                  <span className="tabular-nums">-${completedSale.discount.toFixed(2)}</span>
+   447→                </div>
+   448→              )}
+   449→              {completedSale.tax > 0 && (
+   450→                <div className="flex justify-between">
+   451→                  <span className="text-muted-foreground">Tax</span>
+   452→                  <span className="tabular-nums">${completedSale.tax.toFixed(2)}</span>
+   453→                </div>
+   454→              )}
+   455→              <Separator className="opacity-50" />
+   456→              <div className="flex justify-between font-bold text-[15px] tracking-tight">
+   457→                <span>Total</span>
+   458→                <span className="tabular-nums">${completedSale.total.toFixed(2)}</span>
+   459→              </div>
+   460→            </div>
+   461→
+   462→            <div className="flex justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+   463→              <span>Paid: {completedSale.paymentMethod}</span>
+   464→              {completedSale.customerName && <span>Customer: {completedSale.customerName}</span>}
+   465→            </div>
+   466→          </div>
+   467→        )}
+   468→      </MacosDialog>
+   469→
+   470→      {/* ─── Main POS Split Layout ─── */}
+   471→      <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-0">
+   472→        {/* ─── Left: Products ─── */}
+   473→        <div className="lg:col-span-3 flex flex-col min-h-0 gap-4">
+   474→          {/* Search + Category Filter Bar */}
+   475→          <div className="macos-card macos-shadow-card p-4 flex-shrink-0">
+   476→            <MacosSearch
+   477→              value={searchTerm}
+   478→              onChange={setSearchTerm}
+   479→              placeholder="Search by name, ISBN, or barcode…"
+   480→              className="h-9"
+   481→            />
+   482→
+   483→            <div className="mt-3">
+   484→              <MacosFilterBar
+   485→                items={categoryFilterItems}
+   486→                activeId={categoryFilter}
+   487→                onChange={(id) => setCategoryFilter(id as 'all' | 'books' | 'stationery' | 'school')}
+   488→              />
+   489→            </div>
+   490→          </div>
+   491→
+   492→          {/* Product Grid */}
+   493→          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+   494→            {searchLoading ? (
+   495→              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+   496→                {Array.from({ length: 6 }).map((_, i) => (
+   497→                  <div key={i} className="macos-card macos-shadow-card p-4 animate-pulse">
+   498→                    <div className="h-3 bg-secondary rounded-md w-3/4 mb-3" />
+   499→                    <div className="h-2.5 bg-secondary rounded-md w-1/2 mb-3" />
+   500→                    <div className="h-4 bg-secondary rounded-md w-1/3" />
+   501→                  </div>
+   502→                ))}
+   503→              </div>
+   504→            ) : products.length === 0 ? (
+   505→              <MacosEmptyState
+   506→                icon={Package}
+   507→                title="No products found"
+   508→                description="Try a different search or category"
+   509→                className="macos-card macos-shadow-card"
+   510→              />
+   511→            ) : (
+   512→              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+   513→                {products.map((product) => {
+   514→                  const inCart = cart.find((c) => c.product.id === product.id && c.product.type === product.type)
+   515→                  return (
+   516→                    <button
+   517→                      key={`${product.type}-${product.id}`}
+   518→                      className={`macos-card macos-shadow-card macos-card-hover p-4 text-left w-full cursor-pointer group ${inCart ? 'ring-1 ring-macos-green/30 bg-macos-green/[0.02]' : 'bg-card'} ${isViewOnly ? 'cursor-default' : ''}`}
+   519→                      onClick={() => addToCart(product)}
+   520→                      disabled={isViewOnly}
+   521→                    >
+   522→                      <div className="space-y-2">
+   523→                        <div className="flex items-start justify-between gap-1.5">
+   524→                          <p className="text-[13px] font-semibold leading-snug line-clamp-2 tracking-tight group-hover:text-macos-blue transition-colors">{product.name}</p>
+   525→                          <MacosBadge variant={product.type === 'book' ? 'danger' : 'warning'}>
+   526→                            {product.type === 'book' ? 'Book' : 'Item'}
+   527→                          </MacosBadge>
+   528→                        </div>
+   529→                        {product.author && (
+   530→                          <p className="text-[11px] text-muted-foreground truncate tracking-tight">by {product.author}</p>
+   531→                        )}
+   532→                        {product.brand && (
+   533→                          <p className="text-[11px] text-muted-foreground truncate tracking-tight">{product.brand}</p>
+   534→                        )}
+   535→                        {product.category && (
+   536→                          <MacosBadge>{product.category}</MacosBadge>
+   537→                        )}
+   538→                        <div className="flex items-center justify-between pt-1">
+   539→                          <div>
+   540→                            {product.discount > 0 ? (
+   541→                              <div className="flex items-center gap-1.5">
+   542→                                <span className="text-[11px] text-muted-foreground line-through tracking-tight">${product.price.toFixed(2)}</span>
+   543→                                <span className="text-[14px] font-bold text-macos-green tracking-tight">${(product.price * (1 - product.discount / 100)).toFixed(2)}</span>
+   544→                              </div>
+   545→                            ) : (
+   546→                              <span className="text-[14px] font-bold tracking-tight">${product.price.toFixed(2)}</span>
+   547→                            )}
+   548→                          </div>
+   549→                          {inCart ? (
+   550→                            <MacosBadge variant="success">×{inCart.quantity}</MacosBadge>
+   551→                          ) : !isViewOnly ? (
+   552→                            <div className="size-6 rounded-lg bg-macos-blue/10 flex items-center justify-center group-hover:bg-macos-blue/20 transition-colors">
+   553→                              <Plus className="size-3 text-macos-blue" />
+   554→                            </div>
+   555→                          ) : null}
+   556→                        </div>
+   557→                      </div>
+   558→                    </button>
+   559→                  )
+   560→                })}
+   561→              </div>
+   562→            )}
+   563→          </div>
+   564→        </div>
+   565→
+   566→        {/* ─── Right: Cart Panel (Frosted Glass) ─── */}
+   567→        <div className="lg:col-span-2 flex flex-col min-h-0">
+   568→          <div className="macos-card glass-card macos-shadow-elevated flex-1 flex flex-col min-h-0">
+   569→            {/* Cart Header */}
+   570→            <div className="p-4 pb-3 flex items-center justify-between border-b border-border/40 flex-shrink-0">
+   571→              <h3 className="macos-section-title flex items-center gap-2">
+   572→                <div className="size-5 rounded-md bg-gg-bridge/10 flex items-center justify-center">
+   573→                  <ShoppingCart className="size-3 text-gg-bridge" />
+   574→                </div>
+   575→                Cart
+   576→                {cart.length > 0 && (
+   577→                  <MacosBadge variant="danger">{cart.length}</MacosBadge>
+   578→                )}
+   579→              </h3>
+   580→              {cart.length > 0 && !isViewOnly && (
+   581→                <MacosButton
+   582→                  variant="danger"
+   583→                  icon={Trash2}
+   584→                  onClick={clearCart}
+   585→                >
+   586→                  Clear
+   587→                </MacosButton>
+   588→              )}
+   589→            </div>
+   590→
+   591→            {/* Scrollable Cart Content */}
+   592→            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4">
+   593→              {/* Customer Selection */}
+   594→              <div className="space-y-2">
+   595→                <div className="flex items-center justify-between">
+   596→                  <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Customer</Label>
+   597→                  <button
+   598→                    className="text-[11px] font-medium text-macos-blue hover:text-macos-blue/80 flex items-center gap-1 rounded-md px-1.5 py-0.5 hover:bg-macos-blue/10 transition-colors"
+   599→                    onClick={() => setCustomerLookupOpen(true)}
+   600→                  >
+   601→                    <UserCircle className="size-3" />
+   602→                    {selectedCustomer ? 'Change' : 'Select'}
+   603→                  </button>
+   604→                </div>
+   605→                {selectedCustomer ? (
+   606→                  <div className="flex items-center justify-between rounded-xl bg-gg-bay/5 border border-gg-bay/10 p-2.5">
+   607→                    <div>
+   608→                      <p className="text-[13px] font-semibold tracking-tight">{selectedCustomer.name}</p>
+   609→                      <p className="text-[10px] text-muted-foreground tracking-tight font-medium">{selectedCustomer.loyaltyPoints} loyalty pts</p>
+   610→                    </div>
+   611→                    {!isViewOnly && (
+   612→                      <button
+   613→                        className="size-5 rounded-md hover:bg-macos-red/10 flex items-center justify-center transition-colors"
+   614→                        onClick={() => setSelectedCustomer(null)}
+   615→                      >
+   616→                        <X className="size-3 text-macos-red" />
+   617→                      </button>
+   618→                    )}
+   619→                  </div>
+   620→                ) : (
+   621→                  <p className="text-[11px] text-muted-foreground tracking-tight font-medium">Walk-in customer</p>
+   622→                )}
+   623→              </div>
+   624→
+   625→              <Separator className="opacity-40" />
+   626→
+   627→              {/* Cart Items */}
+   628→              <div className="space-y-0">
+   629→                {cart.length === 0 ? (
+   630→                  <MacosEmptyState
+   631→                    icon={ShoppingCart}
+   632→                    title="Cart is empty"
+   633→                    description="Click products to add them"
+   634→                  />
+   635→                ) : (
+   636→                  <div className="space-y-0.5">
+   637→                    {cart.map((item, index) => (
+   638→                      <div key={`${item.product.type}-${item.product.id}`} className="flex items-center gap-2.5 rounded-xl p-2.5 hover:bg-secondary/30 transition-colors group/item">
+   639→                        {/* Type indicator */}
+   640→                        <div className={`size-2 rounded-full flex-shrink-0 ${item.product.type === 'book' ? 'bg-gg-bridge' : 'bg-gg-sunset'}`} />
+   641→
+   642→                        <div className="flex-1 min-w-0">
+   643→                          <p className="text-[13px] font-medium truncate tracking-tight">{item.product.name}</p>
+   644→                          <div className="flex items-center gap-1.5 mt-0.5">
+   645→                            <span className="text-[11px] text-muted-foreground tracking-tight tabular-nums">${item.unitPrice.toFixed(2)}</span>
+   646→                            {item.discount > 0 && (
+   647→                              <MacosBadge variant="success">-{item.discount}%</MacosBadge>
+   648→                            )}
+   649→                          </div>
+   650→                        </div>
+   651→
+   652→                        {/* Quantity controls */}
+   653→                        <div className="flex items-center gap-0.5">
+   654→                          <button
+   655→                            className="size-6 rounded-lg bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
+   656→                            onClick={() => updateQuantity(index, item.quantity - 1)}
+   657→                            disabled={isViewOnly}
+   658→                          >
+   659→                            <Minus className="size-2.5" />
+   660→                          </button>
+   661→                          <span className="w-7 text-center text-[13px] font-semibold tabular-nums tracking-tight">{item.quantity}</span>
+   662→                          <button
+   663→                            className="size-6 rounded-lg bg-secondary/60 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-40"
+   664→                            onClick={() => updateQuantity(index, item.quantity + 1)}
+   665→                            disabled={isViewOnly}
+   666→                          >
+   667→                            <Plus className="size-2.5" />
+   668→                          </button>
+   669→                        </div>
+   670→
+   671→                        <div className="text-right min-w-[52px]">
+   672→                          <p className="text-[13px] font-semibold tabular-nums tracking-tight">${item.totalPrice.toFixed(2)}</p>
+   673→                          {!isViewOnly && (
+   674→                            <button
+   675→                              className="size-4 text-muted-foreground/50 hover:text-macos-red mt-0.5 inline-flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity"
+   676→                              onClick={() => removeFromCart(index)}
+   677→                            >
+   678→                              <X className="size-2.5" />
+   679→                            </button>
+   680→                          )}
+   681→                        </div>
+   682→                      </div>
+   683→                    ))}
+   684→                  </div>
+   685→                )}
+   686→              </div>
+   687→
+   688→              <Separator className="opacity-40" />
+   689→
+   690→              {/* Discount */}
+   691→              <MacosFormField label="Cart Discount">
+   692→                <div className="flex gap-2">
+   693→                  <Select value={discountType} onValueChange={(v: 'percentage' | 'fixed') => setDiscountType(v)} disabled={isViewOnly}>
+   694→                    <SelectTrigger className="rounded-lg bg-secondary/60 border-0 text-[13px] h-7 w-[100px] font-medium focus:ring-0">
+   695→                      <SelectValue />
+   696→                    </SelectTrigger>
+   697→                    <SelectContent>
+   698→                      <SelectItem value="percentage">Percent %</SelectItem>
+   699→                      <SelectItem value="fixed">Fixed $</SelectItem>
+   700→                    </SelectContent>
+   701→                  </Select>
+   702→                  <Input
+   703→                    type="number"
+   704→                    min="0"
+   705→                    step={discountType === 'percentage' ? '1' : '0.01'}
+   706→                    value={cartDiscount || ''}
+   707→                    onChange={(e) => setCartDiscount(parseFloat(e.target.value) || 0)}
+   708→                    placeholder="0"
+   709→                    disabled={isViewOnly}
+   710→                    className="w-20 rounded-lg bg-secondary/60 border-0 text-[13px] h-7 font-medium focus-visible:ring-1 focus-visible:ring-macos-blue/30"
+   711→                  />
+   712→                </div>
+   713→              </MacosFormField>
+   714→
+   715→              {/* Tax */}
+   716→              <div className="flex items-center justify-between">
+   717→                <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Tax Rate (%)</Label>
+   718→                <Input
+   719→                  type="number"
+   720→                  min="0"
+   721→                  step="0.5"
+   722→                  value={taxRate || ''}
+   723→                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+   724→                  placeholder="0"
+   725→                  disabled={isViewOnly}
+   726→                  className="w-16 text-right rounded-lg bg-secondary/60 border-0 text-[13px] h-7 font-medium focus-visible:ring-1 focus-visible:ring-macos-blue/30"
+   727→                />
+   728→              </div>
+   729→            </div>
+   730→
+   731→            {/* Fixed Bottom: Totals + Payment + Checkout */}
+   732→            <div className="flex-shrink-0 border-t border-border/40 p-4 space-y-3 bg-card/50">
+   733→              {/* Totals */}
+   734→              <div className="space-y-1.5 text-[13px] tracking-tight">
+   735→                <div className="flex justify-between">
+   736→                  <span className="text-muted-foreground font-medium">Subtotal</span>
+   737→                  <span className="tabular-nums font-medium">${subtotal.toFixed(2)}</span>
+   738→                </div>
+   739→                {discountAmount > 0 && (
+   740→                  <div className="flex justify-between text-macos-green">
+   741→                    <span className="font-medium">Discount</span>
+   742→                    <span className="tabular-nums font-medium">-${discountAmount.toFixed(2)}</span>
+   743→                  </div>
+   744→                )}
+   745→                {taxAmount > 0 && (
+   746→                  <div className="flex justify-between">
+   747→                    <span className="text-muted-foreground font-medium">Tax ({taxRate}%)</span>
+   748→                    <span className="tabular-nums font-medium">${taxAmount.toFixed(2)}</span>
+   749→                  </div>
+   750→                )}
+   751→                <Separator className="opacity-40" />
+   752→                <div className="flex justify-between items-baseline">
+   753→                  <span className="font-bold text-[15px] tracking-tight">Total</span>
+   754→                  <span className="font-bold text-[20px] tracking-tight tabular-nums">${total.toFixed(2)}</span>
+   755→                </div>
+   756→              </div>
+   757→
+   758→              {/* Payment Method */}
+   759→              <div className="space-y-2">
+   760→                <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Payment Method</Label>
+   761→                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-4 gap-2">
+   762→                  {paymentMethods.map((pm) => {
+   763→                    const Icon = pm.icon
+   764→                    const isSelected = paymentMethod === pm.value
+   765→                    const colorMap: Record<string, string> = {
+   766→                      'macos-green': 'text-macos-green bg-macos-green/10 ring-macos-green/20',
+   767→                      'macos-blue': 'text-macos-blue bg-macos-blue/10 ring-macos-blue/20',
+   768→                      'macos-purple': 'text-macos-purple bg-macos-purple/10 ring-macos-purple/20',
+   769→                      'macos-orange': 'text-macos-orange bg-macos-orange/10 ring-macos-orange/20',
+   770→                    }
+   771→                    return (
+   772→                      <Label
+   773→                        key={pm.value}
+   774→                        className={`flex flex-col items-center gap-1.5 rounded-xl p-2.5 cursor-pointer transition-all ${isSelected ? `ring-1 ${colorMap[pm.color]}` : 'bg-secondary/40 hover:bg-secondary/60 ring-0'}`}
+   775→                      >
+   776→                        <RadioGroupItem value={pm.value} className="sr-only" />
+   777→                        <Icon className={`size-3.5 ${isSelected ? '' : 'text-muted-foreground'}`} />
+   778→                        <span className="text-[9px] font-semibold tracking-wide">{pm.label}</span>
+   779→                      </Label>
+   780→                    )
+   781→                  })}
+   782→                </RadioGroup>
+   783→              </div>
+   784→
+   785→              {/* Complete Sale */}
+   786→              <Button
+   787→                className="w-full bg-gg-bridge hover:bg-gg-bridge/90 text-white rounded-xl font-semibold text-[13px] h-11 shadow-sm disabled:opacity-50"
+   788→                onClick={handleCompleteSale}
+   789→                disabled={cart.length === 0 || completing || isViewOnly}
+   790→              >
+   791→                {completing ? (
+   792→                  <>
+   793→                    <Loader2 className="size-4 mr-2 animate-spin" />
+   794→                    Processing…
+   795→                  </>
+   796→                ) : isViewOnly ? (
+   797→                  <>
+   798→                    <Eye className="size-4 mr-2" />
+   799→                    View Only — Checkout Disabled
+   800→                  </>
+   801→                ) : (
+   802→                  <>
+   803→                    <Check className="size-4 mr-2" />
+   804→                    Complete Sale — ${total.toFixed(2)}
+   805→                  </>
+   806→                )}
+   807→              </Button>
+   808→            </div>
+   809→          </div>
+   810→        </div>
+   811→      </div>
+   812→
+   813→      {/* ─── Customer Lookup Dialog ─── */}
+   814→      <MacosDialog
+   815→        open={customerLookupOpen}
+   816→        onOpenChange={setCustomerLookupOpen}
+   817→        title="Select Customer"
+   818→        description="Search for an existing customer"
+   819→        className="glass-card"
+   820→        footer={
+   821→          <Button
+   822→            variant="ghost"
+   823→            className="bg-secondary text-secondary-foreground rounded-xl text-[13px] h-9 font-medium hover:bg-secondary/80"
+   824→            onClick={() => {
+   825→              setCustomerLookupOpen(false)
+   826→              setCustomerSearch('')
+   827→              setSelectedCustomer(null)
+   828→            }}
+   829→          >
+   830→            Walk-in Customer
+   831→          </Button>
+   832→        }
+   833→      >
+   834→        <div className="space-y-4">
+   835→          <MacosSearch
+   836→            value={customerSearch}
+   837→            onChange={setCustomerSearch}
+   838→            placeholder="Search by name, email, or phone…"
+   839→            className="h-9"
+   840→          />
+   841→          <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-0.5">
+   842→            {customers.length === 0 && customerSearch ? (
+   843→              <MacosEmptyState
+   844→                title="No customers found"
+   845→                className="py-10"
+   846→              />
+   847→            ) : (
+   848→              customers.map((c) => (
+   849→                <button
+   850→                  key={c.id}
+   851→                  className="w-full flex items-center justify-between rounded-xl p-3 hover:bg-secondary/50 transition-colors text-left group"
+   852→                  onClick={() => {
+   853→                    setSelectedCustomer(c)
+   854→                    setCustomerLookupOpen(false)
+   855→                    setCustomerSearch('')
+   856→                  }}
+   857→                >
+   858→                  <div>
+   859→                    <p className="text-[13px] font-semibold tracking-tight">{c.name}</p>
+   860→                    <p className="text-[11px] text-muted-foreground tracking-tight">{c.email || c.phone || 'No contact info'}</p>
+   861→                  </div>
+   862→                  <MacosBadge variant="warning">{c.loyaltyPoints} pts</MacosBadge>
+   863→                </button>
+   864→              ))
+   865→            )}
+   866→          </div>
+   867→        </div>
+   868→      </MacosDialog>
+   869→    </div>
+   870→  )
+   871→}
+   872→
