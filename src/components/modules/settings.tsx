@@ -34,6 +34,13 @@ import {
   Hash,
   HardDrive,
   Lock,
+  Type,
+  Layout,
+  QrCode,
+  Stamp,
+  Landmark,
+  CreditCard,
+  ScrollText,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -253,6 +260,148 @@ interface IntegrationSettings {
   paymentProvider: string
 }
 
+interface ReceiptFormatSettings {
+  // Layout
+  layoutTemplate: 'thermal-58' | 'thermal-80' | 'a4' | 'custom'
+  paperWidth: string
+  fontSize: 'small' | 'medium' | 'large'
+
+  // Header
+  showLogo: boolean
+  showCompanyName: boolean
+  showBusinessAddress: boolean
+  showPhoneNumber: boolean
+  showTaxId: boolean
+  customHeaderText: string
+
+  // Line Items
+  showItemName: boolean
+  showItemCode: boolean
+  showQuantity: boolean
+  showUnitPrice: boolean
+  showItemTotal: boolean
+  showItemDiscount: boolean
+  itemSeparator: 'line' | 'dots' | 'space' | 'none'
+
+  // Totals
+  showSubtotal: boolean
+  showTaxBreakdown: boolean
+  showDiscountSummary: boolean
+  showPaymentMethod: boolean
+  showAmountPaid: boolean
+  showChangeDue: boolean
+
+  // Footer
+  customFooterText: string
+  showReturnPolicy: boolean
+  returnPolicyText: string
+  showQrCode: boolean
+  qrCodeContent: 'url' | 'receipt_url' | 'none'
+  showBarcode: boolean
+
+  // Numbering
+  receiptPrefix: string
+  receiptNumberFormat: 'sequential' | 'date-based' | 'custom'
+  receiptStartNumber: number
+  receiptResetFrequency: 'never' | 'yearly' | 'monthly' | 'daily'
+
+  // Additional
+  showCashierName: boolean
+  showTerminalId: boolean
+  showDateTime: boolean
+  receiptDateFormat: string
+  showCustomerInfo: boolean
+  showLoyaltyPoints: boolean
+  receiptCopies: number
+  autoPrintOnComplete: boolean
+  paperCutAfterPrint: boolean
+}
+
+interface InvoiceFormatSettings {
+  // Layout Template
+  layoutTemplate: 'standard' | 'modern' | 'minimal' | 'custom'
+  colorScheme: 'default' | 'blue' | 'green' | 'professional' | 'custom'
+  customPrimaryColor: string
+  fontFamily: 'default' | 'serif' | 'sans-serif' | 'monospace'
+  invoiceFontSize: 'small' | 'medium' | 'large'
+
+  // Header
+  showCompanyLogo: boolean
+  logoSize: 'small' | 'medium' | 'large'
+  companyNamePosition: 'left' | 'center' | 'right'
+  showCompanyAddress: boolean
+  showCompanyPhone: boolean
+  showCompanyEmail: boolean
+  showCompanyWebsite: boolean
+  showTaxRegistration: boolean
+  customInvoiceHeader: string
+
+  // Invoice Details
+  invoiceLabel: 'Invoice' | 'Tax Invoice' | 'Proforma Invoice' | 'Commercial Invoice'
+  showInvoiceNumber: boolean
+  showInvoiceDate: boolean
+  showDueDate: boolean
+  showPoReference: boolean
+  invoicePrefix: string
+  invoiceStartNumber: number
+  invoiceResetFrequency: 'never' | 'yearly' | 'monthly'
+  dueDateDays: number
+
+  // Bill To / Ship To
+  showBillTo: boolean
+  billToLabel: string
+  showShipTo: boolean
+  shipToLabel: string
+  showCustomerTaxId: boolean
+  showCustomerEmail: boolean
+  showCustomerPhone: boolean
+
+  // Line Items
+  showItemNumber: boolean
+  showItemDescription: boolean
+  showItemSku: boolean
+  showHsnCode: boolean
+  showItemQuantity: boolean
+  showItemUnit: boolean
+  showItemUnitPrice: boolean
+  showItemDiscount: boolean
+  showItemTax: boolean
+  showItemAmount: boolean
+
+  // Totals
+  showInvoiceSubtotal: boolean
+  showInvoiceDiscountSummary: boolean
+  showTaxBreakdownPerRate: boolean
+  showShippingCharges: boolean
+  showAdjustment: boolean
+  showAmountInWords: boolean
+  showPaymentTerms: boolean
+  paymentTermsText: string
+
+  // Bank Details
+  showBankDetails: boolean
+  bankName: string
+  accountName: string
+  accountNumber: string
+  routingCode: string
+
+  // Footer & Notes
+  showNotesSection: boolean
+  defaultNotesText: string
+  showTermsSection: boolean
+  defaultTermsText: string
+  showAuthorizedSignatory: boolean
+  signatoryLabel: string
+  customInvoiceFooter: string
+
+  // Styling
+  showWatermark: boolean
+  watermarkText: string
+  invoicePageSize: 'A4' | 'Letter' | 'Legal'
+  invoiceOrientation: 'portrait' | 'landscape'
+  invoiceMargins: 'normal' | 'narrow' | 'wide'
+}
+
 // ─── Default Settings ─────────────────────────────────────────────
 const defaultGeneral: GeneralSettings = {
   companyName: 'BookFlow Store',
@@ -450,6 +599,132 @@ const defaultIntegration: IntegrationSettings = {
   paymentProvider: 'none',
 }
 
+const defaultReceiptFormat: ReceiptFormatSettings = {
+  layoutTemplate: 'thermal-80',
+  paperWidth: '80mm',
+  fontSize: 'medium',
+
+  showLogo: false,
+  showCompanyName: true,
+  showBusinessAddress: true,
+  showPhoneNumber: false,
+  showTaxId: false,
+  customHeaderText: '',
+
+  showItemName: true,
+  showItemCode: false,
+  showQuantity: true,
+  showUnitPrice: true,
+  showItemTotal: true,
+  showItemDiscount: false,
+  itemSeparator: 'line',
+
+  showSubtotal: true,
+  showTaxBreakdown: true,
+  showDiscountSummary: true,
+  showPaymentMethod: true,
+  showAmountPaid: true,
+  showChangeDue: true,
+
+  customFooterText: 'Thank you for your purchase!',
+  showReturnPolicy: false,
+  returnPolicyText: 'Items may be returned within 14 days with receipt.',
+  showQrCode: false,
+  qrCodeContent: 'url',
+  showBarcode: false,
+
+  receiptPrefix: 'REC',
+  receiptNumberFormat: 'sequential',
+  receiptStartNumber: 1001,
+  receiptResetFrequency: 'never',
+
+  showCashierName: true,
+  showTerminalId: false,
+  showDateTime: true,
+  receiptDateFormat: 'MM/DD/YYYY HH:mm',
+  showCustomerInfo: false,
+  showLoyaltyPoints: false,
+  receiptCopies: 1,
+  autoPrintOnComplete: true,
+  paperCutAfterPrint: true,
+}
+
+const defaultInvoiceFormat: InvoiceFormatSettings = {
+  layoutTemplate: 'standard',
+  colorScheme: 'default',
+  customPrimaryColor: '#2563eb',
+  fontFamily: 'default',
+  invoiceFontSize: 'medium',
+
+  showCompanyLogo: true,
+  logoSize: 'medium',
+  companyNamePosition: 'left',
+  showCompanyAddress: true,
+  showCompanyPhone: true,
+  showCompanyEmail: true,
+  showCompanyWebsite: false,
+  showTaxRegistration: true,
+  customInvoiceHeader: '',
+
+  invoiceLabel: 'Tax Invoice',
+  showInvoiceNumber: true,
+  showInvoiceDate: true,
+  showDueDate: true,
+  showPoReference: false,
+  invoicePrefix: 'INV',
+  invoiceStartNumber: 1001,
+  invoiceResetFrequency: 'yearly',
+  dueDateDays: 30,
+
+  showBillTo: true,
+  billToLabel: 'Bill To',
+  showShipTo: false,
+  shipToLabel: 'Ship To',
+  showCustomerTaxId: true,
+  showCustomerEmail: true,
+  showCustomerPhone: false,
+
+  showItemNumber: true,
+  showItemDescription: true,
+  showItemSku: true,
+  showHsnCode: false,
+  showItemQuantity: true,
+  showItemUnit: false,
+  showItemUnitPrice: true,
+  showItemDiscount: true,
+  showItemTax: true,
+  showItemAmount: true,
+
+  showInvoiceSubtotal: true,
+  showInvoiceDiscountSummary: true,
+  showTaxBreakdownPerRate: true,
+  showShippingCharges: false,
+  showAdjustment: false,
+  showAmountInWords: true,
+  showPaymentTerms: true,
+  paymentTermsText: 'Payment is due within 30 days of invoice date.',
+
+  showBankDetails: false,
+  bankName: '',
+  accountName: '',
+  accountNumber: '',
+  routingCode: '',
+
+  showNotesSection: true,
+  defaultNotesText: '',
+  showTermsSection: true,
+  defaultTermsText: 'Goods sold are not returnable unless otherwise agreed in writing.',
+  showAuthorizedSignatory: true,
+  signatoryLabel: 'Authorized Signatory',
+  customInvoiceFooter: '',
+
+  showWatermark: false,
+  watermarkText: 'DRAFT',
+  invoicePageSize: 'A4',
+  invoiceOrientation: 'portrait',
+  invoiceMargins: 'normal',
+}
+
 // ─── Section Config ───────────────────────────────────────────────
 const settingsSections = [
   { id: 'general', label: 'General', icon: Building2, desc: 'Company info, regional & localization' },
@@ -461,6 +736,8 @@ const settingsSections = [
   { id: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alert preferences & sounds' },
   { id: 'security', label: 'Security', icon: Shield, desc: 'Authentication, passwords & audit logs' },
   { id: 'printing', label: 'Printing', icon: Printer, desc: 'Receipts, labels & printer setup' },
+  { id: 'receipt-format', label: 'Receipt Format', icon: Receipt, desc: 'Receipt layout, fields & numbering' },
+  { id: 'invoice-format', label: 'Invoice Format', icon: FileText, desc: 'Invoice template, styling & details' },
   { id: 'appearance', label: 'Appearance', icon: Palette, desc: 'Theme, layout & display options' },
   { id: 'backup', label: 'Backup & Data', icon: Database, desc: 'Auto-backup & data retention' },
   { id: 'integrations', label: 'Integrations', icon: Webhook, desc: 'API, webhooks & third-party sync' },
@@ -490,6 +767,8 @@ export function SettingsModule() {
   const [appearance, setAppearance] = React.useState<AppearanceSettings>(defaultAppearance)
   const [backup, setBackup] = React.useState<BackupSettings>(defaultBackup)
   const [integrations, setIntegrations] = React.useState<IntegrationSettings>(defaultIntegration)
+  const [receiptFormat, setReceiptFormat] = React.useState<ReceiptFormatSettings>(defaultReceiptFormat)
+  const [invoiceFormat, setInvoiceFormat] = React.useState<InvoiceFormatSettings>(defaultInvoiceFormat)
 
   // Load settings from API
   React.useEffect(() => {
@@ -512,6 +791,8 @@ export function SettingsModule() {
             if (s.appearance) setAppearance({ ...defaultAppearance, ...s.appearance })
             if (s.backup) setBackup({ ...defaultBackup, ...s.backup })
             if (s.integrations) setIntegrations({ ...defaultIntegration, ...s.integrations })
+            if (s.receiptFormat) setReceiptFormat({ ...defaultReceiptFormat, ...s.receiptFormat })
+            if (s.invoiceFormat) setInvoiceFormat({ ...defaultInvoiceFormat, ...s.invoiceFormat })
           }
         }
       } catch {
@@ -537,7 +818,7 @@ export function SettingsModule() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           general, pos, inventory, tax, sales, email,
-          notifications, security, printing, appearance, backup, integrations,
+          notifications, security, printing, receiptFormat, invoiceFormat, appearance, backup, integrations,
         }),
       })
       if (!res.ok) throw new Error('Failed to save settings')
@@ -566,6 +847,8 @@ export function SettingsModule() {
       case 'appearance': setAppearance(defaultAppearance); break
       case 'backup': setBackup(defaultBackup); break
       case 'integrations': setIntegrations(defaultIntegration); break
+      case 'receipt-format': setReceiptFormat(defaultReceiptFormat); break
+      case 'invoice-format': setInvoiceFormat(defaultInvoiceFormat); break
     }
     markChanged()
   }
@@ -1697,6 +1980,898 @@ export function SettingsModule() {
                         </SelectContent>
                       </Select>
                     </MacosFormField>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Receipt Format ─── */}
+          {activeSection === 'receipt-format' && (
+            <div className="space-y-4">
+              {/* Layout & Paper */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Receipt className="size-4 text-gg-bridge" />
+                  Layout &amp; Paper
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <MacosFormField label="Layout Template">
+                    <Select value={receiptFormat.layoutTemplate} onValueChange={v => { setReceiptFormat(r => ({ ...r, layoutTemplate: v as ReceiptFormatSettings['layoutTemplate'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="thermal-58">Thermal 58mm</SelectItem>
+                        <SelectItem value="thermal-80">Thermal 80mm</SelectItem>
+                        <SelectItem value="a4">A4 Paper</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <MacosFormField label="Paper Width">
+                    <Input value={receiptFormat.paperWidth} onChange={e => { setReceiptFormat(r => ({ ...r, paperWidth: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                  <MacosFormField label="Font Size">
+                    <Select value={receiptFormat.fontSize} onValueChange={v => { setReceiptFormat(r => ({ ...r, fontSize: v as ReceiptFormatSettings['fontSize'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="small">Small</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="large">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                </div>
+              </div>
+
+              {/* Header Configuration */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Building2 className="size-4 text-macos-blue" />
+                  Header Configuration
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Logo</Label>
+                    <Switch checked={receiptFormat.showLogo} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showLogo: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Company Name</Label>
+                    <Switch checked={receiptFormat.showCompanyName} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showCompanyName: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Business Address</Label>
+                    <Switch checked={receiptFormat.showBusinessAddress} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showBusinessAddress: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Phone Number</Label>
+                    <Switch checked={receiptFormat.showPhoneNumber} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showPhoneNumber: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Tax ID</Label>
+                    <Switch checked={receiptFormat.showTaxId} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showTaxId: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <MacosFormField label="Custom Header Text">
+                    <Input value={receiptFormat.customHeaderText} onChange={e => { setReceiptFormat(r => ({ ...r, customHeaderText: e.target.value })); markChanged() }} disabled={isViewOnly} placeholder="Optional header text" className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                </div>
+              </div>
+
+              {/* Line Item Display */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Package className="size-4 text-macos-green" />
+                  Line Item Display
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Item Name</Label>
+                    <Switch checked={receiptFormat.showItemName} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showItemName: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Item Code</Label>
+                    <Switch checked={receiptFormat.showItemCode} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showItemCode: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Quantity</Label>
+                    <Switch checked={receiptFormat.showQuantity} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showQuantity: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Unit Price</Label>
+                    <Switch checked={receiptFormat.showUnitPrice} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showUnitPrice: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Item Total</Label>
+                    <Switch checked={receiptFormat.showItemTotal} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showItemTotal: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Item Discount</Label>
+                    <Switch checked={receiptFormat.showItemDiscount} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showItemDiscount: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+                <MacosFormField label="Item Separator">
+                  <Select value={receiptFormat.itemSeparator} onValueChange={v => { setReceiptFormat(r => ({ ...r, itemSeparator: v as ReceiptFormatSettings['itemSeparator'] })); markChanged() }} disabled={isViewOnly}>
+                    <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-48"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="line">Line</SelectItem>
+                      <SelectItem value="dots">Dots</SelectItem>
+                      <SelectItem value="space">Space</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </MacosFormField>
+              </div>
+
+              {/* Totals Section */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <DollarSign className="size-4 text-macos-green" />
+                  Totals Section
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Subtotal</Label>
+                    <Switch checked={receiptFormat.showSubtotal} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showSubtotal: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Tax Breakdown</Label>
+                    <Switch checked={receiptFormat.showTaxBreakdown} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showTaxBreakdown: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Discount Summary</Label>
+                    <Switch checked={receiptFormat.showDiscountSummary} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showDiscountSummary: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Payment Method</Label>
+                    <Switch checked={receiptFormat.showPaymentMethod} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showPaymentMethod: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Amount Paid</Label>
+                    <Switch checked={receiptFormat.showAmountPaid} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showAmountPaid: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Change Due</Label>
+                    <Switch checked={receiptFormat.showChangeDue} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showChangeDue: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer & Extras */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <ScrollText className="size-4 text-macos-purple" />
+                  Footer &amp; Extras
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <MacosFormField label="Custom Footer Text">
+                    <Input value={receiptFormat.customFooterText} onChange={e => { setReceiptFormat(r => ({ ...r, customFooterText: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Return Policy</Label>
+                    <Switch checked={receiptFormat.showReturnPolicy} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showReturnPolicy: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+                {receiptFormat.showReturnPolicy && (
+                  <MacosFormField label="Return Policy Text">
+                    <Textarea value={receiptFormat.returnPolicyText} onChange={e => { setReceiptFormat(r => ({ ...r, returnPolicyText: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] min-h-[60px]" />
+                  </MacosFormField>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show QR Code</Label>
+                    <Switch checked={receiptFormat.showQrCode} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showQrCode: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  {receiptFormat.showQrCode && (
+                    <MacosFormField label="QR Code Content">
+                      <Select value={receiptFormat.qrCodeContent} onValueChange={v => { setReceiptFormat(r => ({ ...r, qrCodeContent: v as ReceiptFormatSettings['qrCodeContent'] })); markChanged() }} disabled={isViewOnly}>
+                        <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="url">URL</SelectItem>
+                          <SelectItem value="receipt_url">Receipt URL</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </MacosFormField>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Barcode</Label>
+                    <Switch checked={receiptFormat.showBarcode} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showBarcode: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Numbering & Sequence */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Hash className="size-4 text-macos-orange" />
+                  Numbering &amp; Sequence
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <MacosFormField label="Receipt Prefix">
+                    <Input value={receiptFormat.receiptPrefix} onChange={e => { setReceiptFormat(r => ({ ...r, receiptPrefix: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                  <MacosFormField label="Number Format">
+                    <Select value={receiptFormat.receiptNumberFormat} onValueChange={v => { setReceiptFormat(r => ({ ...r, receiptNumberFormat: v as ReceiptFormatSettings['receiptNumberFormat'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sequential">Sequential</SelectItem>
+                        <SelectItem value="date-based">Date-Based</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <MacosFormField label="Start Number">
+                    <Input type="number" value={receiptFormat.receiptStartNumber} onChange={e => { setReceiptFormat(r => ({ ...r, receiptStartNumber: parseInt(e.target.value) || 1001 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                  <MacosFormField label="Reset Frequency">
+                    <Select value={receiptFormat.receiptResetFrequency} onValueChange={v => { setReceiptFormat(r => ({ ...r, receiptResetFrequency: v as ReceiptFormatSettings['receiptResetFrequency'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Never</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                </div>
+              </div>
+
+              {/* Additional Options */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Bell className="size-4 text-macos-orange" />
+                  Additional Options
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Cashier Name</Label>
+                    <Switch checked={receiptFormat.showCashierName} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showCashierName: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Terminal ID</Label>
+                    <Switch checked={receiptFormat.showTerminalId} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showTerminalId: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Date/Time</Label>
+                    <Switch checked={receiptFormat.showDateTime} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showDateTime: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <MacosFormField label="Date Format">
+                    <Input value={receiptFormat.receiptDateFormat} onChange={e => { setReceiptFormat(r => ({ ...r, receiptDateFormat: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Customer Info</Label>
+                    <Switch checked={receiptFormat.showCustomerInfo} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showCustomerInfo: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Loyalty Points</Label>
+                    <Switch checked={receiptFormat.showLoyaltyPoints} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, showLoyaltyPoints: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <MacosFormField label="Receipt Copies">
+                    <Input type="number" min={1} max={5} value={receiptFormat.receiptCopies} onChange={e => { setReceiptFormat(r => ({ ...r, receiptCopies: parseInt(e.target.value) || 1 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Auto-Print on Complete</Label>
+                    <Switch checked={receiptFormat.autoPrintOnComplete} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, autoPrintOnComplete: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Paper Cut After Print</Label>
+                    <Switch checked={receiptFormat.paperCutAfterPrint} onCheckedChange={v => { setReceiptFormat(r => ({ ...r, paperCutAfterPrint: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Preview */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Eye className="size-4 text-macos-blue" />
+                  Live Preview
+                </h3>
+                <div className="flex justify-center">
+                  <div className="border-2 border-dashed border-border/60 rounded-lg p-4 bg-white text-black font-mono text-[10px] leading-[14px] w-64">
+                    {/* Header */}
+                    {receiptFormat.showCompanyName && <div className="text-center font-bold text-[11px]">BookFlow Store</div>}
+                    {receiptFormat.showBusinessAddress && <div className="text-center">123 Main Street</div>}
+                    {receiptFormat.showPhoneNumber && <div className="text-center">Tel: (555) 123-4567</div>}
+                    {receiptFormat.showTaxId && <div className="text-center">Tax ID: 12-3456789</div>}
+                    {receiptFormat.customHeaderText && <div className="text-center">{receiptFormat.customHeaderText}</div>}
+                    <div className="border-b border-dashed border-gray-400 my-1" />
+                    {/* Date & Receipt # */}
+                    {receiptFormat.showDateTime && <div>03/05/2026 14:30</div>}
+                    <div>{receiptFormat.receiptPrefix}-1001</div>
+                    {receiptFormat.showCashierName && <div>Cashier: John</div>}
+                    {receiptFormat.showTerminalId && <div>Terminal: T-01</div>}
+                    {receiptFormat.showCustomerInfo && <div>Customer: Jane Doe</div>}
+                    <div className="border-b border-dashed border-gray-400 my-1" />
+                    {/* Line Items */}
+                    <div className="flex justify-between">
+                      {receiptFormat.showItemName && <span className="flex-1">Book A</span>}
+                      {receiptFormat.showQuantity && <span className="w-6 text-right">x2</span>}
+                      {receiptFormat.showUnitPrice && <span className="w-10 text-right">$15</span>}
+                      {receiptFormat.showItemTotal && <span className="w-12 text-right">$30</span>}
+                    </div>
+                    {receiptFormat.showItemCode && <div className="text-[9px] text-gray-500">SKU: BK-001</div>}
+                    {receiptFormat.showItemDiscount && <div className="text-[9px] text-gray-500">Disc: -$2.00</div>}
+                    <div className="flex justify-between">
+                      {receiptFormat.showItemName && <span className="flex-1">Pen Set</span>}
+                      {receiptFormat.showQuantity && <span className="w-6 text-right">x1</span>}
+                      {receiptFormat.showUnitPrice && <span className="w-10 text-right">$8</span>}
+                      {receiptFormat.showItemTotal && <span className="w-12 text-right">$8</span>}
+                    </div>
+                    <div className="border-b border-dashed border-gray-400 my-1" />
+                    {/* Totals */}
+                    {receiptFormat.showSubtotal && <div className="flex justify-between"><span>Subtotal</span><span>$38.00</span></div>}
+                    {receiptFormat.showDiscountSummary && <div className="flex justify-between"><span>Discount</span><span>-$2.00</span></div>}
+                    {receiptFormat.showTaxBreakdown && <div className="flex justify-between"><span>Tax (10%)</span><span>$3.60</span></div>}
+                    <div className="flex justify-between font-bold"><span>TOTAL</span><span>$39.60</span></div>
+                    {receiptFormat.showPaymentMethod && <div className="flex justify-between"><span>Payment</span><span>Cash</span></div>}
+                    {receiptFormat.showAmountPaid && <div className="flex justify-between"><span>Paid</span><span>$40.00</span></div>}
+                    {receiptFormat.showChangeDue && <div className="flex justify-between"><span>Change</span><span>$0.40</span></div>}
+                    {receiptFormat.showLoyaltyPoints && <div className="flex justify-between"><span>Loyalty Pts</span><span>+39</span></div>}
+                    <div className="border-b border-dashed border-gray-400 my-1" />
+                    {/* Footer */}
+                    {receiptFormat.customFooterText && <div className="text-center">{receiptFormat.customFooterText}</div>}
+                    {receiptFormat.showReturnPolicy && <div className="text-center text-[9px] text-gray-500">{receiptFormat.returnPolicyText}</div>}
+                    {receiptFormat.showQrCode && <div className="text-center text-[9px]">[QR Code]</div>}
+                    {receiptFormat.showBarcode && <div className="text-center text-[9px]">||||||||||||</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Invoice Format ─── */}
+          {activeSection === 'invoice-format' && (
+            <div className="space-y-4">
+              {/* Template & Styling */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Layout className="size-4 text-gg-bridge" />
+                  Template &amp; Styling
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <MacosFormField label="Layout Template">
+                    <Select value={invoiceFormat.layoutTemplate} onValueChange={v => { setInvoiceFormat(f => ({ ...f, layoutTemplate: v as InvoiceFormatSettings['layoutTemplate'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="modern">Modern</SelectItem>
+                        <SelectItem value="minimal">Minimal</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <MacosFormField label="Color Scheme">
+                    <Select value={invoiceFormat.colorScheme} onValueChange={v => { setInvoiceFormat(f => ({ ...f, colorScheme: v as InvoiceFormatSettings['colorScheme'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Default</SelectItem>
+                        <SelectItem value="blue">Blue</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="custom">Custom</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  {invoiceFormat.colorScheme === 'custom' && (
+                    <MacosFormField label="Custom Primary Color">
+                      <div className="flex gap-2 items-center">
+                        <input type="color" value={invoiceFormat.customPrimaryColor} onChange={e => { setInvoiceFormat(f => ({ ...f, customPrimaryColor: e.target.value })); markChanged() }} disabled={isViewOnly} className="size-9 rounded-lg border-0 cursor-pointer" />
+                        <Input value={invoiceFormat.customPrimaryColor} onChange={e => { setInvoiceFormat(f => ({ ...f, customPrimaryColor: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                      </div>
+                    </MacosFormField>
+                  )}
+                  <MacosFormField label="Font Family">
+                    <Select value={invoiceFormat.fontFamily} onValueChange={v => { setInvoiceFormat(f => ({ ...f, fontFamily: v as InvoiceFormatSettings['fontFamily'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">Default</SelectItem>
+                        <SelectItem value="serif">Serif</SelectItem>
+                        <SelectItem value="sans-serif">Sans-Serif</SelectItem>
+                        <SelectItem value="monospace">Monospace</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <MacosFormField label="Font Size">
+                    <Select value={invoiceFormat.invoiceFontSize} onValueChange={v => { setInvoiceFormat(f => ({ ...f, invoiceFontSize: v as InvoiceFormatSettings['invoiceFontSize'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="small">Small</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="large">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                </div>
+              </div>
+
+              {/* Company Header */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Building2 className="size-4 text-macos-blue" />
+                  Company Header
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Company Logo</Label>
+                    <Switch checked={invoiceFormat.showCompanyLogo} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showCompanyLogo: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  {invoiceFormat.showCompanyLogo && (
+                    <MacosFormField label="Logo Size">
+                      <Select value={invoiceFormat.logoSize} onValueChange={v => { setInvoiceFormat(f => ({ ...f, logoSize: v as InvoiceFormatSettings['logoSize'] })); markChanged() }} disabled={isViewOnly}>
+                        <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-36"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="small">Small</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="large">Large</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </MacosFormField>
+                  )}
+                  <MacosFormField label="Company Name Position">
+                    <Select value={invoiceFormat.companyNamePosition} onValueChange={v => { setInvoiceFormat(f => ({ ...f, companyNamePosition: v as InvoiceFormatSettings['companyNamePosition'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="center">Center</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Company Address</Label>
+                    <Switch checked={invoiceFormat.showCompanyAddress} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showCompanyAddress: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Company Phone</Label>
+                    <Switch checked={invoiceFormat.showCompanyPhone} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showCompanyPhone: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Company Email</Label>
+                    <Switch checked={invoiceFormat.showCompanyEmail} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showCompanyEmail: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Company Website</Label>
+                    <Switch checked={invoiceFormat.showCompanyWebsite} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showCompanyWebsite: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Tax Registration</Label>
+                    <Switch checked={invoiceFormat.showTaxRegistration} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showTaxRegistration: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <MacosFormField label="Custom Header Text">
+                    <Input value={invoiceFormat.customInvoiceHeader} onChange={e => { setInvoiceFormat(f => ({ ...f, customInvoiceHeader: e.target.value })); markChanged() }} disabled={isViewOnly} placeholder="Optional header text" className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                </div>
+              </div>
+
+              {/* Invoice Details */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <FileText className="size-4 text-gg-bridge" />
+                  Invoice Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <MacosFormField label="Invoice Label">
+                    <Select value={invoiceFormat.invoiceLabel} onValueChange={v => { setInvoiceFormat(f => ({ ...f, invoiceLabel: v as InvoiceFormatSettings['invoiceLabel'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Invoice">Invoice</SelectItem>
+                        <SelectItem value="Tax Invoice">Tax Invoice</SelectItem>
+                        <SelectItem value="Proforma Invoice">Proforma Invoice</SelectItem>
+                        <SelectItem value="Commercial Invoice">Commercial Invoice</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Invoice Number</Label>
+                    <Switch checked={invoiceFormat.showInvoiceNumber} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showInvoiceNumber: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Invoice Date</Label>
+                    <Switch checked={invoiceFormat.showInvoiceDate} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showInvoiceDate: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Due Date</Label>
+                    <Switch checked={invoiceFormat.showDueDate} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showDueDate: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show PO Reference</Label>
+                    <Switch checked={invoiceFormat.showPoReference} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showPoReference: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <MacosFormField label="Invoice Prefix">
+                    <Input value={invoiceFormat.invoicePrefix} onChange={e => { setInvoiceFormat(f => ({ ...f, invoicePrefix: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                  <MacosFormField label="Start Number">
+                    <Input type="number" value={invoiceFormat.invoiceStartNumber} onChange={e => { setInvoiceFormat(f => ({ ...f, invoiceStartNumber: parseInt(e.target.value) || 1001 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                  <MacosFormField label="Reset Frequency">
+                    <Select value={invoiceFormat.invoiceResetFrequency} onValueChange={v => { setInvoiceFormat(f => ({ ...f, invoiceResetFrequency: v as InvoiceFormatSettings['invoiceResetFrequency'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="never">Never</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <MacosFormField label="Due Date (days)">
+                    <Input type="number" value={invoiceFormat.dueDateDays} onChange={e => { setInvoiceFormat(f => ({ ...f, dueDateDays: parseInt(e.target.value) || 30 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                  </MacosFormField>
+                </div>
+              </div>
+
+              {/* Bill To / Ship To */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Users className="size-4 text-macos-purple" />
+                  Bill To / Ship To
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Bill To</Label>
+                    <Switch checked={invoiceFormat.showBillTo} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showBillTo: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  {invoiceFormat.showBillTo && (
+                    <MacosFormField label="Bill To Label">
+                      <Input value={invoiceFormat.billToLabel} onChange={e => { setInvoiceFormat(f => ({ ...f, billToLabel: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                    </MacosFormField>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Ship To</Label>
+                    <Switch checked={invoiceFormat.showShipTo} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showShipTo: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  {invoiceFormat.showShipTo && (
+                    <MacosFormField label="Ship To Label">
+                      <Input value={invoiceFormat.shipToLabel} onChange={e => { setInvoiceFormat(f => ({ ...f, shipToLabel: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                    </MacosFormField>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Customer Tax ID</Label>
+                    <Switch checked={invoiceFormat.showCustomerTaxId} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showCustomerTaxId: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Customer Email</Label>
+                    <Switch checked={invoiceFormat.showCustomerEmail} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showCustomerEmail: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Customer Phone</Label>
+                    <Switch checked={invoiceFormat.showCustomerPhone} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showCustomerPhone: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Line Item Columns */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Package className="size-4 text-macos-green" />
+                  Line Item Columns
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Item Number</Label>
+                    <Switch checked={invoiceFormat.showItemNumber} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemNumber: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Description</Label>
+                    <Switch checked={invoiceFormat.showItemDescription} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemDescription: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">SKU</Label>
+                    <Switch checked={invoiceFormat.showItemSku} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemSku: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">HSN Code</Label>
+                    <Switch checked={invoiceFormat.showHsnCode} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showHsnCode: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Quantity</Label>
+                    <Switch checked={invoiceFormat.showItemQuantity} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemQuantity: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Unit</Label>
+                    <Switch checked={invoiceFormat.showItemUnit} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemUnit: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Unit Price</Label>
+                    <Switch checked={invoiceFormat.showItemUnitPrice} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemUnitPrice: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Discount</Label>
+                    <Switch checked={invoiceFormat.showItemDiscount} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemDiscount: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Tax</Label>
+                    <Switch checked={invoiceFormat.showItemTax} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemTax: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Amount</Label>
+                    <Switch checked={invoiceFormat.showItemAmount} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showItemAmount: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Totals & Payment */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <DollarSign className="size-4 text-macos-green" />
+                  Totals &amp; Payment
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Subtotal</Label>
+                    <Switch checked={invoiceFormat.showInvoiceSubtotal} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showInvoiceSubtotal: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Discount Summary</Label>
+                    <Switch checked={invoiceFormat.showInvoiceDiscountSummary} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showInvoiceDiscountSummary: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Tax Breakdown Per Rate</Label>
+                    <Switch checked={invoiceFormat.showTaxBreakdownPerRate} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showTaxBreakdownPerRate: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Shipping Charges</Label>
+                    <Switch checked={invoiceFormat.showShippingCharges} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showShippingCharges: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Adjustment</Label>
+                    <Switch checked={invoiceFormat.showAdjustment} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showAdjustment: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Amount in Words</Label>
+                    <Switch checked={invoiceFormat.showAmountInWords} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showAmountInWords: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Payment Terms</Label>
+                    <Switch checked={invoiceFormat.showPaymentTerms} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showPaymentTerms: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                </div>
+                {invoiceFormat.showPaymentTerms && (
+                  <MacosFormField label="Payment Terms Text">
+                    <Textarea value={invoiceFormat.paymentTermsText} onChange={e => { setInvoiceFormat(f => ({ ...f, paymentTermsText: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] min-h-[60px]" />
+                  </MacosFormField>
+                )}
+              </div>
+
+              {/* Bank Details */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Landmark className="size-4 text-macos-blue" />
+                  Bank Details
+                </h3>
+                <div className="flex items-center justify-between">
+                  <Label className="text-[12px] font-semibold tracking-tight">Show Bank Details</Label>
+                  <Switch checked={invoiceFormat.showBankDetails} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showBankDetails: v })); markChanged() }} disabled={isViewOnly} />
+                </div>
+                {invoiceFormat.showBankDetails && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <MacosFormField label="Bank Name">
+                      <Input value={invoiceFormat.bankName} onChange={e => { setInvoiceFormat(f => ({ ...f, bankName: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                    </MacosFormField>
+                    <MacosFormField label="Account Name">
+                      <Input value={invoiceFormat.accountName} onChange={e => { setInvoiceFormat(f => ({ ...f, accountName: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                    </MacosFormField>
+                    <MacosFormField label="Account Number">
+                      <Input value={invoiceFormat.accountNumber} onChange={e => { setInvoiceFormat(f => ({ ...f, accountNumber: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                    </MacosFormField>
+                    <MacosFormField label="Routing Code">
+                      <Input value={invoiceFormat.routingCode} onChange={e => { setInvoiceFormat(f => ({ ...f, routingCode: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                    </MacosFormField>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer & Notes */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Stamp className="size-4 text-macos-orange" />
+                  Footer &amp; Notes
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Notes Section</Label>
+                    <Switch checked={invoiceFormat.showNotesSection} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showNotesSection: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  {invoiceFormat.showNotesSection && (
+                    <MacosFormField label="Default Notes">
+                      <Textarea value={invoiceFormat.defaultNotesText} onChange={e => { setInvoiceFormat(f => ({ ...f, defaultNotesText: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] min-h-[60px]" />
+                    </MacosFormField>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Terms Section</Label>
+                    <Switch checked={invoiceFormat.showTermsSection} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showTermsSection: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  {invoiceFormat.showTermsSection && (
+                    <MacosFormField label="Default Terms">
+                      <Textarea value={invoiceFormat.defaultTermsText} onChange={e => { setInvoiceFormat(f => ({ ...f, defaultTermsText: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] min-h-[60px]" />
+                    </MacosFormField>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Authorized Signatory</Label>
+                    <Switch checked={invoiceFormat.showAuthorizedSignatory} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showAuthorizedSignatory: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  {invoiceFormat.showAuthorizedSignatory && (
+                    <MacosFormField label="Signatory Label">
+                      <Input value={invoiceFormat.signatoryLabel} onChange={e => { setInvoiceFormat(f => ({ ...f, signatoryLabel: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                    </MacosFormField>
+                  )}
+                </div>
+                <MacosFormField label="Custom Footer Text">
+                  <Input value={invoiceFormat.customInvoiceFooter} onChange={e => { setInvoiceFormat(f => ({ ...f, customInvoiceFooter: e.target.value })); markChanged() }} disabled={isViewOnly} placeholder="Optional footer text" className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                </MacosFormField>
+              </div>
+
+              {/* Page Setup */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <CreditCard className="size-4 text-gg-bridge" />
+                  Page Setup
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[12px] font-semibold tracking-tight">Show Watermark</Label>
+                    <Switch checked={invoiceFormat.showWatermark} onCheckedChange={v => { setInvoiceFormat(f => ({ ...f, showWatermark: v })); markChanged() }} disabled={isViewOnly} />
+                  </div>
+                  {invoiceFormat.showWatermark && (
+                    <MacosFormField label="Watermark Text">
+                      <Input value={invoiceFormat.watermarkText} onChange={e => { setInvoiceFormat(f => ({ ...f, watermarkText: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+                    </MacosFormField>
+                  )}
+                  <MacosFormField label="Page Size">
+                    <Select value={invoiceFormat.invoicePageSize} onValueChange={v => { setInvoiceFormat(f => ({ ...f, invoicePageSize: v as InvoiceFormatSettings['invoicePageSize'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="A4">A4</SelectItem>
+                        <SelectItem value="Letter">Letter</SelectItem>
+                        <SelectItem value="Legal">Legal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <MacosFormField label="Orientation">
+                    <Select value={invoiceFormat.invoiceOrientation} onValueChange={v => { setInvoiceFormat(f => ({ ...f, invoiceOrientation: v as InvoiceFormatSettings['invoiceOrientation'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="portrait">Portrait</SelectItem>
+                        <SelectItem value="landscape">Landscape</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                  <MacosFormField label="Margins">
+                    <Select value={invoiceFormat.invoiceMargins} onValueChange={v => { setInvoiceFormat(f => ({ ...f, invoiceMargins: v as InvoiceFormatSettings['invoiceMargins'] })); markChanged() }} disabled={isViewOnly}>
+                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="narrow">Narrow</SelectItem>
+                        <SelectItem value="wide">Wide</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </MacosFormField>
+                </div>
+              </div>
+
+              {/* Live Preview */}
+              <div className="macos-card macos-shadow-card p-5 space-y-4">
+                <h3 className="macos-section-title flex items-center gap-2">
+                  <Eye className="size-4 text-macos-blue" />
+                  Live Preview
+                </h3>
+                <div className="flex justify-center">
+                  <div
+                    className="border border-border/60 rounded-lg p-5 bg-white text-black text-[10px] leading-[14px] w-full max-w-md relative"
+                    style={{ fontFamily: invoiceFormat.fontFamily === 'default' ? 'inherit' : invoiceFormat.fontFamily }}
+                  >
+                    {invoiceFormat.showWatermark && (
+                      <div className="absolute inset-0 flex items-center justify-center text-[36px] font-bold text-gray-200 rotate-45 pointer-events-none select-none">{invoiceFormat.watermarkText}</div>
+                    )}
+                    {/* Company Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        {invoiceFormat.showCompanyLogo && <div className="size-8 bg-gray-200 rounded mb-1 flex items-center justify-center text-[7px] text-gray-500">LOGO</div>}
+                        <div className="font-bold text-[12px]">BookFlow Store</div>
+                        {invoiceFormat.showCompanyAddress && <div className="text-[9px] text-gray-500">123 Business Ave</div>}
+                        {invoiceFormat.showCompanyPhone && <div className="text-[9px] text-gray-500">Tel: (555) 123-4567</div>}
+                        {invoiceFormat.showCompanyEmail && <div className="text-[9px] text-gray-500">info@bookflow.com</div>}
+                        {invoiceFormat.showCompanyWebsite && <div className="text-[9px] text-gray-500">www.bookflow.com</div>}
+                        {invoiceFormat.showTaxRegistration && <div className="text-[9px] text-gray-500">Tax Reg: 12-3456789</div>}
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-[14px]">{invoiceFormat.invoiceLabel}</div>
+                        {invoiceFormat.showInvoiceNumber && <div className="text-[9px]">{invoiceFormat.invoicePrefix}-1001</div>}
+                        {invoiceFormat.showInvoiceDate && <div className="text-[9px]">Date: 03/05/2026</div>}
+                        {invoiceFormat.showDueDate && <div className="text-[9px]">Due: 04/04/2026</div>}
+                        {invoiceFormat.showPoReference && <div className="text-[9px]">PO: PO-789</div>}
+                      </div>
+                    </div>
+                    {/* Bill To / Ship To */}
+                    <div className="flex gap-4 mb-3">
+                      {invoiceFormat.showBillTo && (
+                        <div className="flex-1 border border-gray-300 rounded p-2">
+                          <div className="font-bold text-[9px] mb-0.5">{invoiceFormat.billToLabel}</div>
+                          <div className="text-[8px]">Jane Doe</div>
+                          {invoiceFormat.showCustomerEmail && <div className="text-[8px]">jane@example.com</div>}
+                          {invoiceFormat.showCustomerTaxId && <div className="text-[8px]">Tax ID: 98-7654321</div>}
+                          {invoiceFormat.showCustomerPhone && <div className="text-[8px]">Phone: (555) 987-6543</div>}
+                        </div>
+                      )}
+                      {invoiceFormat.showShipTo && (
+                        <div className="flex-1 border border-gray-300 rounded p-2">
+                          <div className="font-bold text-[9px] mb-0.5">{invoiceFormat.shipToLabel}</div>
+                          <div className="text-[8px]">Jane Doe</div>
+                          <div className="text-[8px]">456 Oak St</div>
+                        </div>
+                      )}
+                    </div>
+                    {/* Line Items */}
+                    <div className="border border-gray-300 rounded mb-3 overflow-hidden">
+                      <div className="flex bg-gray-100 text-[8px] font-bold px-2 py-1 gap-1">
+                        {invoiceFormat.showItemNumber && <span className="w-5">#</span>}
+                        {invoiceFormat.showItemDescription && <span className="flex-1">Description</span>}
+                        {invoiceFormat.showItemSku && <span className="w-12">SKU</span>}
+                        {invoiceFormat.showHsnCode && <span className="w-12">HSN</span>}
+                        {invoiceFormat.showItemQuantity && <span className="w-6 text-right">Qty</span>}
+                        {invoiceFormat.showItemUnit && <span className="w-8">Unit</span>}
+                        {invoiceFormat.showItemUnitPrice && <span className="w-12 text-right">Price</span>}
+                        {invoiceFormat.showItemDiscount && <span className="w-10 text-right">Disc</span>}
+                        {invoiceFormat.showItemTax && <span className="w-10 text-right">Tax</span>}
+                        {invoiceFormat.showItemAmount && <span className="w-14 text-right">Amount</span>}
+                      </div>
+                      <div className="flex px-2 py-1 gap-1 border-t border-gray-200">
+                        {invoiceFormat.showItemNumber && <span className="w-5">1</span>}
+                        {invoiceFormat.showItemDescription && <span className="flex-1">Book A</span>}
+                        {invoiceFormat.showItemSku && <span className="w-12 text-[7px]">BK-001</span>}
+                        {invoiceFormat.showHsnCode && <span className="w-12 text-[7px]">4901</span>}
+                        {invoiceFormat.showItemQuantity && <span className="w-6 text-right">2</span>}
+                        {invoiceFormat.showItemUnit && <span className="w-8">pcs</span>}
+                        {invoiceFormat.showItemUnitPrice && <span className="w-12 text-right">$15</span>}
+                        {invoiceFormat.showItemDiscount && <span className="w-10 text-right">-$2</span>}
+                        {invoiceFormat.showItemTax && <span className="w-10 text-right">$1.4</span>}
+                        {invoiceFormat.showItemAmount && <span className="w-14 text-right">$28</span>}
+                      </div>
+                      <div className="flex px-2 py-1 gap-1 border-t border-gray-200">
+                        {invoiceFormat.showItemNumber && <span className="w-5">2</span>}
+                        {invoiceFormat.showItemDescription && <span className="flex-1">Pen Set</span>}
+                        {invoiceFormat.showItemSku && <span className="w-12 text-[7px]">PN-010</span>}
+                        {invoiceFormat.showHsnCode && <span className="w-12 text-[7px]">9608</span>}
+                        {invoiceFormat.showItemQuantity && <span className="w-6 text-right">1</span>}
+                        {invoiceFormat.showItemUnit && <span className="w-8">set</span>}
+                        {invoiceFormat.showItemUnitPrice && <span className="w-12 text-right">$8</span>}
+                        {invoiceFormat.showItemDiscount && <span className="w-10 text-right">-</span>}
+                        {invoiceFormat.showItemTax && <span className="w-10 text-right">$0.8</span>}
+                        {invoiceFormat.showItemAmount && <span className="w-14 text-right">$8</span>}
+                      </div>
+                    </div>
+                    {/* Totals */}
+                    <div className="flex justify-end mb-3">
+                      <div className="w-48">
+                        {invoiceFormat.showInvoiceSubtotal && <div className="flex justify-between text-[9px]"><span>Subtotal</span><span>$38.00</span></div>}
+                        {invoiceFormat.showInvoiceDiscountSummary && <div className="flex justify-between text-[9px]"><span>Discount</span><span>-$2.00</span></div>}
+                        {invoiceFormat.showTaxBreakdownPerRate && <div className="flex justify-between text-[9px]"><span>Tax (10%)</span><span>$2.20</span></div>}
+                        {invoiceFormat.showShippingCharges && <div className="flex justify-between text-[9px]"><span>Shipping</span><span>$5.00</span></div>}
+                        {invoiceFormat.showAdjustment && <div className="flex justify-between text-[9px]"><span>Adjustment</span><span>$0.00</span></div>}
+                        <div className="flex justify-between font-bold text-[11px] border-t border-gray-300 mt-1 pt-1"><span>Total</span><span>$38.20</span></div>
+                        {invoiceFormat.showAmountInWords && <div className="text-[8px] text-gray-500 mt-0.5">In words: Thirty-eight dollars and twenty cents</div>}
+                      </div>
+                    </div>
+                    {invoiceFormat.showPaymentTerms && <div className="text-[8px] text-gray-500 mb-2"><span className="font-bold">Terms:</span> {invoiceFormat.paymentTermsText}</div>}
+                    {/* Bank Details */}
+                    {invoiceFormat.showBankDetails && (
+                      <div className="border border-gray-300 rounded p-2 mb-2">
+                        <div className="font-bold text-[9px] mb-0.5">Bank Details</div>
+                        {invoiceFormat.bankName && <div className="text-[8px]">Bank: {invoiceFormat.bankName || '—'}</div>}
+                        <div className="text-[8px]">A/C: {invoiceFormat.accountNumber || '—'}</div>
+                      </div>
+                    )}
+                    {/* Notes & Terms */}
+                    {invoiceFormat.showNotesSection && <div className="text-[8px] text-gray-500 mb-1"><span className="font-bold">Notes:</span> {invoiceFormat.defaultNotesText || '—'}</div>}
+                    {invoiceFormat.showTermsSection && <div className="text-[8px] text-gray-500 mb-1"><span className="font-bold">Terms:</span> {invoiceFormat.defaultTermsText}</div>}
+                    {/* Signatory */}
+                    {invoiceFormat.showAuthorizedSignatory && (
+                      <div className="text-right mt-4">
+                        <div className="border-t border-gray-300 w-32 ml-auto pt-1 text-[8px]">{invoiceFormat.signatoryLabel}</div>
+                      </div>
+                    )}
+                    {invoiceFormat.customInvoiceFooter && <div className="text-center text-[8px] text-gray-400 mt-2">{invoiceFormat.customInvoiceFooter}</div>}
                   </div>
                 </div>
               </div>

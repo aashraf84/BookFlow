@@ -53,6 +53,7 @@ export async function PUT(request: NextRequest) {
     const allowedSections = [
       'general', 'pos', 'inventory', 'tax', 'sales',
       'email', 'notifications', 'security', 'printing',
+      'receiptFormat', 'invoiceFormat',
       'appearance', 'backup', 'integrations',
     ]
 

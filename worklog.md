@@ -135,3 +135,42 @@ Work Log:
 - Preserved all existing UI layout, chart configs, styling, and component structure exactly
 - Removed unused imports (`Calendar`, `ArrowUpRight`, `ArrowDownRight`)
 - Lint passes clean
+
+---
+Task ID: 1
+Agent: Code Agent
+Task: Add Receipt Format and Invoice Format settings sections to settings module
+
+Work Log:
+- Added 7 new lucide-react imports: Type, Layout, QrCode, Stamp, Landmark, CreditCard, ScrollText
+- Added `ReceiptFormatSettings` interface (56 fields) covering: layout/paper, header, line items, totals, footer/extras, numbering/sequence, and additional options
+- Added `InvoiceFormatSettings` interface (60+ fields) covering: template/styling, company header, invoice details, bill-to/ship-to, line item columns, totals/payment, bank details, footer/notes, and page setup
+- Added `defaultReceiptFormat` constant with sensible defaults (thermal-80, medium font, sequential numbering, etc.)
+- Added `defaultInvoiceFormat` constant with sensible defaults (standard layout, Tax Invoice label, INV prefix, yearly reset, etc.)
+- Added two new sidebar entries: 'Receipt Format' (Receipt icon) and 'Invoice Format' (FileText icon) positioned after Printing and before Appearance
+- Added `receiptFormat` and `invoiceFormat` state variables using `React.useState`
+- Added loading logic for both in the `loadSettings` effect with spread defaults
+- Added both to the `handleSave` JSON body
+- Added reset cases for 'receipt-format' and 'invoice-format' in `handleResetSection`
+- Built complete Receipt Format UI section (8 sub-cards):
+  1. Layout & Paper — template select, paper width input, font size select
+  2. Header Configuration — 5 toggles (logo, company name, address, phone, tax ID) + custom header text
+  3. Line Item Display — 6 toggles (name, code, qty, unit price, total, discount) + item separator select
+  4. Totals Section — 6 toggles (subtotal, tax breakdown, discount, payment method, amount paid, change due)
+  5. Footer & Extras — custom footer text, return policy toggle/text, QR code toggle/content, barcode toggle
+  6. Numbering & Sequence — prefix, number format, start number, reset frequency
+  7. Additional Options — cashier name, terminal ID, date/time, date format, customer info, loyalty points, copies, auto-print, paper cut
+  8. Live Preview — monospace simulated receipt showing/hiding elements based on current settings
+- Built complete Invoice Format UI section (10 sub-cards):
+  1. Template & Styling — layout template, color scheme (with custom color picker), font family, font size
+  2. Company Header — logo toggle/size, name position, address/phone/email/website/tax reg toggles, custom header
+  3. Invoice Details — label select (Invoice/Tax Invoice/Proforma/Commercial), number/date/due/PO toggles, prefix, start number, reset frequency, due date days
+  4. Bill To / Ship To — toggles with editable labels, customer tax ID/email/phone toggles
+  5. Line Item Columns — 10 column toggles (#, description, SKU, HSN, qty, unit, price, discount, tax, amount)
+  6. Totals & Payment — 7 toggles (subtotal, discount summary, tax per rate, shipping, adjustment, amount in words, payment terms) + terms text
+  7. Bank Details — toggle with 4 fields (bank name, account name, account number, routing code)
+  8. Footer & Notes — notes/terms toggles with text areas, signatory toggle/label, custom footer
+  9. Page Setup — watermark toggle/text, page size, orientation, margins
+  10. Live Preview — simulated invoice with conditional rendering matching all settings
+- All styling matches existing sections: macos-card, macos-shadow-card, macos-section-title, MacosFormField, shadcn/ui Select/Switch/Input/Textarea
+- Lint passes clean
