@@ -84,36 +84,16 @@ interface DashboardData {
     author: string
     totalSold: number
   }[]
+  trends: {
+    todaySales: number
+    monthlyRevenue: number
+    activeCustomers: number
+    inventoryValue: number
+  }
+  monthlyRevenueData: { month: string; revenue: number }[]
+  salesByCategoryData: { category: string; sales: number; fill: string }[]
+  branchPerformanceData: { branch: string; revenue: number; orders: number }[]
 }
-
-// ── Mock chart data ──────────────────────────────────────────────
-const monthlyRevenueData = [
-  { month: 'Jan', revenue: 42000 },
-  { month: 'Feb', revenue: 38000 },
-  { month: 'Mar', revenue: 55000 },
-  { month: 'Apr', revenue: 47000 },
-  { month: 'May', revenue: 62000 },
-  { month: 'Jun', revenue: 58000 },
-  { month: 'Jul', revenue: 71000 },
-  { month: 'Aug', revenue: 89000 },
-  { month: 'Sep', revenue: 95000 },
-  { month: 'Oct', revenue: 78000 },
-  { month: 'Nov', revenue: 68000 },
-  { month: 'Dec', revenue: 82000 },
-]
-
-const salesByCategoryData = [
-  { category: 'Books', sales: 62400, fill: 'var(--color-macos-blue)' },
-  { category: 'Stationery', sales: 38200, fill: 'var(--color-macos-green)' },
-  { category: 'School Supplies', sales: 28600, fill: 'var(--color-macos-orange)' },
-]
-
-const branchPerformanceData = [
-  { branch: 'Downtown', revenue: 34500, orders: 156 },
-  { branch: 'Mall', revenue: 28200, orders: 128 },
-  { branch: 'Online', revenue: 22800, orders: 203 },
-  { branch: 'University', revenue: 18500, orders: 94 },
-]
 
 const revenueChartConfig: ChartConfig = {
   revenue: { label: 'Revenue', color: 'var(--color-macos-blue)' },
@@ -121,9 +101,6 @@ const revenueChartConfig: ChartConfig = {
 
 const categoryChartConfig: ChartConfig = {
   sales: { label: 'Sales', color: 'var(--color-macos-blue)' },
-  Books: { label: 'Books', color: 'var(--color-macos-blue)' },
-  Stationery: { label: 'Stationery', color: 'var(--color-macos-green)' },
-  'School Supplies': { label: 'School Supplies', color: 'var(--color-macos-orange)' },
 }
 
 // ── Component ────────────────────────────────────────────────────
@@ -171,12 +148,14 @@ export default function DashboardModule() {
   }
 
   // ── Stat card data ───────────────────────────────────────────
+  const formatTrend = (val: number) => `${val >= 0 ? '+' : ''}${val}%`
+
   const stats = useMemo(() => [
     {
       label: "Today's Sales",
       value: formatCurrency(data?.todaySales ?? 0),
-      change: '+12.5%',
-      up: true,
+      change: formatTrend(data?.trends?.todaySales ?? 0),
+      up: (data?.trends?.todaySales ?? 0) >= 0,
       icon: DollarSign,
       iconColor: 'text-macos-green',
       bgColor: 'bg-macos-green/10',
@@ -184,8 +163,8 @@ export default function DashboardModule() {
     {
       label: 'Monthly Revenue',
       value: formatCurrency(data?.monthlyRevenue ?? 0),
-      change: '+8.2%',
-      up: true,
+      change: formatTrend(data?.trends?.monthlyRevenue ?? 0),
+      up: (data?.trends?.monthlyRevenue ?? 0) >= 0,
       icon: TrendingUp,
       iconColor: 'text-macos-blue',
       bgColor: 'bg-macos-blue/10',
@@ -193,8 +172,8 @@ export default function DashboardModule() {
     {
       label: 'Active Customers',
       value: (data?.activeCustomers ?? 0).toLocaleString(),
-      change: '+3.1%',
-      up: true,
+      change: formatTrend(data?.trends?.activeCustomers ?? 0),
+      up: (data?.trends?.activeCustomers ?? 0) >= 0,
       icon: Users,
       iconColor: 'text-macos-purple',
       bgColor: 'bg-macos-purple/10',
@@ -202,8 +181,8 @@ export default function DashboardModule() {
     {
       label: 'Inventory Value',
       value: formatCurrency(data?.inventoryValue ?? 0),
-      change: '-1.4%',
-      up: false,
+      change: formatTrend(data?.trends?.inventoryValue ?? 0),
+      up: (data?.trends?.inventoryValue ?? 0) >= 0,
       icon: Package,
       iconColor: 'text-macos-orange',
       bgColor: 'bg-macos-orange/10',
@@ -447,7 +426,7 @@ export default function DashboardModule() {
             </div>
           </div>
           <ChartContainer config={revenueChartConfig} className="h-56 w-full">
-            <AreaChart data={monthlyRevenueData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+            <AreaChart data={data?.monthlyRevenueData ?? []} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="var(--color-macos-blue)" stopOpacity={0.2} />
@@ -472,14 +451,14 @@ export default function DashboardModule() {
             </div>
           </div>
           <ChartContainer config={categoryChartConfig} className="h-56 w-full">
-            <BarChart data={salesByCategoryData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+            <BarChart data={data?.salesByCategoryData ?? []} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.06)" />
               <XAxis dataKey="category" tickLine={false} axisLine={false} fontSize={11} tick={{ fill: '#86868B' }} />
               <YAxis tickLine={false} axisLine={false} fontSize={11} tick={{ fill: '#86868B' }} tickFormatter={(v: number) => `$${v / 1000}k`} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <ChartLegend content={<ChartLegendContent nameKey="category" />} />
               <Bar dataKey="sales" radius={[6, 6, 0, 0]}>
-                {salesByCategoryData.map((entry, index) => (
+                {(data?.salesByCategoryData ?? []).map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
               </Bar>
@@ -691,14 +670,14 @@ export default function DashboardModule() {
           <BarChart3 className="size-4 text-muted-foreground" strokeWidth={1.5} />
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {branchPerformanceData.map((branch, idx) => {
+          {(data?.branchPerformanceData ?? []).map((branch, idx) => {
             const colorMap = [
               { text: 'text-macos-green', bg: 'bg-macos-green/10' },
               { text: 'text-macos-blue', bg: 'bg-macos-blue/10' },
               { text: 'text-macos-purple', bg: 'bg-macos-purple/10' },
               { text: 'text-macos-orange', bg: 'bg-macos-orange/10' },
             ]
-            const color = colorMap[idx]
+            const color = colorMap[idx % colorMap.length]
             return (
               <div key={branch.branch} className="macos-card macos-shadow p-3.5">
                 <div className="flex items-center gap-2 mb-2">

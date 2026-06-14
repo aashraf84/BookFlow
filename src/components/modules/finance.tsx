@@ -172,22 +172,35 @@ export function FinanceModule() {
 
 // ==================== OVERVIEW TAB ====================
 
+interface ChartData {
+  revenueExpenseData: { month: string; revenue: number; expenses: number }[]
+  cashFlowData: { month: string; inflow: number; outflow: number }[]
+  trends: {
+    revenue: number
+    expenses: number
+    netIncome: number
+  }
+}
+
 function OverviewTab() {
   const [accounts, setAccounts] = React.useState<Account[]>([])
   const [expenses, setExpenses] = React.useState<Expense[]>([])
+  const [chartData, setChartData] = React.useState<ChartData | null>(null)
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     async function fetchData() {
       setLoading(true)
       try {
-        const [accRes, expRes] = await Promise.all([
+        const [accRes, expRes, chartsRes] = await Promise.all([
           fetch('/api/finance?type=accounts&limit=100'),
           fetch('/api/finance?type=expenses&limit=100'),
+          fetch('/api/finance?type=charts'),
         ])
-        const [accJson, expJson] = await Promise.all([accRes.json(), expRes.json()])
+        const [accJson, expJson, chartsJson] = await Promise.all([accRes.json(), expRes.json(), chartsRes.json()])
         if (accJson.data) setAccounts(accJson.data)
         if (expJson.data) setExpenses(expJson.data)
+        if (chartsJson.success && chartsJson.data) setChartData(chartsJson.data)
       } catch (err) {
         console.error('Failed to fetch finance data:', err)
       } finally {
@@ -220,13 +233,8 @@ function OverviewTab() {
     expense: CHART_COLORS.orange,
   }
 
-  // Generate mock monthly data for charts
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const revenueExpenseData = months.map((month, i) => ({
-    month,
-    revenue: Math.round(revenue * (0.6 + Math.random() * 0.5 + i * 0.03)),
-    expenses: Math.round(expenseTotal * (0.5 + Math.random() * 0.5 + i * 0.02)),
-  }))
+  // Chart data from API
+  const revenueExpenseData = chartData?.revenueExpenseData ?? []
 
   // Account breakdown for pie chart
   const accountBreakdown = accountTypes.map((type) => {
@@ -247,12 +255,8 @@ function OverviewTab() {
 
   const categoryColors = [CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.orange, CHART_COLORS.purple, CHART_COLORS.teal, CHART_COLORS.red, CHART_COLORS.golden, CHART_COLORS.sunset]
 
-  // Cash flow area chart data
-  const cashFlowData = months.map((month, i) => ({
-    month,
-    inflow: Math.round(revenue * (0.7 + Math.random() * 0.4 + i * 0.02)),
-    outflow: Math.round(expenseTotal * (0.6 + Math.random() * 0.4 + i * 0.015)),
-  }))
+  // Cash flow data from API
+  const cashFlowData = chartData?.cashFlowData ?? []
 
   return (
     <div className="space-y-5">
@@ -275,7 +279,7 @@ function OverviewTab() {
               icon={TrendingUp}
               iconColor="text-macos-green"
               iconBg="bg-macos-green/10"
-              trend={{ value: 8.5, label: 'vs last month' }}
+              trend={{ value: chartData?.trends?.revenue ?? 0, label: 'vs last month' }}
             />
             <MacosStatCard
               label="Expenses"
@@ -283,7 +287,7 @@ function OverviewTab() {
               icon={TrendingDown}
               iconColor="text-macos-red"
               iconBg="bg-macos-red/10"
-              trend={{ value: -3.2, label: 'vs last month' }}
+              trend={{ value: chartData?.trends?.expenses ?? 0, label: 'vs last month' }}
             />
             <MacosStatCard
               label="Net Income"
@@ -291,7 +295,7 @@ function OverviewTab() {
               icon={DollarSign}
               iconColor="text-macos-blue"
               iconBg="bg-macos-blue/10"
-              trend={{ value: netIncome >= 0 ? 12.1 : -5.3, label: 'vs last month' }}
+              trend={{ value: chartData?.trends?.netIncome ?? 0, label: 'vs last month' }}
             />
           </MacosStatGrid>
 

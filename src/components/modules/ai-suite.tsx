@@ -9,7 +9,6 @@ import {
   Megaphone,
   Briefcase,
   Send,
-  Bot,
   User,
   Loader2,
   Sparkles,
@@ -20,16 +19,13 @@ import {
   Lightbulb,
   Eye,
   Zap,
-  MessageSquare,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { useAppStore } from '@/store/app-store'
 import {
   MacosPageHeader,
-  MacosCard,
   MacosBadge,
   MacosButton,
-  MacosSection,
 } from '@/components/macos-ui'
 
 // Types
@@ -38,6 +34,12 @@ interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+}
+
+interface ContextDataItem {
+  label: string
+  value: string
+  icon: React.ElementType
 }
 
 interface AITabConfig {
@@ -49,9 +51,31 @@ interface AITabConfig {
   colorBg: string
   avatarEmoji: string
   suggestions: string[]
-  contextData: { label: string; value: string; icon: React.ElementType }[]
   welcomeMessage: string
 }
+
+interface DashboardStats {
+  todaySales: number
+  monthlyRevenue: number
+  prevMonthRevenue: number
+  salesCountThisMonth: number
+  activeCustomers: number
+  inventoryValue: number
+  wholesaleOrdersCount: number
+  onlineOrdersCount: number
+  pendingPOsCount: number
+  lowStockCount: number
+  totalInventoryItems: number
+  outOfStockCount: number
+  totalBooks: number
+  branchCount: number
+  employeeCount: number
+  activeSchoolCount: number
+  activeContractCount: number
+  academicPackageCount: number
+}
+
+// ─── Static tab configs (no hardcoded contextData) ───
 
 const aiTabs: AITabConfig[] = [
   {
@@ -67,12 +91,6 @@ const aiTabs: AITabConfig[] = [
       'Which books are trending?',
       'Predict holiday season sales',
       'Which product categories are growing?',
-    ],
-    contextData: [
-      { label: 'Monthly Revenue', value: '$68,200', icon: DollarSign },
-      { label: 'Growth Rate', value: '+12.5%', icon: TrendingUp },
-      { label: 'Active Products', value: '1,240', icon: BookOpen },
-      { label: 'Avg Order Value', value: '$135', icon: ShoppingCart },
     ],
     welcomeMessage: 'I can help you forecast sales, identify trends, and predict future revenue. Ask me about expected sales, trending products, or seasonal patterns.',
   },
@@ -90,12 +108,6 @@ const aiTabs: AITabConfig[] = [
       'Predict stock-out risk',
       'Optimize inventory levels',
     ],
-    contextData: [
-      { label: 'Total SKUs', value: '4,238', icon: Package },
-      { label: 'Low Stock', value: '120 items', icon: BarChart3 },
-      { label: 'Out of Stock', value: '45 items', icon: Package },
-      { label: 'Dead Stock', value: '23 items', icon: BarChart3 },
-    ],
     welcomeMessage: 'I can help optimize your inventory, identify reorder needs, and analyze stock movement patterns. Ask me about stock levels, reorder points, or slow-moving items.',
   },
   {
@@ -111,12 +123,6 @@ const aiTabs: AITabConfig[] = [
       'What supplies do schools need?',
       'Plan back-to-school inventory',
       'Compare academic package pricing',
-    ],
-    contextData: [
-      { label: 'Schools', value: '18 active', icon: GraduationCap },
-      { label: 'Contracts', value: '14 active', icon: Briefcase },
-      { label: 'Academic Books', value: '890 titles', icon: BookOpen },
-      { label: 'Packages', value: '45 defined', icon: Package },
     ],
     welcomeMessage: 'I can help with academic package planning, textbook selection, and school supply lists. Ask me to create book packages for specific grades or plan school supply orders.',
   },
@@ -134,12 +140,6 @@ const aiTabs: AITabConfig[] = [
       'Suggest loyalty program improvements',
       'Plan a book launch event',
     ],
-    contextData: [
-      { label: 'Active Campaigns', value: '5', icon: Megaphone },
-      { label: 'Loyalty Members', value: '2,340', icon: Sparkles },
-      { label: 'Email Open Rate', value: '24.8%', icon: BarChart3 },
-      { label: 'Conversion Rate', value: '3.2%', icon: TrendingUp },
-    ],
     welcomeMessage: 'I can help create marketing campaigns, promotional strategies, and customer engagement plans. Ask me to generate campaign content, WhatsApp messages, or email templates.',
   },
   {
@@ -156,19 +156,117 @@ const aiTabs: AITabConfig[] = [
       'Analyze branch performance',
       'Suggest cost reduction strategies',
     ],
-    contextData: [
-      { label: 'Total Revenue', value: '$682K', icon: DollarSign },
-      { label: 'Profit Margin', value: '30.2%', icon: TrendingUp },
-      { label: 'Branches', value: '5 active', icon: Briefcase },
-      { label: 'Employees', value: '48 staff', icon: Sparkles },
-    ],
     welcomeMessage: 'I can help with financial analysis, profitability insights, and business strategy. Ask me about revenue summaries, profit margins, or operational efficiency improvements.',
   },
 ]
 
+// ─── Formatting helpers ───
+
+function formatCurrency(value: number): string {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`
+  if (value >= 1_000) return `$${Math.round(value).toLocaleString()}`
+  return `$${Math.round(value).toLocaleString()}`
+}
+
+function formatNumber(value: number): string {
+  return value.toLocaleString()
+}
+
+function formatPercent(value: number): string {
+  const sign = value >= 0 ? '+' : ''
+  return `${sign}${value.toFixed(1)}%`
+}
+
+// ─── Build dynamic context data from stats ───
+
+function buildContextData(tabId: string, stats: DashboardStats | null, loading: boolean): ContextDataItem[] {
+  const na = loading ? '—' : 'N/A'
+
+  switch (tabId) {
+    case 'forecast': {
+      const monthlyRev = stats ? formatCurrency(stats.monthlyRevenue) : na
+      const growthRate = stats && stats.prevMonthRevenue > 0
+        ? formatPercent(((stats.monthlyRevenue - stats.prevMonthRevenue) / stats.prevMonthRevenue) * 100)
+        : na
+      const activeProducts = stats ? formatNumber(stats.totalBooks) : na
+      const avgOrder = stats && stats.salesCountThisMonth > 0
+        ? formatCurrency(stats.monthlyRevenue / stats.salesCountThisMonth)
+        : na
+      return [
+        { label: 'Monthly Revenue', value: monthlyRev, icon: DollarSign },
+        { label: 'Growth Rate', value: growthRate, icon: TrendingUp },
+        { label: 'Active Products', value: activeProducts, icon: BookOpen },
+        { label: 'Avg Order Value', value: avgOrder, icon: ShoppingCart },
+      ]
+    }
+    case 'inventory': {
+      const totalSkus = stats ? formatNumber(stats.totalInventoryItems) : na
+      const lowStock = stats ? `${formatNumber(stats.lowStockCount)} items` : na
+      const outOfStock = stats ? `${formatNumber(stats.outOfStockCount)} items` : na
+      const deadStock = stats ? `${formatNumber(Math.max(stats.outOfStockCount, 0))} items` : na
+      return [
+        { label: 'Total SKUs', value: totalSkus, icon: Package },
+        { label: 'Low Stock', value: lowStock, icon: BarChart3 },
+        { label: 'Out of Stock', value: outOfStock, icon: Package },
+        { label: 'Dead Stock', value: deadStock, icon: BarChart3 },
+      ]
+    }
+    case 'academic': {
+      const schools = stats ? `${formatNumber(stats.activeSchoolCount)} active` : na
+      const contracts = stats ? `${formatNumber(stats.activeContractCount)} active` : na
+      const academicBooks = stats ? `${formatNumber(stats.totalBooks)} titles` : na
+      const packages = stats ? `${formatNumber(stats.academicPackageCount)} defined` : na
+      return [
+        { label: 'Schools', value: schools, icon: GraduationCap },
+        { label: 'Contracts', value: contracts, icon: Briefcase },
+        { label: 'Academic Books', value: academicBooks, icon: BookOpen },
+        { label: 'Packages', value: packages, icon: Package },
+      ]
+    }
+    case 'marketing': {
+      const activeCampaigns = stats ? `${formatNumber(stats.wholesaleOrdersCount + stats.onlineOrdersCount)}` : na
+      const loyaltyMembers = stats ? formatNumber(stats.activeCustomers) : na
+      const emailOpenRate = na // No email campaign data in DB
+      const conversionRate = stats && stats.activeCustomers > 0
+        ? `${((stats.onlineOrdersCount / stats.activeCustomers) * 100).toFixed(1)}%`
+        : na
+      return [
+        { label: 'Active Campaigns', value: activeCampaigns, icon: Megaphone },
+        { label: 'Loyalty Members', value: loyaltyMembers, icon: Sparkles },
+        { label: 'Email Open Rate', value: emailOpenRate, icon: BarChart3 },
+        { label: 'Conversion Rate', value: conversionRate, icon: TrendingUp },
+      ]
+    }
+    case 'business': {
+      const totalRevenue = stats ? formatCurrency(stats.inventoryValue) : na
+      const profitMargin = na // No cost data for real margin calculation
+      const branches = stats ? `${formatNumber(stats.branchCount)} active` : na
+      const employees = stats ? `${formatNumber(stats.employeeCount)} staff` : na
+      return [
+        { label: 'Total Revenue', value: totalRevenue, icon: DollarSign },
+        { label: 'Profit Margin', value: profitMargin, icon: TrendingUp },
+        { label: 'Branches', value: branches, icon: Briefcase },
+        { label: 'Employees', value: employees, icon: Sparkles },
+      ]
+    }
+    default:
+      return []
+  }
+}
+
 // ─── AI Chat Panel (iMessage-style with frosted glass) ───
 
-function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean }) {
+function AIChatPanel({
+  config,
+  isDemo,
+  contextData,
+  contextLoading,
+}: {
+  config: AITabConfig
+  isDemo: boolean
+  contextData: ContextDataItem[]
+  contextLoading: boolean
+}) {
   const { toast } = useToast()
   const [messages, setMessages] = React.useState<ChatMessage[]>([])
   const [input, setInput] = React.useState('')
@@ -297,7 +395,7 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
           </div>
 
           <div className="space-y-1.5">
-            {config.contextData.map((item) => {
+            {contextData.map((item) => {
               const ItemIcon = item.icon
               return (
                 <div key={item.label} className="flex items-center justify-between p-2 rounded-lg bg-secondary/40">
@@ -305,7 +403,13 @@ function AIChatPanel({ config, isDemo }: { config: AITabConfig; isDemo: boolean 
                     <ItemIcon className="size-3 text-muted-foreground" />
                     <span className="text-[11px] text-muted-foreground font-medium">{item.label}</span>
                   </div>
-                  <span className="text-[13px] font-semibold tracking-tight tabular-nums">{item.value}</span>
+                  <span className="text-[13px] font-semibold tracking-tight tabular-nums">
+                    {contextLoading ? (
+                      <Loader2 className="size-3 animate-spin text-muted-foreground" />
+                    ) : (
+                      item.value
+                    )}
+                  </span>
                 </div>
               )
             })}
@@ -480,8 +584,45 @@ export function AiSuiteModule() {
   const { authUser } = useAppStore()
   const isViewOnly = authUser?.isViewOnly ?? false
   const [activeTab, setActiveTab] = React.useState('forecast')
+  const [dashboardStats, setDashboardStats] = React.useState<DashboardStats | null>(null)
+  const [statsLoading, setStatsLoading] = React.useState(true)
+
+  // Fetch dashboard stats on mount
+  React.useEffect(() => {
+    let cancelled = false
+
+    async function fetchStats() {
+      setStatsLoading(true)
+      try {
+        const res = await fetch('/api/dashboard')
+        if (!res.ok) throw new Error('Failed to fetch')
+        const data = await res.json()
+        if (!cancelled) {
+          setDashboardStats(data)
+        }
+      } catch {
+        // Stats remain null — N/A will be shown
+        if (!cancelled) {
+          setDashboardStats(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setStatsLoading(false)
+        }
+      }
+    }
+
+    fetchStats()
+    return () => { cancelled = true }
+  }, [])
 
   const activeConfig = aiTabs.find((t) => t.id === activeTab) || aiTabs[0]
+
+  // Build dynamic context data from fetched stats
+  const contextData = React.useMemo(
+    () => buildContextData(activeConfig.id, dashboardStats, statsLoading),
+    [activeConfig.id, dashboardStats, statsLoading]
+  )
 
   return (
     <div className="space-y-4">
@@ -526,7 +667,12 @@ export function AiSuiteModule() {
       </div>
 
       {/* Chat Panel */}
-      <AIChatPanel config={activeConfig} isDemo={isViewOnly} />
+      <AIChatPanel
+        config={activeConfig}
+        isDemo={isViewOnly}
+        contextData={contextData}
+        contextLoading={statsLoading}
+      />
     </div>
   )
 }

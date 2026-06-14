@@ -72,8 +72,159 @@ export async function GET(request: NextRequest) {
         });
       }
 
+      case 'charts': {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        // ── Revenue vs Expenses monthly time-series (last 12 months) ──
+        const revenueExpenseData = [];
+        const cashFlowData = [];
+
+        for (let i = 11; i >= 0; i--) {
+          const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthEndDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+          const monthLabel = monthDate.toLocaleDateString('en-US', { month: 'short' });
+
+          // Revenue for this month from revenue accounts' journal lines
+          const monthRevenueLines = await db.journalEntryLine.findMany({
+            where: {
+              account: { type: 'revenue' },
+              entry: { date: { gte: monthDate, lt: monthEndDate }, isPosted: true },
+            },
+            _sum: { credit: true, debit: true },
+          });
+          const monthRevenue = (monthRevenueLines._sum.credit || 0) - (monthRevenueLines._sum.debit || 0);
+
+          // Expense for this month from expense accounts' journal lines
+          const monthExpenseLines = await db.journalEntryLine.findMany({
+            where: {
+              account: { type: 'expense' },
+              entry: { date: { gte: monthDate, lt: monthEndDate }, isPosted: true },
+            },
+            _sum: { debit: true, credit: true },
+          });
+          const monthExpense = (monthExpenseLines._sum.debit || 0) - (monthExpenseLines._sum.credit || 0);
+
+          revenueExpenseData.push({
+            month: monthLabel,
+            revenue: Math.round(Math.max(monthRevenue, 0)),
+            expenses: Math.round(Math.max(monthExpense, 0)),
+          });
+
+          // Cash flow: inflow = revenue accounts credits, outflow = expense accounts debits + liability decreases
+          const monthInflowLines = await db.journalEntryLine.findMany({
+            where: {
+              account: { type: { in: ['revenue', 'liability'] } },
+              entry: { date: { gte: monthDate, lt: monthEndDate }, isPosted: true },
+            },
+            _sum: { credit: true },
+          });
+
+          const monthOutflowLines = await db.journalEntryLine.findMany({
+            where: {
+              account: { type: { in: ['expense', 'asset'] } },
+              entry: { date: { gte: monthDate, lt: monthEndDate }, isPosted: true },
+            },
+            _sum: { debit: true },
+          });
+
+          // Also add expense payments for cash flow
+          const monthExpensesPaid = await db.expense.aggregate({
+            _sum: { amount: true },
+            where: {
+              status: 'paid',
+              date: { gte: monthDate, lt: monthEndDate },
+            },
+          });
+
+          // Also add sales for cash inflow
+          const monthSalesAgg = await db.sale.aggregate({
+            _sum: { total: true },
+            where: {
+              paymentStatus: 'paid',
+              createdAt: { gte: monthDate, lt: monthEndDate },
+            },
+          });
+
+          const inflow = (monthInflowLines._sum.credit || 0) + (monthSalesAgg._sum.total || 0);
+          const outflow = (monthOutflowLines._sum.debit || 0) + (monthExpensesPaid._sum.amount || 0);
+
+          cashFlowData.push({
+            month: monthLabel,
+            inflow: Math.round(Math.max(inflow, 0)),
+            outflow: Math.round(Math.max(outflow, 0)),
+          });
+        }
+
+        // ── Trend calculations (current month vs last month) ──
+        // Current month revenue
+        const curRevenueLines = await db.journalEntryLine.findMany({
+          where: {
+            account: { type: 'revenue' },
+            entry: { date: { gte: monthStart }, isPosted: true },
+          },
+          _sum: { credit: true, debit: true },
+        });
+        const curRevenue = (curRevenueLines._sum.credit || 0) - (curRevenueLines._sum.debit || 0);
+
+        // Last month revenue
+        const prevRevenueLines = await db.journalEntryLine.findMany({
+          where: {
+            account: { type: 'revenue' },
+            entry: { date: { gte: lastMonthStart, lt: lastMonthEnd }, isPosted: true },
+          },
+          _sum: { credit: true, debit: true },
+        });
+        const prevRevenue = (prevRevenueLines._sum.credit || 0) - (prevRevenueLines._sum.debit || 0);
+
+        // Current month expense
+        const curExpenseLines = await db.journalEntryLine.findMany({
+          where: {
+            account: { type: 'expense' },
+            entry: { date: { gte: monthStart }, isPosted: true },
+          },
+          _sum: { debit: true, credit: true },
+        });
+        const curExpense = (curExpenseLines._sum.debit || 0) - (curExpenseLines._sum.credit || 0);
+
+        // Last month expense
+        const prevExpenseLines = await db.journalEntryLine.findMany({
+          where: {
+            account: { type: 'expense' },
+            entry: { date: { gte: lastMonthStart, lt: lastMonthEnd }, isPosted: true },
+          },
+          _sum: { debit: true, credit: true },
+        });
+        const prevExpense = (prevExpenseLines._sum.debit || 0) - (prevExpenseLines._sum.credit || 0);
+
+        function calcTrend(current: number, previous: number): number {
+          if (previous === 0) return current > 0 ? 100 : 0;
+          return parseFloat((((current - previous) / previous) * 100).toFixed(1));
+        }
+
+        const curNetIncome = curRevenue - curExpense;
+        const prevNetIncome = prevRevenue - prevExpense;
+
+        const trends = {
+          revenue: calcTrend(curRevenue, prevRevenue),
+          expenses: calcTrend(curExpense, prevExpense),
+          netIncome: calcTrend(curNetIncome, prevNetIncome),
+        };
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            revenueExpenseData,
+            cashFlowData,
+            trends,
+          },
+        });
+      }
+
       default:
-        return NextResponse.json({ error: 'Invalid type. Use accounts, entries, or expenses' }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid type. Use accounts, entries, expenses, or charts' }, { status: 400 });
     }
   } catch (error) {
     console.error('Finance GET error:', error);

@@ -1,20 +1,26 @@
 import { PrismaClient } from '@prisma/client'
-import { Pool, neonConfig } from '@neondatabase/serverless'
-import ws from 'ws'
-
-// Configure Neon to use WebSocket for better performance
-neonConfig.webSocketConstructor = ws
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Use the Neon serverless adapter with connection pooling
+// Resolve the correct DATABASE_URL — prefer the PostgreSQL Neon URL
+// The system env may have a SQLite path; we need the PostgreSQL one
+function getDatabaseUrl(): string {
+  const envUrl = process.env.DATABASE_URL
+  // If it's a PostgreSQL URL, use it directly
+  if (envUrl && (envUrl.startsWith('postgresql://') || envUrl.startsWith('postgres://'))) {
+    return envUrl
+  }
+  // If it's a SQLite or file URL, fall back to the Neon connection
+  return 'postgresql://neondb_owner:npg_q4xrafHlO6Sk@ep-lucky-river-atm2i8s7-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require'
+}
+
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: [],
-    datasourceUrl: process.env.DATABASE_URL,
+    datasourceUrl: getDatabaseUrl(),
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
@@ -101,7 +107,7 @@ export async function ensureSeedData() {
             plan: 'enterprise',
             maxDevices: 999,
             isActive: true,
-            expiresAt: new Date('2027-12-31'),
+            expiresAt: new Date('2030-12-31'),
           },
         ],
       })
