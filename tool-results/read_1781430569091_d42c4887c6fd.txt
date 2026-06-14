@@ -1,0 +1,2002 @@
+     1→'use client'
+     2→
+     3→import * as React from 'react'
+     4→import {
+     5→  Settings,
+     6→  Building2,
+     7→  Globe,
+     8→  DollarSign,
+     9→  Receipt,
+    10→  ShoppingCart,
+    11→  Truck,
+    12→  Users,
+    13→  Shield,
+    14→  Bell,
+    15→  Printer,
+    16→  Palette,
+    17→  Database,
+    18→  Mail,
+    19→  Phone,
+    20→  Package,
+    21→  BarChart3,
+    22→  Save,
+    23→  RotateCcw,
+    24→  Check,
+    25→  Loader2,
+    26→  Eye,
+    27→  AlertCircle,
+    28→  X,
+    29→  ChevronRight,
+    30→  Webhook,
+    31→  FileText,
+    32→  Warehouse,
+    33→  Percent,
+    34→  Hash,
+    35→  HardDrive,
+    36→  Lock,
+    37→} from 'lucide-react'
+    38→
+    39→import { Button } from '@/components/ui/button'
+    40→import { Input } from '@/components/ui/input'
+    41→import { Label } from '@/components/ui/label'
+    42→import { Separator } from '@/components/ui/separator'
+    43→import { Switch } from '@/components/ui/switch'
+    44→import { Textarea } from '@/components/ui/textarea'
+    45→import {
+    46→  Select,
+    47→  SelectContent,
+    48→  SelectItem,
+    49→  SelectTrigger,
+    50→  SelectValue,
+    51→} from '@/components/ui/select'
+    52→import { useAppStore } from '@/store/app-store'
+    53→import {
+    54→  MacosPageHeader,
+    55→  MacosBadge,
+    56→  MacosFormField,
+    57→} from '@/components/macos-ui'
+    58→
+    59→// ─── Types ────────────────────────────────────────────────────────
+    60→interface GeneralSettings {
+    61→  companyName: string
+    62→  legalName: string
+    63→  taxId: string
+    64→  registrationNo: string
+    65→  industry: string
+    66→  website: string
+    67→  email: string
+    68→  phone: string
+    69→  address: string
+    70→  city: string
+    71→  state: string
+    72→  country: string
+    73→  postalCode: string
+    74→  logo: string
+    75→  fiscalYearStart: string
+    76→  dateFormat: string
+    77→  timeFormat: string
+    78→  timezone: string
+    79→  language: string
+    80→  currency: string
+    81→  currencySymbol: string
+    82→  currencyPosition: 'before' | 'after'
+    83→  thousandSeparator: string
+    84→  decimalSeparator: string
+    85→  decimalPlaces: number
+    86→}
+    87→
+    88→interface PosSettings {
+    89→  defaultPaymentMethod: string
+    90→  autoPrintReceipt: boolean
+    91→  receiptHeader: string
+    92→  receiptFooter: string
+    93→  receiptPaperSize: string
+    94→  showTaxOnReceipt: boolean
+    95→  showDiscountOnReceipt: boolean
+    96→  showCustomerOnReceipt: boolean
+    97→  enableBarcodeScanning: boolean
+    98→  barcodePrefix: string
+    99→  enableQuickKeys: boolean
+   100→  requireCustomerForSale: boolean
+   101→  allowNegativeStock: boolean
+   102→  maxCartItems: number
+   103→  autoClearCart: boolean
+   104→  enableHoldCart: boolean
+   105→  maxHeldCarts: number
+   106→  roundingMode: string
+   107→  roundingAmount: number
+   108→}
+   109→
+   110→interface InventorySettings {
+   111→  lowStockThreshold: number
+   112→  criticalStockThreshold: number
+   113→  enableStockAlerts: boolean
+   114→  alertFrequency: string
+   115→  enableAutoReorder: boolean
+   116→  reorderPoint: number
+   117→  reorderQuantity: number
+   118→  defaultSupplier: string
+   119→  trackSerialNumbers: boolean
+   120→  trackBatchNumbers: boolean
+   121→  enableExpiryTracking: boolean
+   122→  expiryAlertDays: number
+   123→  enableWarehouseManagement: boolean
+   124→  requireStockCount: boolean
+   125→  stockCountFrequency: string
+   126→  allowNegativeStock: boolean
+   127→  costMethod: string
+   128→  enableMultiWarehouse: boolean
+   129→}
+   130→
+   131→interface TaxSettings {
+   132→  enableTax: boolean
+   133→  defaultTaxRate: number
+   134→  taxInclusivePricing: boolean
+   135→  enableMultiTax: boolean
+   136→  taxRegistrationNumber: string
+   137→  taxFrequency: string
+   138→  enableTaxExempt: boolean
+   139→  taxCalculationMethod: string
+   140→  enableWithholdingTax: boolean
+   141→  withholdingTaxRate: number
+   142→}
+   143→
+   144→interface SalesSettings {
+   145→  enableWholesale: boolean
+   146→  wholesaleMinOrder: number
+   147→  enableSchoolSupply: boolean
+   148→  enableOnlineOrders: boolean
+   149→  orderPrefix: string
+   150→  invoicePrefix: string
+   151→  invoiceAutoNumber: boolean
+   152→  invoiceStartNumber: number
+   153→  quotationPrefix: string
+   154→  enableQuotations: boolean
+   155→  quotationValidityDays: number
+   156→  enableReturns: boolean
+   157→  returnWindowDays: number
+   158→  requireReturnReason: boolean
+   159→  enablePriceOverride: boolean
+   160→  maxDiscountPercent: number
+   161→  requireDiscountApproval: boolean
+   162→  enableLoyaltyProgram: boolean
+   163→  loyaltyPointValue: number
+   164→  loyaltyEarningRate: number
+   165→  minRedeemPoints: number
+   166→}
+   167→
+   168→interface EmailSettings {
+   169→  enableEmailNotifications: boolean
+   170→  smtpHost: string
+   171→  smtpPort: number
+   172→  smtpUser: string
+   173→  smtpPassword: string
+   174→  smtpEncryption: string
+   175→  senderName: string
+   176→  senderEmail: string
+   177→  enableSaleConfirmation: boolean
+   178→  enableLowStockAlert: boolean
+   179→  enableDailyReport: boolean
+   180→  enableWeeklyReport: boolean
+   181→  enableMonthlyReport: boolean
+   182→}
+   183→
+   184→interface NotificationSettings {
+   185→  enableNotifications: boolean
+   186→  enableSoundAlerts: boolean
+   187→  lowStockAlert: boolean
+   188→  newOrderAlert: boolean
+   189→  paymentReceivedAlert: boolean
+   190→  employeeClockInAlert: boolean
+   191→  dailySummaryAlert: boolean
+   192→  systemUpdateAlert: boolean
+   193→}
+   194→
+   195→interface SecuritySettings {
+   196→  enableTwoFactor: boolean
+   197→  sessionTimeout: number
+   198→  maxLoginAttempts: number
+   199→  passwordMinLength: number
+   200→  requireSpecialChars: boolean
+   201→  requireNumbers: boolean
+   202→  requireUppercase: boolean
+   203→  passwordExpiryDays: number
+   204→  enableAuditLog: boolean
+   205→  auditLogRetention: number
+   206→  enableIpWhitelist: boolean
+   207→  ipWhitelist: string
+   208→}
+   209→
+   210→interface PrintingSettings {
+   211→  defaultPrinter: string
+   212→  receiptPrinter: string
+   213→  labelPrinter: string
+   214→  receiptWidth: string
+   215→  labelSize: string
+   216→  enableAutoPrint: boolean
+   217→  printCopies: number
+   218→  enableBarcodeLabels: boolean
+   219→  barcodeFormat: string
+   220→  labelFields: string[]
+   221→}
+   222→
+   223→interface AppearanceSettings {
+   224→  theme: string
+   225→  accentColor: string
+   226→  sidebarPosition: string
+   227→  compactMode: boolean
+   228→  fontSize: string
+   229→  showAnimations: boolean
+   230→  dashboardLayout: string
+   231→}
+   232→
+   233→interface BackupSettings {
+   234→  enableAutoBackup: boolean
+   235→  backupFrequency: string
+   236→  backupRetention: number
+   237→  backupLocation: string
+   238→  lastBackupDate: string
+   239→  enableCloudBackup: boolean
+   240→  cloudProvider: string
+   241→}
+   242→
+   243→interface IntegrationSettings {
+   244→  enableApi: boolean
+   245→  apiKey: string
+   246→  enableWebhooks: boolean
+   247→  webhookUrl: string
+   248→  enableAccountingSync: boolean
+   249→  accountingProvider: string
+   250→  enableEcommerceSync: boolean
+   251→  ecommercePlatform: string
+   252→  enablePaymentGateway: boolean
+   253→  paymentProvider: string
+   254→}
+   255→
+   256→// ─── Default Settings ─────────────────────────────────────────────
+   257→const defaultGeneral: GeneralSettings = {
+   258→  companyName: 'BookFlow Store',
+   259→  legalName: '',
+   260→  taxId: '',
+   261→  registrationNo: '',
+   262→  industry: 'bookstore',
+   263→  website: '',
+   264→  email: '',
+   265→  phone: '',
+   266→  address: '',
+   267→  city: '',
+   268→  state: '',
+   269→  country: 'US',
+   270→  postalCode: '',
+   271→  logo: '',
+   272→  fiscalYearStart: '01-01',
+   273→  dateFormat: 'MM/DD/YYYY',
+   274→  timeFormat: '12h',
+   275→  timezone: 'America/New_York',
+   276→  language: 'en',
+   277→  currency: 'USD',
+   278→  currencySymbol: '$',
+   279→  currencyPosition: 'before',
+   280→  thousandSeparator: ',',
+   281→  decimalSeparator: '.',
+   282→  decimalPlaces: 2,
+   283→}
+   284→
+   285→const defaultPos: PosSettings = {
+   286→  defaultPaymentMethod: 'cash',
+   287→  autoPrintReceipt: true,
+   288→  receiptHeader: 'BookFlow OS',
+   289→  receiptFooter: 'Thank you for your purchase!',
+   290→  receiptPaperSize: '80mm',
+   291→  showTaxOnReceipt: true,
+   292→  showDiscountOnReceipt: true,
+   293→  showCustomerOnReceipt: false,
+   294→  enableBarcodeScanning: true,
+   295→  barcodePrefix: 'BF',
+   296→  enableQuickKeys: true,
+   297→  requireCustomerForSale: false,
+   298→  allowNegativeStock: false,
+   299→  maxCartItems: 99,
+   300→  autoClearCart: true,
+   301→  enableHoldCart: true,
+   302→  maxHeldCarts: 5,
+   303→  roundingMode: 'none',
+   304→  roundingAmount: 0.05,
+   305→}
+   306→
+   307→const defaultInventory: InventorySettings = {
+   308→  lowStockThreshold: 10,
+   309→  criticalStockThreshold: 3,
+   310→  enableStockAlerts: true,
+   311→  alertFrequency: 'daily',
+   312→  enableAutoReorder: false,
+   313→  reorderPoint: 5,
+   314→  reorderQuantity: 20,
+   315→  defaultSupplier: '',
+   316→  trackSerialNumbers: false,
+   317→  trackBatchNumbers: false,
+   318→  enableExpiryTracking: false,
+   319→  expiryAlertDays: 30,
+   320→  enableWarehouseManagement: true,
+   321→  requireStockCount: false,
+   322→  stockCountFrequency: 'monthly',
+   323→  allowNegativeStock: false,
+   324→  costMethod: 'weighted_average',
+   325→  enableMultiWarehouse: false,
+   326→}
+   327→
+   328→const defaultTax: TaxSettings = {
+   329→  enableTax: true,
+   330→  defaultTaxRate: 10,
+   331→  taxInclusivePricing: false,
+   332→  enableMultiTax: false,
+   333→  taxRegistrationNumber: '',
+   334→  taxFrequency: 'monthly',
+   335→  enableTaxExempt: true,
+   336→  taxCalculationMethod: 'exclusive',
+   337→  enableWithholdingTax: false,
+   338→  withholdingTaxRate: 0,
+   339→}
+   340→
+   341→const defaultSales: SalesSettings = {
+   342→  enableWholesale: true,
+   343→  wholesaleMinOrder: 10,
+   344→  enableSchoolSupply: true,
+   345→  enableOnlineOrders: false,
+   346→  orderPrefix: 'ORD',
+   347→  invoicePrefix: 'INV',
+   348→  invoiceAutoNumber: true,
+   349→  invoiceStartNumber: 1001,
+   350→  quotationPrefix: 'QUO',
+   351→  enableQuotations: true,
+   352→  quotationValidityDays: 30,
+   353→  enableReturns: true,
+   354→  returnWindowDays: 14,
+   355→  requireReturnReason: true,
+   356→  enablePriceOverride: false,
+   357→  maxDiscountPercent: 20,
+   358→  requireDiscountApproval: true,
+   359→  enableLoyaltyProgram: true,
+   360→  loyaltyPointValue: 0.01,
+   361→  loyaltyEarningRate: 1,
+   362→  minRedeemPoints: 100,
+   363→}
+   364→
+   365→const defaultEmail: EmailSettings = {
+   366→  enableEmailNotifications: false,
+   367→  smtpHost: '',
+   368→  smtpPort: 587,
+   369→  smtpUser: '',
+   370→  smtpPassword: '',
+   371→  smtpEncryption: 'tls',
+   372→  senderName: 'BookFlow OS',
+   373→  senderEmail: '',
+   374→  enableSaleConfirmation: true,
+   375→  enableLowStockAlert: true,
+   376→  enableDailyReport: false,
+   377→  enableWeeklyReport: true,
+   378→  enableMonthlyReport: true,
+   379→}
+   380→
+   381→const defaultNotification: NotificationSettings = {
+   382→  enableNotifications: true,
+   383→  enableSoundAlerts: true,
+   384→  lowStockAlert: true,
+   385→  newOrderAlert: true,
+   386→  paymentReceivedAlert: true,
+   387→  employeeClockInAlert: false,
+   388→  dailySummaryAlert: true,
+   389→  systemUpdateAlert: true,
+   390→}
+   391→
+   392→const defaultSecurity: SecuritySettings = {
+   393→  enableTwoFactor: false,
+   394→  sessionTimeout: 30,
+   395→  maxLoginAttempts: 5,
+   396→  passwordMinLength: 8,
+   397→  requireSpecialChars: true,
+   398→  requireNumbers: true,
+   399→  requireUppercase: true,
+   400→  passwordExpiryDays: 90,
+   401→  enableAuditLog: true,
+   402→  auditLogRetention: 365,
+   403→  enableIpWhitelist: false,
+   404→  ipWhitelist: '',
+   405→}
+   406→
+   407→const defaultPrinting: PrintingSettings = {
+   408→  defaultPrinter: 'system',
+   409→  receiptPrinter: 'thermal',
+   410→  labelPrinter: 'label',
+   411→  receiptWidth: '80mm',
+   412→  labelSize: '40x20',
+   413→  enableAutoPrint: false,
+   414→  printCopies: 1,
+   415→  enableBarcodeLabels: true,
+   416→  barcodeFormat: 'CODE128',
+   417→  labelFields: ['name', 'price', 'barcode'],
+   418→}
+   419→
+   420→const defaultAppearance: AppearanceSettings = {
+   421→  theme: 'system',
+   422→  accentColor: 'default',
+   423→  sidebarPosition: 'left',
+   424→  compactMode: false,
+   425→  fontSize: 'default',
+   426→  showAnimations: true,
+   427→  dashboardLayout: 'grid',
+   428→}
+   429→
+   430→const defaultBackup: BackupSettings = {
+   431→  enableAutoBackup: true,
+   432→  backupFrequency: 'daily',
+   433→  backupRetention: 30,
+   434→  backupLocation: '/backups',
+   435→  lastBackupDate: '',
+   436→  enableCloudBackup: false,
+   437→  cloudProvider: 'none',
+   438→}
+   439→
+   440→const defaultIntegration: IntegrationSettings = {
+   441→  enableApi: false,
+   442→  apiKey: '',
+   443→  enableWebhooks: false,
+   444→  webhookUrl: '',
+   445→  enableAccountingSync: false,
+   446→  accountingProvider: 'none',
+   447→  enableEcommerceSync: false,
+   448→  ecommercePlatform: 'none',
+   449→  enablePaymentGateway: false,
+   450→  paymentProvider: 'none',
+   451→}
+   452→
+   453→// ─── Section Config ───────────────────────────────────────────────
+   454→const settingsSections = [
+   455→  { id: 'general', label: 'General', icon: Building2, desc: 'Company info, regional & localization' },
+   456→  { id: 'pos', label: 'POS & Retail', icon: ShoppingCart, desc: 'Point of sale configuration' },
+   457→  { id: 'inventory', label: 'Inventory', icon: Warehouse, desc: 'Stock management & warehousing' },
+   458→  { id: 'tax', label: 'Tax & Compliance', icon: Receipt, desc: 'Tax rates, calculation & filing' },
+   459→  { id: 'sales', label: 'Sales & Orders', icon: Truck, desc: 'Wholesale, invoices, returns & loyalty' },
+   460→  { id: 'email', label: 'Email & SMTP', icon: Mail, desc: 'Email server & notification templates' },
+   461→  { id: 'notifications', label: 'Notifications', icon: Bell, desc: 'Alert preferences & sounds' },
+   462→  { id: 'security', label: 'Security', icon: Shield, desc: 'Authentication, passwords & audit logs' },
+   463→  { id: 'printing', label: 'Printing', icon: Printer, desc: 'Receipts, labels & printer setup' },
+   464→  { id: 'appearance', label: 'Appearance', icon: Palette, desc: 'Theme, layout & display options' },
+   465→  { id: 'backup', label: 'Backup & Data', icon: Database, desc: 'Auto-backup & data retention' },
+   466→  { id: 'integrations', label: 'Integrations', icon: Webhook, desc: 'API, webhooks & third-party sync' },
+   467→]
+   468→
+   469→// ─── Component ────────────────────────────────────────────────────
+   470→export function SettingsModule() {
+   471→  const { authUser } = useAppStore()
+   472→  const isViewOnly = authUser?.isViewOnly ?? false
+   473→
+   474→  const [activeSection, setActiveSection] = React.useState('general')
+   475→  const [saving, setSaving] = React.useState(false)
+   476→  const [saved, setSaved] = React.useState(false)
+   477→  const [error, setError] = React.useState<string | null>(null)
+   478→  const [hasChanges, setHasChanges] = React.useState(false)
+   479→
+   480→  // Settings state
+   481→  const [general, setGeneral] = React.useState<GeneralSettings>(defaultGeneral)
+   482→  const [pos, setPos] = React.useState<PosSettings>(defaultPos)
+   483→  const [inventory, setInventory] = React.useState<InventorySettings>(defaultInventory)
+   484→  const [tax, setTax] = React.useState<TaxSettings>(defaultTax)
+   485→  const [sales, setSales] = React.useState<SalesSettings>(defaultSales)
+   486→  const [email, setEmail] = React.useState<EmailSettings>(defaultEmail)
+   487→  const [notifications, setNotifications] = React.useState<NotificationSettings>(defaultNotification)
+   488→  const [security, setSecurity] = React.useState<SecuritySettings>(defaultSecurity)
+   489→  const [printing, setPrinting] = React.useState<PrintingSettings>(defaultPrinting)
+   490→  const [appearance, setAppearance] = React.useState<AppearanceSettings>(defaultAppearance)
+   491→  const [backup, setBackup] = React.useState<BackupSettings>(defaultBackup)
+   492→  const [integrations, setIntegrations] = React.useState<IntegrationSettings>(defaultIntegration)
+   493→
+   494→  // Load settings from API
+   495→  React.useEffect(() => {
+   496→    async function loadSettings() {
+   497→      try {
+   498→        const res = await fetch('/api/settings')
+   499→        if (res.ok) {
+   500→          const data = await res.json()
+   501→          if (data.success && data.settings) {
+   502→            const s = data.settings
+   503→            if (s.general) setGeneral({ ...defaultGeneral, ...s.general })
+   504→            if (s.pos) setPos({ ...defaultPos, ...s.pos })
+   505→            if (s.inventory) setInventory({ ...defaultInventory, ...s.inventory })
+   506→            if (s.tax) setTax({ ...defaultTax, ...s.tax })
+   507→            if (s.sales) setSales({ ...defaultSales, ...s.sales })
+   508→            if (s.email) setEmail({ ...defaultEmail, ...s.email })
+   509→            if (s.notifications) setNotifications({ ...defaultNotification, ...s.notifications })
+   510→            if (s.security) setSecurity({ ...defaultSecurity, ...s.security })
+   511→            if (s.printing) setPrinting({ ...defaultPrinting, ...s.printing })
+   512→            if (s.appearance) setAppearance({ ...defaultAppearance, ...s.appearance })
+   513→            if (s.backup) setBackup({ ...defaultBackup, ...s.backup })
+   514→            if (s.integrations) setIntegrations({ ...defaultIntegration, ...s.integrations })
+   515→          }
+   516→        }
+   517→      } catch {
+   518→        // Settings will use defaults
+   519→      }
+   520→    }
+   521→    loadSettings()
+   522→  }, [])
+   523→
+   524→  // Mark changes
+   525→  const markChanged = React.useCallback(() => {
+   526→    if (!hasChanges) setHasChanges(true)
+   527→    setSaved(false)
+   528→  }, [hasChanges])
+   529→
+   530→  // Save all settings
+   531→  const handleSave = async () => {
+   532→    setSaving(true)
+   533→    setError(null)
+   534→    try {
+   535→      const res = await fetch('/api/settings', {
+   536→        method: 'PUT',
+   537→        headers: { 'Content-Type': 'application/json' },
+   538→        body: JSON.stringify({
+   539→          general, pos, inventory, tax, sales, email,
+   540→          notifications, security, printing, appearance, backup, integrations,
+   541→        }),
+   542→      })
+   543→      if (!res.ok) throw new Error('Failed to save settings')
+   544→      setSaved(true)
+   545→      setHasChanges(false)
+   546→      setTimeout(() => setSaved(false), 3000)
+   547→    } catch (err) {
+   548→      setError(err instanceof Error ? err.message : 'Save failed')
+   549→    } finally {
+   550→      setSaving(false)
+   551→    }
+   552→  }
+   553→
+   554→  // Reset current section
+   555→  const handleResetSection = () => {
+   556→    switch (activeSection) {
+   557→      case 'general': setGeneral(defaultGeneral); break
+   558→      case 'pos': setPos(defaultPos); break
+   559→      case 'inventory': setInventory(defaultInventory); break
+   560→      case 'tax': setTax(defaultTax); break
+   561→      case 'sales': setSales(defaultSales); break
+   562→      case 'email': setEmail(defaultEmail); break
+   563→      case 'notifications': setNotifications(defaultNotification); break
+   564→      case 'security': setSecurity(defaultSecurity); break
+   565→      case 'printing': setPrinting(defaultPrinting); break
+   566→      case 'appearance': setAppearance(defaultAppearance); break
+   567→      case 'backup': setBackup(defaultBackup); break
+   568→      case 'integrations': setIntegrations(defaultIntegration); break
+   569→    }
+   570→    markChanged()
+   571→  }
+   572→
+   573→  const currentSectionInfo = settingsSections.find(s => s.id === activeSection)!
+   574→  const CurrentIcon = currentSectionInfo.icon
+   575→
+   576→  return (
+   577→    <div className="flex flex-col gap-5">
+   578→      {/* Header */}
+   579→      <MacosPageHeader
+   580→        title="Settings"
+   581→        subtitle="Configure your ERP system — manage company, POS, inventory, tax, security, and integrations"
+   582→        icon={Settings}
+   583→        iconColor="text-gg-bridge"
+   584→        iconBg="bg-gg-bridge/10"
+   585→      >
+   586→        {isViewOnly && (
+   587→          <MacosBadge variant="warning" className="flex items-center gap-1.5">
+   588→            <Eye className="size-3" />
+   589→            View Only
+   590→          </MacosBadge>
+   591→        )}
+   592→        <div className="flex items-center gap-2">
+   593→          {hasChanges && (
+   594→            <MacosBadge variant="warning">Unsaved changes</MacosBadge>
+   595→          )}
+   596→          {saved && (
+   597→            <MacosBadge variant="success" className="flex items-center gap-1">
+   598→              <Check className="size-3" />
+   599→              Saved
+   600→            </MacosBadge>
+   601→          )}
+   602→        </div>
+   603→      </MacosPageHeader>
+   604→
+   605→      {/* Error Alert */}
+   606→      {error && (
+   607→        <div className="macos-card macos-shadow-card flex items-center gap-2.5 p-3 border-macos-red/20 bg-macos-red/5 flex-shrink-0">
+   608→          <div className="size-6 rounded-md bg-macos-red/10 flex items-center justify-center flex-shrink-0">
+   609→            <AlertCircle className="size-3.5 text-macos-red" />
+   610→          </div>
+   611→          <span className="text-[13px] font-medium text-macos-red flex-1">{error}</span>
+   612→          <button className="size-6 rounded-md hover:bg-macos-red/10 flex items-center justify-center" onClick={() => setError(null)}>
+   613→            <X className="size-3.5 text-macos-red" />
+   614→          </button>
+   615→        </div>
+   616→      )}
+   617→
+   618→      {/* Main Layout */}
+   619→      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+   620→        {/* Sidebar Navigation */}
+   621→        <div className="lg:col-span-1">
+   622→          <div className="macos-card macos-shadow-card p-2 sticky top-4">
+   623→            <nav className="space-y-0.5">
+   624→              {settingsSections.map((section) => {
+   625→                const Icon = section.icon
+   626→                const isActive = activeSection === section.id
+   627→                return (
+   628→                  <button
+   629→                    key={section.id}
+   630→                    onClick={() => setActiveSection(section.id)}
+   631→                    className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-all ${
+   632→                      isActive
+   633→                        ? 'bg-primary/10 text-primary shadow-[0_0.5px_1px_rgba(0,0,0,0.04)]'
+   634→                        : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
+   635→                    }`}
+   636→                  >
+   637→                    <div className={`size-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+   638→                      isActive ? 'bg-primary/15' : 'bg-secondary/60'
+   639→                    }`}>
+   640→                      <Icon className={`size-3.5 ${isActive ? 'text-primary' : ''}`} strokeWidth={isActive ? 2 : 1.5} />
+   641→                    </div>
+   642→                    <div className="flex-1 min-w-0">
+   643→                      <p className={`text-[12px] font-semibold tracking-tight truncate ${isActive ? 'text-primary' : ''}`}>{section.label}</p>
+   644→                    </div>
+   645→                    {isActive && (
+   646→                      <ChevronRight className="size-3 text-primary/50 flex-shrink-0" />
+   647→                    )}
+   648→                  </button>
+   649→                )
+   650→              })}
+   651→            </nav>
+   652→          </div>
+   653→        </div>
+   654→
+   655→        {/* Content Area */}
+   656→        <div className="lg:col-span-3 space-y-4">
+   657→          {/* Section Header */}
+   658→          <div className="macos-card macos-shadow-card p-4 flex items-center justify-between">
+   659→            <div className="flex items-center gap-3">
+   660→              <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center">
+   661→                <CurrentIcon className="size-4 text-primary" strokeWidth={1.8} />
+   662→              </div>
+   663→              <div>
+   664→                <h2 className="text-[15px] font-bold tracking-tight">{currentSectionInfo.label}</h2>
+   665→                <p className="text-[11px] text-muted-foreground font-medium">{currentSectionInfo.desc}</p>
+   666→              </div>
+   667→            </div>
+   668→            <div className="flex items-center gap-2">
+   669→              <Button
+   670→                variant="ghost"
+   671→                size="sm"
+   672→                className="h-8 rounded-lg text-[12px] font-medium text-muted-foreground hover:text-foreground"
+   673→                onClick={handleResetSection}
+   674→                disabled={isViewOnly}
+   675→              >
+   676→                <RotateCcw className="size-3.5 mr-1.5" />
+   677→                Reset to Default
+   678→              </Button>
+   679→              <Button
+   680→                size="sm"
+   681→                className="h-8 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold px-4"
+   682→                onClick={handleSave}
+   683→                disabled={saving || isViewOnly}
+   684→              >
+   685→                {saving ? (
+   686→                  <><Loader2 className="size-3.5 mr-1.5 animate-spin" />Saving…</>
+   687→                ) : (
+   688→                  <><Save className="size-3.5 mr-1.5" />Save All</>
+   689→                )}
+   690→              </Button>
+   691→            </div>
+   692→          </div>
+   693→
+   694→          {/* ─── General Settings ─── */}
+   695→          {activeSection === 'general' && (
+   696→            <div className="space-y-4">
+   697→              {/* Company Information */}
+   698→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+   699→                <h3 className="macos-section-title flex items-center gap-2">
+   700→                  <Building2 className="size-4 text-gg-bridge" />
+   701→                  Company Information
+   702→                </h3>
+   703→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   704→                  <MacosFormField label="Company Name">
+   705→                    <Input value={general.companyName} onChange={e => { setGeneral(g => ({ ...g, companyName: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   706→                  </MacosFormField>
+   707→                  <MacosFormField label="Legal Name">
+   708→                    <Input value={general.legalName} onChange={e => { setGeneral(g => ({ ...g, legalName: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   709→                  </MacosFormField>
+   710→                  <MacosFormField label="Tax ID / Registration No.">
+   711→                    <Input value={general.taxId} onChange={e => { setGeneral(g => ({ ...g, taxId: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   712→                  </MacosFormField>
+   713→                  <MacosFormField label="Registration Number">
+   714→                    <Input value={general.registrationNo} onChange={e => { setGeneral(g => ({ ...g, registrationNo: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   715→                  </MacosFormField>
+   716→                  <MacosFormField label="Industry">
+   717→                    <Select value={general.industry} onValueChange={v => { setGeneral(g => ({ ...g, industry: v })); markChanged() }} disabled={isViewOnly}>
+   718→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   719→                      <SelectContent>
+   720→                        <SelectItem value="bookstore">Bookstore</SelectItem>
+   721→                        <SelectItem value="publishing">Publishing</SelectItem>
+   722→                        <SelectItem value="stationery">Stationery</SelectItem>
+   723→                        <SelectItem value="education">Education</SelectItem>
+   724→                        <SelectItem value="retail">Retail</SelectItem>
+   725→                        <SelectItem value="wholesale">Wholesale</SelectItem>
+   726→                        <SelectItem value="other">Other</SelectItem>
+   727→                      </SelectContent>
+   728→                    </Select>
+   729→                  </MacosFormField>
+   730→                  <MacosFormField label="Website">
+   731→                    <Input value={general.website} onChange={e => { setGeneral(g => ({ ...g, website: e.target.value })); markChanged() }} disabled={isViewOnly} placeholder="https://" className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   732→                  </MacosFormField>
+   733→                </div>
+   734→              </div>
+   735→
+   736→              {/* Contact Information */}
+   737→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+   738→                <h3 className="macos-section-title flex items-center gap-2">
+   739→                  <Phone className="size-4 text-gg-sunset" />
+   740→                  Contact Information
+   741→                </h3>
+   742→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   743→                  <MacosFormField label="Email">
+   744→                    <Input type="email" value={general.email} onChange={e => { setGeneral(g => ({ ...g, email: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   745→                  </MacosFormField>
+   746→                  <MacosFormField label="Phone">
+   747→                    <Input value={general.phone} onChange={e => { setGeneral(g => ({ ...g, phone: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   748→                  </MacosFormField>
+   749→                  <MacosFormField label="Address" className="md:col-span-2">
+   750→                    <Textarea value={general.address} onChange={e => { setGeneral(g => ({ ...g, address: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] min-h-[60px]" />
+   751→                  </MacosFormField>
+   752→                  <MacosFormField label="City">
+   753→                    <Input value={general.city} onChange={e => { setGeneral(g => ({ ...g, city: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   754→                  </MacosFormField>
+   755→                  <MacosFormField label="State / Province">
+   756→                    <Input value={general.state} onChange={e => { setGeneral(g => ({ ...g, state: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   757→                  </MacosFormField>
+   758→                  <MacosFormField label="Country">
+   759→                    <Select value={general.country} onValueChange={v => { setGeneral(g => ({ ...g, country: v })); markChanged() }} disabled={isViewOnly}>
+   760→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   761→                      <SelectContent>
+   762→                        <SelectItem value="US">United States</SelectItem>
+   763→                        <SelectItem value="GB">United Kingdom</SelectItem>
+   764→                        <SelectItem value="PK">Pakistan</SelectItem>
+   765→                        <SelectItem value="IN">India</SelectItem>
+   766→                        <SelectItem value="AE">UAE</SelectItem>
+   767→                        <SelectItem value="SA">Saudi Arabia</SelectItem>
+   768→                        <SelectItem value="MY">Malaysia</SelectItem>
+   769→                        <SelectItem value="SG">Singapore</SelectItem>
+   770→                        <SelectItem value="AU">Australia</SelectItem>
+   771→                        <SelectItem value="CA">Canada</SelectItem>
+   772→                        <SelectItem value="DE">Germany</SelectItem>
+   773→                        <SelectItem value="FR">France</SelectItem>
+   774→                      </SelectContent>
+   775→                    </Select>
+   776→                  </MacosFormField>
+   777→                  <MacosFormField label="Postal Code">
+   778→                    <Input value={general.postalCode} onChange={e => { setGeneral(g => ({ ...g, postalCode: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   779→                  </MacosFormField>
+   780→                </div>
+   781→              </div>
+   782→
+   783→              {/* Localization */}
+   784→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+   785→                <h3 className="macos-section-title flex items-center gap-2">
+   786→                  <Globe className="size-4 text-macos-blue" />
+   787→                  Localization & Regional
+   788→                </h3>
+   789→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   790→                  <MacosFormField label="Language">
+   791→                    <Select value={general.language} onValueChange={v => { setGeneral(g => ({ ...g, language: v })); markChanged() }} disabled={isViewOnly}>
+   792→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   793→                      <SelectContent>
+   794→                        <SelectItem value="en">English</SelectItem>
+   795→                        <SelectItem value="ur">Urdu</SelectItem>
+   796→                        <SelectItem value="ar">Arabic</SelectItem>
+   797→                        <SelectItem value="hi">Hindi</SelectItem>
+   798→                        <SelectItem value="fr">French</SelectItem>
+   799→                        <SelectItem value="de">German</SelectItem>
+   800→                        <SelectItem value="ms">Malay</SelectItem>
+   801→                      </SelectContent>
+   802→                    </Select>
+   803→                  </MacosFormField>
+   804→                  <MacosFormField label="Timezone">
+   805→                    <Select value={general.timezone} onValueChange={v => { setGeneral(g => ({ ...g, timezone: v })); markChanged() }} disabled={isViewOnly}>
+   806→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   807→                      <SelectContent>
+   808→                        <SelectItem value="America/New_York">Eastern (UTC-5)</SelectItem>
+   809→                        <SelectItem value="America/Chicago">Central (UTC-6)</SelectItem>
+   810→                        <SelectItem value="America/Denver">Mountain (UTC-7)</SelectItem>
+   811→                        <SelectItem value="America/Los_Angeles">Pacific (UTC-8)</SelectItem>
+   812→                        <SelectItem value="Asia/Karachi">Pakistan (UTC+5)</SelectItem>
+   813→                        <SelectItem value="Asia/Kolkata">India (UTC+5:30)</SelectItem>
+   814→                        <SelectItem value="Asia/Dubai">Dubai (UTC+4)</SelectItem>
+   815→                        <SelectItem value="Asia/Singapore">Singapore (UTC+8)</SelectItem>
+   816→                        <SelectItem value="Europe/London">London (UTC+0)</SelectItem>
+   817→                        <SelectItem value="Europe/Berlin">Berlin (UTC+1)</SelectItem>
+   818→                      </SelectContent>
+   819→                    </Select>
+   820→                  </MacosFormField>
+   821→                  <MacosFormField label="Date Format">
+   822→                    <Select value={general.dateFormat} onValueChange={v => { setGeneral(g => ({ ...g, dateFormat: v })); markChanged() }} disabled={isViewOnly}>
+   823→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   824→                      <SelectContent>
+   825→                        <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+   826→                        <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+   827→                        <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+   828→                        <SelectItem value="DD-MM-YYYY">DD-MM-YYYY</SelectItem>
+   829→                      </SelectContent>
+   830→                    </Select>
+   831→                  </MacosFormField>
+   832→                  <MacosFormField label="Time Format">
+   833→                    <Select value={general.timeFormat} onValueChange={v => { setGeneral(g => ({ ...g, timeFormat: v })); markChanged() }} disabled={isViewOnly}>
+   834→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   835→                      <SelectContent>
+   836→                        <SelectItem value="12h">12 Hour</SelectItem>
+   837→                        <SelectItem value="24h">24 Hour</SelectItem>
+   838→                      </SelectContent>
+   839→                    </Select>
+   840→                  </MacosFormField>
+   841→                  <MacosFormField label="Fiscal Year Start">
+   842→                    <Input value={general.fiscalYearStart} onChange={e => { setGeneral(g => ({ ...g, fiscalYearStart: e.target.value })); markChanged() }} disabled={isViewOnly} placeholder="MM-DD" className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   843→                  </MacosFormField>
+   844→                </div>
+   845→              </div>
+   846→
+   847→              {/* Currency */}
+   848→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+   849→                <h3 className="macos-section-title flex items-center gap-2">
+   850→                  <DollarSign className="size-4 text-macos-green" />
+   851→                  Currency Settings
+   852→                </h3>
+   853→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   854→                  <MacosFormField label="Currency">
+   855→                    <Select value={general.currency} onValueChange={v => { setGeneral(g => ({ ...g, currency: v })); markChanged() }} disabled={isViewOnly}>
+   856→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   857→                      <SelectContent>
+   858→                        <SelectItem value="USD">USD — US Dollar</SelectItem>
+   859→                        <SelectItem value="EUR">EUR — Euro</SelectItem>
+   860→                        <SelectItem value="GBP">GBP — British Pound</SelectItem>
+   861→                        <SelectItem value="PKR">PKR — Pakistani Rupee</SelectItem>
+   862→                        <SelectItem value="INR">INR — Indian Rupee</SelectItem>
+   863→                        <SelectItem value="AED">AED — UAE Dirham</SelectItem>
+   864→                        <SelectItem value="SAR">SAR — Saudi Riyal</SelectItem>
+   865→                        <SelectItem value="MYR">MYR — Malaysian Ringgit</SelectItem>
+   866→                        <SelectItem value="SGD">SGD — Singapore Dollar</SelectItem>
+   867→                        <SelectItem value="AUD">AUD — Australian Dollar</SelectItem>
+   868→                        <SelectItem value="CAD">CAD — Canadian Dollar</SelectItem>
+   869→                      </SelectContent>
+   870→                    </Select>
+   871→                  </MacosFormField>
+   872→                  <MacosFormField label="Currency Symbol">
+   873→                    <Input value={general.currencySymbol} onChange={e => { setGeneral(g => ({ ...g, currencySymbol: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-20" />
+   874→                  </MacosFormField>
+   875→                  <MacosFormField label="Symbol Position">
+   876→                    <Select value={general.currencyPosition} onValueChange={v => { setGeneral(g => ({ ...g, currencyPosition: v as 'before' | 'after' })); markChanged() }} disabled={isViewOnly}>
+   877→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   878→                      <SelectContent>
+   879→                        <SelectItem value="before">Before amount ($100)</SelectItem>
+   880→                        <SelectItem value="after">After amount (100$)</SelectItem>
+   881→                      </SelectContent>
+   882→                    </Select>
+   883→                  </MacosFormField>
+   884→                  <MacosFormField label="Decimal Places">
+   885→                    <Select value={String(general.decimalPlaces)} onValueChange={v => { setGeneral(g => ({ ...g, decimalPlaces: parseInt(v) })); markChanged() }} disabled={isViewOnly}>
+   886→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   887→                      <SelectContent>
+   888→                        <SelectItem value="0">0</SelectItem>
+   889→                        <SelectItem value="2">2</SelectItem>
+   890→                        <SelectItem value="3">3</SelectItem>
+   891→                      </SelectContent>
+   892→                    </Select>
+   893→                  </MacosFormField>
+   894→                  <MacosFormField label="Thousand Separator">
+   895→                    <Input value={general.thousandSeparator} onChange={e => { setGeneral(g => ({ ...g, thousandSeparator: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-20" />
+   896→                  </MacosFormField>
+   897→                  <MacosFormField label="Decimal Separator">
+   898→                    <Input value={general.decimalSeparator} onChange={e => { setGeneral(g => ({ ...g, decimalSeparator: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-20" />
+   899→                  </MacosFormField>
+   900→                </div>
+   901→              </div>
+   902→            </div>
+   903→          )}
+   904→
+   905→          {/* ─── POS Settings ─── */}
+   906→          {activeSection === 'pos' && (
+   907→            <div className="space-y-4">
+   908→              {/* Receipt Configuration */}
+   909→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+   910→                <h3 className="macos-section-title flex items-center gap-2">
+   911→                  <Receipt className="size-4 text-gg-bridge" />
+   912→                  Receipt Configuration
+   913→                </h3>
+   914→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   915→                  <MacosFormField label="Receipt Header">
+   916→                    <Input value={pos.receiptHeader} onChange={e => { setPos(p => ({ ...p, receiptHeader: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   917→                  </MacosFormField>
+   918→                  <MacosFormField label="Receipt Footer">
+   919→                    <Input value={pos.receiptFooter} onChange={e => { setPos(p => ({ ...p, receiptFooter: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+   920→                  </MacosFormField>
+   921→                  <MacosFormField label="Paper Size">
+   922→                    <Select value={pos.receiptPaperSize} onValueChange={v => { setPos(p => ({ ...p, receiptPaperSize: v })); markChanged() }} disabled={isViewOnly}>
+   923→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   924→                      <SelectContent>
+   925→                        <SelectItem value="58mm">58mm (Small)</SelectItem>
+   926→                        <SelectItem value="80mm">80mm (Standard)</SelectItem>
+   927→                        <SelectItem value="A4">A4 (Full Page)</SelectItem>
+   928→                      </SelectContent>
+   929→                    </Select>
+   930→                  </MacosFormField>
+   931→                  <MacosFormField label="Default Payment Method">
+   932→                    <Select value={pos.defaultPaymentMethod} onValueChange={v => { setPos(p => ({ ...p, defaultPaymentMethod: v })); markChanged() }} disabled={isViewOnly}>
+   933→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+   934→                      <SelectContent>
+   935→                        <SelectItem value="cash">Cash</SelectItem>
+   936→                        <SelectItem value="card">Card</SelectItem>
+   937→                        <SelectItem value="bank">Bank Transfer</SelectItem>
+   938→                        <SelectItem value="wallet">Digital Wallet</SelectItem>
+   939→                      </SelectContent>
+   940→                    </Select>
+   941→                  </MacosFormField>
+   942→                </div>
+   943→                <div className="space-y-3 pt-1">
+   944→                  <div className="flex items-center justify-between">
+   945→                    <div>
+   946→                      <Label className="text-[12px] font-semibold tracking-tight">Auto-Print Receipt</Label>
+   947→                      <p className="text-[11px] text-muted-foreground">Print receipt automatically after sale</p>
+   948→                    </div>
+   949→                    <Switch checked={pos.autoPrintReceipt} onCheckedChange={v => { setPos(p => ({ ...p, autoPrintReceipt: v })); markChanged() }} disabled={isViewOnly} />
+   950→                  </div>
+   951→                  <div className="flex items-center justify-between">
+   952→                    <div>
+   953→                      <Label className="text-[12px] font-semibold tracking-tight">Show Tax on Receipt</Label>
+   954→                    </div>
+   955→                    <Switch checked={pos.showTaxOnReceipt} onCheckedChange={v => { setPos(p => ({ ...p, showTaxOnReceipt: v })); markChanged() }} disabled={isViewOnly} />
+   956→                  </div>
+   957→                  <div className="flex items-center justify-between">
+   958→                    <div>
+   959→                      <Label className="text-[12px] font-semibold tracking-tight">Show Discount on Receipt</Label>
+   960→                    </div>
+   961→                    <Switch checked={pos.showDiscountOnReceipt} onCheckedChange={v => { setPos(p => ({ ...p, showDiscountOnReceipt: v })); markChanged() }} disabled={isViewOnly} />
+   962→                  </div>
+   963→                  <div className="flex items-center justify-between">
+   964→                    <div>
+   965→                      <Label className="text-[12px] font-semibold tracking-tight">Show Customer on Receipt</Label>
+   966→                    </div>
+   967→                    <Switch checked={pos.showCustomerOnReceipt} onCheckedChange={v => { setPos(p => ({ ...p, showCustomerOnReceipt: v })); markChanged() }} disabled={isViewOnly} />
+   968→                  </div>
+   969→                </div>
+   970→              </div>
+   971→
+   972→              {/* Scanning & Input */}
+   973→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+   974→                <h3 className="macos-section-title flex items-center gap-2">
+   975→                  <Hash className="size-4 text-macos-purple" />
+   976→                  Scanning & Input
+   977→                </h3>
+   978→                <div className="space-y-3">
+   979→                  <div className="flex items-center justify-between">
+   980→                    <div>
+   981→                      <Label className="text-[12px] font-semibold tracking-tight">Barcode Scanning</Label>
+   982→                      <p className="text-[11px] text-muted-foreground">Enable barcode scanner input</p>
+   983→                    </div>
+   984→                    <Switch checked={pos.enableBarcodeScanning} onCheckedChange={v => { setPos(p => ({ ...p, enableBarcodeScanning: v })); markChanged() }} disabled={isViewOnly} />
+   985→                  </div>
+   986→                  <MacosFormField label="Barcode Prefix">
+   987→                    <Input value={pos.barcodePrefix} onChange={e => { setPos(p => ({ ...p, barcodePrefix: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-24" />
+   988→                  </MacosFormField>
+   989→                  <div className="flex items-center justify-between">
+   990→                    <div>
+   991→                      <Label className="text-[12px] font-semibold tracking-tight">Quick Keys</Label>
+   992→                      <p className="text-[11px] text-muted-foreground">Enable quick-add product keys</p>
+   993→                    </div>
+   994→                    <Switch checked={pos.enableQuickKeys} onCheckedChange={v => { setPos(p => ({ ...p, enableQuickKeys: v })); markChanged() }} disabled={isViewOnly} />
+   995→                  </div>
+   996→                </div>
+   997→              </div>
+   998→
+   999→              {/* Cart & Checkout */}
+  1000→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1001→                <h3 className="macos-section-title flex items-center gap-2">
+  1002→                  <ShoppingCart className="size-4 text-macos-green" />
+  1003→                  Cart & Checkout Behavior
+  1004→                </h3>
+  1005→                <div className="space-y-3">
+  1006→                  <div className="flex items-center justify-between">
+  1007→                    <div>
+  1008→                      <Label className="text-[12px] font-semibold tracking-tight">Require Customer for Sale</Label>
+  1009→                      <p className="text-[11px] text-muted-foreground">Must select a customer to complete sale</p>
+  1010→                    </div>
+  1011→                    <Switch checked={pos.requireCustomerForSale} onCheckedChange={v => { setPos(p => ({ ...p, requireCustomerForSale: v })); markChanged() }} disabled={isViewOnly} />
+  1012→                  </div>
+  1013→                  <div className="flex items-center justify-between">
+  1014→                    <div>
+  1015→                      <Label className="text-[12px] font-semibold tracking-tight">Allow Negative Stock Sale</Label>
+  1016→                      <p className="text-[11px] text-muted-foreground">Allow selling items with zero stock</p>
+  1017→                    </div>
+  1018→                    <Switch checked={pos.allowNegativeStock} onCheckedChange={v => { setPos(p => ({ ...p, allowNegativeStock: v })); markChanged() }} disabled={isViewOnly} />
+  1019→                  </div>
+  1020→                  <div className="flex items-center justify-between">
+  1021→                    <div>
+  1022→                      <Label className="text-[12px] font-semibold tracking-tight">Auto-Clear Cart After Sale</Label>
+  1023→                    </div>
+  1024→                    <Switch checked={pos.autoClearCart} onCheckedChange={v => { setPos(p => ({ ...p, autoClearCart: v })); markChanged() }} disabled={isViewOnly} />
+  1025→                  </div>
+  1026→                  <div className="flex items-center justify-between">
+  1027→                    <div>
+  1028→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Hold/Suspend Cart</Label>
+  1029→                      <p className="text-[11px] text-muted-foreground">Allow suspending transactions</p>
+  1030→                    </div>
+  1031→                    <Switch checked={pos.enableHoldCart} onCheckedChange={v => { setPos(p => ({ ...p, enableHoldCart: v })); markChanged() }} disabled={isViewOnly} />
+  1032→                  </div>
+  1033→                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1034→                    <MacosFormField label="Max Cart Items">
+  1035→                      <Input type="number" value={pos.maxCartItems} onChange={e => { setPos(p => ({ ...p, maxCartItems: parseInt(e.target.value) || 99 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1036→                    </MacosFormField>
+  1037→                    <MacosFormField label="Max Held Carts">
+  1038→                      <Input type="number" value={pos.maxHeldCarts} onChange={e => { setPos(p => ({ ...p, maxHeldCarts: parseInt(e.target.value) || 5 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1039→                    </MacosFormField>
+  1040→                  </div>
+  1041→                </div>
+  1042→              </div>
+  1043→
+  1044→              {/* Rounding */}
+  1045→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1046→                <h3 className="macos-section-title flex items-center gap-2">
+  1047→                  <Percent className="size-4 text-macos-orange" />
+  1048→                  Rounding
+  1049→                </h3>
+  1050→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1051→                  <MacosFormField label="Rounding Mode">
+  1052→                    <Select value={pos.roundingMode} onValueChange={v => { setPos(p => ({ ...p, roundingMode: v })); markChanged() }} disabled={isViewOnly}>
+  1053→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1054→                      <SelectContent>
+  1055→                        <SelectItem value="none">No Rounding</SelectItem>
+  1056→                        <SelectItem value="nearest">Nearest 0.05</SelectItem>
+  1057→                        <SelectItem value="up">Round Up</SelectItem>
+  1058→                        <SelectItem value="down">Round Down</SelectItem>
+  1059→                      </SelectContent>
+  1060→                    </Select>
+  1061→                  </MacosFormField>
+  1062→                  <MacosFormField label="Rounding Amount">
+  1063→                    <Input type="number" step="0.01" value={pos.roundingAmount} onChange={e => { setPos(p => ({ ...p, roundingAmount: parseFloat(e.target.value) || 0 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1064→                  </MacosFormField>
+  1065→                </div>
+  1066→              </div>
+  1067→            </div>
+  1068→          )}
+  1069→
+  1070→          {/* ─── Inventory Settings ─── */}
+  1071→          {activeSection === 'inventory' && (
+  1072→            <div className="space-y-4">
+  1073→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1074→                <h3 className="macos-section-title flex items-center gap-2">
+  1075→                  <Package className="size-4 text-macos-orange" />
+  1076→                  Stock Thresholds
+  1077→                </h3>
+  1078→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1079→                  <MacosFormField label="Low Stock Threshold">
+  1080→                    <Input type="number" value={inventory.lowStockThreshold} onChange={e => { setInventory(i => ({ ...i, lowStockThreshold: parseInt(e.target.value) || 10 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1081→                  </MacosFormField>
+  1082→                  <MacosFormField label="Critical Stock Threshold">
+  1083→                    <Input type="number" value={inventory.criticalStockThreshold} onChange={e => { setInventory(i => ({ ...i, criticalStockThreshold: parseInt(e.target.value) || 3 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1084→                  </MacosFormField>
+  1085→                </div>
+  1086→                <div className="space-y-3">
+  1087→                  <div className="flex items-center justify-between">
+  1088→                    <div>
+  1089→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Stock Alerts</Label>
+  1090→                    </div>
+  1091→                    <Switch checked={inventory.enableStockAlerts} onCheckedChange={v => { setInventory(i => ({ ...i, enableStockAlerts: v })); markChanged() }} disabled={isViewOnly} />
+  1092→                  </div>
+  1093→                  <MacosFormField label="Alert Frequency">
+  1094→                    <Select value={inventory.alertFrequency} onValueChange={v => { setInventory(i => ({ ...i, alertFrequency: v })); markChanged() }} disabled={isViewOnly}>
+  1095→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-40"><SelectValue /></SelectTrigger>
+  1096→                      <SelectContent>
+  1097→                        <SelectItem value="realtime">Real-time</SelectItem>
+  1098→                        <SelectItem value="hourly">Hourly</SelectItem>
+  1099→                        <SelectItem value="daily">Daily</SelectItem>
+  1100→                        <SelectItem value="weekly">Weekly</SelectItem>
+  1101→                      </SelectContent>
+  1102→                    </Select>
+  1103→                  </MacosFormField>
+  1104→                </div>
+  1105→              </div>
+  1106→
+  1107→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1108→                <h3 className="macos-section-title flex items-center gap-2">
+  1109→                  <RotateCcw className="size-4 text-macos-blue" />
+  1110→                  Auto Reorder
+  1111→                </h3>
+  1112→                <div className="space-y-3">
+  1113→                  <div className="flex items-center justify-between">
+  1114→                    <div>
+  1115→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Auto-Reorder</Label>
+  1116→                      <p className="text-[11px] text-muted-foreground">Automatically create purchase orders when stock is low</p>
+  1117→                    </div>
+  1118→                    <Switch checked={inventory.enableAutoReorder} onCheckedChange={v => { setInventory(i => ({ ...i, enableAutoReorder: v })); markChanged() }} disabled={isViewOnly} />
+  1119→                  </div>
+  1120→                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1121→                    <MacosFormField label="Reorder Point">
+  1122→                      <Input type="number" value={inventory.reorderPoint} onChange={e => { setInventory(i => ({ ...i, reorderPoint: parseInt(e.target.value) || 5 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1123→                    </MacosFormField>
+  1124→                    <MacosFormField label="Reorder Quantity">
+  1125→                      <Input type="number" value={inventory.reorderQuantity} onChange={e => { setInventory(i => ({ ...i, reorderQuantity: parseInt(e.target.value) || 20 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1126→                    </MacosFormField>
+  1127→                  </div>
+  1128→                </div>
+  1129→              </div>
+  1130→
+  1131→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1132→                <h3 className="macos-section-title flex items-center gap-2">
+  1133→                  <Warehouse className="size-4 text-gg-bridge" />
+  1134→                  Warehouse & Tracking
+  1135→                </h3>
+  1136→                <div className="space-y-3">
+  1137→                  <div className="flex items-center justify-between">
+  1138→                    <Label className="text-[12px] font-semibold tracking-tight">Warehouse Management</Label>
+  1139→                    <Switch checked={inventory.enableWarehouseManagement} onCheckedChange={v => { setInventory(i => ({ ...i, enableWarehouseManagement: v })); markChanged() }} disabled={isViewOnly} />
+  1140→                  </div>
+  1141→                  <div className="flex items-center justify-between">
+  1142→                    <Label className="text-[12px] font-semibold tracking-tight">Multi-Warehouse</Label>
+  1143→                    <Switch checked={inventory.enableMultiWarehouse} onCheckedChange={v => { setInventory(i => ({ ...i, enableMultiWarehouse: v })); markChanged() }} disabled={isViewOnly} />
+  1144→                  </div>
+  1145→                  <div className="flex items-center justify-between">
+  1146→                    <Label className="text-[12px] font-semibold tracking-tight">Track Serial Numbers</Label>
+  1147→                    <Switch checked={inventory.trackSerialNumbers} onCheckedChange={v => { setInventory(i => ({ ...i, trackSerialNumbers: v })); markChanged() }} disabled={isViewOnly} />
+  1148→                  </div>
+  1149→                  <div className="flex items-center justify-between">
+  1150→                    <Label className="text-[12px] font-semibold tracking-tight">Track Batch Numbers</Label>
+  1151→                    <Switch checked={inventory.trackBatchNumbers} onCheckedChange={v => { setInventory(i => ({ ...i, trackBatchNumbers: v })); markChanged() }} disabled={isViewOnly} />
+  1152→                  </div>
+  1153→                  <div className="flex items-center justify-between">
+  1154→                    <div>
+  1155→                      <Label className="text-[12px] font-semibold tracking-tight">Expiry Tracking</Label>
+  1156→                      <p className="text-[11px] text-muted-foreground">Track product expiration dates</p>
+  1157→                    </div>
+  1158→                    <Switch checked={inventory.enableExpiryTracking} onCheckedChange={v => { setInventory(i => ({ ...i, enableExpiryTracking: v })); markChanged() }} disabled={isViewOnly} />
+  1159→                  </div>
+  1160→                  {inventory.enableExpiryTracking && (
+  1161→                    <MacosFormField label="Expiry Alert (Days Before)">
+  1162→                      <Input type="number" value={inventory.expiryAlertDays} onChange={e => { setInventory(i => ({ ...i, expiryAlertDays: parseInt(e.target.value) || 30 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-24" />
+  1163→                    </MacosFormField>
+  1164→                  )}
+  1165→                  <div className="flex items-center justify-between">
+  1166→                    <Label className="text-[12px] font-semibold tracking-tight">Allow Negative Stock</Label>
+  1167→                    <Switch checked={inventory.allowNegativeStock} onCheckedChange={v => { setInventory(i => ({ ...i, allowNegativeStock: v })); markChanged() }} disabled={isViewOnly} />
+  1168→                  </div>
+  1169→                  <MacosFormField label="Cost Calculation Method">
+  1170→                    <Select value={inventory.costMethod} onValueChange={v => { setInventory(i => ({ ...i, costMethod: v })); markChanged() }} disabled={isViewOnly}>
+  1171→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-52"><SelectValue /></SelectTrigger>
+  1172→                      <SelectContent>
+  1173→                        <SelectItem value="fifo">FIFO (First In, First Out)</SelectItem>
+  1174→                        <SelectItem value="lifo">LIFO (Last In, First Out)</SelectItem>
+  1175→                        <SelectItem value="weighted_average">Weighted Average</SelectItem>
+  1176→                        <SelectItem value="standard">Standard Cost</SelectItem>
+  1177→                      </SelectContent>
+  1178→                    </Select>
+  1179→                  </MacosFormField>
+  1180→                </div>
+  1181→              </div>
+  1182→            </div>
+  1183→          )}
+  1184→
+  1185→          {/* ─── Tax Settings ─── */}
+  1186→          {activeSection === 'tax' && (
+  1187→            <div className="space-y-4">
+  1188→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1189→                <h3 className="macos-section-title flex items-center gap-2">
+  1190→                  <Receipt className="size-4 text-macos-green" />
+  1191→                  Tax Configuration
+  1192→                </h3>
+  1193→                <div className="space-y-3">
+  1194→                  <div className="flex items-center justify-between">
+  1195→                    <div>
+  1196→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Tax</Label>
+  1197→                      <p className="text-[11px] text-muted-foreground">Apply tax to sales transactions</p>
+  1198→                    </div>
+  1199→                    <Switch checked={tax.enableTax} onCheckedChange={v => { setTax(t => ({ ...t, enableTax: v })); markChanged() }} disabled={isViewOnly} />
+  1200→                  </div>
+  1201→                  {tax.enableTax && (
+  1202→                    <>
+  1203→                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1204→                        <MacosFormField label="Default Tax Rate (%)">
+  1205→                          <Input type="number" step="0.5" value={tax.defaultTaxRate} onChange={e => { setTax(t => ({ ...t, defaultTaxRate: parseFloat(e.target.value) || 0 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1206→                        </MacosFormField>
+  1207→                        <MacosFormField label="Tax Registration Number">
+  1208→                          <Input value={tax.taxRegistrationNumber} onChange={e => { setTax(t => ({ ...t, taxRegistrationNumber: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1209→                        </MacosFormField>
+  1210→                      </div>
+  1211→                      <div className="flex items-center justify-between">
+  1212→                        <div>
+  1213→                          <Label className="text-[12px] font-semibold tracking-tight">Tax-Inclusive Pricing</Label>
+  1214→                          <p className="text-[11px] text-muted-foreground">Product prices include tax</p>
+  1215→                        </div>
+  1216→                        <Switch checked={tax.taxInclusivePricing} onCheckedChange={v => { setTax(t => ({ ...t, taxInclusivePricing: v })); markChanged() }} disabled={isViewOnly} />
+  1217→                      </div>
+  1218→                      <MacosFormField label="Tax Calculation Method">
+  1219→                        <Select value={tax.taxCalculationMethod} onValueChange={v => { setTax(t => ({ ...t, taxCalculationMethod: v })); markChanged() }} disabled={isViewOnly}>
+  1220→                          <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-52"><SelectValue /></SelectTrigger>
+  1221→                          <SelectContent>
+  1222→                            <SelectItem value="exclusive">Exclusive (Add tax on top)</SelectItem>
+  1223→                            <SelectItem value="inclusive">Inclusive (Tax included in price)</SelectItem>
+  1224→                          </SelectContent>
+  1225→                        </Select>
+  1226→                      </MacosFormField>
+  1227→                      <div className="flex items-center justify-between">
+  1228→                        <Label className="text-[12px] font-semibold tracking-tight">Enable Multi-Tax</Label>
+  1229→                        <Switch checked={tax.enableMultiTax} onCheckedChange={v => { setTax(t => ({ ...t, enableMultiTax: v })); markChanged() }} disabled={isViewOnly} />
+  1230→                      </div>
+  1231→                      <div className="flex items-center justify-between">
+  1232→                        <Label className="text-[12px] font-semibold tracking-tight">Tax-Exempt Customers</Label>
+  1233→                        <Switch checked={tax.enableTaxExempt} onCheckedChange={v => { setTax(t => ({ ...t, enableTaxExempt: v })); markChanged() }} disabled={isViewOnly} />
+  1234→                      </div>
+  1235→                      <MacosFormField label="Tax Filing Frequency">
+  1236→                        <Select value={tax.taxFrequency} onValueChange={v => { setTax(t => ({ ...t, taxFrequency: v })); markChanged() }} disabled={isViewOnly}>
+  1237→                          <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-40"><SelectValue /></SelectTrigger>
+  1238→                          <SelectContent>
+  1239→                            <SelectItem value="monthly">Monthly</SelectItem>
+  1240→                            <SelectItem value="quarterly">Quarterly</SelectItem>
+  1241→                            <SelectItem value="annually">Annually</SelectItem>
+  1242→                          </SelectContent>
+  1243→                        </Select>
+  1244→                      </MacosFormField>
+  1245→                    </>
+  1246→                  )}
+  1247→                </div>
+  1248→              </div>
+  1249→
+  1250→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1251→                <h3 className="macos-section-title flex items-center gap-2">
+  1252→                  <DollarSign className="size-4 text-macos-red" />
+  1253→                  Withholding Tax
+  1254→                </h3>
+  1255→                <div className="space-y-3">
+  1256→                  <div className="flex items-center justify-between">
+  1257→                    <div>
+  1258→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Withholding Tax</Label>
+  1259→                    </div>
+  1260→                    <Switch checked={tax.enableWithholdingTax} onCheckedChange={v => { setTax(t => ({ ...t, enableWithholdingTax: v })); markChanged() }} disabled={isViewOnly} />
+  1261→                  </div>
+  1262→                  {tax.enableWithholdingTax && (
+  1263→                    <MacosFormField label="Withholding Tax Rate (%)">
+  1264→                      <Input type="number" step="0.5" value={tax.withholdingTaxRate} onChange={e => { setTax(t => ({ ...t, withholdingTaxRate: parseFloat(e.target.value) || 0 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-32" />
+  1265→                    </MacosFormField>
+  1266→                  )}
+  1267→                </div>
+  1268→              </div>
+  1269→            </div>
+  1270→          )}
+  1271→
+  1272→          {/* ─── Sales & Orders ─── */}
+  1273→          {activeSection === 'sales' && (
+  1274→            <div className="space-y-4">
+  1275→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1276→                <h3 className="macos-section-title flex items-center gap-2">
+  1277→                  <Truck className="size-4 text-gg-sunset" />
+  1278→                  Sales Channels
+  1279→                </h3>
+  1280→                <div className="space-y-3">
+  1281→                  <div className="flex items-center justify-between">
+  1282→                    <div>
+  1283→                      <Label className="text-[12px] font-semibold tracking-tight">Wholesale</Label>
+  1284→                      <p className="text-[11px] text-muted-foreground">Enable wholesale ordering</p>
+  1285→                    </div>
+  1286→                    <Switch checked={sales.enableWholesale} onCheckedChange={v => { setSales(s => ({ ...s, enableWholesale: v })); markChanged() }} disabled={isViewOnly} />
+  1287→                  </div>
+  1288→                  {sales.enableWholesale && (
+  1289→                    <MacosFormField label="Minimum Wholesale Order Qty">
+  1290→                      <Input type="number" value={sales.wholesaleMinOrder} onChange={e => { setSales(s => ({ ...s, wholesaleMinOrder: parseInt(e.target.value) || 10 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-32" />
+  1291→                    </MacosFormField>
+  1292→                  )}
+  1293→                  <div className="flex items-center justify-between">
+  1294→                    <Label className="text-[12px] font-semibold tracking-tight">School Supply</Label>
+  1295→                    <Switch checked={sales.enableSchoolSupply} onCheckedChange={v => { setSales(s => ({ ...s, enableSchoolSupply: v })); markChanged() }} disabled={isViewOnly} />
+  1296→                  </div>
+  1297→                  <div className="flex items-center justify-between">
+  1298→                    <Label className="text-[12px] font-semibold tracking-tight">Online Orders</Label>
+  1299→                    <Switch checked={sales.enableOnlineOrders} onCheckedChange={v => { setSales(s => ({ ...s, enableOnlineOrders: v })); markChanged() }} disabled={isViewOnly} />
+  1300→                  </div>
+  1301→                </div>
+  1302→              </div>
+  1303→
+  1304→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1305→                <h3 className="macos-section-title flex items-center gap-2">
+  1306→                  <FileText className="size-4 text-macos-blue" />
+  1307→                  Invoicing & Quotations
+  1308→                </h3>
+  1309→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1310→                  <MacosFormField label="Order Prefix">
+  1311→                    <Input value={sales.orderPrefix} onChange={e => { setSales(s => ({ ...s, orderPrefix: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1312→                  </MacosFormField>
+  1313→                  <MacosFormField label="Invoice Prefix">
+  1314→                    <Input value={sales.invoicePrefix} onChange={e => { setSales(s => ({ ...s, invoicePrefix: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1315→                  </MacosFormField>
+  1316→                  <MacosFormField label="Invoice Start Number">
+  1317→                    <Input type="number" value={sales.invoiceStartNumber} onChange={e => { setSales(s => ({ ...s, invoiceStartNumber: parseInt(e.target.value) || 1001 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1318→                  </MacosFormField>
+  1319→                  <MacosFormField label="Quotation Prefix">
+  1320→                    <Input value={sales.quotationPrefix} onChange={e => { setSales(s => ({ ...s, quotationPrefix: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1321→                  </MacosFormField>
+  1322→                </div>
+  1323→                <div className="space-y-3">
+  1324→                  <div className="flex items-center justify-between">
+  1325→                    <Label className="text-[12px] font-semibold tracking-tight">Auto-Number Invoices</Label>
+  1326→                    <Switch checked={sales.invoiceAutoNumber} onCheckedChange={v => { setSales(s => ({ ...s, invoiceAutoNumber: v })); markChanged() }} disabled={isViewOnly} />
+  1327→                  </div>
+  1328→                  <div className="flex items-center justify-between">
+  1329→                    <Label className="text-[12px] font-semibold tracking-tight">Enable Quotations</Label>
+  1330→                    <Switch checked={sales.enableQuotations} onCheckedChange={v => { setSales(s => ({ ...s, enableQuotations: v })); markChanged() }} disabled={isViewOnly} />
+  1331→                  </div>
+  1332→                  {sales.enableQuotations && (
+  1333→                    <MacosFormField label="Quotation Validity (Days)">
+  1334→                      <Input type="number" value={sales.quotationValidityDays} onChange={e => { setSales(s => ({ ...s, quotationValidityDays: parseInt(e.target.value) || 30 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-32" />
+  1335→                    </MacosFormField>
+  1336→                  )}
+  1337→                </div>
+  1338→              </div>
+  1339→
+  1340→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1341→                <h3 className="macos-section-title flex items-center gap-2">
+  1342→                  <RotateCcw className="size-4 text-macos-red" />
+  1343→                  Returns & Discounts
+  1344→                </h3>
+  1345→                <div className="space-y-3">
+  1346→                  <div className="flex items-center justify-between">
+  1347→                    <Label className="text-[12px] font-semibold tracking-tight">Enable Returns</Label>
+  1348→                    <Switch checked={sales.enableReturns} onCheckedChange={v => { setSales(s => ({ ...s, enableReturns: v })); markChanged() }} disabled={isViewOnly} />
+  1349→                  </div>
+  1350→                  {sales.enableReturns && (
+  1351→                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1352→                      <MacosFormField label="Return Window (Days)">
+  1353→                        <Input type="number" value={sales.returnWindowDays} onChange={e => { setSales(s => ({ ...s, returnWindowDays: parseInt(e.target.value) || 14 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1354→                      </MacosFormField>
+  1355→                      <div className="flex items-center justify-between pt-5">
+  1356→                        <Label className="text-[12px] font-semibold tracking-tight">Require Return Reason</Label>
+  1357→                        <Switch checked={sales.requireReturnReason} onCheckedChange={v => { setSales(s => ({ ...s, requireReturnReason: v })); markChanged() }} disabled={isViewOnly} />
+  1358→                      </div>
+  1359→                    </div>
+  1360→                  )}
+  1361→                  <Separator className="opacity-40" />
+  1362→                  <div className="flex items-center justify-between">
+  1363→                    <Label className="text-[12px] font-semibold tracking-tight">Enable Price Override</Label>
+  1364→                    <Switch checked={sales.enablePriceOverride} onCheckedChange={v => { setSales(s => ({ ...s, enablePriceOverride: v })); markChanged() }} disabled={isViewOnly} />
+  1365→                  </div>
+  1366→                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1367→                    <MacosFormField label="Max Discount (%)">
+  1368→                      <Input type="number" value={sales.maxDiscountPercent} onChange={e => { setSales(s => ({ ...s, maxDiscountPercent: parseInt(e.target.value) || 20 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1369→                    </MacosFormField>
+  1370→                    <div className="flex items-center justify-between pt-5">
+  1371→                      <Label className="text-[12px] font-semibold tracking-tight">Require Discount Approval</Label>
+  1372→                      <Switch checked={sales.requireDiscountApproval} onCheckedChange={v => { setSales(s => ({ ...s, requireDiscountApproval: v })); markChanged() }} disabled={isViewOnly} />
+  1373→                    </div>
+  1374→                  </div>
+  1375→                </div>
+  1376→              </div>
+  1377→
+  1378→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1379→                <h3 className="macos-section-title flex items-center gap-2">
+  1380→                  <Users className="size-4 text-gg-golden" />
+  1381→                  Loyalty Program
+  1382→                </h3>
+  1383→                <div className="space-y-3">
+  1384→                  <div className="flex items-center justify-between">
+  1385→                    <div>
+  1386→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Loyalty Program</Label>
+  1387→                      <p className="text-[11px] text-muted-foreground">Reward customers with points on purchases</p>
+  1388→                    </div>
+  1389→                    <Switch checked={sales.enableLoyaltyProgram} onCheckedChange={v => { setSales(s => ({ ...s, enableLoyaltyProgram: v })); markChanged() }} disabled={isViewOnly} />
+  1390→                  </div>
+  1391→                  {sales.enableLoyaltyProgram && (
+  1392→                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  1393→                      <MacosFormField label="Point Value ($)">
+  1394→                        <Input type="number" step="0.001" value={sales.loyaltyPointValue} onChange={e => { setSales(s => ({ ...s, loyaltyPointValue: parseFloat(e.target.value) || 0.01 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1395→                      </MacosFormField>
+  1396→                      <MacosFormField label="Earning Rate (pts/$)">
+  1397→                        <Input type="number" value={sales.loyaltyEarningRate} onChange={e => { setSales(s => ({ ...s, loyaltyEarningRate: parseInt(e.target.value) || 1 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1398→                      </MacosFormField>
+  1399→                      <MacosFormField label="Min Redeem Points">
+  1400→                        <Input type="number" value={sales.minRedeemPoints} onChange={e => { setSales(s => ({ ...s, minRedeemPoints: parseInt(e.target.value) || 100 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1401→                      </MacosFormField>
+  1402→                    </div>
+  1403→                  )}
+  1404→                </div>
+  1405→              </div>
+  1406→            </div>
+  1407→          )}
+  1408→
+  1409→          {/* ─── Email & SMTP ─── */}
+  1410→          {activeSection === 'email' && (
+  1411→            <div className="space-y-4">
+  1412→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1413→                <h3 className="macos-section-title flex items-center gap-2">
+  1414→                  <Mail className="size-4 text-macos-blue" />
+  1415→                  SMTP Configuration
+  1416→                </h3>
+  1417→                <div className="space-y-3">
+  1418→                  <div className="flex items-center justify-between">
+  1419→                    <div>
+  1420→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Email Notifications</Label>
+  1421→                    </div>
+  1422→                    <Switch checked={email.enableEmailNotifications} onCheckedChange={v => { setEmail(e => ({ ...e, enableEmailNotifications: v })); markChanged() }} disabled={isViewOnly} />
+  1423→                  </div>
+  1424→                  {email.enableEmailNotifications && (
+  1425→                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1426→                      <MacosFormField label="SMTP Host">
+  1427→                        <Input value={email.smtpHost} onChange={e => { setEmail(e => ({ ...e, smtpHost: e.target.value })); markChanged() }} disabled={isViewOnly} placeholder="smtp.gmail.com" className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1428→                      </MacosFormField>
+  1429→                      <MacosFormField label="SMTP Port">
+  1430→                        <Input type="number" value={email.smtpPort} onChange={e => { setEmail(e => ({ ...e, smtpPort: parseInt(e.target.value) || 587 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-24" />
+  1431→                      </MacosFormField>
+  1432→                      <MacosFormField label="SMTP Username">
+  1433→                        <Input value={email.smtpUser} onChange={e => { setEmail(e => ({ ...e, smtpUser: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1434→                      </MacosFormField>
+  1435→                      <MacosFormField label="SMTP Password">
+  1436→                        <Input type="password" value={email.smtpPassword} onChange={e => { setEmail(e => ({ ...e, smtpPassword: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1437→                      </MacosFormField>
+  1438→                      <MacosFormField label="Encryption">
+  1439→                        <Select value={email.smtpEncryption} onValueChange={v => { setEmail(e => ({ ...e, smtpEncryption: v })); markChanged() }} disabled={isViewOnly}>
+  1440→                          <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-32"><SelectValue /></SelectTrigger>
+  1441→                          <SelectContent>
+  1442→                            <SelectItem value="tls">TLS</SelectItem>
+  1443→                            <SelectItem value="ssl">SSL</SelectItem>
+  1444→                            <SelectItem value="none">None</SelectItem>
+  1445→                          </SelectContent>
+  1446→                        </Select>
+  1447→                      </MacosFormField>
+  1448→                      <MacosFormField label="Sender Name">
+  1449→                        <Input value={email.senderName} onChange={e => { setEmail(e => ({ ...e, senderName: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1450→                      </MacosFormField>
+  1451→                      <MacosFormField label="Sender Email" className="md:col-span-2">
+  1452→                        <Input type="email" value={email.senderEmail} onChange={e => { setEmail(e => ({ ...e, senderEmail: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1453→                      </MacosFormField>
+  1454→                    </div>
+  1455→                  )}
+  1456→                </div>
+  1457→              </div>
+  1458→
+  1459→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1460→                <h3 className="macos-section-title flex items-center gap-2">
+  1461→                  <Bell className="size-4 text-macos-orange" />
+  1462→                  Email Templates
+  1463→                </h3>
+  1464→                <div className="space-y-3">
+  1465→                  {[
+  1466→                    { key: 'enableSaleConfirmation', label: 'Sale Confirmation', desc: 'Send receipt to customer after purchase' },
+  1467→                    { key: 'enableLowStockAlert', label: 'Low Stock Alert', desc: 'Notify when products are running low' },
+  1468→                    { key: 'enableDailyReport', label: 'Daily Report', desc: 'Daily sales summary' },
+  1469→                    { key: 'enableWeeklyReport', label: 'Weekly Report', desc: 'Weekly performance report' },
+  1470→                    { key: 'enableMonthlyReport', label: 'Monthly Report', desc: 'Monthly financial summary' },
+  1471→                  ].map(item => (
+  1472→                    <div key={item.key} className="flex items-center justify-between">
+  1473→                      <div>
+  1474→                        <Label className="text-[12px] font-semibold tracking-tight">{item.label}</Label>
+  1475→                        <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+  1476→                      </div>
+  1477→                      <Switch
+  1478→                        checked={email[item.key as keyof EmailSettings] as boolean}
+  1479→                        onCheckedChange={v => { setEmail(e => ({ ...e, [item.key]: v })); markChanged() }}
+  1480→                        disabled={isViewOnly}
+  1481→                      />
+  1482→                    </div>
+  1483→                  ))}
+  1484→                </div>
+  1485→              </div>
+  1486→            </div>
+  1487→          )}
+  1488→
+  1489→          {/* ─── Notifications ─── */}
+  1490→          {activeSection === 'notifications' && (
+  1491→            <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1492→              <h3 className="macos-section-title flex items-center gap-2">
+  1493→                <Bell className="size-4 text-macos-orange" />
+  1494→                Alert Preferences
+  1495→              </h3>
+  1496→              <div className="space-y-3">
+  1497→                <div className="flex items-center justify-between">
+  1498→                  <div>
+  1499→                    <Label className="text-[12px] font-semibold tracking-tight">Enable Notifications</Label>
+  1500→                    <p className="text-[11px] text-muted-foreground">Master switch for all in-app notifications</p>
+  1501→                  </div>
+  1502→                  <Switch checked={notifications.enableNotifications} onCheckedChange={v => { setNotifications(n => ({ ...n, enableNotifications: v })); markChanged() }} disabled={isViewOnly} />
+  1503→                </div>
+  1504→                <Separator className="opacity-40" />
+  1505→                {[
+  1506→                  { key: 'enableSoundAlerts', label: 'Sound Alerts', desc: 'Play sounds for notifications' },
+  1507→                  { key: 'lowStockAlert', label: 'Low Stock Alert', desc: 'When inventory falls below threshold' },
+  1508→                  { key: 'newOrderAlert', label: 'New Order Alert', desc: 'When a new order is placed' },
+  1509→                  { key: 'paymentReceivedAlert', label: 'Payment Received', desc: 'When payment is confirmed' },
+  1510→                  { key: 'employeeClockInAlert', label: 'Employee Clock In', desc: 'When employees check in' },
+  1511→                  { key: 'dailySummaryAlert', label: 'Daily Summary', desc: 'End-of-day sales summary' },
+  1512→                  { key: 'systemUpdateAlert', label: 'System Updates', desc: 'Software updates and announcements' },
+  1513→                ].map(item => (
+  1514→                  <div key={item.key} className="flex items-center justify-between">
+  1515→                    <div>
+  1516→                      <Label className="text-[12px] font-semibold tracking-tight">{item.label}</Label>
+  1517→                      <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+  1518→                    </div>
+  1519→                    <Switch
+  1520→                      checked={notifications[item.key as keyof NotificationSettings] as boolean}
+  1521→                      onCheckedChange={v => { setNotifications(n => ({ ...n, [item.key]: v })); markChanged() }}
+  1522→                      disabled={isViewOnly || !notifications.enableNotifications}
+  1523→                    />
+  1524→                  </div>
+  1525→                ))}
+  1526→              </div>
+  1527→            </div>
+  1528→          )}
+  1529→
+  1530→          {/* ─── Security ─── */}
+  1531→          {activeSection === 'security' && (
+  1532→            <div className="space-y-4">
+  1533→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1534→                <h3 className="macos-section-title flex items-center gap-2">
+  1535→                  <Shield className="size-4 text-macos-red" />
+  1536→                  Authentication
+  1537→                </h3>
+  1538→                <div className="space-y-3">
+  1539→                  <div className="flex items-center justify-between">
+  1540→                    <div>
+  1541→                      <Label className="text-[12px] font-semibold tracking-tight">Two-Factor Authentication</Label>
+  1542→                      <p className="text-[11px] text-muted-foreground">Require 2FA for all users</p>
+  1543→                    </div>
+  1544→                    <Switch checked={security.enableTwoFactor} onCheckedChange={v => { setSecurity(s => ({ ...s, enableTwoFactor: v })); markChanged() }} disabled={isViewOnly} />
+  1545→                  </div>
+  1546→                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1547→                    <MacosFormField label="Session Timeout (minutes)">
+  1548→                      <Input type="number" value={security.sessionTimeout} onChange={e => { setSecurity(s => ({ ...s, sessionTimeout: parseInt(e.target.value) || 30 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1549→                    </MacosFormField>
+  1550→                    <MacosFormField label="Max Login Attempts">
+  1551→                      <Input type="number" value={security.maxLoginAttempts} onChange={e => { setSecurity(s => ({ ...s, maxLoginAttempts: parseInt(e.target.value) || 5 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1552→                    </MacosFormField>
+  1553→                  </div>
+  1554→                </div>
+  1555→              </div>
+  1556→
+  1557→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1558→                <h3 className="macos-section-title flex items-center gap-2">
+  1559→                  <Lock className="size-4 text-macos-purple" />
+  1560→                  Password Policy
+  1561→                </h3>
+  1562→                <div className="space-y-3">
+  1563→                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1564→                    <MacosFormField label="Minimum Password Length">
+  1565→                      <Input type="number" value={security.passwordMinLength} onChange={e => { setSecurity(s => ({ ...s, passwordMinLength: parseInt(e.target.value) || 8 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1566→                    </MacosFormField>
+  1567→                    <MacosFormField label="Password Expiry (days)">
+  1568→                      <Input type="number" value={security.passwordExpiryDays} onChange={e => { setSecurity(s => ({ ...s, passwordExpiryDays: parseInt(e.target.value) || 90 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1569→                    </MacosFormField>
+  1570→                  </div>
+  1571→                  <div className="flex items-center justify-between">
+  1572→                    <Label className="text-[12px] font-semibold tracking-tight">Require Special Characters</Label>
+  1573→                    <Switch checked={security.requireSpecialChars} onCheckedChange={v => { setSecurity(s => ({ ...s, requireSpecialChars: v })); markChanged() }} disabled={isViewOnly} />
+  1574→                  </div>
+  1575→                  <div className="flex items-center justify-between">
+  1576→                    <Label className="text-[12px] font-semibold tracking-tight">Require Numbers</Label>
+  1577→                    <Switch checked={security.requireNumbers} onCheckedChange={v => { setSecurity(s => ({ ...s, requireNumbers: v })); markChanged() }} disabled={isViewOnly} />
+  1578→                  </div>
+  1579→                  <div className="flex items-center justify-between">
+  1580→                    <Label className="text-[12px] font-semibold tracking-tight">Require Uppercase Letters</Label>
+  1581→                    <Switch checked={security.requireUppercase} onCheckedChange={v => { setSecurity(s => ({ ...s, requireUppercase: v })); markChanged() }} disabled={isViewOnly} />
+  1582→                  </div>
+  1583→                </div>
+  1584→              </div>
+  1585→
+  1586→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1587→                <h3 className="macos-section-title flex items-center gap-2">
+  1588→                  <FileText className="size-4 text-macos-blue" />
+  1589→                  Audit & Access
+  1590→                </h3>
+  1591→                <div className="space-y-3">
+  1592→                  <div className="flex items-center justify-between">
+  1593→                    <div>
+  1594→                      <Label className="text-[12px] font-semibold tracking-tight">Audit Logging</Label>
+  1595→                      <p className="text-[11px] text-muted-foreground">Log all user actions for compliance</p>
+  1596→                    </div>
+  1597→                    <Switch checked={security.enableAuditLog} onCheckedChange={v => { setSecurity(s => ({ ...s, enableAuditLog: v })); markChanged() }} disabled={isViewOnly} />
+  1598→                  </div>
+  1599→                  {security.enableAuditLog && (
+  1600→                    <MacosFormField label="Audit Log Retention (days)">
+  1601→                      <Input type="number" value={security.auditLogRetention} onChange={e => { setSecurity(s => ({ ...s, auditLogRetention: parseInt(e.target.value) || 365 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-32" />
+  1602→                    </MacosFormField>
+  1603→                  )}
+  1604→                  <div className="flex items-center justify-between">
+  1605→                    <div>
+  1606→                      <Label className="text-[12px] font-semibold tracking-tight">IP Whitelist</Label>
+  1607→                      <p className="text-[11px] text-muted-foreground">Restrict access to specific IP addresses</p>
+  1608→                    </div>
+  1609→                    <Switch checked={security.enableIpWhitelist} onCheckedChange={v => { setSecurity(s => ({ ...s, enableIpWhitelist: v })); markChanged() }} disabled={isViewOnly} />
+  1610→                  </div>
+  1611→                  {security.enableIpWhitelist && (
+  1612→                    <MacosFormField label="Allowed IPs (comma-separated)">
+  1613→                      <Textarea value={security.ipWhitelist} onChange={e => { setSecurity(s => ({ ...s, ipWhitelist: e.target.value })); markChanged() }} disabled={isViewOnly} placeholder="192.168.1.0/24, 10.0.0.1" className="rounded-lg bg-secondary/50 border-0 text-[13px] min-h-[60px]" />
+  1614→                    </MacosFormField>
+  1615→                  )}
+  1616→                </div>
+  1617→              </div>
+  1618→            </div>
+  1619→          )}
+  1620→
+  1621→          {/* ─── Printing ─── */}
+  1622→          {activeSection === 'printing' && (
+  1623→            <div className="space-y-4">
+  1624→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1625→                <h3 className="macos-section-title flex items-center gap-2">
+  1626→                  <Printer className="size-4 text-gg-bridge" />
+  1627→                  Printer Setup
+  1628→                </h3>
+  1629→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1630→                  <MacosFormField label="Default Printer">
+  1631→                    <Select value={printing.defaultPrinter} onValueChange={v => { setPrinting(p => ({ ...p, defaultPrinter: v })); markChanged() }} disabled={isViewOnly}>
+  1632→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1633→                      <SelectContent>
+  1634→                        <SelectItem value="system">System Default</SelectItem>
+  1635→                        <SelectItem value="thermal">Thermal Printer</SelectItem>
+  1636→                        <SelectItem value="laser">Laser Printer</SelectItem>
+  1637→                      </SelectContent>
+  1638→                    </Select>
+  1639→                  </MacosFormField>
+  1640→                  <MacosFormField label="Receipt Printer">
+  1641→                    <Select value={printing.receiptPrinter} onValueChange={v => { setPrinting(p => ({ ...p, receiptPrinter: v })); markChanged() }} disabled={isViewOnly}>
+  1642→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1643→                      <SelectContent>
+  1644→                        <SelectItem value="thermal">Thermal Printer</SelectItem>
+  1645→                        <SelectItem value="system">System Default</SelectItem>
+  1646→                      </SelectContent>
+  1647→                    </Select>
+  1648→                  </MacosFormField>
+  1649→                  <MacosFormField label="Label Printer">
+  1650→                    <Select value={printing.labelPrinter} onValueChange={v => { setPrinting(p => ({ ...p, labelPrinter: v })); markChanged() }} disabled={isViewOnly}>
+  1651→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1652→                      <SelectContent>
+  1653→                        <SelectItem value="label">Label Printer</SelectItem>
+  1654→                        <SelectItem value="system">System Default</SelectItem>
+  1655→                      </SelectContent>
+  1656→                    </Select>
+  1657→                  </MacosFormField>
+  1658→                  <MacosFormField label="Print Copies">
+  1659→                    <Input type="number" min={1} max={5} value={printing.printCopies} onChange={e => { setPrinting(p => ({ ...p, printCopies: parseInt(e.target.value) || 1 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-24" />
+  1660→                  </MacosFormField>
+  1661→                </div>
+  1662→                <div className="flex items-center justify-between">
+  1663→                  <Label className="text-[12px] font-semibold tracking-tight">Auto-Print on Sale</Label>
+  1664→                  <Switch checked={printing.enableAutoPrint} onCheckedChange={v => { setPrinting(p => ({ ...p, enableAutoPrint: v })); markChanged() }} disabled={isViewOnly} />
+  1665→                </div>
+  1666→              </div>
+  1667→
+  1668→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1669→                <h3 className="macos-section-title flex items-center gap-2">
+  1670→                  <Package className="size-4 text-macos-green" />
+  1671→                  Barcode Labels
+  1672→                </h3>
+  1673→                <div className="space-y-3">
+  1674→                  <div className="flex items-center justify-between">
+  1675→                    <Label className="text-[12px] font-semibold tracking-tight">Enable Barcode Labels</Label>
+  1676→                    <Switch checked={printing.enableBarcodeLabels} onCheckedChange={v => { setPrinting(p => ({ ...p, enableBarcodeLabels: v })); markChanged() }} disabled={isViewOnly} />
+  1677→                  </div>
+  1678→                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1679→                    <MacosFormField label="Barcode Format">
+  1680→                      <Select value={printing.barcodeFormat} onValueChange={v => { setPrinting(p => ({ ...p, barcodeFormat: v })); markChanged() }} disabled={isViewOnly}>
+  1681→                        <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1682→                        <SelectContent>
+  1683→                          <SelectItem value="CODE128">CODE128</SelectItem>
+  1684→                          <SelectItem value="EAN13">EAN-13</SelectItem>
+  1685→                          <SelectItem value="UPC">UPC-A</SelectItem>
+  1686→                          <SelectItem value="QR">QR Code</SelectItem>
+  1687→                        </SelectContent>
+  1688→                      </Select>
+  1689→                    </MacosFormField>
+  1690→                    <MacosFormField label="Label Size">
+  1691→                      <Select value={printing.labelSize} onValueChange={v => { setPrinting(p => ({ ...p, labelSize: v })); markChanged() }} disabled={isViewOnly}>
+  1692→                        <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1693→                        <SelectContent>
+  1694→                          <SelectItem value="40x20">40×20mm (Small)</SelectItem>
+  1695→                          <SelectItem value="60x30">60×30mm (Medium)</SelectItem>
+  1696→                          <SelectItem value="80x40">80×40mm (Large)</SelectItem>
+  1697→                        </SelectContent>
+  1698→                      </Select>
+  1699→                    </MacosFormField>
+  1700→                  </div>
+  1701→                </div>
+  1702→              </div>
+  1703→            </div>
+  1704→          )}
+  1705→
+  1706→          {/* ─── Appearance ─── */}
+  1707→          {activeSection === 'appearance' && (
+  1708→            <div className="space-y-4">
+  1709→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1710→                <h3 className="macos-section-title flex items-center gap-2">
+  1711→                  <Palette className="size-4 text-macos-purple" />
+  1712→                  Theme & Display
+  1713→                </h3>
+  1714→                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1715→                  <MacosFormField label="Theme">
+  1716→                    <Select value={appearance.theme} onValueChange={v => { setAppearance(a => ({ ...a, theme: v })); markChanged() }} disabled={isViewOnly}>
+  1717→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1718→                      <SelectContent>
+  1719→                        <SelectItem value="system">System Default</SelectItem>
+  1720→                        <SelectItem value="light">Light</SelectItem>
+  1721→                        <SelectItem value="dark">Dark</SelectItem>
+  1722→                      </SelectContent>
+  1723→                    </Select>
+  1724→                  </MacosFormField>
+  1725→                  <MacosFormField label="Accent Color">
+  1726→                    <Select value={appearance.accentColor} onValueChange={v => { setAppearance(a => ({ ...a, accentColor: v })); markChanged() }} disabled={isViewOnly}>
+  1727→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1728→                      <SelectContent>
+  1729→                        <SelectItem value="default">Default</SelectItem>
+  1730→                        <SelectItem value="blue">Blue</SelectItem>
+  1731→                        <SelectItem value="green">Green</SelectItem>
+  1732→                        <SelectItem value="purple">Purple</SelectItem>
+  1733→                        <SelectItem value="orange">Orange</SelectItem>
+  1734→                      </SelectContent>
+  1735→                    </Select>
+  1736→                  </MacosFormField>
+  1737→                  <MacosFormField label="Font Size">
+  1738→                    <Select value={appearance.fontSize} onValueChange={v => { setAppearance(a => ({ ...a, fontSize: v })); markChanged() }} disabled={isViewOnly}>
+  1739→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1740→                      <SelectContent>
+  1741→                        <SelectItem value="small">Small</SelectItem>
+  1742→                        <SelectItem value="default">Default</SelectItem>
+  1743→                        <SelectItem value="large">Large</SelectItem>
+  1744→                      </SelectContent>
+  1745→                    </Select>
+  1746→                  </MacosFormField>
+  1747→                  <MacosFormField label="Dashboard Layout">
+  1748→                    <Select value={appearance.dashboardLayout} onValueChange={v => { setAppearance(a => ({ ...a, dashboardLayout: v })); markChanged() }} disabled={isViewOnly}>
+  1749→                      <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1750→                      <SelectContent>
+  1751→                        <SelectItem value="grid">Grid</SelectItem>
+  1752→                        <SelectItem value="list">List</SelectItem>
+  1753→                        <SelectItem value="compact">Compact</SelectItem>
+  1754→                      </SelectContent>
+  1755→                    </Select>
+  1756→                  </MacosFormField>
+  1757→                </div>
+  1758→                <div className="space-y-3">
+  1759→                  <div className="flex items-center justify-between">
+  1760→                    <Label className="text-[12px] font-semibold tracking-tight">Compact Mode</Label>
+  1761→                    <Switch checked={appearance.compactMode} onCheckedChange={v => { setAppearance(a => ({ ...a, compactMode: v })); markChanged() }} disabled={isViewOnly} />
+  1762→                  </div>
+  1763→                  <div className="flex items-center justify-between">
+  1764→                    <Label className="text-[12px] font-semibold tracking-tight">Show Animations</Label>
+  1765→                    <Switch checked={appearance.showAnimations} onCheckedChange={v => { setAppearance(a => ({ ...a, showAnimations: v })); markChanged() }} disabled={isViewOnly} />
+  1766→                  </div>
+  1767→                </div>
+  1768→              </div>
+  1769→            </div>
+  1770→          )}
+  1771→
+  1772→          {/* ─── Backup & Data ─── */}
+  1773→          {activeSection === 'backup' && (
+  1774→            <div className="space-y-4">
+  1775→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1776→                <h3 className="macos-section-title flex items-center gap-2">
+  1777→                  <Database className="size-4 text-macos-green" />
+  1778→                  Backup Configuration
+  1779→                </h3>
+  1780→                <div className="space-y-3">
+  1781→                  <div className="flex items-center justify-between">
+  1782→                    <div>
+  1783→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Auto-Backup</Label>
+  1784→                      <p className="text-[11px] text-muted-foreground">Automatically backup your data</p>
+  1785→                    </div>
+  1786→                    <Switch checked={backup.enableAutoBackup} onCheckedChange={v => { setBackup(b => ({ ...b, enableAutoBackup: v })); markChanged() }} disabled={isViewOnly} />
+  1787→                  </div>
+  1788→                  {backup.enableAutoBackup && (
+  1789→                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  1790→                      <MacosFormField label="Backup Frequency">
+  1791→                        <Select value={backup.backupFrequency} onValueChange={v => { setBackup(b => ({ ...b, backupFrequency: v })); markChanged() }} disabled={isViewOnly}>
+  1792→                          <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9"><SelectValue /></SelectTrigger>
+  1793→                          <SelectContent>
+  1794→                            <SelectItem value="hourly">Hourly</SelectItem>
+  1795→                            <SelectItem value="daily">Daily</SelectItem>
+  1796→                            <SelectItem value="weekly">Weekly</SelectItem>
+  1797→                            <SelectItem value="monthly">Monthly</SelectItem>
+  1798→                          </SelectContent>
+  1799→                        </Select>
+  1800→                      </MacosFormField>
+  1801→                      <MacosFormField label="Retention (days)">
+  1802→                        <Input type="number" value={backup.backupRetention} onChange={e => { setBackup(b => ({ ...b, backupRetention: parseInt(e.target.value) || 30 })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1803→                      </MacosFormField>
+  1804→                      <MacosFormField label="Backup Location">
+  1805→                        <Input value={backup.backupLocation} onChange={e => { setBackup(b => ({ ...b, backupLocation: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1806→                      </MacosFormField>
+  1807→                    </div>
+  1808→                  )}
+  1809→                </div>
+  1810→              </div>
+  1811→
+  1812→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1813→                <h3 className="macos-section-title flex items-center gap-2">
+  1814→                  <HardDrive className="size-4 text-macos-blue" />
+  1815→                  Cloud Backup
+  1816→                </h3>
+  1817→                <div className="space-y-3">
+  1818→                  <div className="flex items-center justify-between">
+  1819→                    <div>
+  1820→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Cloud Backup</Label>
+  1821→                      <p className="text-[11px] text-muted-foreground">Sync backups to cloud storage</p>
+  1822→                    </div>
+  1823→                    <Switch checked={backup.enableCloudBackup} onCheckedChange={v => { setBackup(b => ({ ...b, enableCloudBackup: v })); markChanged() }} disabled={isViewOnly} />
+  1824→                  </div>
+  1825→                  {backup.enableCloudBackup && (
+  1826→                    <MacosFormField label="Cloud Provider">
+  1827→                      <Select value={backup.cloudProvider} onValueChange={v => { setBackup(b => ({ ...b, cloudProvider: v })); markChanged() }} disabled={isViewOnly}>
+  1828→                        <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-48"><SelectValue /></SelectTrigger>
+  1829→                        <SelectContent>
+  1830→                          <SelectItem value="aws">Amazon S3</SelectItem>
+  1831→                          <SelectItem value="gcp">Google Cloud</SelectItem>
+  1832→                          <SelectItem value="azure">Azure Blob</SelectItem>
+  1833→                          <SelectItem value="dropbox">Dropbox</SelectItem>
+  1834→                        </SelectContent>
+  1835→                      </Select>
+  1836→                    </MacosFormField>
+  1837→                  )}
+  1838→                </div>
+  1839→              </div>
+  1840→
+  1841→              {/* Backup Status */}
+  1842→              <div className="macos-card macos-shadow-card p-5">
+  1843→                <div className="flex items-center justify-between">
+  1844→                  <div>
+  1845→                    <h3 className="macos-section-title">Backup Status</h3>
+  1846→                    <p className="text-[11px] text-muted-foreground mt-0.5">
+  1847→                      Last backup: {backup.lastBackupDate || 'Never'}
+  1848→                    </p>
+  1849→                  </div>
+  1850→                  <Button
+  1851→                    variant="outline"
+  1852→                    size="sm"
+  1853→                    className="rounded-lg text-[12px] font-medium h-8"
+  1854→                    disabled={isViewOnly}
+  1855→                    onClick={() => {
+  1856→                      setBackup(b => ({ ...b, lastBackupDate: new Date().toLocaleString() }))
+  1857→                      markChanged()
+  1858→                    }}
+  1859→                  >
+  1860→                    <Database className="size-3.5 mr-1.5" />
+  1861→                    Backup Now
+  1862→                  </Button>
+  1863→                </div>
+  1864→              </div>
+  1865→            </div>
+  1866→          )}
+  1867→
+  1868→          {/* ─── Integrations ─── */}
+  1869→          {activeSection === 'integrations' && (
+  1870→            <div className="space-y-4">
+  1871→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1872→                <h3 className="macos-section-title flex items-center gap-2">
+  1873→                  <Webhook className="size-4 text-macos-purple" />
+  1874→                  API Access
+  1875→                </h3>
+  1876→                <div className="space-y-3">
+  1877→                  <div className="flex items-center justify-between">
+  1878→                    <div>
+  1879→                      <Label className="text-[12px] font-semibold tracking-tight">Enable API Access</Label>
+  1880→                      <p className="text-[11px] text-muted-foreground">Allow external apps to connect via API</p>
+  1881→                    </div>
+  1882→                    <Switch checked={integrations.enableApi} onCheckedChange={v => { setIntegrations(i => ({ ...i, enableApi: v })); markChanged() }} disabled={isViewOnly} />
+  1883→                  </div>
+  1884→                  {integrations.enableApi && (
+  1885→                    <MacosFormField label="API Key">
+  1886→                      <div className="flex gap-2">
+  1887→                        <Input value={integrations.apiKey} onChange={e => { setIntegrations(i => ({ ...i, apiKey: e.target.value })); markChanged() }} disabled={isViewOnly} className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 font-mono" />
+  1888→                        <Button
+  1889→                          variant="outline"
+  1890→                          size="sm"
+  1891→                          className="rounded-lg text-[11px] font-medium h-9 px-3 flex-shrink-0"
+  1892→                          disabled={isViewOnly}
+  1893→                          onClick={() => {
+  1894→                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  1895→                            const key = 'bf_' + Array.from({ length: 32 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+  1896→                            setIntegrations(i => ({ ...i, apiKey: key }))
+  1897→                            markChanged()
+  1898→                          }}
+  1899→                        >
+  1900→                          Generate
+  1901→                        </Button>
+  1902→                      </div>
+  1903→                    </MacosFormField>
+  1904→                  )}
+  1905→                </div>
+  1906→              </div>
+  1907→
+  1908→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1909→                <h3 className="macos-section-title flex items-center gap-2">
+  1910→                  <Globe className="size-4 text-macos-blue" />
+  1911→                  Webhooks
+  1912→                </h3>
+  1913→                <div className="space-y-3">
+  1914→                  <div className="flex items-center justify-between">
+  1915→                    <div>
+  1916→                      <Label className="text-[12px] font-semibold tracking-tight">Enable Webhooks</Label>
+  1917→                      <p className="text-[11px] text-muted-foreground">Send event data to external services</p>
+  1918→                    </div>
+  1919→                    <Switch checked={integrations.enableWebhooks} onCheckedChange={v => { setIntegrations(i => ({ ...i, enableWebhooks: v })); markChanged() }} disabled={isViewOnly} />
+  1920→                  </div>
+  1921→                  {integrations.enableWebhooks && (
+  1922→                    <MacosFormField label="Webhook URL">
+  1923→                      <Input value={integrations.webhookUrl} onChange={e => { setIntegrations(i => ({ ...i, webhookUrl: e.target.value })); markChanged() }} disabled={isViewOnly} placeholder="https://" className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9" />
+  1924→                    </MacosFormField>
+  1925→                  )}
+  1926→                </div>
+  1927→              </div>
+  1928→
+  1929→              <div className="macos-card macos-shadow-card p-5 space-y-4">
+  1930→                <h3 className="macos-section-title flex items-center gap-2">
+  1931→                  <BarChart3 className="size-4 text-macos-green" />
+  1932→                  Third-Party Sync
+  1933→                </h3>
+  1934→                <div className="space-y-3">
+  1935→                  <div className="flex items-center justify-between">
+  1936→                    <div>
+  1937→                      <Label className="text-[12px] font-semibold tracking-tight">Accounting Software Sync</Label>
+  1938→                    </div>
+  1939→                    <Switch checked={integrations.enableAccountingSync} onCheckedChange={v => { setIntegrations(i => ({ ...i, enableAccountingSync: v })); markChanged() }} disabled={isViewOnly} />
+  1940→                  </div>
+  1941→                  {integrations.enableAccountingSync && (
+  1942→                    <MacosFormField label="Accounting Provider">
+  1943→                      <Select value={integrations.accountingProvider} onValueChange={v => { setIntegrations(i => ({ ...i, accountingProvider: v })); markChanged() }} disabled={isViewOnly}>
+  1944→                        <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-48"><SelectValue /></SelectTrigger>
+  1945→                        <SelectContent>
+  1946→                          <SelectItem value="quickbooks">QuickBooks</SelectItem>
+  1947→                          <SelectItem value="xero">Xero</SelectItem>
+  1948→                          <SelectItem value="freshbooks">FreshBooks</SelectItem>
+  1949→                          <SelectItem value="wave">Wave</SelectItem>
+  1950→                        </SelectContent>
+  1951→                      </Select>
+  1952→                    </MacosFormField>
+  1953→                  )}
+  1954→                  <Separator className="opacity-40" />
+  1955→                  <div className="flex items-center justify-between">
+  1956→                    <div>
+  1957→                      <Label className="text-[12px] font-semibold tracking-tight">E-Commerce Platform Sync</Label>
+  1958→                    </div>
+  1959→                    <Switch checked={integrations.enableEcommerceSync} onCheckedChange={v => { setIntegrations(i => ({ ...i, enableEcommerceSync: v })); markChanged() }} disabled={isViewOnly} />
+  1960→                  </div>
+  1961→                  {integrations.enableEcommerceSync && (
+  1962→                    <MacosFormField label="E-Commerce Platform">
+  1963→                      <Select value={integrations.ecommercePlatform} onValueChange={v => { setIntegrations(i => ({ ...i, ecommercePlatform: v })); markChanged() }} disabled={isViewOnly}>
+  1964→                        <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-48"><SelectValue /></SelectTrigger>
+  1965→                        <SelectContent>
+  1966→                          <SelectItem value="shopify">Shopify</SelectItem>
+  1967→                          <SelectItem value="woocommerce">WooCommerce</SelectItem>
+  1968→                          <SelectItem value="magento">Magento</SelectItem>
+  1969→                          <SelectItem value="bigcommerce">BigCommerce</SelectItem>
+  1970→                        </SelectContent>
+  1971→                      </Select>
+  1972→                    </MacosFormField>
+  1973→                  )}
+  1974→                  <Separator className="opacity-40" />
+  1975→                  <div className="flex items-center justify-between">
+  1976→                    <div>
+  1977→                      <Label className="text-[12px] font-semibold tracking-tight">Payment Gateway</Label>
+  1978→                    </div>
+  1979→                    <Switch checked={integrations.enablePaymentGateway} onCheckedChange={v => { setIntegrations(i => ({ ...i, enablePaymentGateway: v })); markChanged() }} disabled={isViewOnly} />
+  1980→                  </div>
+  1981→                  {integrations.enablePaymentGateway && (
+  1982→                    <MacosFormField label="Payment Provider">
+  1983→                      <Select value={integrations.paymentProvider} onValueChange={v => { setIntegrations(i => ({ ...i, paymentProvider: v })); markChanged() }} disabled={isViewOnly}>
+  1984→                        <SelectTrigger className="rounded-lg bg-secondary/50 border-0 text-[13px] h-9 w-48"><SelectValue /></SelectTrigger>
+  1985→                        <SelectContent>
+  1986→                          <SelectItem value="stripe">Stripe</SelectItem>
+  1987→                          <SelectItem value="paypal">PayPal</SelectItem>
+  1988→                          <SelectItem value="razorpay">Razorpay</SelectItem>
+  1989→                          <SelectItem value="square">Square</SelectItem>
+  1990→                        </SelectContent>
+  1991→                      </Select>
+  1992→                    </MacosFormField>
+  1993→                  )}
+  1994→                </div>
+  1995→              </div>
+  1996→            </div>
+  1997→          )}
+  1998→        </div>
+  1999→      </div>
+  2000→    </div>
+
+[showing lines 1-2000 of 2003; use offset=2001 with limit to continue reading]
